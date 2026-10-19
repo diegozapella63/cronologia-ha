@@ -1,4 +1,4 @@
-import { LitElement, html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
+import { LitElement, html, svg, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
 import { styles, extraStyles } from "./styles.js";
@@ -82,6 +82,9 @@ const local = {
     }
   },
 };
+
+const svgLine = (x1, y1, x2, y2, cls) => svg`<line class=${cls} x1=${x1} y1=${y1} x2=${x2} y2=${y2}></line>`;
+const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
@@ -1111,23 +1114,31 @@ class CronologiaApp extends LitElement {
     let hero;
     if (current.length) {
       const e = current[0];
-      const pct = Math.min(100, Math.max(0, ((now - e.start) / (e.end - e.start)) * 100));
-      hero = html`<button class="hero-ev" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
-        <span class="overline">Agora · termina ${untilLabel(e.end - now)}</span>
-        <span class="hero-title">${e.summary}</span>
-        <span class="hero-meta">${hm(e.start)} – ${hm(e.end)}${e.location ? ` · ${e.location}` : ""}</span>
-        <span class="hero-bar"><i style="width:${pct}%"></i></span>
-        ${next ? html`<span class="hero-next">Depois: <b>${hm(next.start)}</b> ${next.summary}</span>` : nothing}
-      </button>`;
+      const cal = this._cal(e.cal);
+      hero = this._ticket(e, {
+        label: "Agora",
+        pill: `termina ${untilLabel(e.end - now)}`,
+        when: html`<b>${hm(e.start)}</b> – <b>${hm(e.end)}</b> · ${durationLabel(e.end - e.start)}`,
+        stub: next ? html`<span class="tk-next">Depois <b>${hm(next.start)}</b> ${next.summary}</span>` : html`<span class="dot"></span><span>${[cal && cal.name, e.location].filter(Boolean).join(" · ")}</span>`,
+        now,
+        live: true,
+      });
     } else if (next) {
-      const soon = next.start - now < 36 * 3600000;
-      hero = html`<button class="hero-ev" style=${colorVars(this._colorOfEvent(next), this._dark)} @click=${() => this._openEvent(next)}>
-        <span class="overline">A seguir · ${untilLabel(next.start - now)}</span>
-        <span class="hero-title">${next.summary}</span>
-        <span class="hero-meta">${soon && sameDay(next.start, now) ? "" : `${dayLabel(next.start, now)} · `}${hm(next.start)} – ${hm(next.end)}${next.location ? ` · ${next.location}` : ""}</span>
-      </button>`;
+      const cal = this._cal(next.cal);
+      hero = this._ticket(next, {
+        label: "A seguir",
+        pill: untilLabel(next.start - now),
+        when: html`<b>${hm(next.start)}</b> – ${hm(next.end)} · ${sameDay(next.start, now) ? "hoje" : dayLabel(next.start, now, { long: false, cap: false })}`,
+        stub: html`<span class="dot"></span><span>${[cal && cal.name, next.location].filter(Boolean).join(" · ")}</span>`,
+        now,
+      });
     } else if (!loading) {
-      hero = html`<div class="hero-ev empty"><span class="overline">A seguir</span><span class="hero-title">Agenda livre</span><span class="hero-meta">Nada marcado nos próximos dias.</span></div>`;
+      hero = html`<div class="hero-ev ticket empty" style=${colorVars(this._accent(), this._dark)}>
+        <span class="tk-main">
+          <span class="tk-clock">${this._clock(null, now)}</span>
+          <span class="tk-info"><span class="tk-top"><span class="overline">A seguir</span></span><span class="hero-title">Agenda livre</span><span class="tk-when">Nada marcado nos próximos dias</span></span>
+        </span>
+      </div>`;
     }
     const shownAllDay = this._showAllDay || allDay.length <= 3 ? allDay : allDay.slice(0, 2);
     const days = [];
@@ -1171,6 +1182,70 @@ class CronologiaApp extends LitElement {
           ? html`<p class="page-sub">Nada marcado nos próximos 7 dias.</p>`
           : nothing}
     </section>`;
+  }
+
+  /** Appointment card: a clock with the event on the dial, and a ticket stub. */
+  _ticket(e, { label, pill, when, stub, now, live = false }) {
+    return html`<button class="hero-ev ticket ${live ? "live" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
+      <span class="tk-main">
+        <span class="tk-clock">${this._clock(e, now, live)}</span>
+        <span class="tk-info">
+          <span class="tk-top"><span class="overline">${label}</span><span class="tk-pill">${icon("clock", "sm")}${pill}</span></span>
+          <span class="hero-title">${e.summary}</span>
+          <span class="tk-when">${when}</span>
+        </span>
+      </span>
+      <span class="tk-cut" aria-hidden="true"></span>
+      <span class="tk-stub">${stub}</span>
+    </button>`;
+  }
+
+  /**
+   * A small analog clock: the event's span as an arc on the dial and the
+   * hands at its start time (or at "now" while it is happening).
+   */
+  _clock(e, now, live = false) {
+    const C = 40;
+    const R = 34;
+    const angle = (d) => (((d.getHours() % 12) * 60 + d.getMinutes()) / 720) * 2 * Math.PI;
+    const pt = (a, r) => [C + r * Math.sin(a), C - r * Math.cos(a)];
+    const arc = (a0, a1, r) => {
+      let sweep = a1 - a0;
+      while (sweep <= 0) sweep += 2 * Math.PI;
+      sweep = Math.max(sweep, 0.42); // a 15-minute event still shows on the dial
+      if (sweep >= 2 * Math.PI - 0.01) return `M ${C} ${C - r} A ${r} ${r} 0 1 1 ${C - 0.01} ${C - r}`;
+      const [x0, y0] = pt(a0, r);
+      const [x1, y1] = pt(a0 + sweep, r);
+      return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+    };
+    const ticks = Array.from({ length: 12 }, (_, i) => {
+      const a = (i / 12) * 2 * Math.PI;
+      const [x0, y0] = pt(a, i % 3 ? 27 : 24);
+      const [x1, y1] = pt(a, 29);
+      return svgLine(x0, y0, x1, y1, i % 3 ? "tick" : "tick major");
+    });
+    let span = "";
+    let done = "";
+    let at = now;
+    if (e) {
+      const long = e.end - e.start >= 12 * 3600000;
+      span = long ? arc(0, 2 * Math.PI, R) : arc(angle(e.start), angle(e.end), R);
+      if (live && !long) done = arc(angle(e.start), angle(now), R);
+      at = live ? now : e.start;
+    }
+    const hourA = angle(at);
+    const minA = (at.getMinutes() / 60) * 2 * Math.PI;
+    const [hx, hy] = pt(hourA, 15);
+    const [mx, my] = pt(minA, 23);
+    return html`<svg viewBox="0 0 80 80" aria-hidden="true">
+      <circle class="dial" cx="40" cy="40" r="30"></circle>
+      ${ticks}
+      ${span ? svgPath(span, live ? "span faint" : "span") : nothing}
+      ${done ? svgPath(done, "span") : nothing}
+      ${svgLine(C, C, hx, hy, "hand hour")}
+      ${svgLine(C, C, mx, my, "hand min")}
+      <circle class="pin" cx="40" cy="40" r="3"></circle>
+    </svg>`;
   }
 
   _renderNoCalendars() {

@@ -215,6 +215,187 @@ export const calStyles = css`
     font-weight: 600;
     color: var(--rv-text-2);
   }
+  /* appointment ticket ("Agora" / "A seguir") */
+  .hero-ev.ticket {
+    position: relative;
+    padding: 0;
+    gap: 0;
+    border: 1px solid var(--rv-line);
+    border-left: 1px solid var(--rv-line);
+    background: radial-gradient(120% 140% at 0% 0%, var(--cs) 0%, transparent 55%), var(--rv-surface);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07);
+    overflow: visible;
+  }
+  :host([dark]) .hero-ev.ticket {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  }
+  .tk-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px 16px 14px 14px;
+  }
+  .tk-clock {
+    flex: none;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--cs);
+    display: grid;
+    place-items: center;
+  }
+  .tk-clock svg {
+    width: 80px;
+    height: 80px;
+    overflow: visible;
+  }
+  .tk-clock .dial {
+    fill: var(--rv-surface);
+  }
+  .tk-clock .tick {
+    stroke: var(--rv-faint);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+  }
+  .tk-clock .tick.major {
+    stroke: var(--rv-muted);
+    stroke-width: 2.2;
+  }
+  .tk-clock .span {
+    fill: none;
+    stroke: var(--c);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .tk-clock .span.faint {
+    stroke: var(--cs);
+    stroke-width: 6;
+  }
+  .tk-clock .hand {
+    stroke: var(--rv-text);
+    stroke-linecap: round;
+  }
+  .tk-clock .hand.hour {
+    stroke-width: 4;
+  }
+  .tk-clock .hand.min {
+    stroke-width: 2.6;
+  }
+  .tk-clock .pin {
+    fill: var(--ci);
+  }
+  .tk-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tk-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tk-top .overline {
+    color: var(--ci);
+    font-weight: 700;
+  }
+  .tk-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    background: var(--c);
+    color: var(--rv-on-accent);
+    white-space: nowrap;
+  }
+  .tk-pill .i.sm {
+    width: 13px;
+    height: 13px;
+  }
+  .ticket .hero-title {
+    margin-top: 2px;
+  }
+  .tk-when {
+    font-size: 15px;
+    color: var(--rv-text-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .tk-when b {
+    font-family: var(--rv-display);
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--rv-text);
+  }
+  .tk-cut {
+    position: relative;
+    display: block;
+    align-self: stretch;
+    height: 0;
+    margin: 0 14px;
+    border-top: 2px dashed var(--rv-line-strong);
+  }
+  .tk-cut::before,
+  .tk-cut::after {
+    content: "";
+    position: absolute;
+    top: -11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--rv-bg);
+    border: 1px solid var(--rv-line);
+  }
+  .tk-cut::before {
+    left: -26px;
+    clip-path: inset(0 0 0 50%);
+  }
+  .tk-cut::after {
+    right: -26px;
+    clip-path: inset(0 50% 0 0);
+  }
+  .tk-stub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 18px 12px;
+    font-size: 14px;
+    color: var(--rv-muted);
+    min-width: 0;
+  }
+  .tk-stub > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tk-stub .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--c);
+    flex: none;
+  }
+  .tk-next b {
+    font-family: var(--rv-display);
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--rv-text-2);
+    margin: 0 2px;
+  }
+  .hero-ev.ticket.empty .tk-main {
+    padding-bottom: 16px;
+  }
+  .hero-ev.ticket.empty .tk-clock {
+    background: var(--rv-surface-2);
+  }
+
   .allday {
     display: flex;
     flex-wrap: wrap;

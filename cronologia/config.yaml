@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: CronologIA
-version: "1.0.0"
+version: "1.0.1"
 slug: cronologia
 description: Os calendários do Home Assistant (Google, Outlook, local, feriados…) numa agenda bonita, com eventos criados por mensagem ou foto.
 url: "https://github.com/diegozapella63/cronologia-ha/tree/main/cronologia"

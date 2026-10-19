@@ -15,7 +15,7 @@ import { Store } from "./lib/store.js";
 import { AI } from "./lib/ai.js";
 import { normalizeApiEvent, toICS } from "./lib/events.js";
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";

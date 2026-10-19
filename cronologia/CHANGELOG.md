@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Card "Agora" / "A seguir" redesenhado como um cartão de compromisso: relógio com o horário do evento no mostrador, contagem regressiva e canhoto com o calendário, o local ou o que vem depois.
+
 ## 1.0.0
 
 - Primeira versão.
