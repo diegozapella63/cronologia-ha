@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Start CronologIA
+# ==============================================================================
+bashio::log.info "Iniciando o CronologIA..."
+cd /app || bashio::exit.nok "Pasta /app não encontrada"
+exec node /app/server.js

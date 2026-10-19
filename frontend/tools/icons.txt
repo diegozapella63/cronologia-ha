@@ -1,0 +1,7 @@
+calendar calendar-days calendar-plus calendar-clock calendar-range calendar-check calendar-sync calendar-x
+clock clock-3 map-pin repeat chevron-left chevron-right chevron-down chevron-up plus x check search
+sliders-horizontal list layout-grid columns-3 sun moon sun-moon sparkles clipboard-paste images camera
+scan-text message-square-text loader-circle zap wifi-off external-link trash pencil copy eye eye-off
+palette upload download file-text link circle-alert rotate-ccw info lock house layers briefcase
+party-popper server cake gift pill dumbbell stethoscope users book-open plane heart star
+graduation-cap utensils car baby dog bell arrow-right sunrise sunset list-checks library
