@@ -37,15 +37,18 @@ function parseWhen(v) {
 
 function parseRrule(rrule) {
   if (!rrule) return null;
-  const out = { freq: null, interval: 1, count: null, until: null };
+  const out = { freq: null, interval: 1, count: null, until: null, byday: null };
+  const WD = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
   for (const part of rrule.replace(/^RRULE:/, "").split(";")) {
     const [k, v] = part.split("=");
     if (k === "FREQ") out.freq = v;
     else if (k === "INTERVAL") out.interval = Number(v) || 1;
     else if (k === "COUNT") out.count = Number(v);
+    else if (k === "BYDAY") out.byday = v.split(",").map((d) => WD[d.slice(-2)]).filter((d) => d != null);
     else if (k === "UNTIL") {
-      const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z?)?/.exec(v);
-      if (m) out.until = new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 23, m[5] ? +m[5] : 59, m[6] ? +m[6] : 59).getTime();
+      const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?/.exec(v);
+      if (m && m[7]) out.until = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+      else if (m) out.until = new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 23, m[5] ? +m[5] : 59, m[6] ? +m[6] : 59).getTime();
     }
   }
   if (!["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].includes(out.freq)) fail("invalid_format", "Unsupported rrule");
@@ -61,12 +64,34 @@ function step(ms, rule, n) {
   return d.getTime();
 }
 
+const mondayOf = (ms) => {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
+};
+
 function expand(ev, from, to) {
   const dur = ev.end - ev.start;
   const out = [];
   const rule = parseRrule(ev.rrule);
   if (!rule) {
     if (ev.start < to && ev.end > from) out.push({ start: ev.start, end: ev.end, rid: null });
+    return out;
+  }
+  if (rule.freq === "WEEKLY" && rule.byday && rule.byday.length) {
+    // Every chosen weekday of every INTERVAL-th week (weeks start on Monday).
+    const week0 = mondayOf(ev.start);
+    for (let i = 0, n = 0; i < 4000; i++) {
+      const d = new Date(ev.start);
+      d.setDate(d.getDate() + i);
+      const s = d.getTime();
+      if (s >= to || (rule.until != null && s > rule.until)) break;
+      if (Math.round((mondayOf(s) - week0) / (7 * DAY)) % rule.interval || !rule.byday.includes(d.getDay())) continue;
+      if (rule.count != null && ++n > rule.count) break;
+      const rid = recId(ev.allDay, s);
+      if (s + dur > from && !ev.exdates.has(rid)) out.push({ start: s, end: s + dur, rid });
+    }
     return out;
   }
   for (let n = 0; n < 3000; n++) {
@@ -101,6 +126,25 @@ export function createCalendars() {
     return d.getTime();
   };
   const nextWeekday = (wd) => (wd - today().getDay() + 7) % 7 || 7;
+  const WD_CODE = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  // Doses relative to now (minutes, rounded down to the half hour, kept inside today), repeating since `since` days.
+  const dose = (name, offMin, rrule, amount, who, since, notes = "") => {
+    let t = Math.floor((Date.now() + offMin * 60000) / 1800000) * 1800000;
+    const d0 = today().getTime();
+    t = Math.min(Math.max(t, d0 + 30 * 60000), d0 + 23 * 3600000);
+    const first = new Date(t);
+    first.setDate(first.getDate() + since);
+    const desc = `#remédio\nDose: ${amount}\nQuem toma: ${who}${notes ? `\n${notes}` : ""}`;
+    return mk(name, first.getTime(), first.getTime() + 15 * 60000, { rrule, description: desc });
+  };
+  const monthsAgo = (m, plusDays) => {
+    const d = today();
+    d.setDate(d.getDate() + plusDays);
+    d.setMonth(d.getMonth() - m);
+    return ymd(d);
+  };
+  const maint = (who, every, warn, history) =>
+    ["#manutenção", who ? `Quem faz: ${who}` : "", `A cada: ${every}`, `Avisar: ${warn} dias antes`, history.length ? `Feito em: ${history.map((h) => `${h.slice(8, 10)}/${h.slice(5, 7)}/${h.slice(0, 4)}`).join(", ")}` : ""].filter(Boolean).join("\n");
   const mk = (summary, start, end, extra = {}) => ({ uid: `fake-${seq++}`, summary, start, end, allDay: false, rrule: null, exdates: new Set(), description: "", location: "", ...extra });
   const allDay = (summary, off, days = 1, extra = {}) => mk(summary, dayAt(off), dayAt(off + days), { allDay: true, ...extra });
 
@@ -123,7 +167,29 @@ export function createCalendars() {
       name: "Remédios",
       platform: "local_calendar",
       features: 7,
-      events: [mk("Gardenal", at(-30, 8), at(-30, 8, 15), { rrule: "FREQ=DAILY" }), mk("Sertralina", at(-30, 8), at(-30, 8, 15), { rrule: "FREQ=DAILY" })],
+      events: [
+        dose("DPrev 10.000 UI", -240, "FREQ=DAILY", "1 cápsula", "Andressa", -40),
+        dose("Sertralina", -240, "FREQ=DAILY", "50 mg · 1 comprimido", "Andressa", -40, "Depois do café da manhã"),
+        dose("Mounjaro 2,5 mg", -50, `FREQ=WEEKLY;BYDAY=${WD_CODE[today().getDay()]}`, "1 caneta", "Andressa", -21, "Aplicar na barriga, alternando o lado"),
+        dose("Gardenal", -5, "FREQ=DAILY", "1/4 de comprimido", "Mimi", -60),
+        dose("Ômega 3", 120, "FREQ=DAILY;INTERVAL=2", "2 cápsulas", "Diego", -20),
+      ],
+    },
+    "calendar.casa": {
+      name: "Casa",
+      platform: "local_calendar",
+      features: 7,
+      events: [
+        allDay("Regar as plantas", -10, 1, { rrule: "FREQ=DAILY", description: "#rotina\nQuem faz: Diego" }),
+        mk("Tirar o lixo", at(-14, 19), at(-14, 19, 15), { rrule: `FREQ=WEEKLY;BYDAY=${[0, 2, 4].map((k) => WD_CODE[(today().getDay() + k) % 7]).join(",")}`, description: "#rotina\nQuem faz: Andressa\nO caminhão passa às 20h" }),
+        allDay("Limpar a caixa de areia", -9, 1, { rrule: "FREQ=DAILY;INTERVAL=3", description: "#rotina\nQuem faz: Diego" }),
+        allDay("Conta de luz", 3, 1, { rrule: "FREQ=MONTHLY", description: "#conta\nValor: R$ 231,40\nCelesc · débito automático desligado" }),
+        allDay("Internet", -2, 1, { description: "#conta\nValor: R$ 119,90" }),
+        allDay("Trocar o filtro de água", 5, 1, { description: maint("Diego", "6 meses", 7, [monthsAgo(6, 5)]) }),
+        allDay("Limpar o ar-condicionado", -4, 1, { description: maint("Diego", "3 meses", 10, [monthsAgo(3, -4)]) }),
+        allDay("Dedetização", 40, 1, { description: maint("", "6 meses", 15, [monthsAgo(6, 40)]) }),
+        allDay("Trocar a bateria do alarme", 200, 1, { description: maint("", "1 ano", 30, []) }),
+      ],
     },
     "calendar.trabalho": {
       name: "Trabalho",

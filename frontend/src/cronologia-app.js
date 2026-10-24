@@ -6,6 +6,7 @@ import { calStyles } from "./cal-styles.js";
 import { parentHass, detectDark } from "./api.js";
 import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
+import { ModelsMixin } from "./models.js";
 import {
   PALETTE,
   colorById,
@@ -89,7 +90,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends LitElement {
+class CronologiaApp extends ModelsMixin(LitElement) {
   static properties = {
     api: { attribute: false },
     env: { attribute: false },
@@ -108,6 +109,7 @@ class CronologiaApp extends LitElement {
     _query: { state: true },
     _cam: { state: true },
     _ver: { state: true },
+    _home: { state: true },
   };
 
   static styles = [styles, extraStyles, calStyles];
@@ -131,6 +133,7 @@ class CronologiaApp extends LitElement {
     this._query = "";
     this._cam = null;
     this._ver = 0;
+    this._home = null;
     this._states = {};
     this._entities = {};
     this._devices = {};
@@ -219,6 +222,7 @@ class CronologiaApp extends LitElement {
     await this._boot(false);
     this.api.subscribeCalendars((ev) => this._onCalendar(ev)).catch(() => {});
     this.api.subscribePrefs((prefs) => this._setPrefs(prefs)).catch(() => {});
+    if (this.api.subscribeHome) this.api.subscribeHome((ix) => (this._home = ix)).catch(() => {});
   }
 
   async _boot(again) {
@@ -339,7 +343,9 @@ class CronologiaApp extends LitElement {
   /** Events of the visible calendars overlapping [start, end) (loads them if needed). */
   _events(start, end) {
     this._store.ensure(start, end);
-    return this._store.query(start, end);
+    const list = this._store.query(start, end);
+    const bills = this._gerenciaEvents(start, end);
+    return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
   async _saveCalPrefs(id, changes) {
@@ -499,11 +505,20 @@ class CronologiaApp extends LitElement {
   // ------------------------------------------------------------ events: open, create, edit, delete
 
   _openEvent(e) {
+    if (e.gerencia) {
+      this._openSheet("bill", { b: { id: e.gerencia.id, c: e.gerencia } });
+      return;
+    }
     this._openSheet("event", { ev: e });
+  }
+
+  _money(v) {
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
 
   /** Form for a new event (optionally on a day/hour or copied from another event). */
   _openForm({ ev = null, date = null, hour = null, cal = null, copy = false } = {}) {
+    if (ev && ev.kind) return this._openKindForm({ ev, copy });
     const writable = this._writable();
     if (!writable.length && !(ev && !copy)) {
       this._openSheet("nocal", {});
@@ -560,6 +575,7 @@ class CronologiaApp extends LitElement {
 
   /** The form as a Home Assistant event, or throws a message for the person. */
   _eventFromForm(f, { keepRrule = true } = {}) {
+    if (f.kind) return this._kindEvents(f, { keepRrule })[0];
     const title = (f.title || "").trim();
     if (!title) throw new Error("Dê um nome ao evento");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || "")) throw new Error("Escolha a data");
@@ -591,6 +607,7 @@ class CronologiaApp extends LitElement {
 
   async _saveForm() {
     const f = this._form;
+    if (f.kind) return this._saveKindForm();
     let ev;
     try {
       ev = this._eventFromForm(f);
@@ -1062,6 +1079,7 @@ class CronologiaApp extends LitElement {
   }
 
   _colorOfEvent(e) {
+    if (e.gerencia) return colorById("ouro");
     const c = this._cal(e.cal);
     return (c && c.color) || this._accent();
   }
@@ -1081,11 +1099,14 @@ class CronologiaApp extends LitElement {
       const endsToday = sameDay(e.end, day) || (e.end.getHours() === 0 && e.end.getMinutes() === 0 && dayDiff(e.end, day) === 1);
       time = html`<b>${startsToday ? hm(e.start) : "…"}</b><small>${endsToday ? hm(e.end) : "segue"}</small>`;
     }
-    const sub = [e.location, showCal && cal ? cal.name : ""].filter(Boolean).join(" · ");
-    return html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
+    const k = e.kind;
+    const done = k && k.kind !== "manutencao" && this._checkOf(e);
+    const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
+    const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : "") : ""].filter(Boolean).join(" · ");
+    return html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.summary}</span>${sub ? html`<span class="ev-sub">${sub}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${sub}</span>` : nothing}</span>
       ${e.rrule ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
     </button>`;
   }
@@ -1095,8 +1116,10 @@ class CronologiaApp extends LitElement {
   _renderNow() {
     const now = new Date(this._now);
     const today = startOfDay(now);
-    const events = this._events(addDays(today, -1), addDays(today, 9));
+    // Doses, chores, bills and maintenance have their own panels: the agenda shows appointments.
+    const events = this._events(addDays(today, -1), addDays(today, 9)).filter((e) => !e.kind);
     const loading = this._store.loading(addDays(today, -1), addDays(today, 9));
+    const lateMeds = this._ix().meds.filter((m) => m.state === "atrasado");
     const todays = eventsOfDay(events, today);
     // Very long timed events (a 15-hour giveaway…) read like all-day ones: chips, not "Agora".
     const long = (e) => e.end - e.start >= 12 * 3600000;
@@ -1108,9 +1131,11 @@ class CronologiaApp extends LitElement {
     const cals = this._visible();
     if (!this._cals().length) return this._renderNoCalendars();
     const left = timed.filter((e) => e.end > now).length;
-    const status = {
-      text: `${cap(dateLong(now))} · ${todays.length ? `${plural(todays.length, "evento", "eventos")} hoje` : "nada hoje"}${left && left < timed.length ? ` · ${left} pela frente` : ""}`,
-    };
+    const status = lateMeds.length
+      ? { text: `${cap(dateLong(now))} · ${lateMeds.length === 1 ? `${lateMeds[0].summary} atrasado` : `${lateMeds.length} remédios atrasados`}`, tone: "late" }
+      : {
+          text: `${cap(dateLong(now))} · ${todays.length ? `${plural(todays.length, "evento", "eventos")} hoje` : "nada hoje"}${left && left < timed.length ? ` · ${left} pela frente` : ""}`,
+        };
     let hero;
     if (current.length) {
       const e = current[0];
@@ -1152,6 +1177,7 @@ class CronologiaApp extends LitElement {
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/agendas")}>Mostrar</button></div>` : nothing}
+      ${this._renderMedsPanel()} ${this._renderBillsPanel()}
       ${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
@@ -1170,6 +1196,7 @@ class CronologiaApp extends LitElement {
         ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
       </div>
+      ${this._renderHomePanel()}
       ${days.length
         ? html`<div class="panel agenda">
             <div class="overline">Próximos dias</div>
@@ -1392,7 +1419,7 @@ class CronologiaApp extends LitElement {
         ? html`<div class="tgrid-allday" style="--n:${n}">
             <span class="tg-label">dia todo</span>
             ${allDayRows.map(
-              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
+              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad ${e.kind && this._checkOf(e) ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
             )}
           </div>`
         : nothing}
@@ -1410,8 +1437,8 @@ class CronologiaApp extends LitElement {
             }}>
               ${items.map(({ event: e, top, height, lane, lanes }) => {
                 const h = Math.max(height * HOUR_H - 2, 18);
-                return html`<button class="tg-ev ${h < 34 ? "short" : ""}" style="${colorVars(this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
-                  <b>${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}</small>` : nothing}
+                return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${e.kind && this._checkOf(e) ? "done" : ""}" style="${colorVars(this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
+                  <b>${e.kind && this._checkOf(e) ? "✓ " : ""}${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}</small>` : nothing}
                 </button>`;
               })}
               ${isToday ? html`<i class="tg-now" style="top:${nowTop}px"></i>` : nothing}
@@ -1577,6 +1604,7 @@ class CronologiaApp extends LitElement {
           : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos. Adicione um calendário local em Agendas.</div></div>`}
       </div>
 
+      ${this._renderAlertsPanel()} ${this._renderGerenciaPanel()}
       ${this._renderAiPanel()}
 
       <div class="panel" id="dados">
@@ -1667,6 +1695,11 @@ class CronologiaApp extends LitElement {
     } else if (this._sheet === "export") body = this._renderExportSheet();
     else if (this._sheet === "outlook") body = this._renderOutlookSheet();
     else if (this._sheet === "nocal") body = this._renderNoCalSheet();
+    else if (this._sheet === "maint") body = this._renderMaintSheet();
+    else if (this._sheet === "bill") {
+      body = this._renderBillSheet();
+      tint = colorById("ouro");
+    }
     const style = tint ? `--rv-accent:${tint.fill};--rv-accent-ink:${this._dark ? tint.fill : tint.ink};--rv-accent-soft:${hexToRgba(tint.fill, this._dark ? 0.18 : 0.14)};${colorVars(tint, this._dark)}` : "";
     return html`
       <div class="scrim" @click=${() => this._closeSheet()}></div>
@@ -1712,7 +1745,8 @@ class CronologiaApp extends LitElement {
         <div class="fact">${icon("clock")}<span>${when}</span></div>
         ${e.rrule ? html`<div class="fact">${icon("repeat")}<span>${rruleLabel(e.rrule)}</span></div>` : nothing}
         ${e.location ? html`<a class="fact link" href=${mapsUrl(e.location)} target="_blank" rel="noopener noreferrer">${icon("map-pin")}<span>${e.location}</span>${icon("external-link", "sm")}</a>` : nothing}
-        ${e.description
+        ${e.kind ? this._renderKindFacts(e) : nothing}
+        ${e.description && !e.kind
           ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(e.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>`
           : nothing}
       </div>
@@ -1727,6 +1761,7 @@ class CronologiaApp extends LitElement {
 
   _renderFormSheet() {
     const f = this._form;
+    if (f.kind) return this._renderKindForm();
     const writable = this._writable();
     const targets = f.mode === "edit" ? (f.rid ? writable.filter((c) => c.id === f.cal) : writable.filter((c) => c.id === f.origCal || (this._cal(f.origCal) && this._cal(f.origCal).canDelete))) : writable;
     const now = new Date();
@@ -1767,7 +1802,8 @@ class CronologiaApp extends LitElement {
     const dur = (toMin(f.end) - toMin(f.start) + 1440) % 1440;
     const overnight = !f.allDay && !f.endDate && toMin(f.end) <= toMin(f.start);
     return html`
-      ${this._sheetHead(f.mode === "add" ? "Novo evento" : "Editar evento")}
+      ${this._sheetHead(f.mode === "add" ? "Novo" : "Editar evento")}
+      ${f.mode === "add" ? this._renderModelChips("") : nothing}
       ${f.mode === "add"
         ? html`<div class="imp-strip">
             <button @click=${() => this._openImport("text")}>${icon("clipboard-paste")}<span>Colar mensagem</span></button>

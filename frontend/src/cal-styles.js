@@ -1001,4 +1001,789 @@ export const calStyles = css`
   .imp-opt.danger b {
     color: var(--rv-late);
   }
+
+  /* ---------- modelos: remédios, contas, rotina, manutenção ---------- */
+  :host {
+    --rv-ok: #1f9d63;
+    --rv-ok-soft: rgba(31, 157, 99, 0.13);
+    --rv-warn: #c77c02;
+    --rv-warn-soft: rgba(232, 163, 23, 0.16);
+  }
+  :host([dark]) {
+    --rv-ok: #4fd18f;
+    --rv-ok-soft: rgba(79, 209, 143, 0.15);
+    --rv-warn: #ffbe4d;
+    --rv-warn-soft: rgba(255, 190, 77, 0.15);
+  }
+  .model-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    margin: 0 0 16px;
+  }
+  .model {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px 0 8px;
+    border-radius: 15px;
+    border: 1.5px solid var(--rv-line-strong);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--rv-text-2);
+  }
+  .model > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .model .i {
+    width: 22px;
+    height: 22px;
+  }
+  .model.on {
+    background: var(--rv-accent-soft);
+    border-color: var(--rv-accent);
+    color: var(--rv-accent-ink);
+  }
+
+  .ring2 {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    color: var(--rv-accent-ink);
+  }
+  .ring2 svg.rg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .ring2 circle {
+    fill: none;
+    stroke-width: 3.6;
+  }
+  .ring2 .r-bg {
+    stroke: var(--rv-line);
+  }
+  .ring2 .r-fg {
+    stroke: var(--rv-accent);
+    stroke-linecap: round;
+  }
+  .ring2 b {
+    font-family: var(--rv-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rv-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .ring2 .i {
+    width: 18px;
+    height: 18px;
+  }
+  .ring2.ok .r-fg {
+    stroke: var(--rv-ok);
+  }
+  .ring2.ok {
+    color: var(--rv-ok);
+  }
+  .ring2.warn .r-fg {
+    stroke: var(--rv-warn);
+  }
+  .ring2.warn {
+    color: var(--rv-warn);
+  }
+  .ring2.bad .r-fg {
+    stroke: var(--rv-late);
+  }
+  .ring2.bad {
+    color: var(--rv-late);
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+    font-family: var(--rv-display);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .avatar.sm {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    margin-left: -4px;
+  }
+  .pick.on .avatar.sm {
+    background: rgba(255, 255, 255, 0.4);
+    color: inherit;
+  }
+
+  /* Remédios de hoje: the critical card */
+  .panel.meds {
+    padding: 0 0 4px;
+    overflow: hidden;
+    border-width: 1.5px;
+  }
+  .panel.meds.alert {
+    border-color: var(--rv-late);
+    box-shadow: 0 0 0 4px var(--rv-late-soft);
+  }
+  .meds-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px 12px;
+  }
+  .meds-ic {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .panel.meds.alert .meds-ic {
+    background: var(--rv-late-soft);
+    color: var(--rv-late);
+  }
+  .panel.meds.all .meds-ic {
+    background: var(--rv-ok-soft);
+    color: var(--rv-ok);
+  }
+  .meds-tt {
+    flex: 1;
+    min-width: 0;
+  }
+  .meds-tt b {
+    display: block;
+    font-family: var(--rv-display);
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+  .meds-alert {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0 12px 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--rv-late);
+    color: #fff;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+  :host([dark]) .meds-alert {
+    color: #1a0806;
+  }
+  .meds-alert .i {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+  }
+  .meds-who {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px 2px;
+    font-size: 15px;
+  }
+  .meds-who small {
+    color: var(--rv-muted);
+    font-size: 13px;
+  }
+  .who-bell {
+    margin-left: auto;
+    color: var(--rv-muted);
+  }
+  .who-bell .i {
+    width: 16px;
+    height: 16px;
+  }
+  .dose {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 8px;
+    margin: 2px 8px;
+    border-radius: 14px;
+  }
+  .dose.agora {
+    background: var(--rv-accent-faint);
+  }
+  .dose.atrasado {
+    background: var(--rv-late-soft);
+  }
+  .dose-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    text-align: left;
+  }
+  .dose-time {
+    width: 48px;
+    flex: none;
+    text-align: right;
+    font-family: var(--rv-display);
+    font-size: 17px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .dose.atrasado .dose-time,
+  .dose.atrasado .dose-tx small {
+    color: var(--rv-late);
+  }
+  .dose-tx {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .dose-tx b {
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .dose-tx small {
+    font-size: 13.5px;
+    color: var(--rv-muted);
+    line-height: 1.3;
+  }
+  .dose.tomado .dose-tx b {
+    color: var(--rv-muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: var(--rv-faint);
+  }
+  .dose.tomado .dose-time {
+    color: var(--rv-faint);
+  }
+  .dose-btn {
+    flex: none;
+    min-width: 84px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 13px;
+    font-weight: 700;
+    font-size: 15px;
+    border: 1.5px solid var(--rv-line-strong);
+    color: var(--rv-text-2);
+    transition: transform 0.12s;
+  }
+  .dose-btn:active {
+    transform: scale(0.95);
+  }
+  .dose-btn.agora {
+    background: var(--rv-accent);
+    border-color: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  .dose-btn.atrasado {
+    background: var(--rv-late);
+    border-color: var(--rv-late);
+    color: #fff;
+  }
+  :host([dark]) .dose-btn.atrasado {
+    color: #1a0806;
+  }
+  .dose-btn.later {
+    min-width: 0;
+  }
+  .dose-done {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin: 0 22px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--rv-ok);
+    color: #fff;
+  }
+  :host([dark]) .dose-done {
+    color: #06210f;
+  }
+  .dose-done .i {
+    width: 20px;
+    height: 20px;
+    stroke-width: 3;
+  }
+  .panel-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 6px;
+    padding: 11px 16px 10px;
+    border-top: 1px solid var(--rv-line);
+    color: var(--rv-muted);
+    font-size: 13.5px;
+    text-align: left;
+    line-height: 1.35;
+  }
+  .panel-foot > span {
+    flex: 1;
+  }
+  .panel-foot .i {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .panel-foot.warn {
+    color: var(--rv-warn);
+  }
+
+  /* Contas a pagar */
+  .panel.bills {
+    padding: 0 0 4px;
+    overflow: hidden;
+  }
+  .panel.bills.alert {
+    border-color: var(--rv-late);
+  }
+  .bills-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 14px 16px 6px;
+  }
+  .bills-sum {
+    text-align: right;
+    line-height: 1.1;
+  }
+  .bills-sum b {
+    display: block;
+    font-family: var(--rv-display);
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .bills-sum small {
+    font-size: 12.5px;
+    color: var(--rv-muted);
+  }
+  .panel.bills.alert .bills-sum small {
+    color: var(--rv-late);
+    font-weight: 600;
+  }
+  .bill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 12px 2px 8px;
+    margin: 2px 8px;
+    border-radius: 14px;
+  }
+  .bill.late {
+    background: var(--rv-late-soft);
+  }
+  .bill.today {
+    background: var(--rv-warn-soft);
+  }
+  .bill-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    text-align: left;
+  }
+  .bill-due {
+    width: 42px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px 0;
+    border-radius: 10px;
+    background: var(--rv-surface-2);
+    line-height: 1.05;
+  }
+  .bill-due b {
+    font-family: var(--rv-display);
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .bill-due small {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--rv-muted);
+  }
+  .bill.late .bill-due {
+    background: var(--rv-late);
+    color: #fff;
+  }
+  .bill.late .bill-due small {
+    color: inherit;
+    opacity: 0.85;
+  }
+  .bill-tx {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .bill-tx b {
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .bill-tx small {
+    font-size: 13.5px;
+    color: var(--rv-muted);
+    line-height: 1.35;
+  }
+  .bill.late .bill-tx small {
+    color: var(--rv-late);
+  }
+  .bill-val {
+    font-family: var(--rv-display);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--rv-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .bill.paid .bill-tx b,
+  .bill.paid .bill-val {
+    color: var(--rv-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--rv-faint);
+  }
+  .bill .dose-btn {
+    min-width: 76px;
+  }
+  .bill .dose-done {
+    margin: 0 18px;
+  }
+  .panel-foot.plain {
+    margin-top: 4px;
+  }
+
+  /* Rotina e manutenção */
+  .panel.chores {
+    padding: 0 0 4px;
+  }
+  .chores-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 16px 4px;
+  }
+  .chores-head.sub {
+    border-top: 1px solid var(--rv-line);
+    margin-top: 6px;
+  }
+  .chores-head small {
+    color: var(--rv-muted);
+    font-size: 13px;
+  }
+  .chore {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 16px;
+  }
+  .chk {
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: 50%;
+    border: 2px solid var(--rv-line-strong);
+    display: grid;
+    place-items: center;
+  }
+  .chk.on {
+    background: var(--rv-ok);
+    border-color: var(--rv-ok);
+    color: #fff;
+  }
+  .chk .i {
+    width: 17px;
+    height: 17px;
+    stroke-width: 3;
+  }
+  .chore-tx {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 7px 0;
+    text-align: left;
+  }
+  .chore-tx b {
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .chore-tx small {
+    font-size: 13.5px;
+    color: var(--rv-muted);
+  }
+  .chore.done .chore-tx b {
+    color: var(--rv-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--rv-faint);
+  }
+  .maint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 12px 2px 10px;
+    margin: 2px 6px;
+    border-radius: 14px;
+  }
+  .maint.vencida {
+    background: var(--rv-late-soft);
+  }
+  .maint-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    text-align: left;
+  }
+  .maint-tx {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .maint-tx b {
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .maint-tx small {
+    font-size: 13.5px;
+    color: var(--rv-muted);
+  }
+  .maint.vencida .maint-tx small {
+    color: var(--rv-late);
+  }
+  .maint .dose-btn {
+    min-width: 72px;
+  }
+  .maint-list {
+    margin: 0 -8px 8px;
+  }
+  .panel.bills .add-line,
+  .panel.chores .add-line {
+    padding-left: 16px;
+  }
+  .hint-card.maint-ok {
+    width: 100%;
+    text-align: left;
+    background: var(--rv-surface);
+    border: 1px solid var(--rv-line);
+  }
+  .hint-card.maint-ok > span {
+    flex: 1;
+  }
+
+  /* model events in the calendar screens */
+  .kind-ic {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-right: 5px;
+    color: var(--ci);
+  }
+  .kind-ic .i {
+    width: 15px;
+    height: 15px;
+  }
+  .ev-done {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-left: 6px;
+    color: var(--rv-ok);
+  }
+  .ev-done .i {
+    width: 16px;
+    height: 16px;
+    stroke-width: 3;
+  }
+  .ev-row.done .ev-title {
+    color: var(--rv-muted);
+  }
+  .tg-ev.done,
+  .tg-ad.done {
+    opacity: 0.55;
+  }
+  .kind-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 2px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--rv-ok-soft);
+    color: var(--rv-text);
+    font-size: 15px;
+  }
+  .kind-state > .i {
+    color: var(--rv-ok);
+    flex: none;
+  }
+  .kind-state > span {
+    flex: 1;
+  }
+  .btn.kind-act {
+    width: 100%;
+    margin: 12px 0 2px;
+  }
+
+  /* model forms */
+  .times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .time-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px 2px 2px;
+    border-radius: 14px;
+    border: 1.5px solid var(--rv-line-strong);
+  }
+  .time-pill input {
+    border: 0;
+    background: none;
+    padding: 6px 8px;
+    font-size: 17px;
+    font-family: var(--rv-display);
+    font-weight: 600;
+    width: auto;
+    min-width: 0;
+  }
+  .wdp-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .wdp {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid var(--rv-line-strong);
+    font-weight: 700;
+    color: var(--rv-text-2);
+  }
+  .wdp.on {
+    background: var(--rv-accent);
+    border-color: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  .field input[type="number"] {
+    border: 1.5px solid var(--rv-line-strong);
+    background: var(--rv-bg);
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 17px;
+    outline: 0;
+    color: var(--rv-text);
+  }
+  .num-input {
+    width: 78px !important;
+    text-align: center;
+    font-weight: 600;
+  }
+  .money {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1.5px solid var(--rv-line-strong);
+    border-radius: 14px;
+    padding: 0 14px;
+    background: var(--rv-surface-2);
+  }
+  .money > span {
+    font-weight: 600;
+    color: var(--rv-muted);
+  }
+  .field .money input {
+    border: 0 !important;
+    background: none !important;
+    padding-left: 0 !important;
+    font-family: var(--rv-display);
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .who-input {
+    margin-top: 10px;
+  }
+  .inline-time {
+    width: auto !important;
+    padding: 7px 10px !important;
+    border-radius: 12px !important;
+  }
+  .next-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -6px 2px 18px;
+    color: var(--rv-text-2);
+    font-size: 15px;
+  }
+  .next-line .i {
+    color: var(--rv-accent-ink);
+    flex: none;
+  }
+  .switch-row {
+    margin-bottom: 8px;
+  }
+  .switch-row .hint {
+    white-space: normal;
+  }
+  .person-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--rv-line);
+  }
+  .person-row:first-of-type {
+    border-top: 0;
+  }
+  .person-row .grow {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .person-row small {
+    font-size: 12.5px;
+    color: var(--rv-muted);
+  }
+  .select.sm {
+    width: auto;
+    max-width: 52%;
+    font-size: 14px;
+    padding: 9px 34px 9px 12px;
+    border-radius: 12px;
+  }
+  .steps-box .data-note code,
+  .panel-lead code {
+    font-size: 12.5px;
+    word-break: break-all;
+  }
 `;

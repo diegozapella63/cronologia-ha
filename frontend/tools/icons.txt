@@ -5,3 +5,4 @@ scan-text message-square-text loader-circle zap wifi-off external-link trash pen
 palette upload download file-text link circle-alert rotate-ccw info lock house layers briefcase
 party-popper server cake gift pill dumbbell stethoscope users book-open plane heart star
 graduation-cap utensils car baby dog bell arrow-right sunrise sunset list-checks library
+receipt wallet spray-can wrench circle-check smartphone user-round undo-2 bell-ring triangle-alert syringe paw-print hourglass

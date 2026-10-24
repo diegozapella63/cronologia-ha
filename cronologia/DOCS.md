@@ -14,11 +14,11 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 ## Telas
 
-- **Agora**: o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora" e os próximos 7 dias.
+- **Agora**: no alto, **Remédios de hoje** e **Contas a pagar** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
-- **Novo**: cria um evento, ou traz eventos de uma mensagem, foto ou arquivo .ics.
+- **Novo**: cria um evento ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Agendas**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; e atalhos para adicionar calendários.
-- **Mais**: tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, leitura por IA e exportar/importar .ics.
+- **Mais**: tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, leitura por IA e exportar/importar .ics.
 
 ## Criar, editar e apagar
 
@@ -35,6 +35,77 @@ Depende do calendário. O CronologIA só mostra os botões que cada um permite:
 Em eventos que se repetem, ao salvar ou apagar você escolhe **só este evento** ou **este e os próximos** (para apagar, também **toda a série**). Ao apagar um evento comum, aparece **Desfazer**.
 
 Mudar o evento de calendário cria uma cópia no novo calendário e apaga a original (o Home Assistant não tem "mover").
+
+## Modelos
+
+Em **Novo**, escolha o modelo no alto e o formulário muda:
+
+| Modelo | O que pede | Na tela Agora |
+|---|---|---|
+| **Remédio** | remédio, dose, quem toma, horários (1x, 2x, 3x, de 8 em 8 h ou à mão), frequência, por quanto tempo | **Remédios de hoje**, com **Tomei** |
+| **Conta a pagar** | conta, valor, vencimento, se repete todo mês ou todo ano | **Contas a pagar**, com **Paguei** |
+| **Rotina da casa** | tarefa, quem faz, horário (ou qualquer hora), frequência | **Rotina da casa**, com o círculo de feito |
+| **Manutenção** | o que fazer, a cada quanto tempo, quando foi feito pela última vez, quantos dias antes mostrar | **Manutenção da casa**, com o anel do prazo e **Feito** |
+
+Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias da semana** (escolha os dias), **a cada N dias**, todo mês (rotina) ou **só uma vez**. Por quanto tempo: uso contínuo, **por N dias** (antibiótico) ou até uma data. Cada horário vira um evento que se repete no calendário escolhido (de preferência um calendário local, que aceita editar).
+
+O modelo fica escrito na descrição do evento, assim:
+
+```
+#remédio
+Dose: 1 comprimido
+Quem toma: Andressa
+Tomar em jejum
+```
+
+Por isso ele aparece no Google, no Outlook ou no cartão de calendário do Home Assistant, e qualquer aparelho com o CronologIA reconhece. Dá para criar um modelo à mão, escrevendo `#remédio`, `#conta`, `#rotina` ou `#manutenção` na primeira linha da descrição. **Quem toma** pode ser uma pessoa do Home Assistant, outro nome ou um pet.
+
+Os modelos não entram na lista de compromissos da tela Agora, porque têm os cards deles. No calendário eles aparecem com o ícone do modelo e com ✓ quando feitos. **Editar** abre o formulário do modelo; em itens que se repetem, você escolhe só este ou este e os próximos.
+
+### Remédios de hoje
+
+Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei**. A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora.
+
+### Manutenção da casa
+
+Para o que se faz de tempos em tempos e conta **a partir da última vez** (trocar o filtro de água a cada 6 meses, limpar o ar-condicionado a cada 3). No calendário fica só a próxima data. **Feito** leva a próxima data para hoje + o intervalo e guarda o dia no histórico do próprio evento (**Desfazer** volta). O item aparece na tela Agora alguns dias antes de vencer (você escolhe quantos) e fica vermelho quando vence; **Todas as manutenções** mostra a lista inteira com o anel de cada prazo.
+
+## Avisos de remédio no celular
+
+Em **Mais › Avisos de remédio no celular**:
+
+- **Na hora** de cada dose, o celular de quem toma recebe um aviso com **Tomei** e **Adiar 15 min**. Tomei no aviso marca a dose no app; Adiar avisa de novo em 15 minutos.
+- **Se não tomar** (15 min, 30 min ou 1 hora depois, você escolhe), avisa de novo, também para **quem cuida**.
+- Quem não tem celular (uma criança, o gato) avisa quem cuida já na hora.
+- Quando a dose é marcada, o aviso some dos celulares.
+
+O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home Assistant no celular, pelo rastreador dela); dá para escolher outro em cada pessoa e **testar**. Os avisos usam o app Home Assistant do celular (`notify.mobile_app_…`), no canal "Remédios" no Android, com prioridade alta. Cada remédio pode ficar sem aviso (no formulário).
+
+## Contas do GerencIA
+
+Com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) (o app de finanças da mesma família, 1.5.0 ou mais novo) no mesmo Home Assistant, as **contas a pagar, os fixos e as faturas do cartão** aparecem no card **Contas a pagar** e no calendário, no dia do vencimento. **Paguei** dá baixa no GerencIA (o fixo do mês fica pago, a fatura fica toda paga) e **Desfazer** volta. O modelo **Conta a pagar** cria a conta lá (única, todo mês ou todo ano, com categoria), ou só no calendário, se você preferir.
+
+Não há nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação, desligue **Mais › Outros apps** no GerencIA. Em **Mais › Contas do GerencIA** aparece se está conectado e dá para tirar as contas do calendário.
+
+## Sensores e automações
+
+O app cria no Home Assistant:
+
+- `sensor.cronologia_remedios_hoje`: quantas doses faltam hoje, com `tomados`, `total`, `atrasados`, `proximo` e `pendentes`;
+- `binary_sensor.cronologia_remedio_atrasado`: ligado quando alguma dose passou do tempo (classe "problema");
+- `sensor.cronologia_manutencoes_vencidas`: quantas manutenções venceram, com `vencidas` e `proximas`.
+
+Para marcar algo como feito de fora do app (uma automação, uma **etiqueta NFC** na geladeira), dispare o evento `cronologia_feito`:
+
+```yaml
+action: event.fire
+data:
+  event_type: cronologia_feito
+  event_data:
+    nome: Trocar o filtro de água
+```
+
+Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Andressa`, só os dela.
 
 ## Outlook, Google e Alexa
 
@@ -77,10 +148,10 @@ Sem IA configurada, todo o resto funciona normalmente, inclusive importar arquiv
 ## Dados
 
 - Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…).
-- O app guarda só o nome, a cor e a visibilidade de cada calendário e as preferências, em `/data/cronologia.json`, que entra no backup do Home Assistant.
+- O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias e os avisos já enviados, em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento.
 - **Mais > Dados > Exportar agenda (.ics)**: escolha os calendários e o período (próximos 3 ou 12 meses, ou do último ano ao próximo). Cada repetição vira um evento no arquivo, que abre no Google Agenda, no Outlook e no iPhone.
 - O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 
 ## Segurança
 
-O app só repassa ao Home Assistant comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`) e os celulares (`notify.mobile_app_*`), envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos) e `cronologia_feito`. Ele não lê nem controla nenhuma outra entidade da casa.

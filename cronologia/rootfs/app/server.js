@@ -5,6 +5,8 @@
 // - Keeps how each calendar looks (name, color, hidden) in /data.
 // - Finds events in pasted messages and photos with the AI configured in
 //   Home Assistant, and exports calendars as .ics.
+// - Models (remédio, conta, rotina, manutenção): doses taken, chores done,
+//   phone alerts for doses, sensors, and the bills of the GerencIA app.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -14,8 +16,11 @@ import { HAClient } from "./lib/ha.js";
 import { Store } from "./lib/store.js";
 import { AI } from "./lib/ai.js";
 import { normalizeApiEvent, toICS } from "./lib/events.js";
+import { parseKind } from "./lib/kinds.js";
+import { Home } from "./lib/home.js";
+import { Gerencia } from "./lib/gerencia.js";
 
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -25,6 +30,7 @@ const HA_REST = process.env.HA_REST_URL || "http://supervisor/core/api";
 const TOKEN = process.env.SUPERVISOR_TOKEN || process.env.HA_TOKEN || "";
 const DATA_DIR = process.env.DATA_DIR || "/data";
 const MEDIA_DIR = process.env.MEDIA_DIR || "/media";
+const SHARE_DIR = process.env.SHARE_DIR || "/share";
 const INGRESS_IPS = new Set(["172.30.32.2"]);
 const MAX_UPLOAD = 30 * 1024 * 1024;
 const MAX_RANGE_DAYS = 800;
@@ -43,7 +49,14 @@ const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app
 const calStates = new Map();
 const calWatchers = new Set(); // {session, id}
 const prefWatchers = new Set();
+const homeWatchers = new Set();
 let registryCache = null;
+
+const pushHome = (index) => {
+  for (const w of homeWatchers) w.session.event(w.id, index);
+};
+const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
+const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, onChange: pushHome });
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
 const coded = (code, message) => Object.assign(new Error(message), { code });
@@ -89,6 +102,7 @@ ha.on("ready", async () => {
   try {
     await loadStates();
     log.info(`${calStates.size} calendários encontrados`);
+    home.discover().catch((err) => log.warn(`Procurando modelos: ${err.message}`));
   } catch (err) {
     log.error(`Não consegui ler os calendários: ${err.message}`);
   }
@@ -176,7 +190,7 @@ class Session {
   dispose() {
     for (const [, sub] of this.subs) sub.unsubscribe();
     this.subs.clear();
-    for (const set of [calWatchers, prefWatchers]) for (const w of set) if (w.session === this) set.delete(w);
+    for (const set of [calWatchers, prefWatchers, homeWatchers]) for (const w of set) if (w.session === this) set.delete(w);
   }
 
   watch(set, id) {
@@ -222,6 +236,50 @@ class Session {
         });
       }
 
+      case "cronologia/home/subscribe":
+        this.watch(homeWatchers, id);
+        this.result(id);
+        if (home.index) this.event(id, home.index);
+        else home.changed();
+        gerencia.refresh().catch(() => {});
+        return;
+
+      case "cronologia/check/set": {
+        if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
+        home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""));
+        return this.result(id);
+      }
+
+      case "cronologia/maint/done": {
+        if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
+        return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || ""));
+      }
+
+      case "cronologia/maint/undo": {
+        if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
+        await home.maintUndo(msg.entity_id, msg.uid);
+        return this.result(id);
+      }
+
+      case "cronologia/contas/pagar":
+      case "cronologia/contas/desfazer": {
+        if (typeof msg.conta !== "string" || !msg.conta) return this.error(id, "invalid_format", "Conta inválida");
+        const body = { id: msg.conta };
+        if (Number(msg.valor) > 0) body.valor = Number(msg.valor);
+        return this.result(id, await gerencia.act(type.endsWith("pagar") ? "pagar" : "desfazer", body));
+      }
+
+      case "cronologia/contas/nova": {
+        const c = msg.conta || {};
+        const body = { descricao: String(c.descricao || "").slice(0, 120), valor: Number(c.valor), vencimento: String(c.vencimento || ""), repete: ["nao", "mensal", "anual"].includes(c.repete) ? c.repete : "nao" };
+        if (c.categoria) body.categoria = String(c.categoria).slice(0, 60);
+        return this.result(id, await gerencia.act("nova", body));
+      }
+
+      case "cronologia/notify/test":
+        await home.testAlert(msg.target);
+        return this.result(id);
+
       case "cronologia/registry":
         registryCache = null;
         return this.result(id, await registry());
@@ -246,6 +304,7 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs)) home.changed();
         return pushPrefs();
       }
 
@@ -278,7 +337,11 @@ class Session {
 
       case "calendar/event/create": {
         if (!isCal(msg.entity_id)) return this.error(id, "invalid_format", "Não é um calendário");
-        return this.result(id, await ha.send({ type, entity_id: msg.entity_id, event: cleanEvent(msg.event) }));
+        const event = cleanEvent(msg.event);
+        const out = await ha.send({ type, entity_id: msg.entity_id, event });
+        if (parseKind(event.description)) home.noteCalendar(msg.entity_id);
+        home.refreshCalendar(msg.entity_id);
+        return this.result(id, out);
       }
 
       case "calendar/event/update":
@@ -289,7 +352,10 @@ class Session {
         if (typeof msg.recurrence_id === "string" && msg.recurrence_id) out.recurrence_id = msg.recurrence_id;
         if (msg.recurrence_range === "THISANDFUTURE") out.recurrence_range = "THISANDFUTURE";
         if (type === "calendar/event/update") out.event = cleanEvent(msg.event);
-        return this.result(id, await ha.send(out));
+        const res = await ha.send(out);
+        if (out.event && parseKind(out.event.description)) home.noteCalendar(msg.entity_id);
+        home.refreshCalendar(msg.entity_id);
+        return this.result(id, res);
       }
 
       default:
@@ -432,6 +498,8 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 server.listen(PORT, () => log.info(`CronologIA ${VERSION} ouvindo na porta ${PORT}${DEV ? " (modo dev)" : ""}`));
+home.start();
+gerencia.start(() => homeWatchers.size > 0);
 ha.start();
 
 const shutdown = () => {

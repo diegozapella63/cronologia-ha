@@ -2,7 +2,10 @@
 // a real Home Assistant: calendar entities (local, "Outlook", holidays, a
 // read-only remote calendar), the calendar websocket commands (subscribe,
 // create, update, delete, with simple recurrence), the REST events API, the
-// entity registry and an AI Task.
+// entity registry, an AI Task, people with phones (notify.mobile_app_*), the
+// event bus and the REST states API (sensors).
+//   Test helpers: GET /dev/notifications, POST /dev/fire {event_type, data},
+//   GET /api/states/<entity>.
 //   TZ=America/Sao_Paulo node dev/fake-ha.mjs
 //   (ws://127.0.0.1:8123/api/websocket and http://127.0.0.1:8123/api, token "dev")
 import http from "node:http";
@@ -17,6 +20,17 @@ const MEDIA_DIR = process.env.FAKE_MEDIA_DIR || process.env.MEDIA_DIR || "./.dat
 const WITH_AI = process.env.FAKE_HA_NO_AI !== "1";
 
 const model = createCalendars();
+const notifications = [];
+const restStates = new Map();
+const PERSONS = [
+  { entity_id: "person.diego", state: "home", attributes: { friendly_name: "Diego", device_trackers: ["device_tracker.pixel_8"] } },
+  { entity_id: "person.andressa", state: "home", attributes: { friendly_name: "Andressa", device_trackers: ["device_tracker.galaxy_s23"] } },
+];
+const NOTIFY = ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "persistent_notification"];
+
+function fire(eventType, data) {
+  for (const c of conns) for (const [sid, sub] of c.subs) if (sub.type === "bus" && (!sub.event_type || sub.event_type === eventType)) c.event(sid, { event_type: eventType, data, origin: "LOCAL", time_fired: new Date().toISOString() });
+}
 
 function fail(code, message) {
   const e = new Error(message);
@@ -91,6 +105,7 @@ class Conn {
           return ok([
             ...model.ids().map(model.stateOf),
             { entity_id: "light.sala", state: "on", attributes: {} },
+            ...PERSONS,
             ...(WITH_AI
               ? [
                   { entity_id: "ai_task.google_ai_task", state: "unknown", attributes: { friendly_name: "Google AI Task", supported_features: 3 } },
@@ -110,8 +125,10 @@ class Conn {
         case "config/device_registry/list":
           return ok(model.devices);
         case "subscribe_events":
-          this.subs.set(msg.id, { type: "state" });
+          this.subs.set(msg.id, !msg.event_type || msg.event_type === "state_changed" ? { type: "state" } : { type: "bus", event_type: msg.event_type });
           return ok();
+        case "get_services":
+          return ok({ notify: Object.fromEntries(NOTIFY.map((n) => [n, { fields: {} }])), light: { turn_on: {} } });
         case "unsubscribe_events":
           if (!this.subs.delete(msg.subscription)) fail("not_found", "Subscription not found.");
           return ok();
@@ -145,6 +162,12 @@ class Conn {
         }
         case "call_service":
           if (msg.domain === "ai_task") return ok(fakeAI(msg));
+          if (msg.domain === "notify") {
+            if (!NOTIFY.includes(msg.service)) fail("not_found", `Service notify.${msg.service} not found`);
+            notifications.push({ service: msg.service, ...msg.service_data, at: new Date().toISOString() });
+            console.log("notify", msg.service, JSON.stringify(msg.service_data));
+            return ok({ context: { id: "ctx" } });
+          }
           fail("not_found", "Service not found");
           break;
         default:
@@ -158,9 +181,38 @@ class Conn {
 
 // ------------------------------------------------------------------ REST
 
-const server = http.createServer((req, res) => {
-  if (req.headers.authorization !== `Bearer ${TOKEN}`) return res.writeHead(401).end("401: Unauthorized");
+const readBody = (req) =>
+  new Promise((resolve) => {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString() || "{}"));
+      } catch (e) {
+        resolve({});
+      }
+    });
+  });
+const sendJson = (res, obj) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(obj));
+
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
+  // test helpers (no token)
+  if (url.pathname === "/dev/notifications") return sendJson(res, notifications);
+  if (url.pathname === "/dev/fire" && req.method === "POST") {
+    const b = await readBody(req);
+    fire(b.event_type, b.data || {});
+    console.log("fired", b.event_type, JSON.stringify(b.data || {}));
+    return sendJson(res, { ok: true });
+  }
+  if (req.headers.authorization !== `Bearer ${TOKEN}`) return res.writeHead(401).end("401: Unauthorized");
+  const st = url.pathname.match(/^\/api\/states\/([a-z_]+\.[a-z0-9_]+)$/);
+  if (st && req.method === "POST") {
+    const b = await readBody(req);
+    restStates.set(st[1], { entity_id: st[1], state: String(b.state), attributes: b.attributes || {}, last_changed: new Date().toISOString() });
+    return sendJson(res, restStates.get(st[1]));
+  }
+  if (st && req.method === "GET") return restStates.has(st[1]) ? sendJson(res, restStates.get(st[1])) : res.writeHead(404).end();
   const m = url.pathname.match(/^\/api\/calendars\/(calendar\.[a-z0-9_]+)$/);
   if (m && req.method === "GET") {
     if (!model.calendars[m[1]]) return res.writeHead(400).end();

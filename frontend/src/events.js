@@ -3,6 +3,7 @@
 // (calendar/event/subscribe); when Home Assistant is older and has no such
 // command, it falls back to reading the events every few minutes.
 import { parseWhen, addDays, startOfDay, isoLocal } from "./util.js";
+import { parseKind, occurrenceKey } from "../../cronologia/rootfs/app/lib/kinds.js";
 
 const MAX_WINDOWS = 4;
 const POLL_MS = 5 * 60 * 1000;
@@ -13,7 +14,8 @@ export function toEvent(cal, raw) {
   const end = parseWhen(raw.end);
   const allDay = raw.all_day != null ? !!raw.all_day : /^\d{4}-\d{2}-\d{2}$/.test(raw.start);
   return {
-    key: `${cal}|${raw.uid || raw.summary}|${raw.recurrence_id || raw.start}`,
+    key: occurrenceKey(cal, raw),
+    kind: parseKind(raw.description),
     cal,
     uid: raw.uid || null,
     rid: raw.recurrence_id || null,

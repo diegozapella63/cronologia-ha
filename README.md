@@ -2,10 +2,15 @@
 
 ![CronologIA](cronologia/logo.png)
 
-Um App do Home Assistant que mostra os **calendários nativos** (`calendar.*`) numa agenda bonita: o que está acontecendo agora, o mês, a semana e o dia, com cores por calendário. Cria, edita e apaga eventos nos calendários que permitem (local, Google, Outlook…) e **traz eventos de mensagens, fotos e arquivos .ics** com a IA do Home Assistant.
+Um App do Home Assistant que mostra os **calendários nativos** (`calendar.*`) numa agenda bonita: o que está acontecendo agora, o mês, a semana e o dia, com cores por calendário. Cria, edita e apaga eventos nos calendários que permitem (local, Google, Outlook…), tem **modelos de remédio (com aviso no celular), conta a pagar, rotina e manutenção da casa** e **traz eventos de mensagens, fotos e arquivos .ics** com a IA do Home Assistant.
 
 <p align="center">
-  <img src="docs/agora.png" width="24%" alt="Tela Agora com o evento atual e o dia">
+  <img src="docs/agora.png" width="24%" alt="Tela Agora com os remédios de hoje e uma dose atrasada">
+  <img src="docs/remedio.png" width="24%" alt="Modelo Remédio: dose, quem toma e horários">
+  <img src="docs/contas.png" width="24%" alt="Contas a pagar do GerencIA e do calendário">
+  <img src="docs/casa.png" width="24%" alt="Rotina e manutenção da casa">
+</p>
+<p align="center">
   <img src="docs/mes.png" width="24%" alt="Mês com os pontinhos de cada calendário">
   <img src="docs/semana.png" width="24%" alt="Semana com as horas do dia">
   <img src="docs/importar.png" width="24%" alt="Eventos lidos de uma mensagem pela IA">
@@ -26,7 +31,11 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 
 ## O que tem
 
-- **Agora**: o evento que está acontecendo (e quanto falta), o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora" e os próximos 7 dias.
+- **Agora**: os **remédios de hoje** com o botão Tomei (o atrasado fica em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os eventos do dia todo, a lista de hoje, a **rotina e a manutenção da casa** e os próximos 7 dias.
+- **Modelos** em Novo: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** e **Manutenção** contada a partir da última vez.
+- **Aviso de remédio no celular** pelo app Home Assistant, com **Tomei** e **Adiar 15 min** no aviso, e de novo se atrasar, também para quem cuida.
+- **Contas do GerencIA**: com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) instalado, as contas e faturas aparecem aqui e o **Paguei** dá baixa lá.
+- **Sensores** de remédios e manutenção, e o evento `cronologia_feito` para automações e etiquetas NFC.
 - **Calendário** por **mês, semana, dia ou lista**, com busca do último ano ao próximo. Toque num horário vazio da semana para criar um evento ali.
 - **Criar, editar e apagar** nos calendários que permitem, com **repetição** (só este ou este e os próximos) e **Desfazer**.
 - **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. Escolha qual IA em **Mais → Leitura por IA**.
@@ -54,7 +63,7 @@ dev/fake-ha.mjs          Home Assistant falso para desenvolver sem o HA
 cd frontend && npm install && npm run build      # gera cronologia/rootfs/app/www/cronologia.js
 TZ=America/Sao_Paulo node dev/fake-ha.mjs        # HA falso em :8123 (token "dev")
 CRONOLOGIA_DEV=1 HA_WS_URL=ws://127.0.0.1:8123/api/websocket HA_REST_URL=http://127.0.0.1:8123/api \
-  HA_TOKEN=dev DATA_DIR=./.data MEDIA_DIR=./.data/media node cronologia/rootfs/app/server.js
+  HA_TOKEN=dev DATA_DIR=./.data MEDIA_DIR=./.data/media SHARE_DIR=./.data/share node cronologia/rootfs/app/server.js
                                                  # abre em http://127.0.0.1:8099
 ```
 

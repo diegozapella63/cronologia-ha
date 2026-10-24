@@ -1,8 +1,8 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: CronologIA
-version: "1.0.1"
+version: "1.1.0"
 slug: cronologia
-description: Os calendários do Home Assistant (Google, Outlook, local, feriados…) numa agenda bonita, com eventos criados por mensagem ou foto.
+description: Os calendários do Home Assistant numa agenda bonita, com modelos de remédio (com aviso no celular), contas, rotina e manutenção da casa, e eventos criados por mensagem ou foto.
 url: "https://github.com/diegozapella63/cronologia-ha/tree/main/cronologia"
 arch:
   - aarch64
@@ -18,6 +18,9 @@ panel_admin: false
 homeassistant_api: true
 # Photos are handed to Home Assistant's AI Task through the media folder
 # (media/cronologia/ia-temp) while the AI reads them, then deleted.
+# share is only read: share/gerencia/integracao.json says how to reach the
+# GerencIA app (bills), when it is installed.
 map:
   - media:rw
+  - share:ro
 watchdog: "tcp://[HOST]:[PORT:8099]"

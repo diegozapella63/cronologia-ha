@@ -250,6 +250,41 @@ export class Api {
     return this.call("cronologia/ai/status");
   }
 
+  // ---- models: doses, chores, bills, maintenance (see lib/home.js on the server)
+
+  /** cb(index) now and whenever today's doses, chores, bills or maintenance change. */
+  subscribeHome(cb) {
+    return this.conn.subscribeMessage(cb, { type: "cronologia/home/subscribe" });
+  }
+
+  setCheck(key, done, kind) {
+    return this.call("cronologia/check/set", { key, done, kind });
+  }
+
+  maintDone(entityId, uid) {
+    return this.call("cronologia/maint/done", { entity_id: entityId, uid });
+  }
+
+  maintUndo(entityId, uid) {
+    return this.call("cronologia/maint/undo", { entity_id: entityId, uid });
+  }
+
+  payBill(id, valor) {
+    return this.call("cronologia/contas/pagar", { conta: id, ...(valor ? { valor } : {}) });
+  }
+
+  unpayBill(id) {
+    return this.call("cronologia/contas/desfazer", { conta: id });
+  }
+
+  newBill(conta) {
+    return this.call("cronologia/contas/nova", { conta });
+  }
+
+  testAlert(target) {
+    return this.call("cronologia/notify/test", { target });
+  }
+
   exportUrl({ calendars, start, end }) {
     const u = new URL("api/export/ics", location.href);
     u.searchParams.set("calendars", calendars.join(","));
