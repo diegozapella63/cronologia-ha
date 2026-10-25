@@ -257,12 +257,33 @@ export class Api {
     return this.conn.subscribeMessage(cb, { type: "cronologia/home/subscribe" });
   }
 
-  setCheck(key, done, kind) {
-    return this.call("cronologia/check/set", { key, done, kind });
+  setCheck(key, done, kind, who) {
+    return this.call("cronologia/check/set", { key, done, kind, ...(who ? { who } : {}) });
   }
 
-  maintDone(entityId, uid) {
-    return this.call("cronologia/maint/done", { entity_id: entityId, uid });
+  maintDone(entityId, uid, who) {
+    return this.call("cronologia/maint/done", { entity_id: entityId, uid, ...(who ? { who } : {}) });
+  }
+
+  // ---- Recompensas
+  scoreReassign(key, who) {
+    return this.call("cronologia/score/reassign", { key, who });
+  }
+
+  scoreExtra(who, points, title) {
+    return this.call("cronologia/score/extra", { who, points, title });
+  }
+
+  scoreRemove(key) {
+    return this.call("cronologia/score/remove", { key });
+  }
+
+  scoreReward(period, text) {
+    return this.call("cronologia/score/reward", { period, text });
+  }
+
+  scoreDelivered(period, delivered) {
+    return this.call("cronologia/score/delivered", { period, delivered });
   }
 
   maintUndo(entityId, uid) {

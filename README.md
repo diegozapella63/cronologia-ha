@@ -2,15 +2,16 @@
 
 ![CronologIA](cronologia/logo.png)
 
-Um App do Home Assistant que mostra os **calendários nativos** (`calendar.*`) numa agenda bonita: o que está acontecendo agora, o mês, a semana e o dia, com cores por calendário. Cria, edita e apaga eventos nos calendários que permitem (local, Google, Outlook…), tem **modelos de remédio (com aviso no celular), conta a pagar, rotina e manutenção da casa** e **traz eventos de mensagens, fotos e arquivos .ics** com a IA do Home Assistant.
+Um App do Home Assistant que mostra os **calendários nativos** (`calendar.*`) numa agenda bonita: o que está acontecendo agora, o mês, a semana e o dia, com cores por calendário. Cria, edita e apaga eventos nos calendários que permitem (local, Google, Outlook…), tem **modelos de remédio (com aviso no celular), conta a pagar, rotina e manutenção da casa**, um **placar de recompensas** para as tarefas e **traz eventos de mensagens, fotos e arquivos .ics** com a IA do Home Assistant.
 
 <p align="center">
   <img src="docs/agora.png" width="24%" alt="Tela Agora com os remédios de hoje e uma dose atrasada">
+  <img src="docs/recompensas.png" width="24%" alt="Recompensas: placar da semana, prêmio e tarefas com pontos">
   <img src="docs/remedio.png" width="24%" alt="Modelo Remédio: dose, quem toma e horários">
   <img src="docs/contas.png" width="24%" alt="Contas a pagar do GerencIA e do calendário">
-  <img src="docs/casa.png" width="24%" alt="Rotina e manutenção da casa">
 </p>
 <p align="center">
+  <img src="docs/casa.png" width="24%" alt="Rotina e manutenção da casa">
   <img src="docs/mes.png" width="24%" alt="Mês com os pontinhos de cada calendário">
   <img src="docs/semana.png" width="24%" alt="Semana com as horas do dia">
   <img src="docs/importar.png" width="24%" alt="Eventos lidos de uma mensagem pela IA">
@@ -33,6 +34,7 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 
 - **Agora**: os **remédios de hoje** com o botão Tomei (o atrasado fica em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os eventos do dia todo, a lista de hoje, a **rotina e a manutenção da casa** e os próximos 7 dias.
 - **Modelos** em Novo: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** e **Manutenção** contada a partir da última vez.
+- **Recompensas**: placar da casa com pontos por tarefa feita, quem está na frente, o prêmio da semana (ou do mês) e o histórico de quem venceu.
 - **Aviso de remédio no celular** pelo app Home Assistant, com **Tomei** e **Adiar 15 min** no aviso, e de novo se atrasar, também para quem cuida.
 - **Contas do GerencIA**: com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) instalado, as contas e faturas aparecem aqui e o **Paguei** dá baixa lá.
 - **Sensores** de remédios e manutenção, e o evento `cronologia_feito` para automações e etiquetas NFC.
@@ -40,7 +42,7 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Criar, editar e apagar** nos calendários que permitem, com **repetição** (só este ou este e os próximos) e **Desfazer**.
 - **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. Escolha qual IA em **Mais → Leitura por IA**.
 - **Arquivos .ics**: importar convites e exportar os calendários.
-- **Agendas**: nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos.
+- **Agendas** (em Mais): nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Tema claro e escuro** seguindo o Home Assistant.
 

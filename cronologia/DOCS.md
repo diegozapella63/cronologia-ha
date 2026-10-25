@@ -17,8 +17,8 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 - **Agora**: no alto, **Remédios de hoje** e **Contas a pagar** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
 - **Novo**: cria um evento ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
-- **Agendas**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; e atalhos para adicionar calendários.
-- **Mais**: tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, leitura por IA e exportar/importar .ics.
+- **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
+- **Mais**: **Agendas** (os calendários agrupados por integração, com nome, cor, **mostrar/ocultar** e atalhos para adicionar calendários), tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, leitura por IA e exportar/importar .ics.
 
 ## Criar, editar e apagar
 
@@ -70,6 +70,20 @@ Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o bo
 
 Para o que se faz de tempos em tempos e conta **a partir da última vez** (trocar o filtro de água a cada 6 meses, limpar o ar-condicionado a cada 3). No calendário fica só a próxima data. **Feito** leva a próxima data para hoje + o intervalo e guarda o dia no histórico do próprio evento (**Desfazer** volta). O item aparece na tela Agora alguns dias antes de vencer (você escolhe quantos) e fica vermelho quando vence; **Todas as manutenções** mostra a lista inteira com o anel de cada prazo.
 
+## Recompensas
+
+Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **Recompensas**.
+
+- **Pontos nas tarefas**: os modelos **Rotina da casa** e **Manutenção** têm o campo **Pontos para quem fizer** (5, 10, 20, 30, 50 ou outro valor). A frequência é a de sempre: todo dia, dia sim, dia não, a cada 3 dias, dias da semana… No evento fica `Pontos: 10`.
+- **Quem fez ganha**: ao marcar **Feito**, os pontos vão para quem está usando o app (o usuário do Home Assistant de cada um vira a pessoa dele). Se você marcar uma tarefa que outra pessoa fez, o aviso de baixo oferece **"Foi Andressa"** para passar os pontos. Num aparelho sem usuário conhecido, o app pergunta **Quem fez?**. A tarefa que ficou de ontem ainda pode ser marcada.
+- **Placar**: os pontos de cada um no período, quem está na frente (com a coroa) e quantos dias faltam para fechar.
+- **Prêmio do período**: escreva o prêmio do período atual e, se quiser, já o do próximo. Quem somar mais pontos leva; empate fica registrado como empate.
+- **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
+- **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
+- **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
+
+Em **Ajustes do placar** (no fim da aba): quem participa, de quanto em quanto tempo fecha, se o resultado vai para o celular e desligar o placar. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
+
 ## Avisos de remédio no celular
 
 Em **Mais › Avisos de remédio no celular**:
@@ -93,7 +107,8 @@ O app cria no Home Assistant:
 
 - `sensor.cronologia_remedios_hoje`: quantas doses faltam hoje, com `tomados`, `total`, `atrasados`, `proximo` e `pendentes`;
 - `binary_sensor.cronologia_remedio_atrasado`: ligado quando alguma dose passou do tempo (classe "problema");
-- `sensor.cronologia_manutencoes_vencidas`: quantas manutenções venceram, com `vencidas` e `proximas`.
+- `sensor.cronologia_manutencoes_vencidas`: quantas manutenções venceram, com `vencidas` e `proximas`;
+- `sensor.cronologia_placar` (com o placar ligado): quem está na frente, com `pontos` de cada um, `premio`, `periodo` e `termina`.
 
 Para marcar algo como feito de fora do app (uma automação, uma **etiqueta NFC** na geladeira), dispare o evento `cronologia_feito`:
 
@@ -105,7 +120,7 @@ data:
     nome: Trocar o filtro de água
 ```
 
-Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Andressa`, só os dela.
+Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Andressa`, os pontos vão para ela (e, se houver dois itens com o mesmo nome, vale o dela). Uma etiqueta NFC para cada pessoa resolve.
 
 ## Outlook, Google e Alexa
 
@@ -148,7 +163,7 @@ Sem IA configurada, todo o resto funciona normalmente, inclusive importar arquiv
 ## Dados
 
 - Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…).
-- O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias e os avisos já enviados, em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento.
+- O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento.
 - **Mais > Dados > Exportar agenda (.ics)**: escolha os calendários e o período (próximos 3 ou 12 meses, ou do último ano ao próximo). Cada repetição vira um evento no arquivo, que abre no Google Agenda, no Outlook e no iPhone.
 - O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 

@@ -12,6 +12,9 @@ const VIEWS = ["mes", "semana", "lista"];
 const NOTIFY_RE = /^mobile_app_[a-z0-9_]+$/;
 const LATE = [0, 15, 30, 45, 60, 90, 120];
 const KEEP_CHECKS_DAYS = 120;
+const KEEP_POINTS_DAYS = 400;
+const SCORE_PERIODS = ["semana", "quinzena", "mes"];
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const fail = (message) => {
   const err = new Error(message);
@@ -49,6 +52,18 @@ function cleanApp(raw) {
     }
     out.people = Object.keys(people).length ? people : null;
   }
+  if ("score" in raw) {
+    // Recompensas: who competes, how long a period is, and whether the result goes to the phones
+    const a = raw.score && typeof raw.score === "object" ? raw.score : {};
+    const participants = [...new Set((Array.isArray(a.participants) ? a.participants : []).map((n) => String(n).trim().slice(0, 40)).filter(Boolean))].slice(0, 10);
+    out.score = {
+      enabled: !!a.enabled,
+      participants,
+      period: SCORE_PERIODS.includes(a.period) ? a.period : "semana",
+      anchor: YMD_RE.test(a.anchor || "") ? a.anchor : null,
+      notify: a.notify !== false,
+    };
+  }
   if ("alerts" in raw) {
     const a = raw.alerts && typeof raw.alerts === "object" ? raw.alerts : {};
     out.alerts = {
@@ -74,7 +89,7 @@ export class Store {
     this.file = path.join(dir, "cronologia.json");
     this.log = log;
     this.timer = null;
-    this.data = { version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [] };
+    this.data = { version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, current: null } };
     fs.mkdirSync(dir, { recursive: true });
     try {
       const raw = JSON.parse(fs.readFileSync(this.file, "utf8"));
@@ -83,6 +98,13 @@ export class Store {
         this.data.app = raw.app && typeof raw.app === "object" ? raw.app : {};
         for (const k of ["checks", "sent"]) this.data[k] = raw[k] && typeof raw[k] === "object" ? raw[k] : {};
         this.data.kind_cals = Array.isArray(raw.kind_cals) ? raw.kind_cals.filter((id) => CAL_RE.test(id)) : [];
+        const sc = raw.score && typeof raw.score === "object" ? raw.score : {};
+        this.data.score = {
+          entries: Array.isArray(sc.entries) ? sc.entries.filter((e) => e && e.key && e.at) : [],
+          history: Array.isArray(sc.history) ? sc.history.filter((h) => h && h.key) : [],
+          rewards: sc.rewards && typeof sc.rewards === "object" ? sc.rewards : {},
+          current: sc.current && sc.current.key ? sc.current : null,
+        };
         this.prune();
       }
     } catch (err) {
@@ -132,8 +154,63 @@ export class Store {
     return true;
   }
 
+  // ---------------------------------------------------------------- Recompensas
+
+  /** A point entry {key, at, who, points, title, kind}; the same key replaces the old one. */
+  addPoints(entry) {
+    const sc = this.data.score;
+    sc.entries = sc.entries.filter((e) => e.key !== entry.key);
+    sc.entries.push({ key: String(entry.key).slice(0, 600), at: entry.at || new Date().toISOString(), who: String(entry.who).slice(0, 40), points: Math.max(-1000, Math.min(1000, Math.round(Number(entry.points) || 0))), title: String(entry.title || "").slice(0, 120), kind: String(entry.kind || "").slice(0, 20) });
+    this.save();
+  }
+
+  removePoints(key) {
+    const sc = this.data.score;
+    const before = sc.entries.length;
+    sc.entries = sc.entries.filter((e) => e.key !== key);
+    if (sc.entries.length !== before) this.save();
+    return sc.entries.length !== before;
+  }
+
+  pointsByKey(key) {
+    return this.data.score.entries.find((e) => e.key === key) || null;
+  }
+
+  setReward(periodKey, text) {
+    if (!YMD_RE.test(periodKey || "")) fail("Período inválido");
+    const t = String(text || "").trim().slice(0, 200);
+    if (t) this.data.score.rewards[periodKey] = t;
+    else delete this.data.score.rewards[periodKey];
+    for (const h of this.data.score.history) if (h.key === periodKey) h.reward = t;
+    this.save();
+  }
+
+  setDelivered(periodKey, delivered) {
+    const h = this.data.score.history.find((x) => x.key === periodKey);
+    if (!h) fail("Período não encontrado");
+    h.delivered = !!delivered;
+    this.save();
+  }
+
+  /** Closes a period: its result goes to the history (newest first). */
+  closePeriod(record, next) {
+    const sc = this.data.score;
+    sc.history = [record, ...sc.history.filter((h) => h.key !== record.key)].slice(0, 104);
+    sc.current = next;
+    this.save();
+  }
+
+  setCurrentPeriod(p) {
+    this.data.score.current = p;
+    this.save();
+  }
+
   prune() {
     const now = Date.now();
+    const sc = this.data.score;
+    sc.entries = sc.entries.filter((e) => now - Date.parse(e.at) < KEEP_POINTS_DAYS * 86400000);
+    const oldest = new Date(now - 2 * 365 * 86400000).toISOString().slice(0, 10);
+    for (const k of Object.keys(sc.rewards)) if (k < oldest) delete sc.rewards[k];
     for (const [k, v] of Object.entries(this.data.checks)) if (!(now - Date.parse(v && v.at) < KEEP_CHECKS_DAYS * 86400000)) delete this.data.checks[k];
     for (const [k, v] of Object.entries(this.data.sent)) {
       const last = Math.max(...["on", "late", "snoozed", "snooze_until"].map((s) => Date.parse(v && v[s]) || 0));

@@ -20,7 +20,7 @@ import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { Gerencia } from "./lib/gerencia.js";
 
-const VERSION = "1.1.1";
+const VERSION = "1.2.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -169,7 +169,7 @@ class Session {
   constructor(ws, headers) {
     this.ws = ws;
     this.subs = new Map(); // client subscription id -> {unsubscribe}
-    this.user = { name: headers["x-remote-user-display-name"] || headers["x-remote-user-name"] || "" };
+    this.user = { id: headers["x-remote-user-id"] || "", name: headers["x-remote-user-display-name"] || headers["x-remote-user-name"] || "" };
     ws.on("message", (text) => this.onMessage(text));
     ws.on("close", () => this.dispose());
   }
@@ -226,7 +226,7 @@ class Session {
         const [reg, aiStatus] = await Promise.all([registry(), ai.status().catch((err) => ({ ready: false, images: false, entities: [], reason: err.message }))]);
         return this.result(id, {
           version: VERSION,
-          user: this.user,
+          user: { ...this.user, person: home.personOfUser(this.user.id, this.user.name) },
           time_zone: process.env.TZ || null,
           ai: aiStatus,
           prefs: store.prefs,
@@ -246,13 +246,13 @@ class Session {
 
       case "cronologia/check/set": {
         if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
-        home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""));
+        home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""));
         return this.result(id);
       }
 
       case "cronologia/maint/done": {
         if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
-        return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || ""));
+        return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));
       }
 
       case "cronologia/maint/undo": {
@@ -275,6 +275,28 @@ class Session {
         if (c.categoria) body.categoria = String(c.categoria).slice(0, 60);
         return this.result(id, await gerencia.act("nova", body));
       }
+
+      case "cronologia/score/reassign":
+        home.reassign(String(msg.key || ""), String(msg.who || ""));
+        return this.result(id);
+
+      case "cronologia/score/extra":
+        home.extraPoints(String(msg.who || ""), msg.points, msg.title);
+        return this.result(id);
+
+      case "cronologia/score/remove":
+        home.removePoints(String(msg.key || ""));
+        return this.result(id);
+
+      case "cronologia/score/reward":
+        store.setReward(String(msg.period || ""), msg.text);
+        home.changed();
+        return this.result(id);
+
+      case "cronologia/score/delivered":
+        store.setDelivered(String(msg.period || ""), !!msg.delivered);
+        home.changed();
+        return this.result(id);
 
       case "cronologia/notify/test":
         await home.testAlert(msg.target);
@@ -304,7 +326,11 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs)) home.changed();
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs)) {
+          // a new setup (or a different period length) starts counting from the current period, without closing one
+          if ("score" in msg.prefs || "week_start" in msg.prefs) home.resetPeriod();
+          home.changed();
+        }
         return pushPrefs();
       }
 

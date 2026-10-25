@@ -143,8 +143,8 @@ export function createCalendars() {
     d.setMonth(d.getMonth() - m);
     return ymd(d);
   };
-  const maint = (who, every, warn, history) =>
-    ["#manutenção", who ? `Quem faz: ${who}` : "", `A cada: ${every}`, `Avisar: ${warn} dias antes`, history.length ? `Feito em: ${history.map((h) => `${h.slice(8, 10)}/${h.slice(5, 7)}/${h.slice(0, 4)}`).join(", ")}` : ""].filter(Boolean).join("\n");
+  const maint = (who, every, warn, history, points = 0) =>
+    ["#manutenção", who ? `Quem faz: ${who}` : "", `A cada: ${every}`, `Avisar: ${warn} dias antes`, history.length ? `Feito em: ${history.map((h) => `${h.slice(8, 10)}/${h.slice(5, 7)}/${h.slice(0, 4)}`).join(", ")}` : "", points ? `Pontos: ${points}` : ""].filter(Boolean).join("\n");
   const mk = (summary, start, end, extra = {}) => ({ uid: `fake-${seq++}`, summary, start, end, allDay: false, rrule: null, exdates: new Set(), description: "", location: "", ...extra });
   const allDay = (summary, off, days = 1, extra = {}) => mk(summary, dayAt(off), dayAt(off + days), { allDay: true, ...extra });
 
@@ -180,13 +180,14 @@ export function createCalendars() {
       platform: "local_calendar",
       features: 7,
       events: [
-        allDay("Regar as plantas", -10, 1, { rrule: "FREQ=DAILY", description: "#rotina\nQuem faz: Diego" }),
-        mk("Tirar o lixo", at(-14, 19), at(-14, 19, 15), { rrule: `FREQ=WEEKLY;BYDAY=${[0, 2, 4].map((k) => WD_CODE[(today().getDay() + k) % 7]).join(",")}`, description: "#rotina\nQuem faz: Andressa\nO caminhão passa às 20h" }),
-        allDay("Limpar a caixa de areia", -9, 1, { rrule: "FREQ=DAILY;INTERVAL=3", description: "#rotina\nQuem faz: Diego" }),
+        allDay("Regar as plantas", -10, 1, { rrule: "FREQ=DAILY", description: "#rotina\nQuem faz: Diego\nPontos: 5" }),
+        mk("Tirar o lixo", at(-14, 19), at(-14, 19, 15), { rrule: `FREQ=WEEKLY;BYDAY=${[0, 2, 4].map((k) => WD_CODE[(today().getDay() + k) % 7]).join(",")}`, description: "#rotina\nQuem faz: Andressa\nPontos: 10\nO caminhão passa às 20h" }),
+        allDay("Limpar a caixa de areia", -9, 1, { rrule: "FREQ=DAILY;INTERVAL=3", description: "#rotina\nQuem faz: Diego\nPontos: 15" }),
+        allDay("Lavar a louça", -20, 1, { rrule: "FREQ=DAILY", description: "#rotina\nPontos: 10" }),
         allDay("Conta de luz", 3, 1, { rrule: "FREQ=MONTHLY", description: "#conta\nValor: R$ 231,40\nCelesc · débito automático desligado" }),
         allDay("Internet", -2, 1, { description: "#conta\nValor: R$ 119,90" }),
-        allDay("Trocar o filtro de água", 5, 1, { description: maint("Diego", "6 meses", 7, [monthsAgo(6, 5)]) }),
-        allDay("Limpar o ar-condicionado", -4, 1, { description: maint("Diego", "3 meses", 10, [monthsAgo(3, -4)]) }),
+        allDay("Trocar o filtro de água", 5, 1, { description: maint("Diego", "6 meses", 7, [monthsAgo(6, 5)], 30) }),
+        allDay("Limpar o ar-condicionado", -4, 1, { description: maint("Diego", "3 meses", 10, [monthsAgo(3, -4)], 40) }),
         allDay("Dedetização", 40, 1, { description: maint("", "6 meses", 15, [monthsAgo(6, 40)]) }),
         allDay("Trocar a bateria do alarme", 200, 1, { description: maint("", "1 ano", 30, []) }),
       ],

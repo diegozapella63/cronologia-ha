@@ -13,8 +13,8 @@
 export const KINDS = {
   remedio: { tag: "#remédio", label: "Remédio", fields: { dose: "Dose", who: "Quem toma", alert: "Aviso no celular" } },
   conta: { tag: "#conta", label: "Conta a pagar", fields: { value: "Valor" } },
-  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz" } },
-  manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em" } },
+  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos" } },
+  manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos" } },
 };
 
 const TAGS = { remedio: "remedio", conta: "conta", rotina: "rotina", manutencao: "manutencao" };
@@ -91,6 +91,11 @@ const historyText = (list) => list.map((s) => `${s.slice(8, 10)}/${s.slice(5, 7)
 
 // ------------------------------------------------------------------ description
 
+const parsePoints = (text) => {
+  const m = /(\d+)/.exec(String(text || ""));
+  return m ? Math.min(1000, Number(m[1])) : 0;
+};
+
 /** Model of an event from its description, or null for a plain event. */
 export function parseKind(description) {
   const lines = String(description || "").replace(/\r/g, "").split("\n");
@@ -118,12 +123,14 @@ export function parseKind(description) {
     out.value = parseMoney(raw.value);
   } else if (kind === "rotina") {
     out.who = raw.who || "";
+    out.points = parsePoints(raw.points);
   } else {
     out.who = raw.who || "";
     out.every = parseEvery(raw.every) || { n: 6, unit: "meses" };
     const w = /(\d+)/.exec(raw.warn || "");
     out.warn = w ? Math.min(365, Number(w[1])) : 7;
     out.history = parseHistory(raw.history);
+    out.points = parsePoints(raw.points);
   }
   return out;
 }
@@ -143,11 +150,13 @@ export function buildDescription(k) {
     add(L.value, k.value != null ? formatMoney(k.value) : "");
   } else if (k.kind === "rotina") {
     add(L.who, k.who);
+    if (k.points > 0) add(L.points, k.points);
   } else {
     add(L.who, k.who);
     add(L.every, everyLabel(k.every));
     add(L.warn, `${k.warn ?? 7} ${(k.warn ?? 7) === 1 ? "dia" : "dias"} antes`);
     add(L.history, historyText((k.history || []).slice(0, 8)));
+    if (k.points > 0) add(L.points, k.points);
   }
   const notes = String(k.notes || "").trim();
   return notes ? `${lines.join("\n")}\n${notes}` : lines.join("\n");
@@ -233,8 +242,11 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const state = taken ? "tomado" : now < start ? "depois" : now < start + lateMs ? "agora" : "atrasado";
       out.meds.push({ ...base, kind: "remedio", dose: k.dose, who: k.who, alert: k.alert && alertsOn, time: allDay ? "" : hmOf(start), taken, state, late_min: state === "atrasado" || state === "agora" ? Math.floor((now - start) / 60000) : 0, notify: targetFor(k.who) });
     } else if (k.kind === "rotina") {
-      if (!(start < t1 && end > t0)) continue;
-      out.routines.push({ ...base, kind: "rotina", who: k.who, time: allDay ? "" : hmOf(start), done: checks[key] || null });
+      // today's, plus yesterday's that were not done (they can still be marked)
+      const todays = start < t1 && end > t0;
+      const yesterday = !todays && start >= t0 - DAY && start < t0 && !checks[key];
+      if (!todays && !yesterday) continue;
+      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday });
     } else if (k.kind === "conta") {
       const paid = checks[key] || null;
       // open ones from the last 2 months and the next 8 days; paid ones around today or paid today
@@ -248,11 +260,11 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       seenMaint.add(id);
       const st = maintStatus(k, allDay ? raw.start : ymdOf(new Date(start)), today);
       const f = features(cal);
-      out.maint.push({ ...base, kind: "manutencao", who: k.who, every: k.every, warn: k.warn, history: k.history, ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
+      out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
     }
   }
   out.meds.sort((a, b) => msOf(a.start) - msOf(b.start) || a.summary.localeCompare(b.summary, "pt-BR"));
-  out.routines.sort((a, b) => Number(b.allDay) - Number(a.allDay) || msOf(a.start) - msOf(b.start));
+  out.routines.sort((a, b) => Number(b.yesterday) - Number(a.yesterday) || Number(b.allDay) - Number(a.allDay) || msOf(a.start) - msOf(b.start));
   out.bills.sort((a, b) => a.due.localeCompare(b.due));
   out.maint.sort((a, b) => a.days - b.days || a.summary.localeCompare(b.summary, "pt-BR"));
   for (const [k, v] of Object.entries(checks)) if (now - Date.parse(v.at) < 45 * DAY) out.checks[k] = v;

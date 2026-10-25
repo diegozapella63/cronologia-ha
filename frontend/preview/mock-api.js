@@ -1,6 +1,7 @@
 // In-memory stand-in for the CronologIA server, used by the preview page.
 import { createCalendars } from "./fake-calendars.js";
 import { buildIndex, occurrenceKey, parseKind, maintDone } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { scoreSettings, periodOf, tally, winnerOf } from "../../cronologia/rootfs/app/lib/score.js";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -8,7 +9,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: {} };
+    this.prefs = { calendars: {}, app: { week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true } } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
@@ -19,6 +20,54 @@ export class MockApi {
     d0.setHours(0, 0, 0, 0);
     for (const raw of this.model.occurrences("calendar.remedios", d0.getTime(), d0.getTime() + 86400000)) {
       if (/DPrev|Sertralina/.test(raw.summary)) this.checks[occurrenceKey("calendar.remedios", raw)] = { at: new Date(Date.parse(raw.start) + 7 * 60000).toISOString(), by: "Andressa", kind: "remedio" };
+    }
+    // Recompensas: this week so far, and the weeks before
+    const at = (dOff, h, m = 0) => {
+      const d = new Date(d0);
+      d.setDate(d.getDate() + dOff);
+      d.setHours(h, m);
+      return d.toISOString();
+    };
+    const st = scoreSettings(this.prefs.app);
+    const cur = periodOf(new Date(), st);
+    const back = Math.round((new Date() - new Date(`${cur.start}T00:00:00`)) / 86400000);
+    const E = (dOff, h, who, points, title, kind = "rotina") => ({ key: `demo|${dOff}|${h}|${title}`, at: at(Math.max(-back, dOff), h, 12), who, points, title, kind });
+    this.score = {
+      entries: [
+        E(0, 8, "Andressa", 10, "Lavar a louça"),
+        E(0, 7, "Diego", 5, "Regar as plantas"),
+        E(-1, 21, "Andressa", 10, "Lavar a louça"),
+        E(-1, 19, "Andressa", 10, "Tirar o lixo"),
+        E(-1, 18, "Diego", 20, "Montou a estante", "extra"),
+        E(-1, 7, "Diego", 5, "Regar as plantas"),
+        E(-2, 22, "Diego", 10, "Lavar a louça"),
+        E(-2, 9, "Diego", 15, "Limpar a caixa de areia"),
+        E(-3, 20, "Andressa", 10, "Lavar a louça"),
+        E(-3, 19, "Andressa", 10, "Tirar o lixo"),
+        E(-3, 10, "Andressa", 30, "Faxina do banheiro", "extra"),
+        E(-4, 21, "Diego", 10, "Lavar a louça"),
+      ].filter((e) => Date.parse(e.at) <= Date.now()),
+      history: [],
+      rewards: {},
+    };
+    const prevWeek = (n) => {
+      const s0 = new Date(`${cur.start}T00:00:00`);
+      s0.setDate(s0.getDate() - 7 * n);
+      const e0 = new Date(s0);
+      e0.setDate(e0.getDate() + 7);
+      const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      return { key: f(s0), start: f(s0), end: f(e0) };
+    };
+    this.score.history = [
+      { ...prevWeek(1), totals: { Andressa: 145, Diego: 120 }, winner: "Andressa", reward: "Escolher o restaurante de domingo", delivered: false },
+      { ...prevWeek(2), totals: { Diego: 110, Andressa: 95 }, winner: "Diego", reward: "Massagem de 20 minutos", delivered: true },
+      { ...prevWeek(3), totals: { Andressa: 100, Diego: 100 }, winner: null, reward: "Cinema", delivered: false },
+    ];
+    this.score.rewards[cur.key] = "Quem ganhar escolhe a série da semana";
+    // yesterday's chores were done (so only today's are open)
+    for (const raw of this.model.occurrences("calendar.casa", d0.getTime() - 86400000, d0.getTime())) {
+      const k = parseKind(raw.description);
+      if (k && k.kind === "rotina" && Date.parse(raw.start) < d0.getTime()) this.checks[occurrenceKey("calendar.casa", raw)] = { at: new Date(d0.getTime() - 3 * 3600000).toISOString(), by: k.who || "Andressa", kind: "rotina" };
     }
     const day = (n) => {
       const d = new Date(d0);
@@ -65,7 +114,67 @@ export class MockApi {
       caregivers: (this.prefs.app.alerts || {}).caregivers || [],
       tracked: ["calendar.remedios", "calendar.casa"],
       gerencia: clone(this.gerencia),
+      score: this._scoreIndex(now),
     };
+  }
+
+  _scoreIndex(now) {
+    const st = scoreSettings(this.prefs.app);
+    const cur = periodOf(new Date(now), st);
+    const next = periodOf(new Date(Date.parse(`${cur.end}T12:00:00`)), st);
+    const rows = tally(this.score.entries, st.participants, cur.start, cur.end);
+    const t0 = new Date(`${cur.start}T00:00:00`).getTime();
+    return {
+      ...st,
+      current: { ...cur, reward: this.score.rewards[cur.key] || "" },
+      next: { ...next, reward: this.score.rewards[next.key] || "" },
+      rows,
+      leader: winnerOf(rows),
+      entries: this.score.entries.filter((e) => Date.parse(e.at) >= t0).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)),
+      history: this.score.history,
+    };
+  }
+
+  _pointsOf(key) {
+    for (const cal of this.model.ids()) {
+      const now = Date.now();
+      for (const raw of this.model.occurrences(cal, now - 3 * 86400000, now + 3 * 86400000)) {
+        if (occurrenceKey(cal, raw) === key) {
+          const k = parseKind(raw.description);
+          return { points: (k && k.points) || 0, title: raw.summary, kind: k && k.kind };
+        }
+      }
+    }
+    return { points: 0 };
+  }
+
+  async scoreReassign(key, who) {
+    const e = this.score.entries.find((x) => x.key === key);
+    if (e) e.who = who;
+    if (this.checks[key]) this.checks[key].by = who;
+    this._pushHome();
+  }
+
+  async scoreExtra(who, points, title) {
+    this.score.entries.push({ key: `extra|${Date.now()}`, at: new Date().toISOString(), who, points, title, kind: "extra" });
+    this._pushHome();
+  }
+
+  async scoreRemove(key) {
+    this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    this._pushHome();
+  }
+
+  async scoreReward(period, text) {
+    if ((text || "").trim()) this.score.rewards[period] = text.trim();
+    else delete this.score.rewards[period];
+    this._pushHome();
+  }
+
+  async scoreDelivered(period, delivered) {
+    const h = this.score.history.find((x) => x.key === period);
+    if (h) h.delivered = delivered;
+    this._pushHome();
   }
 
   _pushHome() {
@@ -81,21 +190,28 @@ export class MockApi {
     return Promise.resolve(() => this.homeSubs.delete(cb));
   }
 
-  async setCheck(key, done, kind) {
-    if (done) this.checks[key] = { at: new Date().toISOString(), by: "Diego", kind };
-    else delete this.checks[key];
+  async setCheck(key, done, kind, who) {
+    this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    if (done) {
+      this.checks[key] = { at: new Date().toISOString(), by: who || "Diego", kind };
+      const p = this._pointsOf(key);
+      if (p.points > 0 && who) this.score.entries.push({ key, at: new Date().toISOString(), who, points: p.points, title: p.title, kind: p.kind });
+    } else delete this.checks[key];
     this._pushHome();
   }
 
-  async maintDone(cal, uid) {
+  async maintDone(cal, uid, who) {
     const ev = this.model.calendars[cal].events.find((e) => e.uid === uid);
     const raw = this.model.occurrences(cal, ev.start - 1, ev.end + 1).find((e) => e.uid === uid);
     this._maintBefore = { cal, uid, raw };
-    const event = maintDone(raw, parseKind(raw.description), new Date());
+    const k = parseKind(raw.description);
+    const event = maintDone(raw, k, new Date());
+    const key = `maint|${cal}|${uid}|${new Date().toISOString().slice(0, 10)}`;
+    if (k.points > 0 && who) this.score.entries.push({ key, at: new Date().toISOString(), who, points: k.points, title: raw.summary, kind: "manutencao" });
     this.model.update(cal, { uid, event });
     this._changed(cal);
     this._pushHome();
-    return { moved: true, next: event.start.slice(0, 10), undo: true };
+    return { moved: true, next: event.start.slice(0, 10), undo: true, key: k.points > 0 && who ? key : null };
   }
 
   async maintUndo(cal, uid) {
@@ -147,7 +263,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.1.0", user: { name: "Diego Zapella" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.2.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

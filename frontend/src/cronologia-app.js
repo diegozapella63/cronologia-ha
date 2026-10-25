@@ -7,6 +7,7 @@ import { parentHass, detectDark } from "./api.js";
 import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { ModelsMixin } from "./models.js";
+import { RewardsMixin } from "./rewards.js";
 import {
   PALETTE,
   colorById,
@@ -90,7 +91,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends ModelsMixin(LitElement) {
+class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
   static properties = {
     api: { attribute: false },
     env: { attribute: false },
@@ -370,6 +371,7 @@ class CronologiaApp extends ModelsMixin(LitElement) {
     const p = (this._path || "").replace(/\/+$/, "");
     if (p === "/calendario") return { name: "calendar" };
     if (p === "/agendas") return { name: "calendars" };
+    if (p === "/recompensas") return { name: "rewards" };
     if (p === "/mais") return { name: "more" };
     return { name: "now" };
   }
@@ -1037,6 +1039,7 @@ class CronologiaApp extends ModelsMixin(LitElement) {
     if (view.name === "calendar") page = this._renderCalendar();
     else if (view.name === "calendars") page = this._renderCalendars();
     else if (view.name === "more") page = this._renderMore();
+    else if (view.name === "rewards") page = this._renderRewards();
     else page = this._renderNow();
     return html`
       <div class="root" style=${style}>
@@ -1055,14 +1058,16 @@ class CronologiaApp extends ModelsMixin(LitElement) {
   }
 
   _renderNav(view) {
-    const tab = (name, path, label, ic) => html`<button class="tab ${view.name === name ? "on" : ""}" @click=${() => this._goTab(path)} aria-label=${label}>${icon(ic)}<span>${label}</span></button>`;
+    // Agendas lives inside Mais: the Mais tab stays lit there.
+    const on = (name) => view.name === name || (name === "more" && view.name === "calendars");
+    const tab = (name, path, label, ic) => html`<button class="tab ${on(name) ? "on" : ""}" @click=${() => this._goTab(path)} aria-label=${label}>${icon(ic)}<span>${label}</span></button>`;
     return html`<nav>
       <div class="tabs">
         ${tab("now", "", "Agora", "clock-3")} ${tab("calendar", "/calendario", "Calendário", "calendar-days")}
         <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Novo evento">
           <span class="pill">${icon("plus")}</span><span>Novo</span>
         </button>
-        ${tab("calendars", "/agendas", "Agendas", "layers")} ${tab("more", "/mais", "Mais", "sliders-horizontal")}
+        ${tab("rewards", "/recompensas", "Recompensas", "trophy")} ${tab("more", "/mais", "Mais", "sliders-horizontal")}
       </div>
     </nav>`;
   }
@@ -1500,6 +1505,7 @@ class CronologiaApp extends ModelsMixin(LitElement) {
     const errors = this._store ? this._store.errors() : new Map();
     const editable = cals.filter((c) => c.canCreate).length;
     return html`<section class="page">
+      <button class="back-link" @click=${() => ((history.state && history.state.rvDepth) > 0 ? history.back() : this._go("/mais", true))}>${icon("chevron-left")}<span>Mais</span></button>
       ${this._renderHead("Agendas", { text: cals.length ? `${plural(cals.length, "calendário", "calendários")} · ${editable ? plural(editable, "com edição", "com edição") : "só leitura"}` : "Nenhum calendário ainda" })}
       ${groups.map(
         (g) => html`<div class="panel">
@@ -1561,6 +1567,13 @@ class CronologiaApp extends ModelsMixin(LitElement) {
     const def = this._defaultCal();
     return html`<section class="page">
       ${this._renderHead("Mais", { text: `CronologIA ${this._version}` })}
+      <div class="panel">
+        <button class="row" @click=${() => this._go("/agendas")}>
+          <span class="tile" style=${colorVars(this._accent(), this._dark)}>${icon("layers")}</span>
+          <span class="grow"><div class="label">Agendas</div><div class="hint">${plural(this._cals().length, "calendário", "calendários")} · nome, cor, mostrar e ocultar, adicionar</div></span>
+          ${icon("chevron-right")}
+        </button>
+      </div>
       <div class="panel">
         <div class="overline">Aparência</div>
         <div class="row col">
@@ -1696,6 +1709,8 @@ class CronologiaApp extends ModelsMixin(LitElement) {
     else if (this._sheet === "outlook") body = this._renderOutlookSheet();
     else if (this._sheet === "nocal") body = this._renderNoCalSheet();
     else if (this._sheet === "maint") body = this._renderMaintSheet();
+    else if (this._sheet === "who") body = this._renderWhoSheet();
+    else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "bill") {
       body = this._renderBillSheet();
       tint = colorById("ouro");

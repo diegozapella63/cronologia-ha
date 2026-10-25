@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import os from "node:os";
 import { parseKind, occurrenceKey, maintDone, foldText, buildIndex } from "./kinds.js";
 import { toHAEvent } from "./events.js";
+import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
@@ -79,7 +80,7 @@ export class Home {
     for (const st of states || []) {
       if (!/^person\.[a-z0-9_]+$/.test(st.entity_id)) continue;
       const a = st.attributes || {};
-      this.persons.set(st.entity_id, { id: st.entity_id, name: a.friendly_name || st.entity_id.slice(7), trackers: Array.isArray(a.device_trackers) ? a.device_trackers : [] });
+      this.persons.set(st.entity_id, { id: st.entity_id, name: a.friendly_name || st.entity_id.slice(7), user_id: a.user_id || null, trackers: Array.isArray(a.device_trackers) ? a.device_trackers : [] });
     }
     this.targets = new Set(Object.keys((services && services.notify) || {}).filter((s) => /^mobile_app_[a-z0-9_]+$/.test(s)));
     this.changed();
@@ -154,6 +155,15 @@ export class Home {
 
   // ---------------------------------------------------------------- people
 
+  /** Name of the person using the app (by the Home Assistant user behind ingress). */
+  personOfUser(userId, displayName) {
+    const byId = userId && [...this.persons.values()].find((p) => p.user_id === userId);
+    if (byId) return byId.name;
+    const first = foldText(displayName).split(" ")[0];
+    const byName = first && [...this.persons.values()].find((p) => foldText(p.name).split(" ")[0] === first);
+    return byName ? byName.name : (displayName || "").trim().split(/\s+/)[0] || "";
+  }
+
   /** Phone of a person: chosen in Mais, or the one from their person entity's tracker. */
   targetFor(name) {
     if (!name) return null;
@@ -219,7 +229,7 @@ export class Home {
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state };
+    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now) };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;
@@ -239,6 +249,7 @@ export class Home {
     // A new day: move the followed window.
     const day = ymd(new Date());
     for (const [id, t] of this.tracked) if (t.day !== day) this.track(id);
+    this.rollover().catch((err) => this.log.warn(`Placar: ${err.message}`));
     this.rebuild();
     this.sendAlerts().catch((err) => this.log.warn(`Avisos: ${err.message}`));
   }
@@ -343,27 +354,140 @@ export class Home {
     if (!name) return;
     const who = foldText((data && data.quem) || "");
     const now = Date.now();
-    const match = (o) => foldText(o.raw.summary) === name && (!who || foldText(o.k.who) === who || !o.k.who);
-    const list = [...this.occurrences()].filter(match);
+    // "quem" is who did it (the points go to them); with two items of the same name, theirs comes first
+    const mine = (o) => (who && foldText(o.k.who) === who ? 0 : 1);
+    const list = [...this.occurrences()].filter((o) => foldText(o.raw.summary) === name).sort((a, b) => mine(a) - mine(b));
     const maint = list.find((o) => o.k.kind === "manutencao" && !o.raw.rrule);
     if (maint) {
-      return this.maintDone(maint.cal, maint.raw.uid, "Automação").catch((err) => this.log.warn(`cronologia_feito: ${err.message}`));
+      return this.maintDone(maint.cal, maint.raw.uid, "Automação", data.quem || "").catch((err) => this.log.warn(`cronologia_feito: ${err.message}`));
     }
     // Doses and chores: the one of today closest to now that is still open.
     const t0 = startOfDay(new Date()).getTime();
     const open = list
       .filter((o) => ["remedio", "rotina", "manutencao"].includes(o.k.kind) && o.start < t0 + DAY && o.end > t0 && !this.store.data.checks[o.key])
-      .sort((a, b) => Math.abs(a.start - now) - Math.abs(b.start - now))[0];
+      .sort((a, b) => mine(a) - mine(b) || Math.abs(a.start - now) - Math.abs(b.start - now))[0];
     if (!open) return this.log.warn(`cronologia_feito: nada aberto hoje com o nome "${data.nome || data.tarefa || data.remedio || data.item}"`);
-    this.check(open.key, true, "Automação", open.k.kind);
+    this.check(open.key, true, "Automação", open.k.kind, data.quem || "");
   }
 
   // ---------------------------------------------------------------- actions
 
-  check(key, done, by, kind) {
-    this.store.setCheck(key, done ? { by, kind } : null);
-    if (done) this.clearAlert(key).catch(() => {});
+  /**
+   * Marks (or unmarks) an occurrence as done. `who` is the person who did it:
+   * a chore or maintenance with points gives them to that person.
+   */
+  check(key, done, by, kind, who = "") {
+    const person = this.participant(who);
+    this.store.setCheck(key, done ? { by: person || who || by, kind } : null);
+    if (done) {
+      this.clearAlert(key).catch(() => {});
+      const o = this.findOccurrence(key);
+      const points = o && o.k.points;
+      if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: o.raw.summary, kind: o.k.kind });
+      else this.store.removePoints(key);
+    } else this.store.removePoints(key);
     this.changed();
+  }
+
+  findOccurrence(key) {
+    for (const o of this.occurrences()) if (o.key === key) return o;
+    return null;
+  }
+
+  // ---------------------------------------------------------------- Recompensas
+
+  /** The participant with this name (accents and case ignored), or "". */
+  participant(name) {
+    const st = scoreSettings(this.store.data.app);
+    if (!st.enabled || !name) return "";
+    return st.participants.find((p) => foldText(p) === foldText(name) || foldText(p).split(" ")[0] === foldText(name).split(" ")[0]) || "";
+  }
+
+  /** Gives a point entry to someone else ("Foi a Andressa"). */
+  reassign(key, who) {
+    const person = this.participant(who);
+    if (!person) throw coded("invalid_format", "Essa pessoa não está no placar");
+    const e = this.store.pointsByKey(key);
+    if (e) this.store.addPoints({ ...e, who: person });
+    const c = this.store.data.checks[key];
+    if (c) this.store.setCheck(key, { ...c, by: person });
+    this.changed();
+  }
+
+  /** Points for something that is not in the calendar ("lavou o carro"). */
+  extraPoints(who, points, title) {
+    const person = this.participant(who);
+    if (!person) throw coded("invalid_format", "Escolha quem fez");
+    const n = Math.round(Number(points) || 0);
+    if (!n || Math.abs(n) > 1000) throw coded("invalid_format", "Pontos inválidos");
+    const t = String(title || "").trim();
+    if (!t) throw coded("invalid_format", "Diga o que foi feito");
+    this.store.addPoints({ key: `extra|${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, who: person, points: n, title: t, kind: "extra" });
+    this.changed();
+  }
+
+  removePoints(key) {
+    if (!String(key).startsWith("extra|")) throw coded("invalid_format", "Só os pontos avulsos saem por aqui; desmarque a tarefa para tirar os dela");
+    this.store.removePoints(key);
+    this.changed();
+  }
+
+  /** What the Recompensas screen shows. */
+  scoreIndex(now = Date.now()) {
+    const st = scoreSettings(this.store.data.app);
+    const sc = this.store.data.score;
+    const cur = periodOf(new Date(now), st);
+    const next = periodOf(new Date(Date.parse(`${cur.end}T12:00:00`)), st);
+    const rows = tally(sc.entries, st.participants, cur.start, cur.end);
+    const t0 = new Date(`${cur.start}T00:00:00`).getTime();
+    const t1 = new Date(`${cur.end}T00:00:00`).getTime();
+    const entries = sc.entries
+      .filter((e) => Date.parse(e.at) >= t0 && Date.parse(e.at) < t1)
+      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+      .slice(0, 80);
+    return {
+      ...st,
+      current: { ...cur, reward: sc.rewards[cur.key] || "" },
+      next: { ...next, reward: sc.rewards[next.key] || "" },
+      rows,
+      leader: winnerOf(rows),
+      entries,
+      history: sc.history.slice(0, 26),
+    };
+  }
+
+  resetPeriod() {
+    const st = scoreSettings(this.store.data.app);
+    const cur = periodOf(new Date(), st);
+    const c = this.store.data.score.current;
+    if (!c || c.key !== cur.key || c.end !== cur.end) this.store.setCurrentPeriod({ key: cur.key, start: cur.start, end: cur.end });
+  }
+
+  /** A new period started: the last one goes to the history and the result to the phones. */
+  async rollover() {
+    const st = scoreSettings(this.store.data.app);
+    if (!st.enabled) return;
+    const sc = this.store.data.score;
+    const cur = periodOf(new Date(), st);
+    if (!sc.current) return this.store.setCurrentPeriod({ key: cur.key, start: cur.start, end: cur.end });
+    if (sc.current.key === cur.key) return;
+    const prev = sc.current;
+    const rows = tally(sc.entries, st.participants, prev.start, prev.end);
+    const winner = winnerOf(rows);
+    const reward = sc.rewards[prev.key] || "";
+    const totals = Object.fromEntries(rows.map((r) => [r.name, r.points]));
+    this.store.closePeriod({ key: prev.key, start: prev.start, end: prev.end, totals, winner, reward, delivered: false }, { key: cur.key, start: cur.start, end: cur.end });
+    this.log.info(`Placar fechado (${prev.start}): ${rows.map((r) => `${r.name} ${r.points}`).join(" × ")}${winner ? `, ${winner} venceu` : ", empate"}`);
+    if (!st.notify) return;
+    const score = rows.map((r) => r.points).join(" × ");
+    const nextReward = sc.rewards[cur.key];
+    const message = `${winner ? `${winner} venceu: ${score}.` : rows.some((r) => r.points > 0) ? `Empate: ${score}.` : "Ninguém pontuou."}${winner && reward ? ` Prêmio: ${reward}.` : ""}${nextReward ? ` Prêmio agora: ${nextReward}.` : ""}`;
+    const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
+    for (const target of targets) {
+      await this.ha
+        .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "🏆 Placar fechado", message, data: { tag: "cronologia-placar", group: "cronologia-placar" } } })
+        .catch((err) => this.log.warn(`Resultado para ${target}: ${err.message}`));
+    }
   }
 
   findRaw(cal, uid) {
@@ -372,14 +496,15 @@ export class Home {
   }
 
   /** Maintenance done today: the event moves to today + interval, with today in its history. */
-  async maintDone(cal, uid, by) {
+  async maintDone(cal, uid, by, who = "") {
     const raw = this.findRaw(cal, uid);
     if (!raw) throw coded("not_found", "Não achei essa manutenção no calendário");
     const k = parseKind(raw.description);
     if (!k || k.kind !== "manutencao") throw coded("invalid_format", "Não é uma manutenção");
     if (raw.rrule) {
-      this.check(occurrenceKey(cal, raw), true, by, "manutencao");
-      return { moved: false };
+      const key = occurrenceKey(cal, raw);
+      this.check(key, true, by, "manutencao", who);
+      return { moved: false, key };
     }
     const event = maintDone(raw, k, new Date());
     const before = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
@@ -391,9 +516,15 @@ export class Home {
       await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
       await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid });
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
-    this.log.info(`Manutenção feita: ${raw.summary} (${by}); próxima em ${event.start.slice(0, 10)}`);
+    // points: one entry per maintenance done (the event moves, so the key carries the day)
+    const person = this.participant(who);
+    const key = `maint|${cal}|${uid}|${new Date().toISOString().slice(0, 10)}`;
+    if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "manutencao" });
+    if (feat & F.UPDATE) this.undo.set(`${cal}|${uid}`, { ...this.undo.get(`${cal}|${uid}`), key });
+    this.log.info(`Manutenção feita: ${raw.summary} (${person || who || by}); próxima em ${event.start.slice(0, 10)}`);
     this.refreshCalendar(cal);
-    return { moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE) };
+    this.changed();
+    return { moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE), key: k.points > 0 && person ? key : null };
   }
 
   async maintUndo(cal, uid) {
@@ -401,6 +532,8 @@ export class Home {
     if (!u || Date.now() - u.at > 30 * 60000) throw coded("not_found", "Não dá mais para desfazer");
     await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(u.before) });
     this.undo.delete(`${cal}|${uid}`);
+    if (u.key) this.store.removePoints(u.key);
+    this.changed();
     this.refreshCalendar(cal);
   }
 
@@ -429,6 +562,13 @@ export class Home {
         attributes: { friendly_name: "CronologIA Manutenções vencidas", icon: "mdi:wrench-clock", unit_of_measurement: "itens", vencidas: overdue.map((m) => `${m.summary} (${m.due})`), proximas: soon.map((m) => `${m.summary} (${m.due})`) },
       },
     };
+    const sc = ix.score;
+    if (sc && sc.enabled) {
+      sensors["sensor.cronologia_placar"] = {
+        state: sc.leader || (sc.rows.some((r) => r.points > 0) ? "Empate" : "Ninguém"),
+        attributes: { friendly_name: "CronologIA Placar", icon: "mdi:trophy", pontos: Object.fromEntries(sc.rows.map((r) => [r.name, r.points])), premio: sc.current.reward || null, periodo: sc.current.label, termina: sc.current.end },
+      };
+    }
     const json = JSON.stringify(sensors);
     if (json === this.sensorsJson && Date.now() - this.sensorsAt < 10 * 60000) return;
     this.sensorsJson = json;

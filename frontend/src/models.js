@@ -1,7 +1,7 @@
 // Modelos (remédio, conta a pagar, rotina da casa, manutenção) on the screens:
 // the Agora panels, the forms, the event sheet facts, the bills of the GerencIA
 // app and the "Avisos" settings. Mixed into <cronologia-app>.
-import { html, svg, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
+import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
@@ -182,18 +182,6 @@ export const ModelsMixin = (Base) =>
       }
     }
 
-    async _maintDone(m) {
-      try {
-        const r = await this.api.maintDone(m.cal, m.uid);
-        this._haptic("success");
-        this._closeSheet();
-        const text = r && r.next ? `Feito. Próxima em ${dateShort(fromYmd(r.next), new Date(this._now))}` : "Feito";
-        this._showToast(text, r && r.undo ? { label: "Desfazer", run: () => this.api.maintUndo(m.cal, m.uid).catch((err) => this._showToast(err.message)) } : null);
-      } catch (err) {
-        this._showToast(`Não consegui: ${err.message}`);
-      }
-    }
-
     async _testAlert(target) {
       try {
         await this.api.testAlert(target);
@@ -262,7 +250,7 @@ export const ModelsMixin = (Base) =>
           (g) => html`${groups.length > 1 || g.who
               ? html`<div class="meds-who"><span class="avatar">${initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.notify ? html`<span class="who-bell" title="Aviso no celular: ${this._targetName(g.notify)}">${icon("bell-ring")}</span>` : nothing}</div>`
               : nothing}
-            ${g.list.map((m) => this._renderDose(m))}`,
+            ${repeat(g.list, (m) => m.key, (m) => this._renderDose(m))}`,
         )}
         ${this._alertsHint(meds)}
       </div>`;
@@ -306,7 +294,7 @@ export const ModelsMixin = (Base) =>
           <span class="overline">Contas a pagar</span>
           ${open.length ? html`<span class="bills-sum"><b>${formatMoney(sum, false)}</b><small>${late.length ? `${plural(late.length, "atrasada", "atrasadas")}` : "próximos 8 dias"}</small></span>` : html`<span class="bills-sum"><small>tudo pago</small></span>`}
         </div>
-        ${shown.map((b) => {
+        ${repeat(shown, (b) => b.id, (b) => {
           const d = fromYmd(b.due);
           const today = dayDiff(d, now) === 0;
           return html`<div class="bill ${b.paid ? "paid" : b.overdue ? "late" : today ? "today" : ""}">
@@ -336,16 +324,19 @@ export const ModelsMixin = (Base) =>
       return html`<div class="panel chores" id="casa">
         ${routines.length
           ? html`<div class="chores-head"><span class="overline">Rotina da casa</span><small>${done} de ${routines.length}</small></div>
-              ${routines.map(
+              ${repeat(
+                routines,
+                (r) => r.key,
                 (r) => html`<div class="chore ${r.done ? "done" : ""}">
-                  <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._check(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${[r.time, r.who, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : ""].filter(Boolean).join(" · ") || "hoje"}</small></button>
+                  <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${[r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+                  ${r.points > 0 && this._scoreOn() ? html`<span class="pts ${r.done ? "got" : ""}">+${r.points}</span>` : nothing}
                 </div>`,
               )}`
           : nothing}
         ${maint.length
           ? html`<div class="chores-head ${routines.length ? "sub" : ""}"><span class="overline">Manutenção da casa</span></div>
-              ${maint.map((m) => this._renderMaintRow(m))}`
+              ${repeat(maint, (m) => m.key, (m) => this._renderMaintRow(m))}`
           : nothing}
         ${total ? html`<button class="add-line" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}Todas as manutenções (${total})</button>` : nothing}
       </div>`;
@@ -357,7 +348,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="maint ${m.state}">
         <button class="maint-main" @click=${() => this._openIndexItem(m)}>
           ${this._ring(m.progress, tone, null, icon("wrench"))}
-          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.who ? ` · ${m.who}` : ""}</small></span>
+          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
         </button>
         ${m.canMove ? html`<button class="dose-btn ${m.state === "vencida" ? "atrasado" : m.state === "perto" ? "agora" : "later"}" @click=${() => this._maintDone(m)}>Feito</button>` : nothing}
       </div>`;
@@ -367,7 +358,7 @@ export const ModelsMixin = (Base) =>
       const list = this._ix().maint || [];
       return html`${this._sheetHead("Manutenção da casa")}
         <p class="sheet-note top">O prazo conta a partir da última vez. Cada item aparece na tela Agora alguns dias antes de vencer.</p>
-        <div class="maint-list">${list.length ? list.map((m) => this._renderMaintRow(m)) : html`<p class="empty-line">Nenhuma manutenção ainda.</p>`}</div>
+        <div class="maint-list">${list.length ? repeat(list, (m) => m.key, (m) => this._renderMaintRow(m)) : html`<p class="empty-line">Nenhuma manutenção ainda.</p>`}</div>
         <div class="sheet-actions"><button class="btn primary" @click=${() => this._openKindForm({ kind: "manutencao" })}>${icon("plus")}Nova manutenção</button></div>`;
     }
 
@@ -388,7 +379,9 @@ export const ModelsMixin = (Base) =>
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
+        if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
       } else if (k.kind === "manutencao") {
+        if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         facts.push(["bell-ring", `Aparece na Agora ${plural(k.warn, "dia", "dias")} antes`]);
@@ -403,7 +396,9 @@ export const ModelsMixin = (Base) =>
         const it = { key: e.key, summary: e.summary };
         action = chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
-          : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${ui.verb}</button>`;
+          : k.kind === "rotina" || k.kind === "manutencao"
+            ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>`
+            : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${ui.verb}</button>`;
       }
       return html`${facts.map(([ic, t]) => html`<div class="fact">${icon(ic)}<span>${t}</span></div>`)}
         ${k.notes ? html`<div class="fact notes">${icon("file-text")}<span>${k.notes}</span></div>` : nothing}
@@ -475,6 +470,7 @@ export const ModelsMixin = (Base) =>
         last: ymd(today),
         warn: 7,
         history: [],
+        points: this._scoreOn() && (kind === "rotina" || kind === "manutencao") ? (kind === "rotina" ? 10 : 30) : 0,
         notes: "",
         location: "",
       };
@@ -504,6 +500,7 @@ export const ModelsMixin = (Base) =>
           warn: k.warn ?? 7,
           history: k.history || [],
           last: (k.history && k.history[0]) || f.last,
+          points: k.points || 0,
           notes: k.notes || "",
           location: ev.location || "",
         };
@@ -539,13 +536,13 @@ export const ModelsMixin = (Base) =>
       if (!title) throw new Error(f.kind === "remedio" ? "Qual é o remédio?" : "Dê um nome");
       const k = { kind: f.kind, notes: f.notes };
       if (f.kind === "remedio") Object.assign(k, { dose: f.dose, who: f.who, alert: f.alert });
-      else if (f.kind === "rotina") k.who = f.who;
+      else if (f.kind === "rotina") Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)) });
       else if (f.kind === "conta") {
         k.value = parseMoney(f.value);
         if (!k.value) throw new Error("Coloque o valor");
       } else {
         if (!(f.every && f.every.n > 0)) throw new Error("Escolha de quanto em quanto tempo");
-        Object.assign(k, { who: f.who, every: f.every, warn: f.warn, history: f.mode === "edit" ? f.history : f.last ? [f.last] : [] });
+        Object.assign(k, { who: f.who, every: f.every, warn: f.warn, history: f.mode === "edit" ? f.history : f.last ? [f.last] : [], points: Math.max(0, Math.round(Number(f.points) || 0)) });
       }
       const base = { summary: title, description: buildDescription(k) };
       if ((f.location || "").trim()) base.location = f.location.trim();
@@ -732,6 +729,20 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
+    /** Points for whoever does it (Recompensas). */
+    _pointsField() {
+      const f = this._form;
+      const n = Number(f.points) || 0;
+      return html`<div class="field">
+        <span class="flabel">Pontos para quem fizer</span>
+        <div class="chip-row">
+          ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${n === v ? "on" : ""}" @click=${() => this._setForm({ points: v })}>${v ? `+${v}` : "Sem pontos"}</button>`)}
+          <input type="number" class="num-input" min="0" max="1000" .value=${String(n)} aria-label="Outro valor de pontos" @input=${(e) => this._setForm({ points: e.target.value })} />
+        </div>
+        ${n > 0 && !this._scoreOn() ? html`<span class="field-hint">${icon("trophy")}<span>Os pontos contam quando o placar estiver ligado, na aba <b>Recompensas</b>.</span></span>` : nothing}
+      </div>`;
+    }
+
     _durField(label) {
       const f = this._form;
       if (f.freq === "uma") return nothing;
@@ -823,6 +834,7 @@ export const ModelsMixin = (Base) =>
               ${!f.allDay ? html`<input type="time" class="inline-time" .value=${f.times[0] || "19:00"} @change=${(e) => e.target.value && this._setForm({ times: [e.target.value] })} aria-label="Horário" />` : nothing}
             </div>
           </div>
+          ${this._pointsField()}
           ${this._freqField("Repete")}
           ${this._dateField(f.mode === "add" ? "Começa" : "Data", f.date, (v) => this._setForm({ date: v }), "kf-date")}
           ${this._durField("Até quando")}
@@ -844,6 +856,7 @@ export const ModelsMixin = (Base) =>
             ? this._dateField("Feito pela última vez", f.last, (v) => this._setForm({ last: v }), "kf-last", { quick: false })
             : this._dateField("Próxima vez", f.date, (v) => this._setForm({ date: v }), "kf-date", { quick: false })}
           <p class="next-line">${icon("calendar-check")}<span>Próxima: <b>${cap(dayLabel(next, now, { long: false }))}</b>${dayDiff(next, now) > 1 ? ` · em ${plural(dayDiff(next, now), "dia", "dias")}` : ""}</span></p>
+          ${this._pointsField()}
           <div class="field"><span class="flabel">Mostrar na Agora</span><div class="chip-row">${[3, 7, 15, 30].map((n) => html`<button class="pick ${f.warn === n ? "on" : ""}" @click=${() => this._setForm({ warn: n })}>${n} dias antes</button>`)}</div></div>
           ${this._calField()}
           ${notes}`;
