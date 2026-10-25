@@ -15,12 +15,12 @@ import { acceptUpgrade } from "./lib/ws.js";
 import { HAClient } from "./lib/ha.js";
 import { Store } from "./lib/store.js";
 import { AI } from "./lib/ai.js";
-import { normalizeApiEvent, toICS } from "./lib/events.js";
+import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { Gerencia } from "./lib/gerencia.js";
 
-const VERSION = "1.1.0";
+const VERSION = "1.1.1";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -338,7 +338,7 @@ class Session {
       case "calendar/event/create": {
         if (!isCal(msg.entity_id)) return this.error(id, "invalid_format", "Não é um calendário");
         const event = cleanEvent(msg.event);
-        const out = await ha.send({ type, entity_id: msg.entity_id, event });
+        const out = await ha.send({ type, entity_id: msg.entity_id, event: toHAEvent(event) });
         if (parseKind(event.description)) home.noteCalendar(msg.entity_id);
         home.refreshCalendar(msg.entity_id);
         return this.result(id, out);
@@ -351,9 +351,10 @@ class Session {
         const out = { type, entity_id: msg.entity_id, uid: msg.uid };
         if (typeof msg.recurrence_id === "string" && msg.recurrence_id) out.recurrence_id = msg.recurrence_id;
         if (msg.recurrence_range === "THISANDFUTURE") out.recurrence_range = "THISANDFUTURE";
-        if (type === "calendar/event/update") out.event = cleanEvent(msg.event);
+        const event = type === "calendar/event/update" ? cleanEvent(msg.event) : null;
+        if (event) out.event = toHAEvent(event);
         const res = await ha.send(out);
-        if (out.event && parseKind(out.event.description)) home.noteCalendar(msg.entity_id);
+        if (event && parseKind(event.description)) home.noteCalendar(msg.entity_id);
         home.refreshCalendar(msg.entity_id);
         return this.result(id, res);
       }

@@ -9,6 +9,7 @@
 import crypto from "node:crypto";
 import os from "node:os";
 import { parseKind, occurrenceKey, maintDone, foldText, buildIndex } from "./kinds.js";
+import { toHAEvent } from "./events.js";
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
@@ -384,10 +385,10 @@ export class Home {
     const before = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
     const feat = this.features(cal);
     if (feat & F.UPDATE) {
-      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event });
+      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(event) });
       this.undo.set(`${cal}|${uid}`, { before, at: Date.now() });
     } else if (feat & F.CREATE && feat & F.DELETE) {
-      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event });
+      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
       await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid });
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     this.log.info(`Manutenção feita: ${raw.summary} (${by}); próxima em ${event.start.slice(0, 10)}`);
@@ -398,7 +399,7 @@ export class Home {
   async maintUndo(cal, uid) {
     const u = this.undo.get(`${cal}|${uid}`);
     if (!u || Date.now() - u.at > 30 * 60000) throw coded("not_found", "Não dá mais para desfazer");
-    await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: u.before });
+    await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(u.before) });
     this.undo.delete(`${cal}|${uid}`);
     this.refreshCalendar(cal);
   }

@@ -3,6 +3,15 @@
 //   {start, end, summary, description?, location?, uid?, recurrence_id?, rrule?, all_day}
 // start/end are "AAAA-MM-DD" for all-day events or ISO date-times with offset.
 
+/**
+ * Event as Home Assistant's calendar/event/create and /update take it: the
+ * times go as dtstart/dtend (reading gives start/end, writing takes dtstart/dtend).
+ */
+export function toHAEvent(ev) {
+  const { start, end, ...rest } = ev;
+  return { ...rest, dtstart: start, dtend: end };
+}
+
 /** REST /api/calendars/<id> format ({dateTime}|{date}) -> subscribe format. */
 export function normalizeApiEvent(e) {
   const pick = (v) => (v && typeof v === "object" ? v.dateTime || v.date || null : v || null);

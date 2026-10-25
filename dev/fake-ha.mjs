@@ -71,6 +71,17 @@ function fakeAI(msg) {
   return { context: { id: "ctx" }, response: { conversation_id: "c1", data: "```json\n" + JSON.stringify({ events }) + "\n```" } };
 }
 
+// Like Home Assistant's WEBSOCKET_EVENT_SCHEMA: writing takes dtstart/dtend (reading gives start/end).
+const EVENT_KEYS = ["dtstart", "dtend", "summary", "description", "location", "rrule"];
+function fromHAEvent(ev) {
+  for (const k of Object.keys(ev || {})) {
+    if (!EVENT_KEYS.includes(k)) fail("invalid_format", `extra keys not allowed @ data['event']['${k}']${k === "end" ? ". Got not a valid option, did you mean 'dtend'?" : ""}`);
+  }
+  if (!ev.dtstart || !ev.dtend || !ev.summary) fail("invalid_format", "required key not provided @ data['event']");
+  const { dtstart, dtend, ...rest } = ev;
+  return { ...rest, start: dtstart, end: dtend };
+}
+
 class Conn {
   constructor(ws) {
     this.ws = ws;
@@ -143,13 +154,13 @@ class Conn {
           return this.event(msg.id, { events });
         }
         case "calendar/event/create": {
-          model.create(msg.entity_id, msg.event);
+          model.create(msg.entity_id, fromHAEvent(msg.event));
           console.log("event created", msg.entity_id, JSON.stringify(msg.event));
           ok();
           return changed(msg.entity_id);
         }
         case "calendar/event/update": {
-          model.update(msg.entity_id, msg);
+          model.update(msg.entity_id, { ...msg, event: fromHAEvent(msg.event) });
           console.log("event updated", msg.entity_id, msg.uid, msg.recurrence_id || "", msg.recurrence_range || "");
           ok();
           return changed(msg.entity_id);
