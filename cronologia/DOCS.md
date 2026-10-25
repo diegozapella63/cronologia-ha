@@ -16,7 +16,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 - **Agora**: no alto, **Remédios de hoje**, **Contas a pagar** e **Tarefas com prazo** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
-- **Novo**: cria um evento ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
+- **Novo**: cria um evento, uma **tarefa do ResolvIA** ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
 - **Mais**: **Agendas** (os calendários agrupados por integração, com nome, cor, **mostrar/ocultar** e atalhos para adicionar calendários), tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, **tarefas do ResolvIA**, leitura por IA e exportar/importar .ics.
 
@@ -109,6 +109,8 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 - no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;
 - tocando numa delas: prazo, lista, notas e **Concluir** / **Reabrir**.
 
+Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia e horário, ou sem prazo) e notas. A tarefa entra direto na lista do Home Assistant e aparece no ResolvIA na hora; o app lembra a última lista usada. Listas que não aceitam prazo (as do Alexa, por exemplo) recebem a tarefa sem data.
+
 Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece concluída no ResolvIA na hora, e a **repetição** do ResolvIA ("volta 3 dias depois de feito") continua funcionando. O prazo, as notas e a repetição se mudam no ResolvIA. Em **Mais › Tarefas do ResolvIA** você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
 
 ## Sensores e automações
@@ -172,10 +174,14 @@ Sem IA configurada, todo o resto funciona normalmente, inclusive importar arquiv
 
 ## Dados
 
-- Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…).
-- O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento.
-- **Mais > Dados > Exportar agenda (.ics)**: escolha os calendários e o período (próximos 3 ou 12 meses, ou do último ano ao próximo). Cada repetição vira um evento no arquivo, que abre no Google Agenda, no Outlook e no iPhone.
-- O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
+Em **Mais › Dados**, como nos outros apps:
+
+- **Exportar**: **Tudo (ZIP)**, com os dados do app (`cronologia.json`), os eventos de cada calendário em .ics (do último ano aos próximos 13 meses), `eventos.csv` e `pontos.csv` para o Excel; **Eventos (CSV)**; **Dados (JSON)**; e **Agenda (.ics)**, escolhendo os calendários e o período.
+- **Backup na pasta share**: cria o mesmo ZIP em `share/cronologia`, que você acessa pela rede do Home Assistant, com **Restaurar** em cada um.
+- **Importar backup ou JSON**: traz os dados do app de um .zip ou .json do CronologIA (nome e cor das agendas, preferências, pessoas e avisos, placar e marcações). Os eventos não mudam: para trazê-los, use **Importar eventos (.ics)** com o .ics do calendário que está no ZIP.
+- **Versões anteriores**: o app guarda sozinho uma cópia dos dados a cada 10 minutos de uso (as últimas 60) e antes de cada importação ou restauração.
+
+Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 
 ## Segurança
 

@@ -12,6 +12,12 @@ const VIEWS = ["mes", "semana", "lista"];
 const NOTIFY_RE = /^mobile_app_[a-z0-9_]+$/;
 const LATE = [0, 15, 30, 45, 60, 90, 120];
 const KEEP_CHECKS_DAYS = 120;
+const MAX_VERSIONS = 60;
+const VERSION_EVERY = 10 * 60 * 1000;
+const stamp = (d = new Date()) => {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+};
 const KEEP_POINTS_DAYS = 400;
 const SCORE_PERIODS = ["semana", "quinzena", "mes"];
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -90,31 +96,92 @@ const merge = (target, changes) => {
   return next;
 };
 
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, current: null } });
+
+/**
+ * The saved data, checked field by field. `strict` (imports) also runs the
+ * calendar and app settings through the same checks as the screens.
+ */
+function normalize(raw, strict = false) {
+  const out = empty();
+  if (!raw || typeof raw !== "object") return out;
+  const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+  if (strict) {
+    for (const [id, v] of Object.entries(obj(raw.calendars))) {
+      if (!CAL_RE.test(id)) continue;
+      try {
+        const c = merge({}, cleanCalendar(v));
+        if (Object.keys(c).length) out.calendars[id] = c;
+      } catch (e) {
+        /* skip */
+      }
+    }
+    try {
+      out.app = merge({}, cleanApp(obj(raw.app)));
+    } catch (e) {
+      out.app = {};
+    }
+  } else {
+    out.calendars = obj(raw.calendars);
+    out.app = obj(raw.app);
+  }
+  for (const k of ["checks", "sent"]) out[k] = obj(raw[k]);
+  for (const [k, v] of Object.entries(out.checks)) if (!v || typeof v !== "object" || !Number.isFinite(Date.parse(v.at))) delete out.checks[k];
+  out.kind_cals = Array.isArray(raw.kind_cals) ? raw.kind_cals.filter((id) => CAL_RE.test(id)) : [];
+  const sc = obj(raw.score);
+  out.score = {
+    entries: Array.isArray(sc.entries) ? sc.entries.filter((e) => e && e.key && Number.isFinite(Date.parse(e.at)) && typeof e.who === "string") : [],
+    history: Array.isArray(sc.history) ? sc.history.filter((h) => h && YMD_RE.test(h.key || "")) : [],
+    rewards: obj(sc.rewards),
+    current: sc.current && YMD_RE.test(sc.current.key || "") ? sc.current : null,
+  };
+  return out;
+}
+
 export class Store {
   constructor(dir, log) {
     this.file = path.join(dir, "cronologia.json");
+    this.versionsDir = path.join(dir, "versoes");
     this.log = log;
     this.timer = null;
-    this.data = { version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, current: null } };
+    this.lastVersion = 0;
+    this.data = empty();
     fs.mkdirSync(dir, { recursive: true });
     try {
-      const raw = JSON.parse(fs.readFileSync(this.file, "utf8"));
-      if (raw && typeof raw === "object") {
-        this.data.calendars = raw.calendars && typeof raw.calendars === "object" ? raw.calendars : {};
-        this.data.app = raw.app && typeof raw.app === "object" ? raw.app : {};
-        for (const k of ["checks", "sent"]) this.data[k] = raw[k] && typeof raw[k] === "object" ? raw[k] : {};
-        this.data.kind_cals = Array.isArray(raw.kind_cals) ? raw.kind_cals.filter((id) => CAL_RE.test(id)) : [];
-        const sc = raw.score && typeof raw.score === "object" ? raw.score : {};
-        this.data.score = {
-          entries: Array.isArray(sc.entries) ? sc.entries.filter((e) => e && e.key && e.at) : [],
-          history: Array.isArray(sc.history) ? sc.history.filter((h) => h && h.key) : [],
-          rewards: sc.rewards && typeof sc.rewards === "object" ? sc.rewards : {},
-          current: sc.current && sc.current.key ? sc.current : null,
-        };
-        this.prune();
-      }
+      this.data = normalize(JSON.parse(fs.readFileSync(this.file, "utf8")));
+      this.prune();
     } catch (err) {
       if (err.code !== "ENOENT") this.log.warn(`Não consegui ler ${this.file}: ${err.message}`);
+    }
+  }
+
+  /** Swaps everything for `raw` (import, restore), keeping a copy of what was there. */
+  replaceAll(raw, reason) {
+    const next = normalize(raw, true);
+    next.sent = this.data.sent; // alerts already sent today stay sent
+    if (this.timer) this.flush({ version: false });
+    this.version(reason, true);
+    this.data = next;
+    this.prune();
+    this.flush({ version: false });
+    return this.data;
+  }
+
+  /** Copies the file as it is now to /data/versoes (at most every 10 min unless forced). */
+  version(reason = "auto", force = false) {
+    if (!force && Date.now() - this.lastVersion < VERSION_EVERY) return null;
+    if (!fs.existsSync(this.file)) return null;
+    try {
+      fs.mkdirSync(this.versionsDir, { recursive: true });
+      const name = `cronologia-${stamp()}-${reason}.json`;
+      fs.copyFileSync(this.file, path.join(this.versionsDir, name));
+      this.lastVersion = Date.now();
+      const all = fs.readdirSync(this.versionsDir).filter((f) => /^cronologia-.*\.json$/.test(f)).sort();
+      for (const old of all.slice(0, Math.max(0, all.length - MAX_VERSIONS))) fs.rmSync(path.join(this.versionsDir, old), { force: true });
+      return name;
+    } catch (err) {
+      this.log.warn(`Não consegui guardar uma versão: ${err.message}`);
+      return null;
     }
   }
 
@@ -229,9 +296,10 @@ export class Store {
     this.timer = setTimeout(() => this.flush(), 400);
   }
 
-  flush() {
+  flush({ version = true } = {}) {
     clearTimeout(this.timer);
     this.timer = null;
+    if (version) this.version("auto");
     const tmp = `${this.file}.tmp`;
     try {
       fs.writeFileSync(tmp, JSON.stringify(this.data, null, 1));

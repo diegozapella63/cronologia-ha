@@ -302,6 +302,46 @@ export class Api {
     return this.call("cronologia/contas/nova", { conta });
   }
 
+  // ---- Dados: exports, backups, import, versions
+  dataUrl(fmt) {
+    return new URL(`api/export/${fmt}`, location.href).href;
+  }
+
+  async importData(file) {
+    const res = await fetch(new URL("api/import", location.href), {
+      method: "POST",
+      headers: { "content-type": "application/octet-stream", "x-file-name": encodeURIComponent(file.name || "") },
+      body: file,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Erro ${res.status}`);
+    return body;
+  }
+
+  versions() {
+    return this.call("cronologia/versions/list");
+  }
+
+  restoreVersion(name) {
+    return this.call("cronologia/versions/restore", { name });
+  }
+
+  backups() {
+    return this.call("cronologia/backups/list");
+  }
+
+  createBackup() {
+    return this.call("cronologia/backups/create");
+  }
+
+  restoreBackup(name) {
+    return this.call("cronologia/backups/restore", { name });
+  }
+
+  addTodo(entityId, task) {
+    return this.call("cronologia/todo/add", { entity_id: entityId, task });
+  }
+
   setTodo(entityId, uid, done) {
     return this.call("cronologia/todo/set", { entity_id: entityId, uid, done });
   }

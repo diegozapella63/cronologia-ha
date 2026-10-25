@@ -9,6 +9,7 @@ import { parseICS } from "./ics.js";
 import { ModelsMixin } from "./models.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
+import { DataMixin } from "./datapanel.js";
 import {
   PALETTE,
   colorById,
@@ -92,7 +93,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends TasksMixin(RewardsMixin(ModelsMixin(LitElement))) {
+class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))) {
   static properties = {
     api: { attribute: false },
     env: { attribute: false },
@@ -193,7 +194,10 @@ class CronologiaApp extends TasksMixin(RewardsMixin(ModelsMixin(LitElement))) {
         grid.scrollTop = hour * HOUR_H;
       }
     }
-    if (changed.has("_path") && this._view().name === "more") this._refreshAi(false);
+    if (changed.has("_path") && this._view().name === "more") {
+      this._refreshAi(false);
+      this._loadBackups();
+    }
   }
 
   _onVisible() {
@@ -1626,23 +1630,7 @@ class CronologiaApp extends TasksMixin(RewardsMixin(ModelsMixin(LitElement))) {
       ${this._renderAlertsPanel()} ${this._renderGerenciaPanel()} ${this._renderTodosSettings()}
       ${this._renderAiPanel()}
 
-      <div class="panel" id="dados">
-        <div class="overline">Dados</div>
-        <div class="data-row">
-          <b>Exportar agenda (.ics)</b>
-          <p>Baixe os eventos para abrir no Google Agenda, no Outlook ou no iPhone, ou para guardar uma cópia.</p>
-          <div class="btn-row"><button class="btn outline sm" @click=${() => this._openExport()}>${icon("download")}Exportar</button></div>
-        </div>
-        <div class="data-row">
-          <b>Importar arquivo .ics</b>
-          <p>Traz os eventos de um convite ou de outra agenda. Você revisa e escolhe o calendário antes de adicionar.</p>
-          <div class="btn-row"><button class="btn outline sm" ?disabled=${!writable.length} @click=${() => this._openImport("ics")}>${icon("upload")}Escolher arquivo</button></div>
-        </div>
-        <div class="data-row">
-          <b>Onde ficam os dados</b>
-          <p>Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda só nomes, cores e preferências, que entram no backup do Home Assistant.</p>
-        </div>
-      </div>
+      ${this._renderDataPanel()}
       <p class="foot"><b>CronologIA</b><br />v${this._version} · usa os calendários nativos do Home Assistant.</p>
     </section>`;
   }
@@ -1715,6 +1703,7 @@ class CronologiaApp extends TasksMixin(RewardsMixin(ModelsMixin(LitElement))) {
     else if (this._sheet === "outlook") body = this._renderOutlookSheet();
     else if (this._sheet === "nocal") body = this._renderNoCalSheet();
     else if (this._sheet === "maint") body = this._renderMaintSheet();
+    else if (this._sheet === "versions") body = this._renderVersions();
     else if (this._sheet === "who") body = this._renderWhoSheet();
     else if (this._sheet === "todo") {
       body = this._renderTodoSheet();

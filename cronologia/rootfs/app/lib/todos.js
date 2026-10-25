@@ -4,6 +4,8 @@
 // does on completion (repeating tasks) keeps working.
 
 const DAY = 86400000;
+// TodoListEntityFeature
+export const TODO_F = { CREATE: 1, DELETE: 2, UPDATE: 4, MOVE: 8, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const isTodo = (id) => typeof id === "string" && /^todo\.[a-z0-9_]+$/.test(id);
 const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -102,7 +104,8 @@ export class Todos {
       const name = (st.attributes && st.attributes.friendly_name) || id;
       const all = this.items.get(id) || [];
       const withDue = all.filter((i) => i.due && i.status !== "completed");
-      lists.push({ id, name, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
+      const features = Number((st.attributes && st.attributes.supported_features) || 0);
+      lists.push({ id, name, features, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
       if (off.has(id)) continue;
       for (const i of all) {
         if (!i.due || !i.uid) continue;
@@ -129,6 +132,32 @@ export class Todos {
     items.sort((a, b) => dueMs(a.due) - dueMs(b.due) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     return { lists, items, today: ymd(today) };
+  }
+
+  /** New task with a due date (todo.add_item). */
+  async add(id, { summary, date, time, description }) {
+    const st = this.states.get(id);
+    if (!isTodo(id) || !st) throw coded("invalid_format", "Escolha uma lista");
+    const f = Number((st.attributes && st.attributes.supported_features) || 0);
+    if (!(f & TODO_F.CREATE)) throw coded("not_supported", "Essa lista não aceita tarefas novas");
+    const text = String(summary || "").trim().slice(0, 255);
+    if (!text) throw coded("invalid_format", "Dê um nome à tarefa");
+    const data = { item: text };
+    if (date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw coded("invalid_format", "Data inválida");
+      if (time) {
+        if (!/^\d{2}:\d{2}$/.test(time)) throw coded("invalid_format", "Horário inválido");
+        if (!(f & TODO_F.DUE_DATETIME)) throw coded("not_supported", "Essa lista não aceita prazo com horário");
+        data.due_datetime = `${date} ${time}:00`;
+      } else {
+        if (!(f & TODO_F.DUE_DATE)) throw coded("not_supported", "Essa lista não aceita prazo");
+        data.due_date = date;
+      }
+    }
+    const notes = String(description || "").trim().slice(0, 4000);
+    if (notes && f & TODO_F.DESCRIPTION) data.description = notes;
+    await this.ha.send({ type: "call_service", domain: "todo", service: "add_item", service_data: data, target: { entity_id: id } });
+    this.refresh(id);
   }
 
   /** Marks an item done (or open again) in Home Assistant. */

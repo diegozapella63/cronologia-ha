@@ -3,7 +3,10 @@
 // the settings in Mais. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { colorById, colorVars, plural, clip, cap, hm, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks } from "./util.js";
+import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks } from "./util.js";
+
+const TF = { CREATE: 1, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
+const LAST_LIST = "cronologia.todo_list";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
@@ -107,6 +110,90 @@ export const TasksMixin = (Base) =>
             ? html`<button class="btn outline" @click=${() => this._todoDone(t, false).then(() => this._closeSheet())}>${icon("undo-2")}Reabrir</button>`
             : html`<button class="btn primary" @click=${() => this._todoDone(t, true).then(() => this._closeSheet())}>${icon("check")}Concluir</button>`}
         </div>`;
+    }
+
+    // ------------------------------------------------------------ new task
+
+    _todoLists() {
+      return this._todos().lists.filter((l) => !l.unavailable && l.features & TF.CREATE);
+    }
+
+    _openTodoForm({ date = null } = {}) {
+      const lists = this._todoLists();
+      let last = "";
+      try {
+        last = JSON.parse(localStorage.getItem(LAST_LIST) || '""');
+      } catch (e) {
+        /* private mode */
+      }
+      const pick = lists.find((l) => l.id === last) || lists.find((l) => !l.hidden && l.features & TF.DUE_DATE) || lists[0];
+      this._openSheet("form", { mode: "add", kind: "tarefa", title: "", list: pick ? pick.id : "", date: ymd(date ? startOfDay(date) : startOfDay(new Date())), noDue: false, timed: false, time: "09:00", notes: "" });
+      this.updateComplete.then(() => {
+        const ta = this.renderRoot.querySelector(".sheet .ev-title-input");
+        if (ta) ta.focus();
+      });
+    }
+
+    _renderTodoForm() {
+      const f = this._form;
+      const lists = this._todoLists();
+      const l = lists.find((x) => x.id === f.list);
+      const feats = l ? l.features : 0;
+      const canDate = !!(feats & TF.DUE_DATE);
+      const canTime = !!(feats & TF.DUE_DATETIME);
+      const canNotes = !!(feats & TF.DESCRIPTION);
+      return html`
+        ${this._sheetHead("Novo")}
+        ${this._renderModelChips("tarefa")}
+        <label class="field">
+          <span class="flabel">Tarefa</span>
+          <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder="Ex.: Levar o carro na revisão" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveTodoForm())}></textarea>
+        </label>
+        <div class="field">
+          <span class="flabel">Lista do ResolvIA</span>
+          <div class="chip-row">${lists.map((x) => html`<button class="pick list ${f.list === x.id ? "on" : ""}" style=${colorVars(colorById(TODO_COLOR), this._dark)} @click=${() => this._setForm({ list: x.id })}>${icon("list-checks")}<span>${clip(x.name, 26)}</span></button>`)}</div>
+        </div>
+        ${canDate || canTime
+          ? html`${f.noDue ? nothing : this._dateField("Prazo", f.date, (v) => this._setForm({ date: v }), "td-date")}
+              <div class="chip-row" style="margin:-8px 0 18px">
+                <button class="pick ${f.noDue ? "on" : ""}" @click=${() => this._setForm({ noDue: !f.noDue })}>Sem prazo</button>
+                ${canTime && !f.noDue
+                  ? html`<button class="pick ${f.timed ? "on" : ""}" @click=${() => this._setForm({ timed: !f.timed })}>${icon("clock")}<span>Com horário</span></button>
+                      ${f.timed ? html`<input type="time" class="inline-time" .value=${f.time} aria-label="Horário" @change=${(e) => e.target.value && this._setForm({ time: e.target.value })} />` : nothing}`
+                  : nothing}
+              </div>`
+          : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>Essa lista não aceita prazo (listas do Alexa, por exemplo). A tarefa entra sem data.</span></p>`}
+        ${canNotes ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
+        <div class="sheet-actions">
+          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
+          <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim() || !l} @click=${() => this._saveTodoForm()}>${f.saving ? "Salvando…" : "Criar tarefa"}</button>
+        </div>`;
+    }
+
+    async _saveTodoForm() {
+      const f = this._form;
+      const l = this._todoLists().find((x) => x.id === f.list);
+      if (!l) return this._showToast("Escolha a lista");
+      if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
+      const withDue = !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
+      const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
+      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "" };
+      if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
+      this._setForm({ saving: true });
+      try {
+        await this.api.addTodo(l.id, task);
+        try {
+          localStorage.setItem(LAST_LIST, JSON.stringify(l.id));
+        } catch (e) {
+          /* private mode */
+        }
+        this._haptic("success");
+        await this._closeSheet();
+        this._showToast(`Tarefa criada em ${clip(l.name, 24)}${l.hidden ? " (lista oculta aqui)" : ""}`);
+      } catch (err) {
+        if (this._sheet === "form") this._setForm({ saving: false });
+        this._showToast(`Não consegui criar: ${err.message}`);
+      }
     }
 
     _renderTodosSettings() {

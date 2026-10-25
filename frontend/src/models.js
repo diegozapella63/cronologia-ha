@@ -12,6 +12,7 @@ const icon = (name, cls = "") =>
 
 export const KIND_UI = {
   "": { label: "Evento", icon: "calendar" },
+  tarefa: { label: "Tarefa", icon: "list-checks", verb: "Concluir", done: "concluída" },
   remedio: { label: "Remédio", icon: "pill", verb: "Tomei", done: "tomado" },
   conta: { label: "Conta", icon: "receipt", verb: "Paguei", done: "paga" },
   rotina: { label: "Rotina", icon: "spray-can", verb: "Feito", done: "feito" },
@@ -594,6 +595,7 @@ export const ModelsMixin = (Base) =>
 
     async _saveKindForm() {
       const f = this._form;
+      if (f.kind === "tarefa") return this._saveTodoForm();
       if (f.kind === "conta" && f.dest === "gerencia" && f.mode === "add") {
         const valor = parseMoney(f.value);
         if (!(f.title || "").trim()) return this._showToast("Dê um nome à conta");
@@ -649,14 +651,17 @@ export const ModelsMixin = (Base) =>
     _renderModelChips(current) {
       const f = this._form;
       return html`<div class="model-strip" role="radiogroup" aria-label="Modelo">
-        ${Object.entries(KIND_UI).map(
-          ([k, ui]) => html`<button class="model ${current === k ? "on" : ""}" role="radio" aria-checked=${current === k ? "true" : "false"} @click=${() => {
-            if (current === k) return;
-            const date = f.date ? fromYmd(f.date) : null;
-            if (k) this._openKindForm({ kind: k, date });
-            else this._openForm({ date });
-          }}>${icon(ui.icon)}<span>${ui.label}</span></button>`,
-        )}
+        ${Object.entries(KIND_UI)
+          .filter(([k]) => k !== "tarefa" || this._todos().lists.length)
+          .map(
+            ([k, ui]) => html`<button class="model ${current === k ? "on" : ""}" role="radio" aria-checked=${current === k ? "true" : "false"} @click=${() => {
+              if (current === k) return;
+              const date = f.date ? fromYmd(f.date) : null;
+              if (k === "tarefa") this._openTodoForm({ date });
+              else if (k) this._openKindForm({ kind: k, date });
+              else this._openForm({ date });
+            }}>${icon(ui.icon)}<span>${ui.label}</span></button>`,
+          )}
       </div>`;
     }
 
@@ -769,6 +774,7 @@ export const ModelsMixin = (Base) =>
 
     _renderKindForm() {
       const f = this._form;
+      if (f.kind === "tarefa") return this._renderTodoForm();
       const K = f.kind;
       const ui = KIND_UI[K];
       const now = new Date();

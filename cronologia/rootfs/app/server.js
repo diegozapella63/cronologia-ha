@@ -20,8 +20,9 @@ import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
+import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -58,6 +59,7 @@ const pushHome = (index) => {
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
 const todos = new Todos({ ha, log, onChange: () => home.changed() });
+const backups = new Backups({ dir: path.join(SHARE_DIR, "cronologia") });
 const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
@@ -307,9 +309,41 @@ class Session {
         home.changed();
         return this.result(id);
 
+      case "cronologia/todo/add": {
+        const t = msg.task || {};
+        await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
+        return this.result(id);
+      }
+
       case "cronologia/todo/set":
         await todos.setDone(msg.entity_id, msg.uid, !!msg.done);
         return this.result(id);
+
+      // ---- Dados: versions, backups in share/cronologia
+      case "cronologia/versions/list":
+        return this.result(id, listVersions(store.versionsDir));
+
+      case "cronologia/versions/restore": {
+        const raw = readVersion(store.versionsDir, String(msg.name || ""));
+        replaced(store.replaceAll(raw, "antes-de-restaurar"), `versão ${msg.name}`);
+        return this.result(id, counts());
+      }
+
+      case "cronologia/backups/list":
+        return this.result(id, backups.list());
+
+      case "cronologia/backups/create": {
+        const { cals, range } = await allEvents();
+        const out = backups.save(backupZip(appData(store, VERSION), cals, VERSION, range));
+        log.info(`Backup criado em ${out.folder}/${out.name} (${cals.length} calendários)`);
+        return this.result(id, out);
+      }
+
+      case "cronologia/backups/restore": {
+        const raw = backups.read(String(msg.name || ""));
+        replaced(store.replaceAll(raw, "antes-de-restaurar"), `backup ${msg.name}`);
+        return this.result(id, counts());
+      }
 
       case "cronologia/notify/test":
         await home.testAlert(msg.target);
@@ -404,6 +438,36 @@ class Session {
   }
 }
 
+// ------------------------------------------------------------------ Dados
+
+const counts = () => ({ calendars: Object.keys(store.data.calendars).length, points: store.data.score.entries.length, checks: Object.keys(store.data.checks).length });
+
+/** Everything changed at once (import, restore): every screen gets the new settings. */
+function replaced(data, what) {
+  log.info(`Dados do app trocados (${what})`);
+  pushPrefs();
+  home.resetPeriod();
+  home.changed();
+}
+
+/** The events of every calendar from a year back to 400 days ahead (for the CSV and the ZIP). */
+async function allEvents() {
+  const t = new Date();
+  const start = new Date(t.getFullYear() - 1, t.getMonth(), t.getDate()).toISOString();
+  const end = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 400).toISOString();
+  const cals = [];
+  for (const [id, st] of calStates) {
+    if (!st || st.state === "unavailable") continue;
+    const p = store.data.calendars[id] || {};
+    try {
+      cals.push({ entity_id: id, name: p.name || (st.attributes && st.attributes.friendly_name) || id, events: await fetchEvents(id, start, end) });
+    } catch (err) {
+      log.warn(`Backup: ${id} ficou de fora (${err.message})`);
+    }
+  }
+  return { cals, range: "do último ano aos próximos 13 meses" };
+}
+
 // ------------------------------------------------------------------ HTTP
 
 const FILES = {
@@ -460,6 +524,58 @@ function handleExtract(req, res) {
 }
 
 /** GET /api/export/ics?calendars=a,b&start=ISO&end=ISO -> .ics file */
+function download(res, body, type, name) {
+  res.writeHead(200, { "Content-Type": type, "Content-Length": body.length, "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "no-store" });
+  res.end(body);
+}
+
+/** GET /api/export/json | csv | zip */
+async function handleData(fmt, res) {
+  const name = `cronologia-${fileStamp()}`;
+  try {
+    if (fmt === "json") return download(res, Buffer.from(JSON.stringify(appData(store, VERSION), null, 1)), "application/json; charset=utf-8", `${name}.json`);
+    const { cals, range } = await allEvents();
+    if (fmt === "csv") return download(res, eventsCSV(cals), "text/csv; charset=utf-8", `${name}.csv`);
+    return download(res, backupZip(appData(store, VERSION), cals, VERSION, range), "application/zip", `${name}.zip`);
+  } catch (err) {
+    sendJson(res, 502, { error: err.message });
+  }
+}
+
+/** POST /api/import (body = the .zip or .json file, header x-file-name). */
+function handleImport(req, res) {
+  const chunks = [];
+  let size = 0;
+  let aborted = false;
+  req.on("data", (c) => {
+    size += c.length;
+    if (size > MAX_UPLOAD) {
+      aborted = true;
+      sendJson(res, 413, { error: "Arquivo grande demais" });
+      req.destroy();
+      return;
+    }
+    chunks.push(c);
+  });
+  req.on("end", () => {
+    if (aborted) return;
+    let name = "";
+    try {
+      name = decodeURIComponent(req.headers["x-file-name"] || "");
+    } catch (e) {
+      /* keep empty */
+    }
+    try {
+      const raw = parseImport(Buffer.concat(chunks), name);
+      replaced(store.replaceAll(raw, "antes-de-importar"), `importado de ${name || "arquivo"}`);
+      sendJson(res, 200, counts());
+    } catch (err) {
+      log.warn(`Importação falhou: ${err.message}`);
+      sendJson(res, 400, { error: err.message, code: err.code || "failed" });
+    }
+  });
+}
+
 async function handleExport(url, res) {
   try {
     const ids = (url.searchParams.get("calendars") || "").split(",").filter(isCal);
@@ -498,6 +614,9 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
   if (url.pathname === "/api/export/ics" && req.method === "GET") return handleExport(url, res);
+  const exp = url.pathname.match(/^\/api\/export\/(json|csv|zip)$/);
+  if (exp && req.method === "GET") return handleData(exp[1], res);
+  if (url.pathname === "/api/import" && req.method === "POST") return handleImport(req, res);
   const font = url.pathname.match(/^\/fonts\/([a-z0-9-]+\.woff2)$/);
   const file = font ? [`fonts/${font[1]}`, "font/woff2", true] : FILES[url.pathname];
   if (!file || (req.method !== "GET" && req.method !== "HEAD")) {

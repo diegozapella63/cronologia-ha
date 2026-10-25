@@ -254,6 +254,55 @@ export class MockApi {
     return { ok: true, id };
   }
 
+  // Dados in the preview: nothing leaves the page
+  dataUrl() {
+    return null;
+  }
+
+  async backups() {
+    await wait(80);
+    const d = Date.now();
+    return { available: true, folder: "share/cronologia", backups: [{ name: "cronologia-2026-10-18-2140.zip", size: 214000, date: d - 6 * 86400000 }] };
+  }
+
+  async createBackup() {
+    await wait(500);
+    return { name: "cronologia-agora.zip", folder: "share/cronologia" };
+  }
+
+  async restoreBackup() {
+    await wait(200);
+    return { calendars: 2, points: 12, checks: 3 };
+  }
+
+  async versions() {
+    await wait(150);
+    const d = Date.now();
+    return [
+      { name: "cronologia-a.json", when: d - 40 * 60000, reason: "auto", calendars: 2, points: 12, checks: 4 },
+      { name: "cronologia-b.json", when: d - 26 * 3600000, reason: "antes-de-importar", calendars: 2, points: 9, checks: 2 },
+    ];
+  }
+
+  async restoreVersion() {
+    await wait(200);
+  }
+
+  async importData() {
+    await wait(300);
+    return { calendars: 2, points: 12, checks: 3 };
+  }
+
+  async addTodo(id, task) {
+    await wait(120);
+    const data = { item: task.summary };
+    if (task.date) task.time ? (data.due_datetime = `${task.date} ${task.time}:00`) : (data.due_date = task.date);
+    if (task.description) data.description = task.description;
+    this.todoModel.add(id, data);
+    this.todos.items.set(id, this.todoModel.items(id));
+    this._pushHome();
+  }
+
   async setTodo(id, uid, done) {
     await wait(80);
     this.todoModel.update(id, { item: uid, status: done ? "completed" : "needs_action" });

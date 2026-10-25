@@ -378,6 +378,14 @@ export function createTodos() {
       return lists[id].items.map((i) => ({ ...i }));
     },
     stateOf: (id) => ({ entity_id: id, state: String(lists[id].items.filter((i) => i.status !== "completed").length), attributes: { friendly_name: lists[id].name, supported_features: 127 } }),
+    add(id, data) {
+      const l = lists[id];
+      if (!l) fail("not_found", `Entity not found: ${id}`);
+      if (!data.item) fail("invalid_format", "required key not provided @ data['item']");
+      for (const k of Object.keys(data)) if (!["item", "due_date", "due_datetime", "description"].includes(k)) fail("invalid_format", `extra keys not allowed @ data['${k}']`);
+      const due = data.due_date || (data.due_datetime ? isoLocal(Date.parse(data.due_datetime.replace(" ", "T"))) : undefined);
+      l.items.push({ uid: `todo-${seq++}`, summary: data.item, status: "needs_action", ...(due ? { due } : {}), ...(data.description ? { description: data.description } : {}) });
+    },
     update(id, data) {
       const l = lists[id];
       if (!l) fail("not_found", `Entity not found: ${id}`);

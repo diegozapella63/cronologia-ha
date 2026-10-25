@@ -195,8 +195,8 @@ class Conn {
           if (msg.domain === "ai_task") return ok(fakeAI(msg));
           if (msg.domain === "todo") {
             const ids = [].concat((msg.target && msg.target.entity_id) || []);
-            if (msg.service !== "update_item" || !ids.length) fail("not_found", "Service not found");
-            for (const id of ids) todos.update(id, msg.service_data || {});
+            if (!["update_item", "add_item"].includes(msg.service) || !ids.length) fail("not_found", "Service not found");
+            for (const id of ids) (msg.service === "add_item" ? todos.add : todos.update)(id, msg.service_data || {});
             console.log("todo updated", ids.join(","), JSON.stringify(msg.service_data));
             ok({ context: { id: "ctx" } });
             return ids.forEach(todoChanged);

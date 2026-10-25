@@ -1017,32 +1017,34 @@ export const calStyles = css`
   }
   .model-strip {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 5px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
     margin: 0 0 16px;
   }
   .model {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 6px;
     min-width: 0;
-    padding: 10px 0 8px;
-    border-radius: 15px;
+    min-height: 42px;
+    padding: 6px 6px;
+    border-radius: 13px;
     border: 1.5px solid var(--rv-line-strong);
-    font-size: 11.5px;
+    font-size: 13.5px;
     font-weight: 600;
-    letter-spacing: -0.02em;
     color: var(--rv-text-2);
   }
   .model > span {
-    max-width: 100%;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .model .i {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
+    flex: none;
   }
   .model.on {
     background: var(--rv-accent-soft);
