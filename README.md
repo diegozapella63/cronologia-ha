@@ -34,6 +34,7 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 
 - **Agora**: os **remédios de hoje** com o botão Tomei (o atrasado fica em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os eventos do dia todo, a lista de hoje, a **rotina e a manutenção da casa** e os próximos 7 dias.
 - **Modelos** em Novo: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** e **Manutenção** contada a partir da última vez.
+- **Tarefas do ResolvIA**: as tarefas com prazo das listas do Home Assistant aparecem na tela Agora e no calendário, e o **Concluir** daqui conclui lá.
 - **Recompensas**: placar da casa com pontos por tarefa feita, quem está na frente, o prêmio da semana (ou do mês) e o histórico de quem venceu.
 - **Aviso de remédio no celular** pelo app Home Assistant, com **Tomei** e **Adiar 15 min** no aviso, e de novo se atrasar, também para quem cuida.
 - **Contas do GerencIA**: com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) instalado, as contas e faturas aparecem aqui e o **Paguei** dá baixa lá.

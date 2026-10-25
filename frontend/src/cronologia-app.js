@@ -8,6 +8,7 @@ import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { ModelsMixin } from "./models.js";
 import { RewardsMixin } from "./rewards.js";
+import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import {
   PALETTE,
   colorById,
@@ -91,7 +92,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
+class CronologiaApp extends TasksMixin(RewardsMixin(ModelsMixin(LitElement))) {
   static properties = {
     api: { attribute: false },
     env: { attribute: false },
@@ -345,7 +346,7 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
   _events(start, end) {
     this._store.ensure(start, end);
     const list = this._store.query(start, end);
-    const bills = this._gerenciaEvents(start, end);
+    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end)];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
@@ -509,6 +510,10 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
   _openEvent(e) {
     if (e.gerencia) {
       this._openSheet("bill", { b: { id: e.gerencia.id, c: e.gerencia } });
+      return;
+    }
+    if (e.todo) {
+      this._openSheet("todo", { key: e.todo.key });
       return;
     }
     this._openSheet("event", { ev: e });
@@ -1085,6 +1090,7 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
 
   _colorOfEvent(e) {
     if (e.gerencia) return colorById("ouro");
+    if (e.todo) return colorById(TODO_COLOR);
     const c = this._cal(e.cal);
     return (c && c.color) || this._accent();
   }
@@ -1105,13 +1111,13 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
       time = html`<b>${startsToday ? hm(e.start) : "…"}</b><small>${endsToday ? hm(e.end) : "segue"}</small>`;
     }
     const k = e.kind;
-    const done = k && k.kind !== "manutencao" && this._checkOf(e);
+    const done = e.todo ? e.todo.done : k && k.kind !== "manutencao" && this._checkOf(e);
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
-    const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : "") : ""].filter(Boolean).join(" · ");
+    const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : ""].filter(Boolean).join(" · ");
     return html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${sub}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${sub}</span>` : nothing}</span>
       ${e.rrule ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
     </button>`;
   }
@@ -1122,7 +1128,7 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
     const now = new Date(this._now);
     const today = startOfDay(now);
     // Doses, chores, bills and maintenance have their own panels: the agenda shows appointments.
-    const events = this._events(addDays(today, -1), addDays(today, 9)).filter((e) => !e.kind);
+    const events = this._events(addDays(today, -1), addDays(today, 9)).filter((e) => !e.kind && !e.todo);
     const loading = this._store.loading(addDays(today, -1), addDays(today, 9));
     const lateMeds = this._ix().meds.filter((m) => m.state === "atrasado");
     const todays = eventsOfDay(events, today);
@@ -1182,7 +1188,7 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/agendas")}>Mostrar</button></div>` : nothing}
-      ${this._renderMedsPanel()} ${this._renderBillsPanel()}
+      ${this._renderMedsPanel()} ${this._renderBillsPanel()} ${this._renderTodosPanel()}
       ${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
@@ -1617,7 +1623,7 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
           : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos. Adicione um calendário local em Agendas.</div></div>`}
       </div>
 
-      ${this._renderAlertsPanel()} ${this._renderGerenciaPanel()}
+      ${this._renderAlertsPanel()} ${this._renderGerenciaPanel()} ${this._renderTodosSettings()}
       ${this._renderAiPanel()}
 
       <div class="panel" id="dados">
@@ -1710,6 +1716,10 @@ class CronologiaApp extends RewardsMixin(ModelsMixin(LitElement)) {
     else if (this._sheet === "nocal") body = this._renderNoCalSheet();
     else if (this._sheet === "maint") body = this._renderMaintSheet();
     else if (this._sheet === "who") body = this._renderWhoSheet();
+    else if (this._sheet === "todo") {
+      body = this._renderTodoSheet();
+      tint = colorById(TODO_COLOR);
+    }
     else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "bill") {
       body = this._renderBillSheet();

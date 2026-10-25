@@ -2287,4 +2287,31 @@ export const calStyles = css`
     margin: 0 0 6px;
     line-height: 1.15;
   }
+
+  /* ---------- tarefas com prazo (ResolvIA) ---------- */
+  .panel.todos {
+    padding: 0 0 4px;
+  }
+  .panel.todos.alert {
+    border-color: var(--rv-late);
+  }
+  .chores-head small.late {
+    color: var(--rv-late);
+    font-weight: 600;
+  }
+  .chk.sq {
+    border-radius: 9px;
+  }
+  .chore.todo.late .chore-tx small {
+    color: var(--rv-late);
+  }
+  .chore.todo.late {
+    background: var(--rv-late-soft);
+    margin: 2px 8px;
+    padding: 4px 8px;
+    border-radius: 14px;
+  }
+  .row.switch-row.off .label {
+    color: var(--rv-muted);
+  }
 `;

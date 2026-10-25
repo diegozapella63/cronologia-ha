@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- **Tarefas do ResolvIA**: as tarefas com prazo das listas do Home Assistant (as do ResolvIA) aparecem no card **Tarefas com prazo** da tela Agora (atrasadas, hoje e amanhã) e no calendário, no dia ou no horário do prazo.
+- **Concluir** e **Reabrir** daqui marcam a tarefa no Home Assistant: aparece no ResolvIA na hora e a repetição dele continua valendo.
+- Em **Mais › Tarefas do ResolvIA**, escolha quais listas entram e se aparecem no calendário.
+
 ## 1.2.0
 
 - Nova aba **Recompensas**, no lugar de Agendas (que foi para **Mais › Agendas**): o placar da casa.

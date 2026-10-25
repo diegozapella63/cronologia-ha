@@ -12,7 +12,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { acceptUpgrade } from "../cronologia/rootfs/app/lib/ws.js";
-import { createCalendars } from "../frontend/preview/fake-calendars.js";
+import { createCalendars, createTodos } from "../frontend/preview/fake-calendars.js";
 
 const PORT = Number(process.env.FAKE_HA_PORT || 8123);
 const TOKEN = process.env.FAKE_HA_TOKEN || "dev";
@@ -20,6 +20,7 @@ const MEDIA_DIR = process.env.FAKE_MEDIA_DIR || process.env.MEDIA_DIR || "./.dat
 const WITH_AI = process.env.FAKE_HA_NO_AI !== "1";
 
 const model = createCalendars();
+const todos = createTodos();
 const notifications = [];
 const restStates = new Map();
 const PERSONS = [
@@ -47,6 +48,15 @@ function changed(id) {
     for (const [sid, sub] of c.subs) {
       if (sub.type === "events" && sub.entity_id === id) c.event(sid, { events: model.occurrences(id, sub.from, sub.to) });
       if (sub.type === "state") c.event(sid, { event_type: "state_changed", data: { entity_id: id, new_state: model.stateOf(id) } });
+    }
+  }
+}
+
+function todoChanged(id) {
+  for (const c of conns) {
+    for (const [sid, sub] of c.subs) {
+      if (sub.type === "todo" && sub.entity_id === id) c.event(sid, { items: todos.items(id) });
+      if (sub.type === "state") c.event(sid, { event_type: "state_changed", data: { entity_id: id, new_state: todos.stateOf(id) } });
     }
   }
 }
@@ -117,6 +127,7 @@ class Conn {
             ...model.ids().map(model.stateOf),
             { entity_id: "light.sala", state: "on", attributes: {} },
             ...PERSONS,
+            ...todos.ids().map(todos.stateOf),
             ...(WITH_AI
               ? [
                   { entity_id: "ai_task.google_ai_task", state: "unknown", attributes: { friendly_name: "Google AI Task", supported_features: 3 } },
@@ -138,6 +149,15 @@ class Conn {
         case "subscribe_events":
           this.subs.set(msg.id, !msg.event_type || msg.event_type === "state_changed" ? { type: "state" } : { type: "bus", event_type: msg.event_type });
           return ok();
+        case "todo/item/subscribe": {
+          if (process.env.FAKE_HA_OLD === "1") fail("unknown_command", "Unknown command.");
+          const items = todos.items(msg.entity_id);
+          this.subs.set(msg.id, { type: "todo", entity_id: msg.entity_id });
+          ok();
+          return this.event(msg.id, { items });
+        }
+        case "todo/item/list":
+          return ok({ items: todos.items(msg.entity_id) });
         case "get_services":
           return ok({ notify: Object.fromEntries(NOTIFY.map((n) => [n, { fields: {} }])), light: { turn_on: {} } });
         case "unsubscribe_events":
@@ -173,6 +193,14 @@ class Conn {
         }
         case "call_service":
           if (msg.domain === "ai_task") return ok(fakeAI(msg));
+          if (msg.domain === "todo") {
+            const ids = [].concat((msg.target && msg.target.entity_id) || []);
+            if (msg.service !== "update_item" || !ids.length) fail("not_found", "Service not found");
+            for (const id of ids) todos.update(id, msg.service_data || {});
+            console.log("todo updated", ids.join(","), JSON.stringify(msg.service_data));
+            ok({ context: { id: "ctx" } });
+            return ids.forEach(todoChanged);
+          }
           if (msg.domain === "notify") {
             if (!NOTIFY.includes(msg.service)) fail("not_found", `Service notify.${msg.service} not found`);
             notifications.push({ service: msg.service, ...msg.service_data, at: new Date().toISOString() });

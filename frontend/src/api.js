@@ -302,6 +302,10 @@ export class Api {
     return this.call("cronologia/contas/nova", { conta });
   }
 
+  setTodo(entityId, uid, done) {
+    return this.call("cronologia/todo/set", { entity_id: entityId, uid, done });
+  }
+
   testAlert(target) {
     return this.call("cronologia/notify/test", { target });
   }

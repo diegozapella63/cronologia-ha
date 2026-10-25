@@ -19,8 +19,9 @@ import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { Gerencia } from "./lib/gerencia.js";
+import { Todos } from "./lib/todos.js";
 
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -56,7 +57,8 @@ const pushHome = (index) => {
   for (const w of homeWatchers) w.session.event(w.id, index);
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
-const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, onChange: pushHome });
+const todos = new Todos({ ha, log, onChange: () => home.changed() });
+const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
 const coded = (code, message) => Object.assign(new Error(message), { code });
@@ -72,16 +74,23 @@ function setCalState(entityId, state) {
 async function loadStates() {
   const states = await ha.send({ type: "get_states" });
   const seen = new Set();
+  const seenTodo = new Set();
   for (const st of states) {
+    if (/^todo\.[a-z0-9_]+$/.test(st.entity_id)) {
+      seenTodo.add(st.entity_id);
+      todos.setState(st.entity_id, st);
+    }
     if (!isCal(st.entity_id)) continue;
     seen.add(st.entity_id);
     setCalState(st.entity_id, st);
   }
   for (const id of [...calStates.keys()]) if (!seen.has(id)) setCalState(id, null);
+  for (const id of [...todos.states.keys()]) if (!seenTodo.has(id)) todos.setState(id, null);
 }
 
 ha.subscribe({ type: "subscribe_events", event_type: "state_changed" }, (ev) => {
   const id = ev && ev.data && ev.data.entity_id;
+  if (/^todo\.[a-z0-9_]+$/.test(id || "")) return todos.setState(id, ev.data.new_state);
   if (!isCal(id)) return;
   // A new calendar (or one removed) changes the groups too.
   if (!calStates.has(id) || !ev.data.new_state) registryCache = null;
@@ -298,6 +307,10 @@ class Session {
         home.changed();
         return this.result(id);
 
+      case "cronologia/todo/set":
+        await todos.setDone(msg.entity_id, msg.uid, !!msg.done);
+        return this.result(id);
+
       case "cronologia/notify/test":
         await home.testAlert(msg.target);
         return this.result(id);
@@ -326,7 +339,7 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs)) {
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs)) {
           // a new setup (or a different period length) starts counting from the current period, without closing one
           if ("score" in msg.prefs || "week_start" in msg.prefs) home.resetPeriod();
           home.changed();

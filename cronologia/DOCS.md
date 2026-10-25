@@ -14,11 +14,11 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 ## Telas
 
-- **Agora**: no alto, **Remédios de hoje** e **Contas a pagar** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
+- **Agora**: no alto, **Remédios de hoje**, **Contas a pagar** e **Tarefas com prazo** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
 - **Novo**: cria um evento ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
-- **Mais**: **Agendas** (os calendários agrupados por integração, com nome, cor, **mostrar/ocultar** e atalhos para adicionar calendários), tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, leitura por IA e exportar/importar .ics.
+- **Mais**: **Agendas** (os calendários agrupados por integração, com nome, cor, **mostrar/ocultar** e atalhos para adicionar calendários), tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, **tarefas do ResolvIA**, leitura por IA e exportar/importar .ics.
 
 ## Criar, editar e apagar
 
@@ -101,6 +101,16 @@ Com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) (o app de finan�
 
 Não há nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação, desligue **Mais › Outros apps** no GerencIA. Em **Mais › Contas do GerencIA** aparece se está conectado e dá para tirar as contas do calendário.
 
+## Tarefas do ResolvIA
+
+O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas nas listas do próprio Home Assistant (`todo.*`), e o CronologIA lê essas mesmas listas. As tarefas **com prazo** aparecem:
+
+- no card **Tarefas com prazo** da tela Agora: atrasadas em vermelho, as de hoje e as de amanhã, com o quadradinho de **Concluir** (e **Desfazer**). As de hoje que você concluir ficam com ✓;
+- no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;
+- tocando numa delas: prazo, lista, notas e **Concluir** / **Reabrir**.
+
+Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece concluída no ResolvIA na hora, e a **repetição** do ResolvIA ("volta 3 dias depois de feito") continua funcionando. O prazo, as notas e a repetição se mudam no ResolvIA. Em **Mais › Tarefas do ResolvIA** você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
+
 ## Sensores e automações
 
 O app cria no Home Assistant:
@@ -169,4 +179,4 @@ Sem IA configurada, todo o resto funciona normalmente, inclusive importar arquiv
 
 ## Segurança
 
-Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`) e os celulares (`notify.mobile_app_*`), envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos) e `cronologia_feito`. Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos) e `cronologia_feito`. Ele não lê nem controla nenhuma outra entidade da casa.

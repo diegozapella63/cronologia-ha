@@ -1,5 +1,6 @@
 // In-memory stand-in for the CronologIA server, used by the preview page.
-import { createCalendars } from "./fake-calendars.js";
+import { createCalendars, createTodos } from "./fake-calendars.js";
+import { Todos } from "../../cronologia/rootfs/app/lib/todos.js";
 import { buildIndex, occurrenceKey, parseKind, maintDone } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "../../cronologia/rootfs/app/lib/score.js";
 
@@ -9,11 +10,17 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: { week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true } } };
+    this.prefs = { calendars: {}, app: { todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true } } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
     this.homeSubs = new Set();
+    this.todoModel = createTodos();
+    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {} });
+    for (const id of this.todoModel.ids()) {
+      this.todos.states.set(id, this.todoModel.stateOf(id));
+      this.todos.items.set(id, this.todoModel.items(id));
+    }
     this.checks = {};
     // Morning doses already taken, so the preview shows every state.
     const d0 = new Date();
@@ -115,6 +122,7 @@ export class MockApi {
       tracked: ["calendar.remedios", "calendar.casa"],
       gerencia: clone(this.gerencia),
       score: this._scoreIndex(now),
+      todos: this.todos.index(now, this.prefs.app.todo_hidden || []),
     };
   }
 
@@ -244,6 +252,13 @@ export class MockApi {
     this.gerencia.contas.sort((a, b) => a.vencimento.localeCompare(b.vencimento));
     this._pushHome();
     return { ok: true, id };
+  }
+
+  async setTodo(id, uid, done) {
+    await wait(80);
+    this.todoModel.update(id, { item: uid, status: done ? "completed" : "needs_action" });
+    this.todos.items.set(id, this.todoModel.items(id));
+    this._pushHome();
   }
 
   async testAlert() {

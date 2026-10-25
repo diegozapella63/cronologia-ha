@@ -42,6 +42,12 @@ function cleanApp(raw) {
   if ("default_calendar" in raw) out.default_calendar = CAL_RE.test(raw.default_calendar || "") ? raw.default_calendar : null;
   if ("hide_past" in raw) out.hide_past = raw.hide_past ? true : null;
   if ("gerencia_hidden" in raw) out.gerencia_hidden = raw.gerencia_hidden ? true : null;
+  if ("todo_hidden" in raw) {
+    // to-do lists left out of the agenda (ResolvIA lists)
+    const ids = [...new Set((Array.isArray(raw.todo_hidden) ? raw.todo_hidden : []).filter((id) => /^todo\.[a-z0-9_]+$/.test(id)))].slice(0, 100);
+    out.todo_hidden = ids.length ? ids : null;
+  }
+  if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
   if ("people" in raw) {
     // {"Andressa": {notify: "mobile_app_galaxy_s23"}}: whose phone gets the alerts of each person
     const people = {};

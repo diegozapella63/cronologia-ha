@@ -82,6 +82,7 @@ export const ModelsMixin = (Base) =>
 
     _checkOf(e) {
       if (e.gerencia) return e.gerencia.pago ? { at: null, by: "" } : null;
+      if (e.todo) return e.todo.done ? { at: null, by: "" } : null;
       return this._ix().checks[e.key] || null;
     }
 

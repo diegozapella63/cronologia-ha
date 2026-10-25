@@ -336,3 +336,57 @@ export function createCalendars() {
     },
   };
 }
+
+/** To-do lists like the ResolvIA ones (todo.*), with items that have a due date. */
+export function createTodos() {
+  let seq = 1;
+  const today = () => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  };
+  const day = (n) => ymd(new Date(today().getTime() + n * DAY));
+  const at = (n, h, m = 0) => {
+    const d = today();
+    d.setDate(d.getDate() + n);
+    d.setHours(h, m, 0, 0);
+    return isoLocal(d.getTime());
+  };
+  const it = (summary, extra = {}) => ({ uid: `todo-${seq++}`, summary, status: "needs_action", ...extra });
+  const lists = {
+    "todo.casa": {
+      name: "Casa",
+      items: [it("Passar pano na casa"), it("Pagar o IPVA", { due: day(-2), description: "Parcela única com desconto" }), it("Levar o carro na revisão", { due: at(0, 17, 30) }), it("Trocar a lâmpada da varanda", { due: day(1) }), it("Comprar presente da Ana", { due: day(4) })],
+    },
+    "todo.trabalho": {
+      name: "Trabalho",
+      items: [it("Enviar proposta para o cliente", { due: at(0, 18) }), it("Revisar contrato", { due: day(-1) }), it("Planejar sprint", { due: day(3) }), it("Relatório mensal", { due: day(6), status: "completed" })],
+    },
+    "todo.problem_list": {
+      name: "Problem List",
+      items: Array.from({ length: 10 }, (_, i) => it(`Dispositivo sem resposta ${i + 1}`, { due: day(-3) })),
+    },
+    "todo.shopping_list": {
+      name: "Lista de compras",
+      items: [it("Café"), it("Leite")],
+    },
+  };
+  return {
+    lists,
+    ids: () => Object.keys(lists),
+    items: (id) => {
+      if (!lists[id]) fail("not_found", `Entity not found: ${id}`);
+      return lists[id].items.map((i) => ({ ...i }));
+    },
+    stateOf: (id) => ({ entity_id: id, state: String(lists[id].items.filter((i) => i.status !== "completed").length), attributes: { friendly_name: lists[id].name, supported_features: 127 } }),
+    update(id, data) {
+      const l = lists[id];
+      if (!l) fail("not_found", `Entity not found: ${id}`);
+      const item = l.items.find((i) => i.uid === data.item || i.summary === data.item);
+      if (!item) fail("service_validation_error", `Unable to find to-do list item: ${data.item}`);
+      if (data.status) {
+        if (!["needs_action", "completed"].includes(data.status)) fail("invalid_format", "bad status");
+        item.status = data.status;
+      }
+    },
+  };
+}
