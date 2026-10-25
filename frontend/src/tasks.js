@@ -31,6 +31,9 @@ function dueText(t, now) {
   return `${dayLabel(d, now, { long: false, cap: false })}${time}`;
 }
 
+/** "todo dia", "a cada 2 dias", "toda semana"… as in the ResolvIA (empty when it doesn't repeat). */
+const everyLabel = (days) => (!days ? "" : days === 1 ? "todo dia" : days === 7 ? "toda semana" : days === 14 ? "a cada 2 semanas" : days === 30 ? "todo mês" : `a cada ${days} dias`);
+
 export const TasksMixin = (Base) =>
   class extends Base {
     _todos() {
@@ -83,7 +86,7 @@ export const TasksMixin = (Base) =>
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
-        const sub = t.undated ? t.listName : `${dueText(t, now)} · ${t.listName}`;
+        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
           <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
@@ -133,6 +136,7 @@ export const TasksMixin = (Base) =>
         <div class="ev-facts">
           <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
+          ${t.every ? html`<div class="fact">${icon("repeat")}<span>Volta ${everyLabel(t.every)} depois de concluída</span></div>` : nothing}
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
         </div>

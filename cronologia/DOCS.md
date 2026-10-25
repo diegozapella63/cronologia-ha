@@ -14,7 +14,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 ## Telas
 
-- **Agora**: no alto, **Remédios de hoje**, **Contas a pagar** e **Tarefas com prazo** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias.
+- **Agora**: no alto, **Remédios de hoje** e **Contas a pagar** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, as **Tarefas**, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias. Com todos os remédios do dia tomados, o card deles vai para o fim da tela.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
 - **Novo**: cria um evento, uma **tarefa do ResolvIA** ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
@@ -70,7 +70,7 @@ Os modelos não entram na lista de compromissos da tela Agora, porque têm os ca
 
 ### Remédios de hoje
 
-Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei**. A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora.
+Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei**. A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
 
 ### Manutenção da casa
 
@@ -120,6 +120,8 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 Nas tarefas que valem pontos (com o placar ligado), o card mostra um botão com a inicial de cada pessoa: tocar em **D** conclui a tarefa e dá os pontos para o Diego, sem perguntar. O quadradinho conclui do jeito de sempre (para quem está usando o app, ou pergunta **Quem fez?**).
 
 Com **Mais › Integrações › Tarefas sem prazo na Agora** ligado, o card mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), num grupo **Sem prazo** depois das que têm prazo.
+
+A ordem segue a **frequência** de cada tarefa no ResolvIA (2.9.1 ou mais novo): primeiro as que voltam **todo dia**, depois a cada 2 dias, a cada 3, toda semana… e por último as que não se repetem. Nas que têm prazo, a data vem antes; no mesmo dia, vale a mesma ordem. Cada tarefa mostra a frequência embaixo do nome ("+5 · todo dia · Casa") e na ficha ("Volta todo dia depois de concluída").
 
 Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia e horário, ou sem prazo) e notas. A tarefa entra direto na lista do Home Assistant e aparece no ResolvIA na hora; o app lembra a última lista usada. Listas que não aceitam prazo (as do Alexa, por exemplo) recebem a tarefa sem data.
 

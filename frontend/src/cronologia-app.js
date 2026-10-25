@@ -1072,6 +1072,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     else if (view.name === "more") page = this._renderMore();
     else if (view.name === "rewards") page = this._renderRewards();
     else page = this._renderNow();
+    if (view.name === "calendar" || view.name === "more" || view.name === "rewards") this._medsHold = false;
     return html`
       <div class="root" style=${style}>
         <div class="app">
@@ -1210,10 +1211,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     const nowLine = html`<div class="now-line"><span>${hm(now)}</span></div>`;
     let lineDone = false;
+    // All of today's doses taken: the card goes to the end of the page (it stays put
+    // right after the last Tomei here, until you leave Agora, so it doesn't jump from under the finger).
+    const meds = this._ix().meds || [];
+    const medsLast = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
-      ${this._renderMedsPanel()} ${this._renderBillsPanel()}
+      ${medsLast ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}
       ${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
@@ -1245,6 +1250,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         : !loading
           ? html`<p class="page-sub">Nada marcado nos próximos 7 dias.</p>`
           : nothing}
+      ${medsLast ? this._renderMedsPanel() : nothing}
     </section>`;
   }
 

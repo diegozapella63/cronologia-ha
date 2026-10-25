@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.1
+
+- **Remédios de hoje**: com todos os remédios do dia tomados, o card vai para o fim da tela Agora. Marcando o último ali mesmo, ele só desce quando você sai da Agora (não pula debaixo do dedo). Desmarcar uma dose traz o card de volta para o topo.
+- **Tarefas** na Agora em ordem de frequência: primeiro as que voltam todo dia, depois a cada 2 dias, a cada 3, toda semana… e por último as que não se repetem (nas com prazo, a data vem antes). Cada uma mostra a frequência ("todo dia", "toda semana"), também na ficha. A frequência vem do ResolvIA 2.9.1.
+
 ## 1.10.0
 
 - **Levar para o ResolvIA** (Mais › Integrações › Tarefas do ResolvIA): escolha uma lista e ligue **Manutenções** e/ou **Rotina da casa**. Cada uma vira uma tarefa na lista, com a próxima data (a rotina, de hoje em diante, com o horário), os pontos e uma nota "do CronologIA".

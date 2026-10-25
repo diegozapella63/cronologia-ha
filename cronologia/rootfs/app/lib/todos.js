@@ -11,6 +11,11 @@ export const taskKey = (s) => foldText(s).replace(/\s+/g, " ");
 // TodoListEntityFeature
 export const TODO_F = { CREATE: 1, DELETE: 2, UPDATE: 4, MOVE: 8, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const isTodo = (id) => typeof id === "string" && /^todo\.[a-z0-9_]+$/.test(id);
+/** How often a task comes back in the ResolvIA, in days (null when it doesn't repeat). */
+const everyOf = (app, list, uid) => {
+  const n = Number(app && app.repete && app.repete[list] && app.repete[list][uid]);
+  return Number.isFinite(n) && n > 0 ? Math.min(3650, Math.round(n)) : null;
+};
 const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const coded = (code, message) => Object.assign(new Error(message), { code });
@@ -109,7 +114,13 @@ export class Todos {
       const j = this.readApp();
       const t = Date.parse(j && j.gravado_em);
       if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) {
-        value = { versao: String(j.versao || "").slice(0, 20), semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [], pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {} };
+        value = {
+          versao: String(j.versao || "").slice(0, 20),
+          semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [],
+          pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {},
+          // repete: how often each task comes back in the ResolvIA ({list: {uid: days}}), 2.9.1 or newer
+          repete: j.repete && typeof j.repete === "object" ? j.repete : {},
+        };
       }
     } catch (e) {
       /* not installed, or no share folder */
@@ -147,7 +158,7 @@ export class Todos {
         // Agora › tasks without a due date (or whose dates aren't deadlines), pending only
         for (const i of all) {
           if (!i.uid || i.status === "completed" || (i.due && !info)) continue;
-          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app) });
+          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app), every: everyOf(app, id, i.uid) });
         }
       }
       if (info) continue;
@@ -170,13 +181,22 @@ export class Todos {
           done,
           overdue: !done && (allDay ? at < t0 : at < now),
           points: this.pointsOf(id, i.summary, app),
+          every: everyOf(app, id, i.uid),
           days: Math.round((new Date(new Date(at).getFullYear(), new Date(at).getMonth(), new Date(at).getDate()).getTime() - t0) / DAY),
         });
       }
     }
-    // with a due date first (by date), then the ones without, by list and name
+    // with a due date first (by date), then the ones without. Same date (or no date): the most
+    // frequent first (todo dia, a cada 2 dias… then the ones that don't repeat), then by list and name.
     const order = (t) => (t.undated ? Infinity : dueMs(t.due));
-    items.sort((a, b) => order(a) - order(b) || (a.undated && b.undated ? a.listName.localeCompare(b.listName, "pt-BR") : 0) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
+    const freq = (t) => t.every || Infinity;
+    items.sort(
+      (a, b) =>
+        order(a) - order(b) ||
+        freq(a) - freq(b) ||
+        (a.undated && b.undated ? a.listName.localeCompare(b.listName, "pt-BR") : 0) ||
+        a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }),
+    );
     // keep the card light: at most 60 tasks without a due date
     let n = 0;
     for (let k = 0; k < items.length; ) {

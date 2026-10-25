@@ -140,6 +140,7 @@ export const ModelsMixin = (Base) =>
     // ------------------------------------------------------------ actions
 
     async _check(it, kind) {
+      if (kind === "remedio") this._medsHold = true;
       try {
         await this.api.setCheck(it.key, true, kind);
         this._haptic("success");
