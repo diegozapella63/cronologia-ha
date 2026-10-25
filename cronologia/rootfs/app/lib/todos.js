@@ -122,7 +122,7 @@ export class Todos {
    * Lists and the items with a due date around today: open ones from the last
    * 2 months to the next 2, done ones from 2 days back (to show ✓).
    */
-  index(now = Date.now(), hidden = [], { undated = false } = {}) {
+  index(now = Date.now(), hidden = [], { undated = false, exclude = null } = {}) {
     const today = new Date(now);
     const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const off = new Set(hidden);
@@ -132,7 +132,8 @@ export class Todos {
     const items = [];
     for (const [id, st] of this.states) {
       const name = (st.attributes && st.attributes.friendly_name) || id;
-      const all = this.items.get(id) || [];
+      // the tasks kept by Levar para o ResolvIA are the maintenance and routines of this app: left out
+      const all = (this.items.get(id) || []).filter((i) => !(exclude && exclude.has(`${id}|${i.uid}`)));
       const features = Number((st.attributes && st.attributes.supported_features) || 0);
       // A deadline is only what someone set. A list that doesn't let you set
       // one gets its dates from the integration ("unavailable since…"): those

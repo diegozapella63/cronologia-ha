@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.0
+
+- **Levar para o ResolvIA** (Mais › Integrações › Tarefas do ResolvIA): escolha uma lista e ligue **Manutenções** e/ou **Rotina da casa**. Cada uma vira uma tarefa na lista, com a próxima data (a rotina, de hoje em diante, com o horário), os pontos e uma nota "do CronologIA".
+- Concluir a tarefa no ResolvIA vale como **Feito** aqui: a manutenção ganha a próxima data, a rotina fica marcada e quem concluiu ganha os pontos (com **Foi Andressa** e **Desfazer** vindos do ResolvIA 2.9.0). A tarefa volta logo em seguida com a data seguinte. Concluída sem nome (tela do Home Assistant, Alexa), conta como feita, sem pontos.
+- Excluir a tarefa na lista vale até a próxima data; desligar a chave tira as tarefas, e trocar de lista leva para a nova. Elas não se repetem no card **Tarefas com prazo**.
+- O arquivo `share/cronologia/integracao.json` lista essas tarefas (pontos e tipo) para o ResolvIA.
+
 ## 1.9.1
 
 - Na Agora, o card de **Tarefas** fica logo abaixo do **A seguir** (depois dos eventos do dia todo).

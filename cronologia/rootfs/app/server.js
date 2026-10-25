@@ -20,9 +20,10 @@ import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
+import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.9.1";
+const VERSION = "1.10.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -57,11 +58,15 @@ let registryCache = null;
 const pushHome = (index) => {
   for (const w of homeWatchers) w.session.event(w.id, index);
   publishPresence(); // people or scoreboard may have changed (writes only on a change)
+  mirror.schedule();
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
-const todos = new Todos({ ha, log, onChange: () => home.changed(), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
+const todos = new Todos({ ha, log, onChange: () => (home.changed(), mirror.schedule()), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
 const backups = new Backups({ dir: path.join(SHARE_DIR, "cronologia") });
 const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
+// Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
+const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed() });
+home.mirror = mirror;
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
 const coded = (code, message) => Object.assign(new Error(message), { code });
@@ -386,7 +391,8 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs)) {
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs)) {
+          if ("mirror" in msg.prefs) mirror.schedule(0);
           // a new setup (or a different period length) starts counting from the current period, without closing one
           if ("score" in msg.prefs || "week_start" in msg.prefs) {
             home.resetPeriod();
@@ -683,13 +689,15 @@ let presenceAt = 0;
 let presenceWarned = false;
 function publishPresence() {
   const placar = home.placarInfo();
-  const body = JSON.stringify(placar);
+  const espelho = mirror.published();
+  const body = JSON.stringify({ placar, espelho });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
   try {
     const dir = path.join(SHARE_DIR, "cronologia");
     fs.mkdirSync(dir, { recursive: true });
     const tmp = path.join(dir, ".integracao.json.tmp");
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), placar }, null, 1));
+    // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), placar, espelho }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();
@@ -704,6 +712,7 @@ setInterval(publishPresence, 30 * 1000);
 
 server.listen(PORT, () => log.info(`CronologIA ${VERSION} ouvindo na porta ${PORT}${DEV ? " (modo dev)" : ""}`));
 home.start();
+mirror.start();
 gerencia.start(() => homeWatchers.size > 0);
 ha.start();
 

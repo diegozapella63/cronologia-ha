@@ -233,7 +233,7 @@ export class Home {
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated }) : { lists: [], items: [] }, test: this.lastTest };
+    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;
@@ -416,6 +416,16 @@ export class Home {
   onPoints(data) {
     const d = data || {};
     const key = String(d.chave || "");
+    // a maintenance or routine taken to the ResolvIA list (Levar para o ResolvIA)
+    const esp = /^espelho\|(todo\.[a-z0-9_]+)\|([^|]{1,300})$/.exec(key);
+    if (esp) {
+      if (!this.mirror) return;
+      const acao = String(d.acao || "somar");
+      const who = acao === "desfazer" ? "" : this.participant(String(d.quem || ""));
+      if (acao !== "desfazer" && !who) return this.log.warn(`Feito pelo ResolvIA por quem não está no placar: ${String(d.quem || "").slice(0, 40)}`);
+      this.mirror.onPoints(acao, esp[1], esp[2], who).catch((err) => this.log.warn(`Levar para o ResolvIA: ${err.message}`));
+      return;
+    }
     if (!/^resolvia\|todo\.[a-z0-9_]+\|[^|]{1,300}\|\d{4}-\d{2}-\d{2}$/.test(key)) return this.log.warn(`Pontos com chave inválida: ${key.slice(0, 80)}`);
     const acao = String(d.acao || "somar");
     if (acao === "desfazer") {
@@ -658,6 +668,17 @@ export class Home {
     this.refreshCalendar(cal);
     this.changed();
     return { moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE), key: k.points > 0 && person ? key : null };
+  }
+
+  /** Points of a maintenance done from the ResolvIA when the name came late (Quem fez?). */
+  lateMaintPoints(key, cal, uid, title, who) {
+    const person = this.participant(who);
+    if (!person || !key || this.store.pointsByKey(key)) return;
+    const raw = this.findRaw(cal, uid);
+    const k = raw && parseKind(raw.description);
+    if (!k || !(k.points > 0)) return;
+    this.store.addPoints({ key, who: person, points: k.points, title: title || raw.summary, kind: "manutencao" });
+    this.changed();
   }
 
   async maintUndo(cal, uid) {

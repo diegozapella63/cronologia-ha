@@ -2536,4 +2536,28 @@ export const calStyles = css`
   :host([dark]) .pts-inline {
     color: #f2c14e;
   }
+
+  /* Mais › Integrações › Levar para o ResolvIA */
+  .sub-lead {
+    margin: 4px 0 8px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--rv-muted);
+  }
+  .sub-lead .i {
+    width: 15px;
+    height: 15px;
+    vertical-align: -2px;
+    color: var(--rv-ok);
+  }
+  .sub-lead.with-icon {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 10px;
+  }
+  .sub-lead.with-icon .i {
+    flex: none;
+    margin-top: 2px;
+  }
 `;

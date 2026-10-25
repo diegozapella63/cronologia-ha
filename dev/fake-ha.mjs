@@ -195,8 +195,8 @@ class Conn {
           if (msg.domain === "ai_task") return ok(fakeAI(msg));
           if (msg.domain === "todo") {
             const ids = [].concat((msg.target && msg.target.entity_id) || []);
-            if (!["update_item", "add_item"].includes(msg.service) || !ids.length) fail("not_found", "Service not found");
-            for (const id of ids) (msg.service === "add_item" ? todos.add : todos.update)(id, msg.service_data || {});
+            if (!["update_item", "add_item", "remove_item"].includes(msg.service) || !ids.length) fail("not_found", "Service not found");
+            for (const id of ids) ({ add_item: todos.add, update_item: todos.update, remove_item: todos.remove })[msg.service](id, msg.service_data || {});
             console.log("todo updated", ids.join(","), JSON.stringify(msg.service_data));
             ok({ context: { id: "ctx" } });
             return ids.forEach(todoChanged);
@@ -238,6 +238,16 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   // test helpers (no token)
   if (url.pathname === "/dev/notifications") return sendJson(res, notifications);
+  // Test helpers for the to-do lists: GET /dev/todo?entity_id=todo.x, POST /dev/todo {entity_id, service, data}
+  // (as if the ResolvIA, the Alexa or the Home Assistant screen changed the list)
+  if (url.pathname === "/dev/todo" && req.method === "GET") return sendJson(res, todos.items(url.searchParams.get("entity_id")));
+  if (url.pathname === "/dev/todo" && req.method === "POST") {
+    const b = await readBody(req);
+    ({ add_item: todos.add, update_item: todos.update, remove_item: todos.remove })[b.service](b.entity_id, b.data || {});
+    console.log("todo changed outside", b.entity_id, b.service, JSON.stringify(b.data || {}));
+    todoChanged(b.entity_id);
+    return sendJson(res, { ok: true });
+  }
   if (url.pathname === "/dev/fire" && req.method === "POST") {
     const b = await readBody(req);
     fire(b.event_type, b.data || {});

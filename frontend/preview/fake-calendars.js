@@ -391,10 +391,21 @@ export function createTodos() {
       if (!l) fail("not_found", `Entity not found: ${id}`);
       const item = l.items.find((i) => i.uid === data.item || i.summary === data.item);
       if (!item) fail("service_validation_error", `Unable to find to-do list item: ${data.item}`);
+      for (const k of Object.keys(data)) if (!["item", "rename", "status", "due_date", "due_datetime", "description"].includes(k)) fail("invalid_format", `extra keys not allowed @ data['${k}']`);
       if (data.status) {
         if (!["needs_action", "completed"].includes(data.status)) fail("invalid_format", "bad status");
         item.status = data.status;
       }
+      if (data.rename) item.summary = data.rename;
+      if ("due_date" in data) item.due = data.due_date || undefined;
+      if ("due_datetime" in data) item.due = data.due_datetime ? isoLocal(Date.parse(data.due_datetime.replace(" ", "T"))) : undefined;
+      if ("description" in data) item.description = data.description || undefined;
+    },
+    remove(id, data) {
+      const l = lists[id];
+      if (!l) fail("not_found", `Entity not found: ${id}`);
+      const keys = [].concat(data.item || []);
+      l.items = l.items.filter((i) => !keys.includes(i.uid));
     },
   };
 }

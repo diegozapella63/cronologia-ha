@@ -5,7 +5,7 @@ import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks } from "./util.js";
 
-const TF = { CREATE: 1, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
+const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
 
 const icon = (name, cls = "") =>
@@ -228,6 +228,36 @@ export const TasksMixin = (Base) =>
       }
     }
 
+    /** Mais › Integrações › Levar para o ResolvIA: maintenance and routines as tasks in a list. */
+    _renderMirrorSettings(lists) {
+      const m = this._app("mirror", null) || {};
+      const st = this._ix().mirror || {};
+      const usable = lists.filter((l) => l.features & TF.CREATE && l.features & TF.UPDATE && !l.unavailable);
+      const save = (ch) => this._saveAppPrefs({ mirror: { list: m.list || null, maint: !!m.maint, routine: !!m.routine, ...ch } });
+      const sw = (on, label, hint, key) => html`<div class="row switch-row">
+        <div class="grow"><div class="label">${label}</div><div class="hint">${hint}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${!!on} ?disabled=${!m.list} @change=${(e) => save({ [key]: e.target.checked })} aria-label=${label} /><span class="track"></span></label>
+      </div>`;
+      const active = m.list && (m.maint || m.routine);
+      return html`<div class="sub-overline" id="levar">Levar para o ResolvIA</div>
+        <p class="sub-lead">Cada manutenção e cada rotina da casa vira uma tarefa numa lista do ResolvIA, com a próxima data e os pontos. Concluir lá vale como feito aqui (os pontos vão para quem concluiu) e a tarefa volta com a data seguinte.</p>
+        <label class="field" style="margin:6px 0 4px">
+          <span class="flabel">Lista</span>
+          <select class="select" aria-label="Lista do ResolvIA" @change=${(e) => save({ list: e.target.value || null })}>
+            <option value="" ?selected=${!m.list}>Nenhuma (não levar)</option>
+            ${usable.map((l) => html`<option value=${l.id} ?selected=${m.list === l.id}>${l.name}${l.features & TF.DUE_DATE ? "" : " (sem prazo)"}</option>`)}
+            ${m.list && !usable.some((l) => l.id === m.list) ? html`<option value=${m.list} selected>${m.list} (não encontrada)</option>` : nothing}
+          </select>
+        </label>
+        ${sw(m.maint, "Manutenções", "A próxima data de cada manutenção.", "maint")}
+        ${sw(m.routine, "Rotina da casa", "A próxima vez de cada rotina.", "routine")}
+        ${st.problem
+          ? html`<p class="data-note">${st.problem}</p>`
+          : active
+            ? html`<p class="sub-lead with-icon">${icon("circle-check")}<span>${plural(st.count || 0, "tarefa", "tarefas")} na lista. Elas não se repetem no card de Tarefas daqui.</span></p>`
+            : nothing}`;
+    }
+
     _renderTodosSettings() {
       const { lists, app } = this._todos();
       const hidden = this._app("todo_hidden", null) || [];
@@ -264,6 +294,7 @@ export const TasksMixin = (Base) =>
             <label class="switch"><input type="checkbox" role="switch" .checked=${!l.hidden} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
           </div>`,
         )}
+        ${lists.length ? this._renderMirrorSettings(lists) : nothing}
       </div>`;
     }
   };

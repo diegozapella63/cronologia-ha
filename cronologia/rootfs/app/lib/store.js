@@ -56,6 +56,12 @@ function cleanApp(raw) {
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
   // Agora also lists the pending tasks without a due date
   if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
+  // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
+  if ("mirror" in raw) {
+    const m = raw.mirror && typeof raw.mirror === "object" ? raw.mirror : {};
+    const list = /^todo\.[a-z0-9_]+$/.test(m.list || "") ? m.list : null;
+    out.mirror = list || m.maint || m.routine ? { list, maint: !!m.maint, routine: !!m.routine } : null;
+  }
   if ("people" in raw) {
     // {"Andressa": {notify: "mobile_app_galaxy_s23"}}: whose phone gets the alerts of each person
     const people = {};
@@ -113,7 +119,7 @@ const merge = (target, changes) => {
   return next;
 };
 
-const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null } });
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null } });
 
 /**
  * The saved data, checked field by field. `strict` (imports) also runs the
@@ -142,7 +148,7 @@ function normalize(raw, strict = false) {
     out.calendars = obj(raw.calendars);
     out.app = obj(raw.app);
   }
-  for (const k of ["checks", "sent"]) out[k] = obj(raw[k]);
+  for (const k of ["checks", "sent", "mirror"]) out[k] = obj(raw[k]);
   for (const [k, v] of Object.entries(out.checks)) if (!v || typeof v !== "object" || !Number.isFinite(Date.parse(v.at))) delete out.checks[k];
   out.kind_cals = Array.isArray(raw.kind_cals) ? raw.kind_cals.filter((id) => CAL_RE.test(id)) : [];
   const sc = obj(raw.score);
@@ -183,6 +189,7 @@ export class Store {
   replaceAll(raw, reason) {
     const next = normalize(raw, true);
     next.sent = this.data.sent; // alerts already sent today stay sent
+    next.mirror = this.data.mirror; // the tasks already in the ResolvIA list stay linked
     if (this.timer) this.flush({ version: false });
     this.version(reason, true);
     this.data = next;

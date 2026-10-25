@@ -22,7 +22,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
   - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, resultado no celular, desligar) e a lista de **deméritos**.
-  - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado) e leitura por IA.
+  - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA** e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema, cor do app e início da semana (domingo ou segunda).
 
@@ -87,7 +87,7 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
 - **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". A lista se monta em **Mais › Placar** (**Novo demérito** ou uma das sugestões; toque num deles para mudar os pontos ou apagar). Na aba Recompensas, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. O que já foi descontado sai pelo × nos pontos do período.
-- **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA".
+- **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA". Com **Levar para o ResolvIA** ligado (veja em Tarefas do ResolvIA), as manutenções e rotinas também viram tarefas lá, e concluir no ResolvIA dá os pontos delas.
 - **Para pontuar hoje** (ligue em **Mais › Placar › Marcar pontos em Recompensas**): as tarefas e manutenções com pontos de hoje, para marcar direto da aba, mais **Tarefa com pontos** e **Pontos avulsos**. Desligado, as tarefas são marcadas na Agora e no ResolvIA.
 
 Em **Mais › Placar**: quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, se o resultado vai para o celular, desligar o placar e a lista de deméritos. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
@@ -126,6 +126,18 @@ Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia
 Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece concluída no ResolvIA na hora, e a **repetição** do ResolvIA ("volta 3 dias depois de feito") continua funcionando. O prazo, as notas e a repetição se mudam no ResolvIA. Prazo é só o que alguém definiu: listas que não deixam definir prazo recebem a data da própria integração (a Problem List da Análise dos Dispositivos põe ali desde quando o aparelho está fora do ar), e essas datas não viram tarefa com prazo. Se no ResolvIA você desligar os **Prazos** de uma lista, aqui ela também fica de fora.
 
 Em **Mais › Integrações › Tarefas do ResolvIA** aparece **Conectado ao ResolvIA** com a versão (o ResolvIA 2.5.1 ou mais novo avisa que está instalado pela pasta `share`; sem ele, o app lê as listas do Home Assistant do mesmo jeito), quantas listas e tarefas com prazo há, e você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
+
+### Levar para o ResolvIA
+
+As **manutenções** e as **rotinas da casa** podem aparecer também como tarefas numa lista do ResolvIA. Em **Mais › Integrações › Tarefas do ResolvIA › Levar para o ResolvIA**, escolha a lista (a **Casa**, por exemplo) e ligue **Manutenções**, **Rotina da casa** ou as duas. Cada uma vira **uma** tarefa na lista:
+
+- com a **próxima data**: na manutenção, o próximo vencimento; na rotina, a próxima vez de hoje em diante (com o horário, se a rotina tiver);
+- com os **pontos** que ela vale (o troféu aparece no ResolvIA 2.9.0 ou mais novo);
+- nas notas, "Manutenção do CronologIA" ou "Rotina da casa do CronologIA" (o ResolvIA esconde a marcação técnica `[cr:…]` que vai junto).
+
+**Concluir no ResolvIA vale como Feito aqui**: a manutenção ganha a próxima data, a rotina de hoje fica marcada, e quem concluiu ganha os pontos no placar (o ResolvIA sabe quem é pelo usuário do Home Assistant, ou pergunta **Quem fez?**). Logo depois, a tarefa volta para a lista, pendente, com a data seguinte. **Foi Andressa** passa os pontos; **Desfazer** (ou reabrir a tarefa) desfaz aqui também. Concluída por um caminho sem nome (a tela do Home Assistant ou o Alexa), a tarefa conta como feita, sem pontos.
+
+O nome, a data, as notas e os pontos continuam sendo do CronologIA: mude aqui, no evento, que a tarefa acompanha. No ResolvIA, a tarefa abre só para ver. **Excluir** a tarefa no ResolvIA tira da lista até a próxima data; desligar a chave (ou escolher **Nenhuma**) tira todas, e trocar de lista leva para a nova. Essas tarefas não se repetem no card **Tarefas com prazo** daqui, porque já estão nos cards de manutenção e de rotina. A lista precisa aceitar criar e editar tarefas (uma **Lista de tarefas local** do Home Assistant serve; as do Alexa, não).
 
 ## Sensores e automações
 
@@ -210,4 +222,4 @@ Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Ou
 
 ## Segurança
 
-Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, cria, atualiza e tira as tarefas das manutenções e rotinas na lista escolhida em **Levar para o ResolvIA** (só quando ligado, e só nessa lista), envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.

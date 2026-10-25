@@ -26,7 +26,7 @@ const csv = (rows) => Buffer.from("﻿" + rows.map((r) => r.map(csvCell).join(";
 
 /** What the app keeps (without the alerts already sent). */
 export function appData(store, version) {
-  const { sent, ...rest } = store.data;
+  const { sent, mirror, ...rest } = store.data;
   return { app_name: "CronologIA", app_version: version, exported_at: new Date().toISOString(), ...rest };
 }
 
