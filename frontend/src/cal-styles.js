@@ -2505,4 +2505,35 @@ export const calStyles = css`
     flex: none;
     color: var(--rv-muted);
   }
+
+  /* Agora › Tarefas: quick "who did it" buttons on tasks worth points */
+  .qwho {
+    flex: none;
+    display: flex;
+    gap: 6px;
+  }
+  .qw-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--cs, var(--rv-surface-2));
+    color: var(--ci, var(--rv-text));
+    font-family: var(--rv-display);
+    font-weight: 700;
+    font-size: 17px;
+    transition: transform 0.12s;
+  }
+  .qw-btn:active {
+    transform: scale(0.92);
+  }
+  .pts-inline {
+    font-weight: 700;
+    color: #9a6b00;
+    font-variant-numeric: tabular-nums;
+  }
+  :host([dark]) .pts-inline {
+    color: #f2c14e;
+  }
 `;

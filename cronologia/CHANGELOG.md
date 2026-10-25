@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1
+
+- Na Agora, o card de **Tarefas** fica logo abaixo do **A seguir** (depois dos eventos do dia todo).
+- Tarefas que valem pontos ganham botões rápidos com a inicial de cada pessoa (**A** e **D**): um toque conclui a tarefa e dá os pontos para quem foi tocado, sem perguntar. O quadradinho continua como antes.
+
 ## 1.9.0
 
 - **Mais › Placar › Marcar pontos em Recompensas**: liga o card **Para pontuar hoje** (marcar tarefas, Tarefa com pontos e Pontos avulsos) na aba Recompensas. Começa desligado; as tarefas continuam sendo marcadas na Agora e no ResolvIA.

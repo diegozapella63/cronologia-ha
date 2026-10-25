@@ -12,6 +12,7 @@ const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
 
 export const TODO_COLOR = "laranja";
+const initial = (name) => (name || "?").trim().charAt(0).toUpperCase();
 const dueDate = (t) => (t.allDay ? fromYmd(t.due) : new Date(t.due));
 
 function dueText(t, now) {
@@ -52,8 +53,8 @@ export const TasksMixin = (Base) =>
       return this._tEvCache.list.filter((e) => e.start < end && e.end > start);
     }
 
-    /** Concluir/Reabrir; a task with ResolvIA points goes to whoever did it (asks when unknown). */
-    async _todoDone(t, done) {
+    /** Concluir/Reabrir; a task with ResolvIA points goes to whoever did it (asks when unknown, or `by` from the quick buttons). */
+    async _todoDone(t, done, by = null) {
       const run = async (who) => {
         if (this._sheet === "who") await this._closeSheet();
         try {
@@ -65,7 +66,7 @@ export const TasksMixin = (Base) =>
           this._showToast(`Não consegui: ${err.message}`);
         }
       };
-      if (done && t.points > 0) return this._withWho(t.points, t.summary, run);
+      if (done && t.points > 0) return by ? run(by) : this._withWho(t.points, t.summary, run);
       return run("");
     }
 
@@ -78,11 +79,23 @@ export const TasksMixin = (Base) =>
       const late = items.filter((t) => t.overdue);
       const open = items.filter((t) => !t.done);
       const shown = this._todosAll ? items : items.slice(0, 6);
-      const row = (t) => html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
-        <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-        <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${t.undated ? t.listName : `${dueText(t, now)} · ${t.listName}`}</small></button>
-        ${t.points > 0 && this._scoreOn() ? html`<span class="pts ${t.done ? "got" : ""}">+${t.points}</span>` : nothing}
-      </div>`;
+      // tasks worth points: one quick button per person (up to 3) concludes and gives them the points
+      const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
+      const row = (t) => {
+        const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
+        const sub = t.undated ? t.listName : `${dueText(t, now)} · ${t.listName}`;
+        return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
+          <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
+          <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
+          ${quick
+            ? html`<div class="qwho" role="group" aria-label="Quem fez ${t.summary}">
+                ${people.map((p) => html`<button class="qw-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${p} fez ${t.summary} (+${t.points})" title="${p} fez (+${t.points})" @click=${() => this._todoDone(t, true, p)}>${initial(p)}</button>`)}
+              </div>`
+            : t.points > 0 && this._scoreOn()
+              ? html`<span class="pts ${t.done ? "got" : ""}">+${t.points}</span>`
+              : nothing}
+        </div>`;
+      };
       return html`<div class="panel todos ${late.length ? "alert" : ""}" id="tarefas">
         <div class="chores-head">
           <span class="overline">${items.some((t) => t.undated) ? "Tarefas" : "Tarefas com prazo"}</span>

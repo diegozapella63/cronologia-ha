@@ -1213,7 +1213,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
-      ${this._renderMedsPanel()} ${this._renderBillsPanel()} ${this._renderTodosPanel()}
+      ${this._renderMedsPanel()} ${this._renderBillsPanel()}
       ${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
@@ -1221,6 +1221,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
             ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
           </div>`
         : nothing}
+      ${this._renderTodosPanel()}
       <div class="panel agenda">
         <div class="overline">Hoje · ${dateShort(now, now)}</div>
         ${timed.length

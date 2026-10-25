@@ -117,6 +117,8 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 - no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;
 - tocando numa delas: prazo, lista, notas e **Concluir** / **Reabrir**.
 
+Nas tarefas que valem pontos (com o placar ligado), o card mostra um botão com a inicial de cada pessoa: tocar em **D** conclui a tarefa e dá os pontos para o Diego, sem perguntar. O quadradinho conclui do jeito de sempre (para quem está usando o app, ou pergunta **Quem fez?**).
+
 Com **Mais › Integrações › Tarefas sem prazo na Agora** ligado, o card mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), num grupo **Sem prazo** depois das que têm prazo.
 
 Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia e horário, ou sem prazo) e notas. A tarefa entra direto na lista do Home Assistant e aparece no ResolvIA na hora; o app lembra a última lista usada. Listas que não aceitam prazo (as do Alexa, por exemplo) recebem a tarefa sem data.
