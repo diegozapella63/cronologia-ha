@@ -2360,7 +2360,8 @@ export const calStyles = css`
   .chk.sq {
     border-radius: 9px;
   }
-  .chore.todo.late .chore-tx small {
+  .chore.todo.late .chore-tx small,
+  .chore-tx small.late {
     color: var(--rv-late);
   }
   .chore.todo.late {

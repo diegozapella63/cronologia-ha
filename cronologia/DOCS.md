@@ -50,10 +50,23 @@ Em **Novo**, escolha o modelo no alto e o formulário muda:
 |---|---|---|
 | **Remédio** | remédio, dose, quem toma, horários (1x, 2x, 3x, de 8 em 8 h ou à mão), frequência, por quanto tempo | **Remédios de hoje**, com **Tomei** |
 | **Conta a pagar** | conta, valor, vencimento, se repete todo mês ou todo ano | **Contas a pagar**, com **Paguei** |
-| **Rotina da casa** | tarefa, quem faz, horário (ou qualquer hora), frequência | **Rotina da casa**, com o círculo de feito |
+| **Rotina da casa** | tarefa, quem faz, horário (ou qualquer hora), frequência (ou **depois de feita**) | **Rotina da casa**, com o círculo de feito |
 | **Manutenção** | o que fazer, a cada quanto tempo, quando foi feito pela última vez, quantos dias antes mostrar | **Manutenção da casa**, com o anel do prazo e **Feito** |
 
 Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias da semana** (escolha os dias), **a cada N dias**, todo mês (rotina) ou **só uma vez**. Por quanto tempo: uso contínuo, **por N dias** (antibiótico) ou até uma data. Cada horário vira um evento que se repete no calendário escolhido (de preferência um calendário local, que aceita editar).
+
+### Rotina que volta depois de feita
+
+Na **Rotina da casa**, a frequência **Depois de feita** serve para o que conta a partir da última vez, e não de um dia fixo: "trocar a areia 3 dias depois de trocada", "passar pano 2 dias depois". Escolha em quantos dias volta e a **Primeira vez** (hoje, amanhã ou outra data).
+
+- Na agenda fica **só a próxima vez**: um evento só, e não um por dia para sempre.
+- Na Agora, ela aparece na **Rotina da casa** no dia em que vence. Se não for feita, continua lá nos dias seguintes, no alto e em vermelho ("atrasada há 2 dias").
+- **Feito** (o círculo, os botões de quem fez, a ficha do evento, o Alexa ou NFC com `cronologia_feito`, ou o ResolvIA) leva a próxima vez para **hoje + N dias**, guarda o dia em "Feito em" e dá os pontos. Ela fica marcada como feita na lista de hoje ("feito por Diego · volta terça").
+- **Desmarcar** (ou **Desfazer**) volta o evento para onde estava e tira os pontos.
+- Ao editar, dá para mudar os dias e a próxima vez. Uma rotina que se repete por calendário (todo dia, dias da semana…) não vira "Depois de feita" pela edição: crie uma nova.
+- Com **Levar para o ResolvIA** ligado, ela vai para a lista com a próxima data (atrasada também); concluir lá faz o mesmo que o Feito daqui.
+
+No evento fica `Volta: 2 dias depois de feita` e `Feito em: 25/10/2026`.
 
 O modelo fica escrito na descrição do evento, assim:
 

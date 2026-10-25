@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.11.0
+
+- **Rotina da casa › Depois de feita**: para o que volta N dias depois de feito ("trocar a areia 3 dias depois"), com a data da primeira vez.
+  - Na agenda fica só a próxima vez, não um evento por dia.
+  - Aparece na Rotina da casa no dia em que vence e continua lá enquanto não for feita, no alto e em vermelho ("atrasada há 2 dias").
+  - **Feito** leva a próxima vez para hoje + N dias, com os pontos para quem fez e o dia em "Feito em". Desmarcar ou **Desfazer** volta como estava.
+  - Funciona também pelo NFC/Alexa (`cronologia_feito`) e pelo **Levar para o ResolvIA**.
+- Os avisos dizem "Rotina criada", "Manutenção salva" (antes saía "Rotina criado").
+
 ## 1.10.1
 
 - **Remédios de hoje**: com todos os remédios do dia tomados, o card vai para o fim da tela Agora. Marcando o último ali mesmo, ele só desce quando você sai da Agora (não pula debaixo do dedo). Desmarcar uma dose traz o card de volta para o topo.

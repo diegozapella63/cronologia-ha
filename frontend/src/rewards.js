@@ -5,6 +5,7 @@ import { ICONS } from "./icons.js";
 import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
 import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, WEEKDAYS } from "./util.js";
+import { afterSub } from "./models.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
@@ -325,7 +326,7 @@ export const RewardsMixin = (Base) =>
           const by = r.done && r.done.by;
           return html`<div class="chore ${r.done ? "done" : ""}">
             <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${[r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito por ${by || "alguém"}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito por ${by || "alguém"}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
             <span class="pts ${r.done ? "got" : ""}" style=${by ? colorVars(this._pColor(by), this._dark) : ""}>+${r.points}</span>
           </div>`;
         })}

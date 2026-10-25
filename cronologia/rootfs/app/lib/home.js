@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, foldText, buildIndex } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, foldText, buildIndex, buildDescription } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 
@@ -480,10 +480,10 @@ export class Home {
     // Doses and chores: the one of today closest to now that is still open.
     const t0 = startOfDay(new Date()).getTime();
     const open = list
-      .filter((o) => ["remedio", "rotina", "manutencao"].includes(o.k.kind) && o.start < t0 + DAY && o.end > t0 && !this.store.data.checks[o.key])
+      .filter((o) => ["remedio", "rotina", "manutencao"].includes(o.k.kind) && o.start < t0 + DAY && (o.end > t0 || (o.k.after && !o.raw.rrule)) && !this.store.data.checks[o.key])
       .sort((a, b) => mine(a) - mine(b) || Math.abs(a.start - now) - Math.abs(b.start - now))[0];
     if (!open) return this.log.warn(`cronologia_feito: nada aberto hoje com o nome "${data.nome || data.tarefa || data.remedio || data.item}"`);
-    this.check(open.key, true, "Automação", open.k.kind, data.quem || "");
+    Promise.resolve(this.check(open.key, true, "Automação", open.k.kind, data.quem || "")).catch((err) => this.log.warn(`cronologia_feito: ${err.message}`));
   }
 
   // ---------------------------------------------------------------- actions
@@ -493,6 +493,16 @@ export class Home {
    * a chore or maintenance with points gives them to that person.
    */
   check(key, done, by, kind, who = "") {
+    const c = this.store.data.checks[key];
+    if (c && c.moved) {
+      // a routine that already moved to its next date: Desfazer moves it back; a late "Quem fez?" only changes who
+      if (!done) return this.afterUndo(key, c);
+      return this.afterWho(key, who, by);
+    }
+    if (done) {
+      const o = this.findOccurrence(key);
+      if (o && o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterDone(o, key, by, who);
+    }
     const person = this.participant(who);
     this.store.setCheck(key, done ? { by: person || who || by, kind } : null);
     if (done) {
@@ -668,6 +678,62 @@ export class Home {
     this.refreshCalendar(cal);
     this.changed();
     return { moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE), key: k.points > 0 && person ? key : null };
+  }
+
+  /**
+   * A routine that comes back N days after being done ("Volta: 2 dias depois de feita"):
+   * the event moves to today + N (only the next one is ever in the calendar), with today
+   * in its history; the check keeps where it was, for Desfazer.
+   */
+  async afterDone(o, key, by, who = "") {
+    const { cal, raw, k } = o;
+    const today = new Date();
+    // already done today (the moved event marked again from the calendar): nothing to do
+    if (Object.values(this.store.data.checks).some((v) => v && v.moved && v.moved.cal === cal && v.moved.uid === raw.uid && v.moved.day === ymd(today))) return { moved: false };
+    const event = maintDone(raw, { ...k, every: k.after }, today);
+    const feat = this.features(cal);
+    if (!(feat & F.UPDATE)) throw coded("not_supported", "Esse calendário não deixa mudar eventos");
+    await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+    const person = this.participant(who);
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today) } });
+    if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
+    else this.store.removePoints(key);
+    this.log.info(`Rotina feita: ${raw.summary} (${person || who || by}); volta em ${event.start.slice(0, 10)}`);
+    this.refreshCalendar(cal);
+    this.changed();
+    return { moved: true, next: event.start.slice(0, 10) };
+  }
+
+  /** Desfazer of a routine that moved: back to where it was, without today in its history. */
+  async afterUndo(key, c) {
+    const m = c.moved;
+    const raw = this.findRaw(m.cal, m.uid);
+    if (raw) {
+      const k = parseKind(raw.description);
+      const description = k && k.kind === "rotina" ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
+      const event = { summary: raw.summary, start: m.start, end: m.end, description, ...(raw.location ? { location: raw.location } : {}) };
+      await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: m.uid, event: toHAEvent(event) });
+      this.refreshCalendar(m.cal);
+    }
+    this.store.setCheck(key, null);
+    this.store.removePoints(key);
+    this.changed();
+    return { moved: false };
+  }
+
+  /** "Quem fez?" answered after a routine already moved: only who (and the points) change. */
+  afterWho(key, who, by) {
+    const person = this.participant(who);
+    const c = this.store.data.checks[key];
+    if (!c || !person) return null;
+    this.store.setCheck(key, { ...c, by: person });
+    const raw = this.findRaw(c.moved.cal, c.moved.uid);
+    const k = raw && parseKind(raw.description);
+    const e = this.store.pointsByKey(key);
+    if (e) this.store.addPoints({ ...e, who: person });
+    else if (k && k.points > 0) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
+    this.changed();
+    return null;
   }
 
   /** Points of a maintenance done from the ResolvIA when the name came late (Quem fez?). */

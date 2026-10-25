@@ -112,6 +112,11 @@ export class Mirror {
       const best = new Map(); // series -> earliest occurrence not done, from today on
       for (const o of this.home.occurrences()) {
         if (o.k.kind !== "rotina" || !o.raw.uid) continue;
+        // a routine that comes back N days after done is a single event: its date is the next one, even when late
+        if (o.k.after && !o.raw.rrule) {
+          best.set(`rotina|${o.cal}|${o.raw.uid}`, o);
+          continue;
+        }
         if (o.start < t0 || o.start > t0 + AHEAD_DAYS * DAY || checks[o.key]) continue;
         const sid = `rotina|${o.cal}|${o.raw.uid}`;
         const cur = best.get(sid);
@@ -292,7 +297,7 @@ export class Mirror {
     try {
       let pointsKey = null;
       if (r.type === "rotina") {
-        this.home.check(occKey, true, "ResolvIA", "rotina", who || "");
+        await this.home.check(occKey, true, "ResolvIA", "rotina", who || "");
         pointsKey = occKey;
       } else {
         const out = await this.home.maintDone(r.cal, r.evUid, "ResolvIA", who || "");
@@ -328,7 +333,7 @@ export class Mirror {
       const ld = r.lastDone;
       if (ld && Date.now() - ld.at < 10 * 60000 && !ld.who && !ld.failed) {
         // processed before the name arrived (Quem fez? took a while): give the points now
-        if (r.type === "rotina") this.home.check(ld.occKey, true, "ResolvIA", "rotina", who);
+        if (r.type === "rotina") await Promise.resolve(this.home.check(ld.occKey, true, "ResolvIA", "rotina", who)).catch((err) => this.log.warn(`Quem fez (ResolvIA): ${err.message}`));
         else this.home.lateMaintPoints(ld.pointsKey, r.cal, r.evUid, r.written && r.written.summary, who);
         ld.who = who;
         this.store.save();
@@ -346,7 +351,7 @@ export class Mirror {
       const ld = r.lastDone;
       if (!ld || ld.failed || Date.now() - ld.at > 30 * 60000) return;
       try {
-        if (r.type === "rotina") this.home.check(ld.occKey, false, "ResolvIA", "rotina", "");
+        if (r.type === "rotina") await this.home.check(ld.occKey, false, "ResolvIA", "rotina", "");
         else await this.home.maintUndo(r.cal, r.evUid);
       } catch (err) {
         this.log.warn(`Desfazer pelo ResolvIA: ${err.message}`);

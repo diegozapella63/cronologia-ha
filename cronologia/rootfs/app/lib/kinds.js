@@ -13,7 +13,7 @@
 export const KINDS = {
   remedio: { tag: "#remédio", label: "Remédio", fields: { dose: "Dose", who: "Quem toma", alert: "Aviso no celular" } },
   conta: { tag: "#conta", label: "Conta a pagar", fields: { value: "Valor" } },
-  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos" } },
+  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", after: "Volta", history: "Feito em" } },
   manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos" } },
 };
 
@@ -124,6 +124,9 @@ export function parseKind(description) {
   } else if (kind === "rotina") {
     out.who = raw.who || "";
     out.points = parsePoints(raw.points);
+    // "Volta: 2 dias depois de feita": one event, moved to today + 2 days when done (only the next one in the calendar)
+    out.after = raw.after ? parseEvery(raw.after) : null;
+    if (out.after) out.history = parseHistory(raw.history);
   } else {
     out.who = raw.who || "";
     out.every = parseEvery(raw.every) || { n: 6, unit: "meses" };
@@ -151,6 +154,10 @@ export function buildDescription(k) {
   } else if (k.kind === "rotina") {
     add(L.who, k.who);
     if (k.points > 0) add(L.points, k.points);
+    if (k.after && k.after.n > 0) {
+      add(L.after, `${everyLabel(k.after)} depois de feita`);
+      add(L.history, historyText((k.history || []).slice(0, 8)));
+    }
   } else {
     add(L.who, k.who);
     add(L.every, everyLabel(k.every));
@@ -226,6 +233,9 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
   const out = { at: new Date(now).toISOString(), late: late || 30, meds: [], routines: [], bills: [], maint: [], names: [], checks: {} };
   const names = new Set();
   const seenMaint = new Set();
+  // routines that come back N days after being done: done today = a check that moved the event (by event)
+  const movedToday = new Map();
+  for (const [ck, v] of Object.entries(checks)) if (v && v.moved && Date.parse(v.at) >= t0) movedToday.set(`${v.moved.cal}|${v.moved.uid}`, [ck, v]);
   for (const o of occurrences) {
     const { cal, raw } = o;
     const k = o.k || parseKind(raw.description);
@@ -241,6 +251,16 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const taken = checks[key] || null;
       const state = taken ? "tomado" : now < start ? "depois" : now < start + lateMs ? "agora" : "atrasado";
       out.meds.push({ ...base, kind: "remedio", dose: k.dose, who: k.who, alert: k.alert && alertsOn, time: allDay ? "" : hmOf(start), taken, state, late_min: state === "atrasado" || state === "agora" ? Math.floor((now - start) / 60000) : 0, notify: targetFor(k.who) });
+    } else if (k.kind === "rotina" && k.after && !raw.rrule) {
+      // One event, always the next time: shown from its day on (late ones stay until done), and as done today after "Feito"
+      const id = `${cal}|${raw.uid || raw.summary}`;
+      if (seenMaint.has(`r|${id}`)) continue;
+      seenMaint.add(`r|${id}`);
+      const due = allDay ? raw.start : ymdOf(new Date(start));
+      const doneToday = movedToday.get(id);
+      const common = { kind: "rotina", who: k.who, points: k.points || 0, after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
+      if (doneToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
+      else if (start < t1) out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - dateOf(due).getTime()) / DAY)) });
     } else if (k.kind === "rotina") {
       // today's, plus yesterday's that were not done (they can still be marked)
       const todays = start < t1 && end > t0;
@@ -264,7 +284,8 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
     }
   }
   out.meds.sort((a, b) => msOf(a.start) - msOf(b.start) || a.summary.localeCompare(b.summary, "pt-BR"));
-  out.routines.sort((a, b) => Number(b.yesterday) - Number(a.yesterday) || Number(b.allDay) - Number(a.allDay) || msOf(a.start) - msOf(b.start));
+  const behind = (r) => Number(!!r.yesterday || r.late > 0);
+  out.routines.sort((a, b) => behind(b) - behind(a) || Number(b.allDay) - Number(a.allDay) || msOf(a.start) - msOf(b.start));
   out.bills.sort((a, b) => a.due.localeCompare(b.due));
   out.maint.sort((a, b) => a.days - b.days || a.summary.localeCompare(b.summary, "pt-BR"));
   for (const [k, v] of Object.entries(checks)) if (now - Date.parse(v.at) < 45 * DAY) out.checks[k] = v;

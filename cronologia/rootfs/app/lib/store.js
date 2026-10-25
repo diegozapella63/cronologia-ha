@@ -238,7 +238,13 @@ export class Store {
   /** Doses taken, chores done, bills paid: {key: {at, by, kind}}. */
   setCheck(key, value) {
     if (typeof key !== "string" || !key || key.length > 600) fail("item inválido");
-    if (value) this.data.checks[key] = { at: value.at || new Date().toISOString(), by: String(value.by || "").slice(0, 60), kind: String(value.kind || "").slice(0, 20) };
+    if (value) {
+      const c = { at: value.at || new Date().toISOString(), by: String(value.by || "").slice(0, 60), kind: String(value.kind || "").slice(0, 20) };
+      // a routine that comes back N days after done: where the event was before "Feito" (for Desfazer)
+      const m = value.moved;
+      if (m && typeof m === "object") c.moved = { cal: String(m.cal || "").slice(0, 200), uid: String(m.uid || "").slice(0, 300), start: String(m.start || "").slice(0, 40), end: String(m.end || "").slice(0, 40), day: String(m.day || "").slice(0, 10) };
+      this.data.checks[key] = c;
+    }
     else delete this.data.checks[key];
     this.save();
   }

@@ -57,6 +57,13 @@ function maintLabel(m, now) {
 }
 
 /** rrule -> how the form shows it. */
+/** Second line of a routine that comes back N days after done ("atrasada há 2 dias · volta 2 dias depois"). */
+export function afterSub(r, now) {
+  if (r.done) return `feito por ${r.done.by || "alguém"} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
+  const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || "hoje";
+  return [when, r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
+}
+
 function rruleToForm(rrule, start) {
   const p = Object.fromEntries(String(rrule || "").replace(/^RRULE:/, "").split(";").filter(Boolean).map((x) => x.split("=")));
   const out = { freq: "uma", byday: [start.getDay()], interval: 3, dur: "sempre", until: ymd(addDays(start, 30)), days: 7 };
@@ -332,7 +339,7 @@ export const ModelsMixin = (Base) =>
                 (r) => r.key,
                 (r) => html`<div class="chore ${r.done ? "done" : ""}">
                   <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${[r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
                   ${r.points > 0 && this._scoreOn() ? html`<span class="pts ${r.done ? "got" : ""}">+${r.points}</span>` : nothing}
                 </div>`,
               )}`
@@ -383,6 +390,10 @@ export const ModelsMixin = (Base) =>
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
+        if (k.after && !e.rrule) {
+          facts.push(["repeat", `Volta ${everyLabel(k.after)} depois de feita (na agenda, só a próxima vez)`]);
+          if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
+        }
       } else if (k.kind === "manutencao") {
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
@@ -470,6 +481,7 @@ export const ModelsMixin = (Base) =>
         dest: g.ligado ? "gerencia" : "cal",
         categoria: "",
         every: { n: 6, unit: "meses" },
+        afterN: 2,
         last: ymd(today),
         warn: 7,
         history: [],
@@ -507,6 +519,9 @@ export const ModelsMixin = (Base) =>
           notes: k.notes || "",
           location: ev.location || "",
         };
+        // a routine that comes back N days after done (one event, no repetition rule)
+        if (k.kind === "rotina" && k.after && !ev.rrule) Object.assign(f, { freq: "depois", afterN: Math.max(1, Math.round(k.after.n * UNITS[k.after.unit][0])) });
+        f.wasAfter = f.freq === "depois";
       }
       this._openSheet("form", f);
       if (f.mode === "add") {
@@ -539,7 +554,10 @@ export const ModelsMixin = (Base) =>
       if (!title) throw new Error(f.kind === "remedio" ? "Qual é o remédio?" : "Dê um nome");
       const k = { kind: f.kind, notes: f.notes };
       if (f.kind === "remedio") Object.assign(k, { dose: f.dose, who: f.who, alert: f.alert });
-      else if (f.kind === "rotina") Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)) });
+      else if (f.kind === "rotina") {
+        Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)) });
+        if (f.freq === "depois") Object.assign(k, { after: { n: Math.max(1, Math.min(365, Math.round(Number(f.afterN) || 2))), unit: "dias" }, history: f.mode === "edit" ? f.history || [] : [] });
+      }
       else if (f.kind === "conta") {
         k.value = parseMoney(f.value);
         if (!k.value) throw new Error("Coloque o valor");
@@ -588,7 +606,7 @@ export const ModelsMixin = (Base) =>
       return times.map((t) => {
         const [h, m] = t.split(":").map(Number);
         let d = day;
-        if (f.mode === "add" && f.freq !== "uma" && new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m) < now) d = nextDay(d);
+        if (f.mode === "add" && f.freq !== "uma" && f.freq !== "depois" && new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m) < now) d = nextDay(d);
         const s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
         return { ...base, start: isoLocal(s), end: isoLocal(new Date(s.getTime() + len * 60000)), ...extra };
       });
@@ -629,18 +647,19 @@ export const ModelsMixin = (Base) =>
       }
       this._setForm({ saving: true });
       const label = KIND_UI[f.kind].label;
+      const o = ["rotina", "manutencao", "conta"].includes(f.kind) ? "a" : "o"; // Rotina criada, Remédio criado
       try {
         if (f.mode === "add") {
           for (const e of evs) await this.api.createEvent(f.cal, e);
-          this._done(evs.length > 1 ? `${label} criado: ${evs.length} horários em ${clip(cal.name, 20)}` : `${label} criado em ${clip(cal.name, 24)}`, f.cal, ev.start);
+          this._done(evs.length > 1 ? `${label} criad${o}: ${evs.length} horários em ${clip(cal.name, 20)}` : `${label} criad${o} em ${clip(cal.name, 24)}`, f.cal, ev.start);
         } else if (f.cal !== f.origCal) {
           await this.api.createEvent(f.cal, ev);
           await this.api.deleteEvent(f.origCal, f.uid);
           this._store.refresh(f.origCal);
-          this._done(`${label} movido para ${clip(cal.name, 24)}`, f.cal, ev.start);
+          this._done(`${label} movid${o} para ${clip(cal.name, 24)}`, f.cal, ev.start);
         } else {
           await this.api.updateEvent(f.cal, f.uid, ev);
-          this._done(`${label} salvo`, f.cal, ev.start);
+          this._done(`${label} salv${o}`, f.cal, ev.start);
         }
       } catch (err) {
         if (this._sheet === "form") this._setForm({ saving: false });
@@ -716,12 +735,14 @@ export const ModelsMixin = (Base) =>
         ["alternado", "Dia sim, dia não"],
         ["semana", "Dias da semana"],
         ["intervalo", "A cada…"],
-        ...(f.kind === "rotina" ? [["mensal", "Todo mês"]] : []),
+        ...(f.kind === "rotina" ? [["mensal", "Todo mês"], ["depois", "Depois de feita"]] : []),
         ["uma", "Só uma vez"],
       ];
+      // editing: a routine that comes back after done stays one; a repeating one can't become one (it is a series)
+      const allowed = f.mode !== "edit" || f.kind !== "rotina" ? opts : f.wasAfter ? opts.filter(([k]) => k === "depois") : f.rid || f.freq !== "uma" ? opts.filter(([k]) => k !== "depois") : opts;
       return html`<div class="field">
         <span class="flabel">${label}</span>
-        <div class="chip-row">${opts.map(([k, l]) => html`<button class="pick ${f.freq === k ? "on" : ""}" @click=${() => this._setForm({ freq: k })}>${k !== "uma" ? icon("repeat") : nothing}<span>${l}</span></button>`)}</div>
+        <div class="chip-row">${allowed.map(([k, l]) => html`<button class="pick ${f.freq === k ? "on" : ""}" @click=${() => this._setForm({ freq: k })}>${k !== "uma" ? icon(k === "depois" ? "rotate-ccw" : "repeat") : nothing}<span>${l}</span></button>`)}</div>
         ${f.freq === "semana"
           ? html`<div class="wdp-row" role="group" aria-label="Dias da semana">
               ${[0, 1, 2, 3, 4, 5, 6].map((d) => {
@@ -732,6 +753,10 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${f.freq === "intervalo"
           ? html`<div class="time-row"><span class="tl">A cada</span><input type="number" class="num-input" min="2" max="365" .value=${String(f.interval)} @input=${(e) => this._setForm({ interval: e.target.value })} /><span class="tl">dias</span></div>`
+          : nothing}
+        ${f.freq === "depois"
+          ? html`<div class="time-row"><span class="tl">Volta</span><input type="number" class="num-input" min="1" max="365" aria-label="Dias depois de feita" .value=${String(f.afterN)} @input=${(e) => this._setForm({ afterN: e.target.value })} /><span class="tl">${Number(f.afterN) === 1 ? "dia" : "dias"} depois de feita</span></div>
+              <span class="field-hint">${icon("rotate-ccw")}<span>Conta a partir de quando é feita: o Feito leva a próxima vez para ${Number(f.afterN) === 1 ? "amanhã" : `daqui a ${Math.max(1, Number(f.afterN) || 2)} dias`}. Na agenda fica só a próxima, e na Agora ela aparece no dia e continua lá até ser feita.</span></span>`
           : nothing}
       </div>`;
     }
@@ -844,8 +869,8 @@ export const ModelsMixin = (Base) =>
           </div>
           ${this._pointsField()}
           ${this._freqField("Repete")}
-          ${this._dateField(f.mode === "add" ? "Começa" : "Data", f.date, (v) => this._setForm({ date: v }), "kf-date")}
-          ${this._durField("Até quando")}
+          ${this._dateField(f.freq === "depois" ? (f.mode === "add" ? "Primeira vez" : "Próxima vez") : f.mode === "add" ? "Começa" : "Data", f.date, (v) => this._setForm({ date: v }), "kf-date")}
+          ${f.freq === "depois" ? nothing : this._durField("Até quando")}
           ${this._calField()}
           ${notes}`;
       } else {

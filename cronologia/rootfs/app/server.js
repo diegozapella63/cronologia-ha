@@ -23,7 +23,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.10.1";
+const VERSION = "1.11.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -263,7 +263,7 @@ class Session {
 
       case "cronologia/check/set": {
         if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
-        home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""));
+        await home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""));
         return this.result(id);
       }
 
