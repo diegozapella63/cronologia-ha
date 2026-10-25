@@ -66,6 +66,7 @@ export class Home {
     this.ha.subscribe({ type: "subscribe_events", event_type: "mobile_app_notification_action" }, (ev) => this.onAction(ev && ev.data));
     this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_feito" }, (ev) => this.onFeito(ev && ev.data, ev && ev.context));
     this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_pontos" }, (ev) => this.onPoints(ev && ev.data));
+    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_demerito" }, (ev) => this.onDemerit(ev && ev.data));
     this.ha.on("ready", () => {
       this.loadPeople().catch((err) => this.log.warn(`Pessoas: ${err.message}`));
       for (const id of this.store.data.kind_cals) this.track(id);
@@ -531,8 +532,33 @@ export class Home {
     this.changed();
   }
 
+  /** Recompensas › Deméritos: one of the list, against someone. */
+  demerit(id, who) {
+    const d = (this.store.data.app.demerits || []).find((x) => x.id === id);
+    if (!d) throw coded("not_found", "Esse demérito não existe mais");
+    const person = this.participant(who);
+    if (!person) throw coded("invalid_format", "Escolha quem foi");
+    const key = `demerito|${d.id}|${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    this.store.addPoints({ key, who: person, points: -d.points, title: d.title, kind: "demerito" });
+    this.log.info(`-${d.points} para ${person}: ${d.title}`);
+    this.changed();
+    return { key, who: person, points: -d.points };
+  }
+
+  /** cronologia_demerito {nome: "Toalha molhada na cama", quem: "Diego"} from an automation, Alexa routine or NFC tag. */
+  onDemerit(data) {
+    const name = foldText((data && (data.nome || data.demerito)) || "");
+    const d = name && (this.store.data.app.demerits || []).find((x) => foldText(x.title) === name);
+    if (!d) return this.log.warn(`Demérito não encontrado: ${String((data && data.nome) || "").slice(0, 60)}`);
+    try {
+      this.demerit(d.id, String((data && data.quem) || ""));
+    } catch (err) {
+      this.log.warn(`Demérito "${d.title}": ${err.message}`);
+    }
+  }
+
   removePoints(key) {
-    if (!String(key).startsWith("extra|")) throw coded("invalid_format", "Só os pontos avulsos saem por aqui; desmarque a tarefa para tirar os dela");
+    if (!/^(extra|demerito)\|/.test(String(key))) throw coded("invalid_format", "Só os pontos avulsos e os deméritos saem por aqui; desmarque a tarefa para tirar os dela");
     this.store.removePoints(key);
     this.changed();
   }

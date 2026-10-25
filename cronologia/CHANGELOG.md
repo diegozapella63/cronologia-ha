@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.0
+
+- **Deméritos** em Recompensas: uma lista do que tira pontos ("Toalha molhada na cama −5"). Toque em quem foi para descontar, com **Desfazer**; cada um mostra quantas vezes foi marcado no período. Comece pelas sugestões ou por **Novo demérito**; toque no nome para mudar os pontos ou apagar.
+- O placar aceita ficar negativo e mostra os deméritos de cada um; nos pontos do período eles aparecem em vermelho e saem pelo ×.
+- Evento `cronologia_demerito` (`nome`, `quem`) para marcar de fora do app: rotina da Alexa, etiqueta NFC, automação.
+- Corrigido: no modo escuro, o texto dos botões de pontos das manutenções sumia.
+
 ## 1.6.0
 
 - **Recompensas com as tarefas do ResolvIA**: as tarefas que valem pontos no ResolvIA 2.8.0 entram no mesmo placar. Concluir no ResolvIA dá os pontos para quem fez (evento `cronologia_pontos`), com **Foi Andressa** para trocar e **Desfazer**. Concluir no card **Tarefas com prazo** daqui também dá os pontos (pergunta **Quem fez?** quando não sabe), e as de hoje aparecem em **Para pontuar hoje**.

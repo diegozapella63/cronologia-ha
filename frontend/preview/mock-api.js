@@ -10,7 +10,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: { todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true } } };
+    this.prefs = { calendars: {}, app: { todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
@@ -53,6 +53,7 @@ export class MockApi {
         E(-3, 19, "Andressa", 10, "Tirar o lixo"),
         E(-3, 10, "Andressa", 30, "Faxina do banheiro", "extra"),
         E(-4, 21, "Diego", 10, "Lavar a louça"),
+        { ...E(-1, 8, "Diego", -5, "Toalha molhada na cama", "demerito"), key: "demerito|toalha01|demo1" },
       ].filter((e) => Date.parse(e.at) <= Date.now()),
       history: [],
       rewards: {},
@@ -166,6 +167,15 @@ export class MockApi {
   async scoreExtra(who, points, title) {
     this.score.entries.push({ key: `extra|${Date.now()}`, at: new Date().toISOString(), who, points, title, kind: "extra" });
     this._pushHome();
+  }
+
+  async scoreDemerit(id, who) {
+    await wait(60);
+    const d = (this.prefs.app.demerits || []).find((x) => x.id === id);
+    const key = `demerito|${id}|${Date.now().toString(36)}`;
+    this.score.entries.push({ key, at: new Date().toISOString(), who, points: -d.points, title: d.title, kind: "demerito" });
+    this._pushHome();
+    return { key, who, points: -d.points };
   }
 
   async scoreRemove(key) {
@@ -339,7 +349,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.6.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.7.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

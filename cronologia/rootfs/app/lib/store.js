@@ -76,6 +76,19 @@ function cleanApp(raw) {
       notify: a.notify !== false,
     };
   }
+  if ("demerits" in raw) {
+    // Recompensas › Deméritos: what costs points ("Toalha molhada na cama", 5)
+    const list = [];
+    for (const d of (Array.isArray(raw.demerits) ? raw.demerits : []).slice(0, 40)) {
+      if (!d || typeof d !== "object") continue;
+      const title = String(d.title || "").trim().slice(0, 80);
+      const points = Math.round(Math.abs(Number(d.points) || 0));
+      if (!title || points < 1 || points > 1000) continue;
+      const id = /^[a-z0-9]{4,16}$/.test(d.id || "") ? d.id : Math.random().toString(36).slice(2, 10);
+      if (!list.some((x) => x.id === id)) list.push({ id, title, points });
+    }
+    out.demerits = list.length ? list : null;
+  }
   if ("alerts" in raw) {
     const a = raw.alerts && typeof raw.alerts === "object" ? raw.alerts : {};
     out.alerts = {

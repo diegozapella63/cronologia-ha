@@ -15,6 +15,16 @@ const NOUN = { semana: "semana", quinzena: "quinzena", mes: "mês" };
 const THIS = { semana: "desta semana", quinzena: "desta quinzena", mes: "deste mês" };
 const NEXT = { semana: "da próxima semana", quinzena: "da próxima quinzena", mes: "do próximo mês" };
 const LAST = { semana: "Semana passada", quinzena: "Quinzena passada", mes: "Mês passado" };
+// Starting points for the list of deméritos (tap to add).
+const DEMERIT_IDEAS = [
+  ["Toalha molhada na cama", 5],
+  ["Louça suja na pia", 5],
+  ["Roupa no chão", 3],
+  ["Luz acesa sem ninguém", 2],
+];
+const DEMERIT_PICKS = [2, 3, 5, 10, 20];
+const IN = { semana: "nesta semana", quinzena: "nesta quinzena", mes: "neste mês" };
+const newId = () => Math.random().toString(36).slice(2, 10).padEnd(8, "0");
 
 export const RewardsMixin = (Base) =>
   class extends Base {
@@ -132,6 +142,7 @@ export const RewardsMixin = (Base) =>
         </div>
         ${this._renderPrize(s)}
         ${this._renderToScore()}
+        ${this._renderDemerits(s)}
         ${this._renderFeed(s)}
         ${this._renderHistory(s)}
         ${this._renderScoreSettings(s)}
@@ -139,13 +150,16 @@ export const RewardsMixin = (Base) =>
     }
 
     _renderDuel(s, total) {
-      const [a, b] = s.participants.map((p) => s.rows.find((r) => r.name === p) || { name: p, points: 0, count: 0 });
-      const share = total ? a.points / total : 0.5;
+      const [a, b] = s.participants.map((p) => s.rows.find((r) => r.name === p) || { name: p, points: 0, count: 0, demerits: 0 });
+      // with deméritos a side can go below zero: measure both from the lowest
+      const lo = Math.min(0, a.points, b.points);
+      const span = a.points - lo + (b.points - lo);
+      const share = span ? (a.points - lo) / span : 0.5;
       const side = (r, right) => html`<div class="duel-side ${right ? "right" : ""} ${s.leader === r.name ? "lead" : ""}" style=${colorVars(this._pColor(r.name), this._dark)}>
         <span class="avatar xl">${initial(r.name)}${s.leader === r.name ? html`<span class="crown">${icon("crown")}</span>` : nothing}</span>
         <b class="duel-name">${r.name}</b>
         <span class="duel-pts">${r.points}</span>
-        <small>${plural(r.count, "tarefa", "tarefas")}</small>
+        <small>${plural(r.count, "tarefa", "tarefas")}${r.demerits ? html` · <span class="neg-text">${plural(r.demerits, "demérito", "deméritos")}</span>` : nothing}</small>
       </div>`;
       return html`<div class="duel">
           ${side(a, false)}
@@ -159,11 +173,12 @@ export const RewardsMixin = (Base) =>
 
     _renderRanking(s) {
       const max = Math.max(1, ...s.rows.map((r) => r.points));
+      const bar = (r) => Math.max(0, (r.points / max) * 100).toFixed(1);
       return html`<div class="ranking">
         ${s.rows.map(
           (r, i) => html`<div class="rank-row ${s.leader === r.name ? "lead" : ""}" style=${colorVars(this._pColor(r.name), this._dark)}>
             <span class="rank-n">${i + 1}</span><span class="avatar">${initial(r.name)}</span>
-            <span class="rank-main"><b>${r.name}</b><span class="rank-bar"><i style="width:${((r.points / max) * 100).toFixed(1)}%"></i></span></span>
+            <span class="rank-main"><b>${r.name}</b><span class="rank-bar"><i style="width:${bar(r)}%"></i></span></span>
             <span class="rank-pts">${r.points}</span>
           </div>`,
         )}
@@ -288,6 +303,135 @@ export const RewardsMixin = (Base) =>
       </div>`;
     }
 
+    // ------------------------------------------------------------ deméritos
+
+    _demerits() {
+      return this._app("demerits", null) || [];
+    }
+
+    async _saveDemerits(list) {
+      await this._saveAppPrefs({ demerits: list.length ? list : null });
+    }
+
+    async _addDemerit(title, points) {
+      await this._saveDemerits([...this._demerits(), { id: newId(), title, points }]);
+      this._haptic("light");
+      this._showToast(`Demérito criado: ${clip(title, 28)} · −${points}`);
+    }
+
+    /** Tapping someone on a demérito: takes the points, with Desfazer. */
+    async _markDemerit(d, who) {
+      try {
+        const r = await this.api.scoreDemerit(d.id, who);
+        this._haptic("warning");
+        this._showToast(`−${d.points} para ${who}: ${clip(d.title, 24)}`, {
+          label: "Desfazer",
+          run: () => this.api.scoreRemove(r.key).catch((err) => this._showToast(err.message)),
+        });
+      } catch (err) {
+        this._showToast(err.message);
+      }
+    }
+
+    _openDemeritForm(d = null) {
+      this._openSheet("demerit", d ? { id: d.id, title: d.title, points: d.points, mode: "edit" } : { id: null, title: "", points: 5, mode: "add" });
+    }
+
+    async _saveDemeritForm() {
+      const f = this._form;
+      const title = (f.title || "").trim();
+      const points = Math.round(Math.abs(Number(f.points) || 0));
+      if (!title || points < 1) return;
+      const list = this._demerits();
+      const next = f.id ? list.map((x) => (x.id === f.id ? { ...x, title, points } : x)) : [...list, { id: newId(), title, points }];
+      await this._closeSheet();
+      await this._saveDemerits(next);
+      this._showToast(f.id ? "Demérito salvo" : `Demérito criado: ${clip(title, 28)} · −${points}`);
+    }
+
+    _deleteDemerit() {
+      const f = this._form;
+      this._openSheet("confirm", {
+        title: "Apagar este demérito?",
+        text: `“${clip(f.title || "", 40)}” sai da lista. Os pontos já descontados continuam no placar (dá para tirar cada um no histórico de pontos).`,
+        label: "Apagar",
+        danger: true,
+        run: async () => {
+          await this._closeSheet();
+          await this._saveDemerits(this._demerits().filter((x) => x.id !== f.id));
+          this._showToast("Demérito apagado");
+        },
+      });
+    }
+
+    /** Recompensas › Deméritos: what costs points, and who did it. */
+    _renderDemerits(s) {
+      const list = this._demerits();
+      // how many times each one was marked this period, by person
+      const marks = (d) => {
+        const by = {};
+        for (const e of s.entries) if (e.kind === "demerito" && String(e.key).startsWith(`demerito|${d.id}|`)) by[e.who] = (by[e.who] || 0) + 1;
+        return Object.entries(by).map(([w, n]) => `${w} ${n}×`).join(" · ");
+      };
+      const total = s.entries.filter((e) => e.kind === "demerito").length;
+      return html`<div class="panel chores demerits" id="demeritos">
+        <div class="chores-head"><span class="overline">Deméritos</span><small>${total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos"}</small></div>
+        ${list.length
+          ? html`<p class="dm-lead">Toque em quem foi para descontar.</p>
+              ${repeat(
+                list,
+                (d) => d.id,
+                (d) => {
+                  const m = marks(d);
+                  return html`<div class="demerit">
+                    <div class="dm-top">
+                      <button class="dm-tx" @click=${() => this._openDemeritForm(d)}><b>${d.title}</b>${m ? html`<small>${m} ${IN[s.period]}</small>` : nothing}</button>
+                      <span class="pts neg">−${d.points}</span>
+                    </div>
+                    <div class="dm-who">
+                      ${s.participants.map(
+                        (p) => html`<button class="dm-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${d.title}: descontar de ${p}" @click=${() => this._markDemerit(d, p)}>
+                          <span class="avatar sm2">${initial(p)}</span><span>${p}</span>
+                        </button>`,
+                      )}
+                    </div>
+                  </div>`;
+                },
+              )}`
+          : html`<p class="empty-line">O que tira pontos de quem fizer, como deixar a toalha molhada na cama. Crie a lista e, quando acontecer, toque em quem foi.</p>
+              <div class="chip-row dm-ideas">${DEMERIT_IDEAS.map(([t, n]) => html`<button class="pick" @click=${() => this._addDemerit(t, n)}>${icon("plus")}<span>${t} −${n}</span></button>`)}</div>`}
+        <div class="score-actions">
+          <button class="btn outline sm" @click=${() => this._openDemeritForm()}>${icon("plus")}Novo demérito</button>
+        </div>
+      </div>`;
+    }
+
+    _renderDemeritSheet() {
+      const f = this._form;
+      const n = Number(f.points) || 0;
+      const custom = f.custom || (n > 0 && !DEMERIT_PICKS.includes(n));
+      return html`${this._sheetHead(f.mode === "edit" ? "Editar demérito" : "Novo demérito")}
+        <label class="field">
+          <span class="flabel">O que foi</span>
+          <input type="text" .value=${f.title || ""} placeholder="Ex.: Toalha molhada na cama" maxlength="80" @input=${(e) => this._setForm({ title: e.target.value })} />
+        </label>
+        <div class="field">
+          <span class="flabel">Quantos pontos tira</span>
+          <div class="chip-row">
+            ${DEMERIT_PICKS.map((v) => html`<button class="pick ${n === v && !custom ? "on" : ""}" @click=${() => this._setForm({ points: v, custom: false })}>−${v}</button>`)}
+            <button class="pick ${custom ? "on" : ""}" @click=${() => this._setForm({ custom: true })}>Outro</button>
+          </div>
+          ${custom
+            ? html`<div class="time-row"><input type="number" inputmode="numeric" min="1" max="1000" class="num" .value=${String(n || "")} @input=${(e) => this._setForm({ points: Math.max(0, Math.min(1000, parseInt(e.target.value, 10) || 0)) })} /><span class="tl">pontos</span></div>`
+            : nothing}
+          <span class="field-hint">${icon("info")}<span>Para marcar de fora do app (uma rotina da Alexa, uma etiqueta NFC), dispare o evento <code>cronologia_demerito</code> com <code>nome</code> e <code>quem</code>.</span></span>
+        </div>
+        <div class="sheet-actions">
+          ${f.mode === "edit" ? html`<button class="btn outline danger" @click=${() => this._deleteDemerit()}>${icon("trash")}Apagar</button>` : html`<button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>`}
+          <button class="btn primary" ?disabled=${!(f.title || "").trim() || !(n > 0)} @click=${() => this._saveDemeritForm()}>${f.mode === "edit" ? "Salvar" : "Criar"}</button>
+        </div>`;
+    }
+
     _renderFeed(s) {
       if (!s.entries.length) return nothing;
       const now = new Date(this._now);
@@ -304,9 +448,9 @@ export const RewardsMixin = (Base) =>
           (e) => e.key,
           (e) => html`<div class="feed-row" style=${colorVars(this._pColor(e.who), this._dark)}>
             <span class="avatar sm2">${initial(e.who)}</span>
-            <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : e.kind === "tarefa" ? " · ResolvIA" : ""}</small></span>
-            <span class="pts got">${e.points > 0 ? "+" : ""}${e.points}</span>
-            ${e.kind === "extra" ? html`<button class="icon-btn mini" aria-label="Tirar ${e.title}" @click=${() => this._removeExtra(e)}>${icon("x")}</button>` : nothing}
+            <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : e.kind === "tarefa" ? " · ResolvIA" : e.kind === "demerito" ? " · demérito" : ""}</small></span>
+            <span class="pts ${e.points < 0 ? "neg" : "got"}">${e.points > 0 ? "+" : e.points < 0 ? "−" : ""}${Math.abs(e.points)}</span>
+            ${e.kind === "extra" || e.kind === "demerito" ? html`<button class="icon-btn mini" aria-label="Tirar ${e.title}" @click=${() => this._removeExtra(e)}>${icon("x")}</button>` : nothing}
           </div>`,
         )}
         ${s.entries.length > 8 ? html`<button class="add-line" @click=${() => ((this._feedAll = !this._feedAll), this.requestUpdate())}>${icon(this._feedAll ? "chevron-up" : "chevron-down")}${this._feedAll ? "Mostrar menos" : `Ver todos (${s.entries.length})`}</button>` : nothing}
@@ -316,7 +460,7 @@ export const RewardsMixin = (Base) =>
     async _removeExtra(e) {
       try {
         await this.api.scoreRemove(e.key);
-        this._showToast(`${clip(e.title, 26)}: pontos tirados`);
+        this._showToast(e.points < 0 ? `${clip(e.title, 26)}: demérito tirado` : `${clip(e.title, 26)}: pontos tirados`);
       } catch (err) {
         this._showToast(err.message);
       }

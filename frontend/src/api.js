@@ -274,6 +274,10 @@ export class Api {
     return this.call("cronologia/score/extra", { who, points, title });
   }
 
+  scoreDemerit(id, who) {
+    return this.call("cronologia/score/demerit", { demerit: id, who });
+  }
+
   scoreRemove(key) {
     return this.call("cronologia/score/remove", { key });
   }

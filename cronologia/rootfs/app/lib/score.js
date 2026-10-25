@@ -74,14 +74,16 @@ export function tally(entries, participants, start, end) {
   const t0 = dateOf(start).getTime();
   const t1 = dateOf(end).getTime();
   const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
-  const rows = participants.map((name) => ({ name, points: 0, count: 0 }));
+  const rows = participants.map((name) => ({ name, points: 0, count: 0, demerits: 0 }));
   for (const e of entries) {
     const at = Date.parse(e.at);
     if (!(at >= t0 && at < t1)) continue;
     const r = rows.find((x) => fold(x.name) === fold(e.who));
     if (!r) continue;
-    r.points += Number(e.points) || 0;
-    r.count += 1;
+    const n = Number(e.points) || 0;
+    r.points += n;
+    if (n < 0) r.demerits += 1;
+    else r.count += 1;
   }
   return rows.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, "pt-BR"));
 }

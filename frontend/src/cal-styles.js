@@ -2379,4 +2379,75 @@ export const calStyles = css`
     text-transform: uppercase;
     color: var(--rv-muted);
   }
+
+  /* ---------- Recompensas: deméritos ---------- */
+  .pts.neg,
+  :host([dark]) .pts.neg {
+    background: var(--rv-late-soft);
+    color: var(--rv-late);
+  }
+  :host([dark]) .btn-pts {
+    color: #4a3200;
+  }
+  .neg-text {
+    color: var(--rv-late);
+  }
+  .dm-lead {
+    margin: 0;
+    padding: 0 16px 4px;
+    font-size: 13px;
+    color: var(--rv-muted);
+  }
+  .demerit {
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--rv-line);
+  }
+  .dm-lead + .demerit {
+    border-top: 0;
+  }
+  .dm-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dm-tx {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+  }
+  .dm-tx b {
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .dm-tx small {
+    font-size: 12.5px;
+    color: var(--rv-muted);
+  }
+  .dm-who {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .dm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 4px 14px 4px 4px;
+    border-radius: 999px;
+    background: var(--cs, var(--rv-surface-2));
+    color: var(--ci, var(--rv-text));
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform 0.12s;
+  }
+  .dm-btn:active {
+    transform: scale(0.96);
+  }
+  .dm-ideas {
+    padding: 2px 16px 8px;
+  }
 `;

@@ -85,6 +85,7 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Prêmio do período**: escreva o prêmio do período atual e, se quiser, já o do próximo. Quem somar mais pontos leva; empate fica registrado como empate.
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
+- **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". Crie em **Novo demérito** (ou toque numa das sugestões) e, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. Toque no nome do demérito para mudar os pontos ou apagar (o que já foi descontado continua no placar e sai pelo × nos pontos do período).
 - **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA".
 - **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
 
@@ -142,6 +143,17 @@ data:
 
 Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Andressa`, os pontos vão para ela (e, se houver dois itens com o mesmo nome, vale o dela). Uma etiqueta NFC para cada pessoa resolve.
 
+Para marcar um **demérito** de fora do app (uma rotina da Alexa, uma etiqueta NFC no quarto), dispare `cronologia_demerito` com o nome do demérito e de quem foi:
+
+```yaml
+action: event.fire
+data:
+  event_type: cronologia_demerito
+  event_data:
+    nome: Toalha molhada na cama
+    quem: Diego
+```
+
 ## Outlook, Google e Alexa
 
 - **Outlook**: pelo **MS365 Calendar** (HACS), que cria calendários normais no Home Assistant e, com a opção de editar, deixa criar e mudar eventos por aqui. Precisa de um registro de app no Microsoft Entra (Azure), gratuito; desde 2024 isso pede uma conta de trabalho/escola ou um diretório do Entra. A outra forma é publicar o calendário no Outlook na web (Configurações › Calendário › Calendários compartilhados) e adicionar o link ICS como **Calendário remoto**: só leitura, atualizado uma vez por dia.
@@ -193,4 +205,4 @@ Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Ou
 
 ## Segurança
 
-Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos) e `cronologia_feito`. Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.
