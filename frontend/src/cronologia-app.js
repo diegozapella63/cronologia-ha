@@ -229,7 +229,19 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     await this._boot(false);
     this.api.subscribeCalendars((ev) => this._onCalendar(ev)).catch(() => {});
     this.api.subscribePrefs((prefs) => this._setPrefs(prefs)).catch(() => {});
-    if (this.api.subscribeHome) this.api.subscribeHome((ix) => (this._home = ix)).catch(() => {});
+    if (this.api.subscribeHome)
+      this.api
+        .subscribeHome((ix) => {
+          // A button tapped on the test alert (Mais › Avisos): say so here too.
+          const t = ix && ix.test;
+          if (t && this._home && t.at !== this._testSeen && Date.now() - t.at < 120000) {
+            this._haptic("success");
+            this._showToast(`${this._targetName(t.target)}: o botão ${t.action === "tomei" ? "Tomei" : "Adiar"} chegou ao app`);
+          }
+          this._testSeen = t && t.at;
+          this._home = ix;
+        })
+        .catch(() => {});
   }
 
   async _boot(again) {

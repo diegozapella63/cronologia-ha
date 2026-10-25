@@ -52,6 +52,7 @@ export class Home {
     this.byHash = new Map(); // alert hash -> occurrence
     this.undo = new Map(); // cal|uid -> previous event (maintenance)
     this.index = null;
+    this.lastTest = null; // {target, action, at}: a button tapped on the test alert
     this.indexJson = "";
     this.sensorsJson = "";
     this.sensorsAt = 0;
@@ -230,7 +231,7 @@ export class Home {
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos ? this.todos.index(now, this.store.data.app.todo_hidden || []) : { lists: [], items: [] } };
+    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos ? this.todos.index(now, this.store.data.app.todo_hidden || []) : { lists: [], items: [] }, test: this.lastTest };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;
@@ -323,17 +324,55 @@ export class Home {
     }
   }
 
+  /**
+   * The test alert looks like a real one, buttons included. Tapping a button
+   * comes back here (mobile_app_notification_action) and the phone gets a
+   * confirmation, so the whole round trip is tested.
+   */
   async testAlert(target) {
     if (!/^mobile_app_[a-z0-9_]+$/.test(target || "")) throw coded("invalid_format", "Celular inválido");
+    const url = ingressUrl();
     await this.ha.send({
       type: "call_service",
       domain: "notify",
       service: target,
-      service_data: { title: "💊 CronologIA", message: "Teste: assim chega o aviso do remédio.", data: { tag: "cronologia-teste", channel: "Remédios", importance: "high", priority: "high", ttl: 0 } },
+      service_data: {
+        title: "💊 Teste do CronologIA",
+        message: "Assim chega o aviso do remédio. Toque em Tomei para conferir se o botão chega ao app.",
+        data: {
+          tag: "cronologia-teste",
+          channel: "Remédios",
+          importance: "high",
+          priority: "high",
+          ttl: 0,
+          actions: [
+            { action: `CRONOLOGIA_TESTE_TOMEI_${target}`, title: "Tomei" },
+            { action: `CRONOLOGIA_TESTE_ADIAR_${target}`, title: `Adiar ${SNOOZE_MIN} min` },
+          ],
+          push: { "interruption-level": "time-sensitive" },
+          ...(url ? { url, clickAction: url } : {}),
+        },
+      },
     });
   }
 
+  /** A button of the test alert was tapped: confirm on that phone and on the app screen. */
+  async onTestAction(kind, target) {
+    this.log.info(`Teste do aviso: botão ${kind === "TOMEI" ? "Tomei" : "Adiar"} tocado em ${target}`);
+    this.lastTest = { target, action: kind === "TOMEI" ? "tomei" : "adiar", at: Date.now() };
+    this.changed();
+    const message =
+      kind === "TOMEI"
+        ? "O botão Tomei chegou ao CronologIA. Os avisos de remédio estão prontos neste celular."
+        : `O botão Adiar chegou ao CronologIA. Num aviso de verdade, ele avisa de novo em ${SNOOZE_MIN} minutos.`;
+    await this.ha
+      .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "✅ Funcionou", message, data: { tag: "cronologia-teste", channel: "Remédios", ttl: 0 } } })
+      .catch((err) => this.log.warn(`Confirmação do teste para ${target} falhou: ${err.message}`));
+  }
+
   onAction(data) {
+    const t = /^CRONOLOGIA_TESTE_(TOMEI|ADIAR)_(mobile_app_[a-z0-9_]+)$/.exec((data && data.action) || "");
+    if (t) return this.onTestAction(t[1], t[2]);
     const m = /^CRONOLOGIA_(TOMEI|ADIAR)_([a-f0-9]{10})$/.exec((data && data.action) || "");
     if (!m) return;
     const occ = this.byHash.get(m[2]);

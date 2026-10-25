@@ -22,7 +22,7 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.5.0";
+const VERSION = "1.5.1";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";

@@ -187,7 +187,7 @@ export const ModelsMixin = (Base) =>
     async _testAlert(target) {
       try {
         await this.api.testAlert(target);
-        this._showToast(`Aviso de teste enviado para ${this._targetName(target)}`);
+        this._showToast(`Aviso de teste enviado para ${this._targetName(target)}. Toque em Tomei nele para conferir o botão.`);
       } catch (err) {
         this._showToast(`Não foi: ${err.message}`);
       }
