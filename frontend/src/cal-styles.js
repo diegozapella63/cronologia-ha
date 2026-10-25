@@ -2065,18 +2065,50 @@ export const calStyles = css`
     font-size: 15px;
     line-height: 1.35;
   }
-  .prize-edit {
-    margin: 10px 0 4px;
+  /* a prize for each person */
+  .prize-people {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
   }
-  .prize-edit input {
-    width: 100%;
-    border: 1.5px solid var(--rv-accent);
-    background: var(--rv-bg);
+  .prize-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 8px 8px;
     border-radius: 14px;
-    padding: 12px 14px;
-    font-size: 16px;
-    outline: 0;
-    color: var(--rv-text);
+    background: var(--cs, var(--rv-surface-2));
+  }
+  .prize-person.lead {
+    box-shadow: inset 0 0 0 1.5px var(--ci, var(--rv-accent));
+  }
+  .pp-tx {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .pp-tx small {
+    font-size: 12.5px;
+    color: var(--rv-text-2);
+  }
+  .pp-tx b {
+    font-family: var(--rv-display);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .pp-tx i {
+    font-style: normal;
+    color: var(--rv-muted);
+  }
+  .pp-lead {
+    color: #e0a100;
+    display: grid;
+  }
+  :host([dark]) .pp-lead {
+    color: #f2c14e;
   }
   .prize-next {
     display: flex;
@@ -2102,15 +2134,6 @@ export const calStyles = css`
     height: 17px;
     flex: none;
     color: var(--rv-muted);
-  }
-  .prize-next .flabel {
-    width: 100%;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .prize-next .prize-edit {
-    width: 100%;
-    margin-top: 0;
   }
 
   .pts {
@@ -2267,6 +2290,13 @@ export const calStyles = css`
   details.score-set {
     padding: 0 16px;
   }
+  .add-line.center {
+    width: 100%;
+    justify-content: center;
+    padding-left: 4px;
+    margin: 4px 0 8px;
+    color: var(--rv-text-2);
+  }
   details.score-set summary {
     list-style: none;
     display: flex;
@@ -2351,12 +2381,31 @@ export const calStyles = css`
     margin: 0 0 14px;
     box-shadow: 0 0 0 6px var(--rv-bg);
   }
-  .more-tabs button {
-    flex: 1 1 auto;
-    min-width: 0;
+  /* six tabs: they keep their width and the bar scrolls sideways when the screen is narrow */
+  .more-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .more-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .seg.compact.more-tabs button {
+    flex: 1 0 auto;
     padding-left: 6px;
     padding-right: 6px;
     white-space: nowrap;
+  }
+  /* phones: smaller so the six fit (below ~400 px the bar scrolls sideways) */
+  @media (max-width: 440px) {
+    .seg.compact.more-tabs {
+      gap: 1px;
+    }
+    .seg.compact.more-tabs button {
+      font-size: 13px;
+      padding-left: 4px;
+      padding-right: 4px;
+    }
   }
   /* Five tabs: the icons only where there is room for them. */
   @media (max-width: 600px) {
@@ -2364,13 +2413,7 @@ export const calStyles = css`
       display: none;
     }
   }
-  @media (max-width: 370px) {
-    .more-tabs button {
-      font-size: 13px;
-      padding-left: 3px;
-      padding-right: 3px;
-    }
-  }
+
   .sub-overline {
     margin: 16px 0 2px;
     font-size: 12px;

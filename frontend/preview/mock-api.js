@@ -135,8 +135,8 @@ export class MockApi {
     const t0 = new Date(`${cur.start}T00:00:00`).getTime();
     return {
       ...st,
-      current: { ...cur, reward: this.score.rewards[cur.key] || "" },
-      next: { ...next, reward: this.score.rewards[next.key] || "" },
+      current: { ...cur, reward: this.score.rewards[cur.key] || "", prizes: (this.score.prizes || {})[cur.key] || {} },
+      next: { ...next, reward: this.score.rewards[next.key] || "", prizes: (this.score.prizes || {})[next.key] || {} },
       rows,
       leader: winnerOf(rows),
       entries: this.score.entries.filter((e) => Date.parse(e.at) >= t0).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)),
@@ -180,6 +180,16 @@ export class MockApi {
 
   async scoreRemove(key) {
     this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    this._pushHome();
+  }
+
+  async scorePrizes(period, shared, per) {
+    await wait(60);
+    if ((shared || "").trim()) this.score.rewards[period] = shared.trim();
+    else delete this.score.rewards[period];
+    this.score.prizes = this.score.prizes || {};
+    if (per && Object.keys(per).length) this.score.prizes[period] = { ...per };
+    else delete this.score.prizes[period];
     this._pushHome();
   }
 
@@ -349,7 +359,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.7.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.8.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

@@ -22,7 +22,7 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.7.0";
+const VERSION = "1.8.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -301,6 +301,11 @@ class Session {
 
       case "cronologia/score/remove":
         home.removePoints(String(msg.key || ""));
+        return this.result(id);
+
+      case "cronologia/score/prizes":
+        store.setPrizes(String(msg.period || ""), msg.shared, msg.per);
+        home.changed();
         return this.result(id);
 
       case "cronologia/score/reward":

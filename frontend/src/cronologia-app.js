@@ -195,6 +195,15 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       }
     }
     if (changed.has("_path") && this._view().name === "more") {
+      // the tab bar scrolls sideways on narrow screens: keep the open tab in sight
+      const bar = this.renderRoot.querySelector(".more-tabs");
+      const on = bar && bar.querySelector("button.on");
+      if (on) {
+        const l = on.offsetLeft;
+        const r = l + on.offsetWidth;
+        if (l < bar.scrollLeft) bar.scrollLeft = l - 8;
+        else if (r > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = r - bar.clientWidth + 8;
+      }
       const tab = this._view().tab;
       if (tab === "integracoes") this._refreshAi(false);
       if (tab === "dados") this._loadBackups();
@@ -390,7 +399,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (p === "/calendario") return { name: "calendar" };
     if (p === "/agendas") return { name: "more", tab: "calendarios" }; // old address of the Agendas page
     if (p === "/recompensas") return { name: "rewards" };
-    const more = /^\/mais(?:\/(avisos|integracoes|dados|aparencia))?$/.exec(p);
+    const more = /^\/mais(?:\/(avisos|placar|integracoes|dados|aparencia))?$/.exec(p);
     if (more) return { name: "more", tab: more[1] || "calendarios" };
     return { name: "now" };
   }
@@ -1604,6 +1613,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const tabs = [
       ["calendarios", "Calendários", "layers"],
       ["avisos", "Avisos", "bell-ring"],
+      ["placar", "Placar", "trophy"],
       ["integracoes", "Integrações", "blocks"],
       ["dados", "Dados", "archive"],
       ["aparencia", "Aparência", "palette"],
@@ -1616,6 +1626,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let body;
     let status = { text: `CronologIA ${this._version}` };
     if (tab === "avisos") body = this._renderAlertsPanel();
+    else if (tab === "placar") body = this._renderScoreSettings();
     else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()}`;
     else if (tab === "dados") body = this._renderDataPanel();
     else if (tab === "aparencia") body = this._renderAppearance();
@@ -1748,6 +1759,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "demerit") body = this._renderDemeritSheet();
+    else if (this._sheet === "prize") body = this._renderPrizeSheet();
     else if (this._sheet === "bill") {
       body = this._renderBillSheet();
       tint = colorById("ouro");

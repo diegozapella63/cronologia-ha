@@ -21,6 +21,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 - **Mais**, em abas no alto (ficam presas no topo ao rolar):
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
+  - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, resultado no celular, desligar).
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado) e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema, cor do app e início da semana (domingo ou segunda).
@@ -82,14 +83,14 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Pontos nas tarefas**: os modelos **Rotina da casa** e **Manutenção** têm o campo **Pontos para quem fizer** (5, 10, 20, 30, 50 ou outro valor). A frequência é a de sempre: todo dia, dia sim, dia não, a cada 3 dias, dias da semana… No evento fica `Pontos: 10`.
 - **Quem fez ganha**: ao marcar **Feito**, os pontos vão para quem está usando o app (o usuário do Home Assistant de cada um vira a pessoa dele). Se você marcar uma tarefa que outra pessoa fez, o aviso de baixo oferece **"Foi Andressa"** para passar os pontos. Num aparelho sem usuário conhecido, o app pergunta **Quem fez?**. A tarefa que ficou de ontem ainda pode ser marcada.
 - **Placar**: os pontos de cada um no período, quem está na frente (com a coroa) e quantos dias faltam para fechar.
-- **Prêmio do período**: escreva o prêmio do período atual e, se quiser, já o do próximo. Quem somar mais pontos leva; empate fica registrado como empate.
+- **Prêmio do período**: toque em **Definir** e escolha **O mesmo para todos** (quem somar mais pontos leva) ou **Um para cada pessoa** ("Se Diego vencer: jantar fora", "Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; empate fica registrado como empate. Dá para deixar já o do próximo período.
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
 - **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". Crie em **Novo demérito** (ou toque numa das sugestões) e, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. Toque no nome do demérito para mudar os pontos ou apagar (o que já foi descontado continua no placar e sai pelo × nos pontos do período).
 - **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA".
 - **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
 
-Em **Ajustes do placar** (no fim da aba): quem participa, de quanto em quanto tempo fecha, se o resultado vai para o celular e desligar o placar. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
+Em **Mais › Placar** (ou pelo atalho **Ajustes do placar** no fim da aba Recompensas): quem participa, de quanto em quanto tempo fecha, se o resultado vai para o celular e desligar o placar. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
 
 ## Avisos de remédio no celular
 

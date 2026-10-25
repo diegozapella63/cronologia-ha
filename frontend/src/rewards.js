@@ -145,7 +145,7 @@ export const RewardsMixin = (Base) =>
         ${this._renderDemerits(s)}
         ${this._renderFeed(s)}
         ${this._renderHistory(s)}
-        ${this._renderScoreSettings(s)}
+        <button class="add-line center" @click=${() => this._go("/mais/placar")}>${icon("sliders-horizontal")}Ajustes do placar</button>
       </section>`;
     }
 
@@ -202,48 +202,103 @@ export const RewardsMixin = (Base) =>
       </div>`;
     }
 
+    /** Prize of the period: one for whoever wins, or one for each person. */
     _renderPrize(s) {
-      const edit = this._rwEdit;
-      const field = (which, period) => html`<div class="prize-edit">
-        <input type="text" id="rw-input" .value=${period.reward || ""} placeholder="Ex.: escolher o restaurante de domingo" maxlength="200" @keydown=${(e) => e.key === "Enter" && this._saveReward(period.key, e.target.value)} />
-        <div class="btn-row"><button class="btn outline sm" @click=${() => ((this._rwEdit = null), this.requestUpdate())}>Cancelar</button><button class="btn primary sm" @click=${() => this._saveReward(period.key, this.renderRoot.querySelector("#rw-input").value)}>Salvar</button></div>
-      </div>`;
-      return html`<div class="panel prize ${s.current.reward ? "set" : ""}">
+      const cur = s.current;
+      const nx = s.next;
+      const per = (p) => Object.keys(p.prizes || {}).length > 0;
+      const prizeOf = (p, n) => (p.prizes && p.prizes[n]) || p.reward || "";
+      const curSet = per(cur) || !!cur.reward;
+      const nextSet = per(nx) || !!nx.reward;
+      return html`<div class="panel prize ${curSet ? "set" : ""}">
         <div class="prize-head">
           <span class="prize-ic">${icon("trophy")}</span>
           <div class="prize-tx">
-            <span class="overline">Prêmio ${THIS[s.period]}</span>
-            ${edit === "current" ? nothing : s.current.reward ? html`<b>${s.current.reward}</b>` : html`<span class="prize-empty">Ainda sem prêmio. Quem fizer mais pontos leva.</span>`}
+            <span class="overline">${per(cur) ? "Prêmios" : "Prêmio"} ${THIS[s.period]}</span>
+            ${per(cur) ? nothing : cur.reward ? html`<b>${cur.reward}</b>` : html`<span class="prize-empty">Ainda sem prêmio. Pode ser um para todos ou um para cada pessoa.</span>`}
           </div>
-          ${edit === "current" ? nothing : html`<button class="text-btn" @click=${() => this._editReward("current")}>${s.current.reward ? "Mudar" : "Definir"}</button>`}
+          <button class="text-btn" @click=${() => this._openPrize("current")}>${curSet ? "Mudar" : "Definir"}</button>
         </div>
-        ${edit === "current" ? field("current", s.current) : nothing}
+        ${per(cur)
+          ? html`<div class="prize-people">
+              ${s.participants.map((n) => {
+                const t = prizeOf(cur, n);
+                return html`<div class="prize-person ${s.leader === n ? "lead" : ""}" style=${colorVars(this._pColor(n), this._dark)}>
+                  <span class="avatar sm2">${initial(n)}</span>
+                  <span class="pp-tx"><small>Se ${n} vencer</small>${t ? html`<b>${t}</b>` : html`<i>ainda livre</i>`}</span>
+                  ${s.leader === n ? html`<span class="pp-lead">${icon("crown")}</span>` : nothing}
+                </div>`;
+              })}
+            </div>`
+          : nothing}
         <div class="prize-next">
-          ${edit === "next"
-            ? html`<span class="flabel">Prêmio ${NEXT[s.period]} (${s.next.label})</span>${field("next", s.next)}`
-            : html`<span>${icon("gift")}<span>${s.next.reward ? html`Prêmio ${NEXT[s.period]}: <b>${s.next.reward}</b>` : `Prêmio ${NEXT[s.period]} ainda livre`}</span></span><button class="text-btn" @click=${() => this._editReward("next")}>${s.next.reward ? "Mudar" : "Definir"}</button>`}
+          <span>${icon("gift")}<span>${per(nx)
+            ? html`${cap(NEXT[s.period].replace(/^d[ao] /, ""))}: <b>${s.participants.map((n) => `${n}: ${prizeOf(nx, n) || "livre"}`).join(" · ")}</b>`
+            : nx.reward
+              ? html`Prêmio ${NEXT[s.period]}: <b>${nx.reward}</b>`
+              : `Prêmio ${NEXT[s.period]} ainda livre`}</span></span>
+          <button class="text-btn" @click=${() => this._openPrize("next")}>${nextSet ? "Mudar" : "Definir"}</button>
         </div>
       </div>`;
     }
 
-    _editReward(which) {
-      this._rwEdit = which;
-      this.requestUpdate();
-      this.updateComplete.then(() => {
-        const el = this.renderRoot.querySelector("#rw-input");
-        if (el) el.focus();
+    _openPrize(which) {
+      const s = this._score();
+      const p = which === "next" ? s.next : s.current;
+      const per = p.prizes || {};
+      const each = Object.keys(per).length > 0;
+      this._openSheet("prize", {
+        which,
+        key: p.key,
+        label: p.label,
+        mode: each ? "cada" : "todos",
+        shared: p.reward || "",
+        per: Object.fromEntries(s.participants.map((n) => [n, per[n] || (each ? "" : p.reward || "")])),
       });
     }
 
-    async _saveReward(period, text) {
+    async _savePrize() {
+      const f = this._form;
+      const shared = f.mode === "todos" ? (f.shared || "").trim() : "";
+      const per = f.mode === "cada" ? Object.fromEntries(Object.entries(f.per || {}).map(([n, t]) => [n, (t || "").trim()]).filter(([, t]) => t)) : {};
+      await this._closeSheet();
       try {
-        await this.api.scoreReward(period, text);
-        this._rwEdit = null;
+        await this.api.scorePrizes(f.key, shared, per);
         this._haptic("success");
-        this._showToast((text || "").trim() ? "Prêmio salvo" : "Prêmio tirado");
+        this._showToast(shared || Object.keys(per).length ? (Object.keys(per).length ? "Prêmios salvos" : "Prêmio salvo") : "Prêmio tirado");
       } catch (err) {
         this._showToast(`Não consegui salvar: ${err.message}`);
       }
+    }
+
+    _renderPrizeSheet() {
+      const f = this._form;
+      const s = this._score();
+      const examples = ["Ex.: jantar fora", "Ex.: massagem", "Ex.: escolher o filme", "Ex.: folga da louça"];
+      return html`${this._sheetHead(`Prêmio ${f.which === "next" ? NEXT[s.period] : THIS[s.period]}`)}
+        <p class="sheet-note top">${cap(f.label || "")}</p>
+        <div class="seg" role="radiogroup" aria-label="Tipo de prêmio">
+          ${[
+            ["todos", "O mesmo para todos"],
+            ["cada", "Um para cada pessoa"],
+          ].map(([k, l]) => html`<button class=${f.mode === k ? "on" : ""} role="radio" aria-checked=${f.mode === k ? "true" : "false"} @click=${() => this._setForm({ mode: k })}>${l}</button>`)}
+        </div>
+        ${f.mode === "todos"
+          ? html`<label class="field" style="margin-top:14px">
+              <span class="flabel">Quem fizer mais pontos ganha</span>
+              <input type="text" .value=${f.shared || ""} placeholder="Ex.: escolher o restaurante de domingo" maxlength="200" @input=${(e) => this._setForm({ shared: e.target.value })} />
+            </label>`
+          : html`${s.participants.map(
+                (n, i) => html`<label class="field" style=${i ? "" : "margin-top:14px"}>
+                  <span class="flabel">Se ${n} vencer</span>
+                  <input type="text" .value=${(f.per && f.per[n]) || ""} placeholder=${examples[i % examples.length]} maxlength="200" @input=${(e) => this._setForm({ per: { ...this._form.per, [n]: e.target.value } })} />
+                </label>`,
+              )}
+              <span class="field-hint">${icon("info")}<span>Quem vencer ganha o seu prêmio. Empate: ninguém leva.</span></span>`}
+        <div class="sheet-actions">
+          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
+          <button class="btn primary" @click=${() => this._savePrize()}>Salvar</button>
+        </div>`;
     }
 
     async _setDelivered(period, delivered) {
@@ -528,11 +583,20 @@ export const RewardsMixin = (Base) =>
       return this._saveAppPrefs({ score: { ...cur, ...changes } });
     }
 
-    _renderScoreSettings(s) {
+    /** Mais › Placar: who plays, when the period closes, the result on the phones. */
+    _renderScoreSettings() {
+      const s = this._score();
+      if (!s || !s.enabled || !s.participants.length) {
+        return html`<div class="panel score-set" id="placar">
+          <div class="overline">Ajustes do placar</div>
+          <div class="ai-state off"><span class="dot"></span><div><b>Placar desligado</b><span>Ligue em Recompensas: escolha quem participa e de quanto em quanto tempo o placar fecha.</span></div></div>
+          <div class="score-actions" style="padding-left:0;padding-right:0;border:0"><button class="btn primary sm" @click=${() => this._go("/recompensas", true)}>${icon("trophy")}Ir para Recompensas</button></div>
+        </div>`;
+      }
       const people = (this._ix().people || []).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
-      return html`<details class="panel score-set" ?open=${this._scoreSetOpen} @toggle=${(e) => (this._scoreSetOpen = e.target.open)}>
-        <summary><span class="overline">Ajustes do placar</span>${icon("chevron-down")}</summary>
+      return html`<div class="panel score-set" id="placar">
+        <div class="overline">Ajustes do placar</div>
         <div class="field"><span class="flabel">Quem participa</span>
           <div class="chip-row">${names.map((n) => {
             const on = s.participants.includes(n);
@@ -541,14 +605,14 @@ export const RewardsMixin = (Base) =>
         </div>
         <div class="field"><span class="flabel">O placar fecha</span>
           <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
-          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
+          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais › Aparência).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quando o período fecha, quem participa recebe quem venceu e o prêmio.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${s.notify !== false} @change=${(e) => this._scorePrefs({ notify: e.target.checked })} aria-label="Resultado no celular" /><span class="track"></span></label>
         </div>
         <button class="text-btn danger" @click=${() => this._scorePrefs({ enabled: false })}>Desligar o placar</button>
-      </details>`;
+      </div>`;
     }
 
     _renderRewardsSetup() {

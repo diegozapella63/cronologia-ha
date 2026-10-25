@@ -578,8 +578,8 @@ export class Home {
       .slice(0, 80);
     return {
       ...st,
-      current: { ...cur, reward: sc.rewards[cur.key] || "" },
-      next: { ...next, reward: sc.rewards[next.key] || "" },
+      current: { ...cur, reward: sc.rewards[cur.key] || "", prizes: sc.prizes[cur.key] || {} },
+      next: { ...next, reward: sc.rewards[next.key] || "", prizes: sc.prizes[next.key] || {} },
       rows,
       leader: winnerOf(rows),
       entries,
@@ -605,13 +605,15 @@ export class Home {
     const prev = sc.current;
     const rows = tally(sc.entries, st.participants, prev.start, prev.end);
     const winner = winnerOf(rows);
-    const reward = sc.rewards[prev.key] || "";
+    // the winner's own prize, else the one for whoever wins
+    const reward = winner ? this.store.prizeOf(prev.key, winner) : sc.rewards[prev.key] || "";
     const totals = Object.fromEntries(rows.map((r) => [r.name, r.points]));
     this.store.closePeriod({ key: prev.key, start: prev.start, end: prev.end, totals, winner, reward, delivered: false }, { key: cur.key, start: cur.start, end: cur.end });
     this.log.info(`Placar fechado (${prev.start}): ${rows.map((r) => `${r.name} ${r.points}`).join(" × ")}${winner ? `, ${winner} venceu` : ", empate"}`);
     if (!st.notify) return;
     const score = rows.map((r) => r.points).join(" × ");
-    const nextReward = sc.rewards[cur.key];
+    const per = sc.prizes[cur.key] || {};
+    const nextReward = Object.keys(per).length ? st.participants.map((n) => `${n}: ${per[n] || sc.rewards[cur.key] || "livre"}`).join(" · ") : sc.rewards[cur.key];
     const message = `${winner ? `${winner} venceu: ${score}.` : rows.some((r) => r.points > 0) ? `Empate: ${score}.` : "Ninguém pontuou."}${winner && reward ? ` Prêmio: ${reward}.` : ""}${nextReward ? ` Prêmio agora: ${nextReward}.` : ""}`;
     const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
     for (const target of targets) {
@@ -697,7 +699,7 @@ export class Home {
     if (sc && sc.enabled) {
       sensors["sensor.cronologia_placar"] = {
         state: sc.leader || (sc.rows.some((r) => r.points > 0) ? "Empate" : "Ninguém"),
-        attributes: { friendly_name: "CronologIA Placar", icon: "mdi:trophy", pontos: Object.fromEntries(sc.rows.map((r) => [r.name, r.points])), premio: sc.current.reward || null, periodo: sc.current.label, termina: sc.current.end },
+        attributes: { friendly_name: "CronologIA Placar", icon: "mdi:trophy", pontos: Object.fromEntries(sc.rows.map((r) => [r.name, r.points])), premio: sc.current.reward || (Object.keys(sc.current.prizes).length ? Object.entries(sc.current.prizes).map(([n, t]) => `${n}: ${t}`).join(" · ") : null), premios: sc.current.prizes, periodo: sc.current.label, termina: sc.current.end },
       };
     }
     const json = JSON.stringify(sensors);

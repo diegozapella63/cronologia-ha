@@ -109,7 +109,7 @@ const merge = (target, changes) => {
   return next;
 };
 
-const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, current: null } });
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null } });
 
 /**
  * The saved data, checked field by field. `strict` (imports) also runs the
@@ -146,6 +146,13 @@ function normalize(raw, strict = false) {
     entries: Array.isArray(sc.entries) ? sc.entries.filter((e) => e && e.key && Number.isFinite(Date.parse(e.at)) && typeof e.who === "string") : [],
     history: Array.isArray(sc.history) ? sc.history.filter((h) => h && YMD_RE.test(h.key || "")) : [],
     rewards: obj(sc.rewards),
+    // a prize for each person: {period key: {"Diego": "Jantar fora", "Andressa": "Massagem"}}
+    prizes: Object.fromEntries(
+      Object.entries(obj(sc.prizes))
+        .filter(([k, v]) => YMD_RE.test(k) && v && typeof v === "object")
+        .map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([n, t]) => typeof t === "string" && t.trim()).map(([n, t]) => [String(n).slice(0, 40), t.trim().slice(0, 200)]))])
+        .filter(([, v]) => Object.keys(v).length),
+    ),
     current: sc.current && YMD_RE.test(sc.current.key || "") ? sc.current : null,
   };
   return out;
@@ -262,6 +269,35 @@ export class Store {
     return this.data.score.entries.find((e) => e.key === key) || null;
   }
 
+  /**
+   * The prizes of a period at once: `shared` for whoever wins, or `per`
+   * {person: prize} (the winner gets theirs; a person without one gets the
+   * shared one). The history follows when the period is already closed.
+   */
+  setPrizes(periodKey, shared, per) {
+    if (!YMD_RE.test(periodKey || "")) fail("Período inválido");
+    const sc = this.data.score;
+    const t = String(shared || "").trim().slice(0, 200);
+    if (t) sc.rewards[periodKey] = t;
+    else delete sc.rewards[periodKey];
+    const map = {};
+    for (const [name, text] of Object.entries(per && typeof per === "object" ? per : {}).slice(0, 10)) {
+      const n = String(name).trim().slice(0, 40);
+      const v = String(text || "").trim().slice(0, 200);
+      if (n && v) map[n] = v;
+    }
+    if (Object.keys(map).length) sc.prizes[periodKey] = map;
+    else delete sc.prizes[periodKey];
+    for (const h of sc.history) if (h.key === periodKey) h.reward = (h.winner && map[h.winner]) || t;
+    this.save();
+  }
+
+  /** What `who` wins if they win the period (their own prize, else the shared one). */
+  prizeOf(periodKey, who) {
+    const sc = this.data.score;
+    return (who && sc.prizes[periodKey] && sc.prizes[periodKey][who]) || sc.rewards[periodKey] || "";
+  }
+
   setReward(periodKey, text) {
     if (!YMD_RE.test(periodKey || "")) fail("Período inválido");
     const t = String(text || "").trim().slice(0, 200);
@@ -297,6 +333,7 @@ export class Store {
     sc.entries = sc.entries.filter((e) => now - Date.parse(e.at) < KEEP_POINTS_DAYS * 86400000);
     const oldest = new Date(now - 2 * 365 * 86400000).toISOString().slice(0, 10);
     for (const k of Object.keys(sc.rewards)) if (k < oldest) delete sc.rewards[k];
+    for (const k of Object.keys(sc.prizes)) if (k < oldest) delete sc.prizes[k];
     for (const [k, v] of Object.entries(this.data.checks)) if (!(now - Date.parse(v && v.at) < KEEP_CHECKS_DAYS * 86400000)) delete this.data.checks[k];
     for (const [k, v] of Object.entries(this.data.sent)) {
       const last = Math.max(...["on", "late", "snoozed", "snooze_until"].map((s) => Date.parse(v && v[s]) || 0));

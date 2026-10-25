@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0
+
+- **Prêmio por pessoa**: em Recompensas, **Definir** abre a escolha entre **O mesmo para todos** e **Um para cada pessoa** ("Se Diego vencer: jantar fora · Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; o aviso no celular e o histórico mostram o prêmio de quem venceu. O sensor do placar ganhou o atributo `premios`.
+- Os **Ajustes do placar** foram para **Mais › Placar**. Na aba Recompensas fica um atalho no fim.
+- As seis abas do Mais cabem na tela do celular (em telas bem estreitas, a barra rola para o lado).
+
 ## 1.7.0
 
 - **Deméritos** em Recompensas: uma lista do que tira pontos ("Toalha molhada na cama −5"). Toque em quem foi para descontar, com **Desfazer**; cada um mostra quantas vezes foi marcado no período. Comece pelas sugestões ou por **Novo demérito**; toque no nome para mudar os pontos ou apagar.
