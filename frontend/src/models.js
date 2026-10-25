@@ -194,7 +194,7 @@ export const ModelsMixin = (Base) =>
     }
 
     _goAlerts() {
-      this._go("/mais").then(() =>
+      this._go("/mais/avisos").then(() =>
         this.updateComplete.then(() => {
           const el = this.renderRoot.querySelector("#avisos");
           if (el) el.scrollIntoView({ block: "start" });

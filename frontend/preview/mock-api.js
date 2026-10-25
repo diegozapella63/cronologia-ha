@@ -16,7 +16,7 @@ export class MockApi {
     this.prefSubs = new Set();
     this.homeSubs = new Set();
     this.todoModel = createTodos();
-    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {} });
+    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {}, readApp: () => ({ app: "ResolvIA", versao: "2.5.1", gravado_em: new Date().toISOString() }) });
     for (const id of this.todoModel.ids()) {
       this.todos.states.set(id, this.todoModel.stateOf(id));
       this.todos.items.set(id, this.todoModel.items(id));
@@ -327,7 +327,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.2.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.5.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

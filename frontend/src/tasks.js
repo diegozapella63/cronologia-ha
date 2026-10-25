@@ -197,24 +197,37 @@ export const TasksMixin = (Base) =>
     }
 
     _renderTodosSettings() {
-      const { lists } = this._todos();
-      if (!lists.length) return nothing;
+      const { lists, app } = this._todos();
       const hidden = this._app("todo_hidden", null) || [];
       const toggle = (id, show) => this._saveAppPrefs({ todo_hidden: show ? hidden.filter((x) => x !== id) : [...hidden, id] });
+      const shown = lists.filter((l) => !l.hidden);
+      const due = shown.reduce((n, l) => n + l.due, 0);
+      const late = shown.reduce((n, l) => n + l.overdue, 0);
+      const counts = `${plural(lists.length, "lista", "listas")} · ${plural(due, "tarefa com prazo", "tarefas com prazo")}${late ? `, ${plural(late, "atrasada", "atrasadas")}` : ""}.`;
+      const state = !lists.length
+        ? { tone: "off", title: "Nenhuma lista de tarefas encontrada", text: "Com o ResolvIA (ou qualquer lista de tarefas do Home Assistant), as tarefas com prazo aparecem aqui sozinhas. Nada a configurar." }
+        : app
+          ? { tone: "ok", title: `Conectado ao ResolvIA ${app.versao || ""}`.trim(), text: `${counts} Concluir aqui conclui lá, e a repetição do ResolvIA continua valendo.` }
+          : { tone: "ok", title: "Lendo as listas de tarefas do Home Assistant", text: `${counts} Concluir aqui conclui lá.` };
       return html`<div class="panel" id="resolvia">
         <div class="overline">Tarefas do ResolvIA</div>
-        <p class="panel-lead">As tarefas com prazo das listas do Home Assistant (as do ResolvIA) aparecem no card <b>Tarefas com prazo</b> e no calendário. Concluir aqui conclui lá, e a repetição do ResolvIA continua valendo.</p>
-        ${lists.map(
+        <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
+        ${lists.length
+          ? html`<div class="row switch-row">
+                <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">As tarefas aparecem no dia do prazo (ou no horário, se tiver), além do card da Agora.</div></div>
+                <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
+              </div>
+              <div class="sub-overline">Listas</div>`
+          : nothing}
+        ${repeat(
+          lists,
+          (l) => l.id,
           (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
             <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
             <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div></div>
             <label class="switch"><input type="checkbox" role="switch" .checked=${!l.hidden} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
           </div>`,
         )}
-        <div class="row switch-row">
-          <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">As tarefas aparecem no dia do prazo (ou no horário, se tiver).</div></div>
-          <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
-        </div>
       </div>`;
     }
   };

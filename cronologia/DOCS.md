@@ -18,7 +18,12 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
 - **Novo**: cria um evento, uma **tarefa do ResolvIA** ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
-- **Mais**: **Agendas** (os calendários agrupados por integração, com nome, cor, **mostrar/ocultar** e atalhos para adicionar calendários), tema, cor do app, início da semana (domingo ou segunda), calendário padrão para eventos novos, **avisos de remédio no celular**, **contas do GerencIA**, **tarefas do ResolvIA**, leitura por IA e exportar/importar .ics.
+- **Mais**, em abas no alto (ficam presas no topo ao rolar):
+  - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
+  - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
+  - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado) e leitura por IA.
+  - **Dados**: exportar, backup, importar e versões anteriores.
+  - **Aparência**: tema, cor do app e início da semana (domingo ou segunda).
 
 ## Criar, editar e apagar
 
@@ -78,7 +83,7 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Quem fez ganha**: ao marcar **Feito**, os pontos vão para quem está usando o app (o usuário do Home Assistant de cada um vira a pessoa dele). Se você marcar uma tarefa que outra pessoa fez, o aviso de baixo oferece **"Foi Andressa"** para passar os pontos. Num aparelho sem usuário conhecido, o app pergunta **Quem fez?**. A tarefa que ficou de ontem ainda pode ser marcada.
 - **Placar**: os pontos de cada um no período, quem está na frente (com a coroa) e quantos dias faltam para fechar.
 - **Prêmio do período**: escreva o prêmio do período atual e, se quiser, já o do próximo. Quem somar mais pontos leva; empate fica registrado como empate.
-- **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
+- **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
 - **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
 
@@ -86,7 +91,7 @@ Em **Ajustes do placar** (no fim da aba): quem participa, de quanto em quanto te
 
 ## Avisos de remédio no celular
 
-Em **Mais › Avisos de remédio no celular**:
+Em **Mais › Avisos**:
 
 - **Na hora** de cada dose, o celular de quem toma recebe um aviso com **Tomei** e **Adiar 15 min**. Tomei no aviso marca a dose no app; Adiar avisa de novo em 15 minutos.
 - **Se não tomar** (15 min, 30 min ou 1 hora depois, você escolhe), avisa de novo, também para **quem cuida**.
@@ -99,7 +104,7 @@ O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home 
 
 Com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) (o app de finanças da mesma família, 1.5.0 ou mais novo) no mesmo Home Assistant, as **contas a pagar, os fixos e as faturas do cartão** aparecem no card **Contas a pagar** e no calendário, no dia do vencimento. **Paguei** dá baixa no GerencIA (o fixo do mês fica pago, a fatura fica toda paga) e **Desfazer** volta. O modelo **Conta a pagar** cria a conta lá (única, todo mês ou todo ano, com categoria), ou só no calendário, se você preferir.
 
-Não há nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação, desligue **Mais › Outros apps** no GerencIA. Em **Mais › Contas do GerencIA** aparece se está conectado e dá para tirar as contas do calendário.
+Não há nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação, desligue **Mais › Outros apps** no GerencIA. Em **Mais › Integrações › Contas do GerencIA** aparece se está conectado e dá para tirar as contas do calendário.
 
 ## Tarefas do ResolvIA
 
@@ -111,7 +116,7 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 
 Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia e horário, ou sem prazo) e notas. A tarefa entra direto na lista do Home Assistant e aparece no ResolvIA na hora; o app lembra a última lista usada. Listas que não aceitam prazo (as do Alexa, por exemplo) recebem a tarefa sem data.
 
-Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece concluída no ResolvIA na hora, e a **repetição** do ResolvIA ("volta 3 dias depois de feito") continua funcionando. O prazo, as notas e a repetição se mudam no ResolvIA. Em **Mais › Tarefas do ResolvIA** você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
+Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece concluída no ResolvIA na hora, e a **repetição** do ResolvIA ("volta 3 dias depois de feito") continua funcionando. O prazo, as notas e a repetição se mudam no ResolvIA. Em **Mais › Integrações › Tarefas do ResolvIA** aparece **Conectado ao ResolvIA** com a versão (o ResolvIA 2.5.1 ou mais novo avisa que está instalado pela pasta `share`; sem ele, o app lê as listas do Home Assistant do mesmo jeito), quantas listas e tarefas com prazo há, e você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
 
 ## Sensores e automações
 
@@ -166,7 +171,7 @@ Para configurar:
 
 1. Em **Configurações > Dispositivos e serviços > Adicionar integração**, escolha a integração e siga os passos.
 2. Na página da integração, adicione uma **tarefa de IA** (AI Task). Para ler fotos, escolha um modelo que entenda imagens.
-3. No CronologIA, abra **Mais > Leitura por IA** e escolha essa IA. "Padrão do Home Assistant" usa a IA preferida definida em **Configurações > Sistema > Geral**. Toque em **Verificar de novo** para conferir se ela está pronta.
+3. No CronologIA, abra **Mais > Integrações > Leitura por IA** e escolha essa IA. "Padrão do Home Assistant" usa a IA preferida definida em **Configurações > Sistema > Geral**. Toque em **Verificar de novo** para conferir se ela está pronta.
 
 Na hora da leitura, o app copia a foto por alguns segundos para `media/cronologia/ia-temp`, chama a IA pelo Home Assistant e apaga a cópia em seguida. A IA recebe a data e o fuso de hoje para entender "amanhã" ou "quinta".
 

@@ -1757,20 +1757,46 @@ export const calStyles = css`
   .switch-row .hint {
     white-space: normal;
   }
+  /* Name on top, the phone below it, the test bell on the right: fits any width. */
   .person-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 8px;
     align-items: center;
-    gap: 10px;
-    padding: 8px 0;
+    padding: 10px 0;
     border-top: 1px solid var(--rv-line);
   }
   .person-row:first-of-type {
     border-top: 0;
   }
+  .person-row > .avatar {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    margin-top: 2px;
+  }
   .person-row .grow {
+    grid-column: 2;
+    grid-row: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+  }
+  .person-row .grow > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .person-row > .select.sm {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: 100%;
+  }
+  .person-row > .icon-btn {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
   .person-row small {
     font-size: 12.5px;
@@ -2314,6 +2340,43 @@ export const calStyles = css`
     border-radius: 14px;
   }
   .row.switch-row.off .label {
+    color: var(--rv-muted);
+  }
+
+  /* ---------- Mais: tabs at the top ---------- */
+  .more-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    margin: 0 0 14px;
+    box-shadow: 0 0 0 6px var(--rv-bg);
+  }
+  .more-tabs button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+    white-space: nowrap;
+  }
+  /* Five tabs: the icons only where there is room for them. */
+  @media (max-width: 600px) {
+    .more-tabs .i {
+      display: none;
+    }
+  }
+  @media (max-width: 370px) {
+    .more-tabs button {
+      font-size: 13px;
+      padding-left: 3px;
+      padding-right: 3px;
+    }
+  }
+  .sub-overline {
+    margin: 16px 0 2px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--rv-muted);
   }
 `;

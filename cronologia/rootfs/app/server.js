@@ -22,7 +22,7 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -58,7 +58,7 @@ const pushHome = (index) => {
   for (const w of homeWatchers) w.session.event(w.id, index);
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
-const todos = new Todos({ ha, log, onChange: () => home.changed() });
+const todos = new Todos({ ha, log, onChange: () => home.changed(), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
 const backups = new Backups({ dir: path.join(SHARE_DIR, "cronologia") });
 const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
 

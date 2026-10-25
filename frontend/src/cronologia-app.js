@@ -195,8 +195,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       }
     }
     if (changed.has("_path") && this._view().name === "more") {
-      this._refreshAi(false);
-      this._loadBackups();
+      const tab = this._view().tab;
+      if (tab === "integracoes") this._refreshAi(false);
+      if (tab === "dados") this._loadBackups();
     }
   }
 
@@ -375,9 +376,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _view() {
     const p = (this._path || "").replace(/\/+$/, "");
     if (p === "/calendario") return { name: "calendar" };
-    if (p === "/agendas") return { name: "calendars" };
+    if (p === "/agendas") return { name: "more", tab: "calendarios" }; // old address of the Agendas page
     if (p === "/recompensas") return { name: "rewards" };
-    if (p === "/mais") return { name: "more" };
+    const more = /^\/mais(?:\/(avisos|integracoes|dados|aparencia))?$/.exec(p);
+    if (more) return { name: "more", tab: more[1] || "calendarios" };
     return { name: "now" };
   }
 
@@ -1015,7 +1017,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   _goAiSettings() {
     this._closeSheet();
-    this._go("/mais", this._view().name !== "now").then(() =>
+    this._go("/mais/integracoes", this._view().name !== "now").then(() =>
       this.updateComplete.then(() => {
         const el = this.renderRoot.querySelector("#leitura-ia");
         if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -1046,7 +1048,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const style = `--rv-accent:${accent.fill};--rv-accent-ink:${dark ? accent.fill : accent.ink};--rv-accent-soft:${hexToRgba(accent.fill, dark ? 0.18 : 0.14)};--rv-accent-faint:${hexToRgba(accent.fill, dark ? 0.08 : 0.07)};--rv-accent-ink-light:${accent.ink};`;
     let page;
     if (view.name === "calendar") page = this._renderCalendar();
-    else if (view.name === "calendars") page = this._renderCalendars();
     else if (view.name === "more") page = this._renderMore();
     else if (view.name === "rewards") page = this._renderRewards();
     else page = this._renderNow();
@@ -1067,8 +1068,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   }
 
   _renderNav(view) {
-    // Agendas lives inside Mais: the Mais tab stays lit there.
-    const on = (name) => view.name === name || (name === "more" && view.name === "calendars");
+    const on = (name) => view.name === name;
     const tab = (name, path, label, ic) => html`<button class="tab ${on(name) ? "on" : ""}" @click=${() => this._goTab(path)} aria-label=${label}>${icon(ic)}<span>${label}</span></button>`;
     return html`<nav>
       <div class="tabs">
@@ -1191,7 +1191,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let lineDone = false;
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
-      ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/agendas")}>Mostrar</button></div>` : nothing}
+      ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
       ${this._renderMedsPanel()} ${this._renderBillsPanel()} ${this._renderTodosPanel()}
       ${hero || nothing}
       ${allDay.length
@@ -1504,7 +1504,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   // ---------- Agendas
 
-  _renderCalendars() {
+  /** Mais › Calendários: every calendar (name, color, show/hide), where new events go, adding calendars. */
+  _renderCalendarsTab() {
     const cals = this._cals();
     const groups = [];
     for (const c of cals) {
@@ -1513,10 +1514,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       else groups.push({ label: c.group, list: [c] });
     }
     const errors = this._store ? this._store.errors() : new Map();
-    const editable = cals.filter((c) => c.canCreate).length;
-    return html`<section class="page">
-      <button class="back-link" @click=${() => ((history.state && history.state.rvDepth) > 0 ? history.back() : this._go("/mais", true))}>${icon("chevron-left")}<span>Mais</span></button>
-      ${this._renderHead("Agendas", { text: cals.length ? `${plural(cals.length, "calendário", "calendários")} · ${editable ? plural(editable, "com edição", "com edição") : "só leitura"}` : "Nenhum calendário ainda" })}
+    const writable = this._writable();
+    const def = this._defaultCal();
+    return html`
       ${groups.map(
         (g) => html`<div class="panel">
           <div class="overline">${g.label}</div>
@@ -1532,8 +1532,20 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           )}
         </div>`,
       )}
+      <div class="panel" id="novos-eventos">
+        <div class="overline">Novos eventos</div>
+        ${writable.length
+          ? html`<label class="field" style="margin:4px 0 14px">
+              <span class="flabel">Calendário padrão</span>
+              <select class="select" @change=${(e) => this._saveAppPrefs({ default_calendar: e.target.value })}>
+                ${writable.map((c) => html`<option value=${c.id} ?selected=${c.id === def}>${c.name}</option>`)}
+              </select>
+              <span class="field-hint">${icon("info")}<span>Onde caem os eventos novos e os que a IA encontrar. Dá para trocar em cada evento.</span></span>
+            </label>`
+          : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos. Adicione um calendário local logo abaixo.</div></div>`}
+      </div>
       ${this._renderAddCalendars()}
-    </section>`;
+    `;
   }
 
   _renderAddCalendars() {
@@ -1570,20 +1582,51 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   // ---------- Mais
 
+  /**
+   * Mais is split in tabs at the top: /mais (Calendários), /mais/avisos,
+   * /mais/integracoes, /mais/dados, /mais/aparencia. Switching tabs replaces
+   * the history entry, so Back leaves Mais.
+   */
   _renderMore() {
+    const tab = this._view().tab;
+    const tabs = [
+      ["calendarios", "Calendários", "layers"],
+      ["avisos", "Avisos", "bell-ring"],
+      ["integracoes", "Integrações", "blocks"],
+      ["dados", "Dados", "archive"],
+      ["aparencia", "Aparência", "palette"],
+    ];
+    const go = (k) => {
+      if (k === tab) return;
+      this._haptic("light");
+      this._go(k === "calendarios" ? "/mais" : `/mais/${k}`, true);
+    };
+    let body;
+    let status = { text: `CronologIA ${this._version}` };
+    if (tab === "avisos") body = this._renderAlertsPanel();
+    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()}`;
+    else if (tab === "dados") body = this._renderDataPanel();
+    else if (tab === "aparencia") body = this._renderAppearance();
+    else {
+      body = this._renderCalendarsTab();
+      const cals = this._cals();
+      const editable = cals.filter((c) => c.canCreate).length;
+      status = { text: cals.length ? `${plural(cals.length, "calendário", "calendários")} · ${editable ? plural(editable, "com edição", "com edição") : "só leitura"}` : "Nenhum calendário ainda" };
+    }
+    return html`<section class="page">
+      ${this._renderHead("Mais", status)}
+      <div class="seg compact more-tabs" role="tablist" aria-label="Seções">
+        ${tabs.map(([k, label, ic]) => html`<button class=${tab === k ? "on" : ""} role="tab" aria-selected=${tab === k ? "true" : "false"} @click=${() => go(k)}>${icon(ic)}<span>${label}</span></button>`)}
+      </div>
+      <div role="tabpanel" aria-label=${tabs.find((t) => t[0] === tab)[1]}>${body}</div>
+      <p class="foot"><b>CronologIA</b><br />v${this._version} · usa os calendários nativos do Home Assistant.</p>
+    </section>`;
+  }
+
+  _renderAppearance() {
     const accent = this._app("accent", "turquesa");
     const ws = this._app("week_start", 0);
-    const writable = this._writable();
-    const def = this._defaultCal();
-    return html`<section class="page">
-      ${this._renderHead("Mais", { text: `CronologIA ${this._version}` })}
-      <div class="panel">
-        <button class="row" @click=${() => this._go("/agendas")}>
-          <span class="tile" style=${colorVars(this._accent(), this._dark)}>${icon("layers")}</span>
-          <span class="grow"><div class="label">Agendas</div><div class="hint">${plural(this._cals().length, "calendário", "calendários")} · nome, cor, mostrar e ocultar, adicionar</div></span>
-          ${icon("chevron-right")}
-        </button>
-      </div>
+    return html`
       <div class="panel">
         <div class="overline">Aparência</div>
         <div class="row col">
@@ -1614,25 +1657,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         </div>
       </div>
 
-      <div class="panel">
-        <div class="overline">Novos eventos</div>
-        ${writable.length
-          ? html`<label class="field" style="margin:4px 0 14px">
-              <span class="flabel">Calendário padrão</span>
-              <select class="select" @change=${(e) => this._saveAppPrefs({ default_calendar: e.target.value })}>
-                ${writable.map((c) => html`<option value=${c.id} ?selected=${c.id === def}>${c.name}</option>`)}
-              </select>
-              <span class="field-hint">${icon("info")}<span>Onde caem os eventos novos e os que a IA encontrar. Dá para trocar em cada evento.</span></span>
-            </label>`
-          : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos. Adicione um calendário local em Agendas.</div></div>`}
-      </div>
-
-      ${this._renderAlertsPanel()} ${this._renderGerenciaPanel()} ${this._renderTodosSettings()}
-      ${this._renderAiPanel()}
-
-      ${this._renderDataPanel()}
-      <p class="foot"><b>CronologIA</b><br />v${this._version} · usa os calendários nativos do Home Assistant.</p>
-    </section>`;
+    `;
   }
 
   _renderAiPanel() {

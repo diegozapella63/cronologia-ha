@@ -21,10 +21,12 @@ function dueMs(due) {
 }
 
 export class Todos {
-  constructor({ ha, log, onChange }) {
+  constructor({ ha, log, onChange, readApp = null }) {
     this.ha = ha;
     this.log = log;
     this.onChange = onChange;
+    this.readApp = readApp; // () => contents of share/resolvia/integracao.json
+    this.appCache = null;
     this.states = new Map(); // todo.x -> state
     this.items = new Map(); // todo.x -> items
     this.subs = new Map(); // todo.x -> {sub, poll}
@@ -91,6 +93,26 @@ export class Todos {
   }
 
   /**
+   * The ResolvIA app, when it runs in this Home Assistant: it rewrites
+   * share/resolvia/integracao.json every 15 minutes, so an old file means it
+   * was stopped or removed.
+   */
+  app(now = Date.now()) {
+    if (!this.readApp) return null;
+    if (this.appCache && Math.abs(now - this.appCache.at) < 60000) return this.appCache.value;
+    let value = null;
+    try {
+      const j = this.readApp();
+      const t = Date.parse(j && j.gravado_em);
+      if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) value = { versao: String(j.versao || "").slice(0, 20) };
+    } catch (e) {
+      /* not installed, or no share folder */
+    }
+    this.appCache = { at: now, value };
+    return value;
+  }
+
+  /**
    * Lists and the items with a due date around today: open ones from the last
    * 2 months to the next 2, done ones from 2 days back (to show ✓).
    */
@@ -131,7 +153,7 @@ export class Todos {
     }
     items.sort((a, b) => dueMs(a.due) - dueMs(b.due) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    return { lists, items, today: ymd(today) };
+    return { lists, items, today: ymd(today), app: this.app(now) };
   }
 
   /** New task with a due date (todo.add_item). */

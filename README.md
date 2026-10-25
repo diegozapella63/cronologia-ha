@@ -44,7 +44,7 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. Escolha qual IA em **Mais → Leitura por IA**.
 - **Arquivos .ics**: importar convites e exportar os calendários.
 - **Dados**: exportar em ZIP, CSV ou JSON, backup em `share/cronologia`, importar e versões anteriores automáticas.
-- **Agendas** (em Mais): nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos.
+- **Mais em abas**: Calendários (nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos), Avisos, Integrações (GerencIA, ResolvIA e IA, com o indicador de conectado), Dados e Aparência.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Tema claro e escuro** seguindo o Home Assistant.
 
