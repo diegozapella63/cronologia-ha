@@ -24,8 +24,8 @@ const todos = createTodos();
 const notifications = [];
 const restStates = new Map();
 const PERSONS = [
-  { entity_id: "person.diego", state: "home", attributes: { friendly_name: "Diego", device_trackers: ["device_tracker.pixel_8"] } },
-  { entity_id: "person.andressa", state: "home", attributes: { friendly_name: "Andressa", device_trackers: ["device_tracker.galaxy_s23"] } },
+  { entity_id: "person.diego", state: "home", attributes: { friendly_name: "Diego", user_id: "u-diego", device_trackers: ["device_tracker.pixel_8"] } },
+  { entity_id: "person.andressa", state: "home", attributes: { friendly_name: "Andressa", user_id: "u-andressa", device_trackers: ["device_tracker.galaxy_s23"] } },
 ];
 const NOTIFY = ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "persistent_notification"];
 

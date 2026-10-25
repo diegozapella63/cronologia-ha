@@ -51,7 +51,7 @@ export function eventsCSV(calendars) {
 /** Points of the Recompensas, for Excel. */
 export function pointsCSV(data) {
   const rows = [["Quando", "Quem", "Pontos", "O que", "Tipo"]];
-  const kinds = { rotina: "rotina", manutencao: "manutenção", extra: "avulso" };
+  const kinds = { rotina: "rotina", manutencao: "manutenção", extra: "avulso", tarefa: "tarefa do ResolvIA" };
   for (const e of [...(data.score && data.score.entries) || []].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) rows.push([dateTime(Date.parse(e.at)), e.who, e.points, e.title, kinds[e.kind] || e.kind]);
   return csv(rows);
 }

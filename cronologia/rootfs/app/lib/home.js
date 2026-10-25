@@ -65,6 +65,7 @@ export class Home {
   start() {
     this.ha.subscribe({ type: "subscribe_events", event_type: "mobile_app_notification_action" }, (ev) => this.onAction(ev && ev.data));
     this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_feito" }, (ev) => this.onFeito(ev && ev.data, ev && ev.context));
+    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_pontos" }, (ev) => this.onPoints(ev && ev.data));
     this.ha.on("ready", () => {
       this.loadPeople().catch((err) => this.log.warn(`Pessoas: ${err.message}`));
       for (const id of this.store.data.kind_cals) this.track(id);
@@ -386,6 +387,70 @@ export class Home {
       this.store.save();
       this.log.info(`Adiado ${SNOOZE_MIN} min: ${occ.summary}`);
     }
+  }
+
+  /**
+   * What the other apps (ResolvIA) need to give points: whether the scoreboard
+   * is on, who plays, and which Home Assistant user is which player.
+   */
+  placarInfo() {
+    const st = scoreSettings(this.store.data.app);
+    const on = !!st.enabled && st.participants.length > 0;
+    const usuarios = {};
+    if (on) {
+      for (const p of this.persons.values()) {
+        const who = p.user_id && this.participant(p.name);
+        if (who) usuarios[p.user_id] = who;
+      }
+    }
+    return { ativo: on, periodo: st.period, participantes: on ? st.participants : [], usuarios };
+  }
+
+  /**
+   * Points for a to-do task, from the ResolvIA (event cronologia_pontos):
+   * {acao: somar | desfazer | trocar, chave: "resolvia|todo.x|uid|YYYY-MM-DD",
+   *  quem, pontos, titulo}. The same task on the same day counts once, even
+   * if it was marked here too.
+   */
+  onPoints(data) {
+    const d = data || {};
+    const key = String(d.chave || "");
+    if (!/^resolvia\|todo\.[a-z0-9_]+\|[^|]{1,300}\|\d{4}-\d{2}-\d{2}$/.test(key)) return this.log.warn(`Pontos com chave inválida: ${key.slice(0, 80)}`);
+    const acao = String(d.acao || "somar");
+    if (acao === "desfazer") {
+      if (this.store.removePoints(key)) this.changed();
+      return;
+    }
+    const who = this.participant(String(d.quem || ""));
+    if (!who) return this.log.warn(`Pontos para quem não está no placar: ${String(d.quem || "").slice(0, 40)}`);
+    if (acao === "trocar") {
+      const e = this.store.pointsByKey(key);
+      if (e) {
+        this.store.addPoints({ ...e, who });
+        this.changed();
+      }
+      return;
+    }
+    const n = Math.round(Number(d.pontos) || 0);
+    if (n < 1 || n > 1000 || this.store.pointsByKey(key)) return;
+    const title = String(d.titulo || "Tarefa").trim().slice(0, 120) || "Tarefa";
+    this.store.addPoints({ key, who, points: n, title, kind: "tarefa" });
+    this.log.info(`+${n} para ${who}: ${title} (ResolvIA)`);
+    this.changed();
+  }
+
+  /** A to-do task marked here (Tarefas com prazo): its ResolvIA points, same key as there. */
+  todoPoints(list, uid, summary, points, done, who) {
+    const key = `resolvia|${list}|${uid}|${ymd(new Date())}`;
+    if (!done) {
+      if (this.store.removePoints(key)) this.changed();
+      return null;
+    }
+    const person = this.participant(who);
+    if (!(points > 0) || !person || this.store.pointsByKey(key)) return null;
+    this.store.addPoints({ key, who: person, points, title: String(summary || "Tarefa").slice(0, 120), kind: "tarefa" });
+    this.changed();
+    return { key, who: person, points };
   }
 
   /** cronologia_feito {nome: "Filtro de água"} from an automation or an NFC tag. */

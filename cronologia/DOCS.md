@@ -85,6 +85,7 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Prêmio do período**: escreva o prêmio do período atual e, se quiser, já o do próximo. Quem somar mais pontos leva; empate fica registrado como empate.
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
+- **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA".
 - **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
 
 Em **Ajustes do placar** (no fim da aba): quem participa, de quanto em quanto tempo fecha, se o resultado vai para o celular e desligar o placar. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.

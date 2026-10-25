@@ -3,7 +3,11 @@
 // marks items done with the todo.update_item action, so whatever the ResolvIA
 // does on completion (repeating tasks) keeps working.
 
+import { foldText } from "./kinds.js";
+
 const DAY = 86400000;
+/** How the ResolvIA keys its points: the task name, folded. */
+export const taskKey = (s) => foldText(s).replace(/\s+/g, " ");
 // TodoListEntityFeature
 export const TODO_F = { CREATE: 1, DELETE: 2, UPDATE: 4, MOVE: 8, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const isTodo = (id) => typeof id === "string" && /^todo\.[a-z0-9_]+$/.test(id);
@@ -105,7 +109,7 @@ export class Todos {
       const j = this.readApp();
       const t = Date.parse(j && j.gravado_em);
       if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) {
-        value = { versao: String(j.versao || "").slice(0, 20), semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [] };
+        value = { versao: String(j.versao || "").slice(0, 20), semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [], pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {} };
       }
     } catch (e) {
       /* not installed, or no share folder */
@@ -156,6 +160,7 @@ export class Todos {
           allDay,
           done,
           overdue: !done && (allDay ? at < t0 : at < now),
+          points: this.pointsOf(id, i.summary, app),
           days: Math.round((new Date(new Date(at).getFullYear(), new Date(at).getMonth(), new Date(at).getDate()).getTime() - t0) / DAY),
         });
       }
@@ -163,6 +168,19 @@ export class Todos {
     items.sort((a, b) => dueMs(a.due) - dueMs(b.due) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     return { lists, items, today: ymd(today), app: app ? { versao: app.versao } : null };
+  }
+
+  /** Points the ResolvIA gives for a task (0 when none or no ResolvIA). */
+  pointsOf(list, summary, app = this.app()) {
+    const map = app && app.pontos && app.pontos[list];
+    const n = map && Number(map[taskKey(summary)]);
+    return Number.isFinite(n) && n > 0 ? Math.min(1000, Math.round(n)) : 0;
+  }
+
+  /** The summary of a task, for the points. */
+  summaryOf(list, uid) {
+    const i = (this.items.get(list) || []).find((x) => x.uid === uid);
+    return i ? i.summary || "" : "";
   }
 
   /** New task with a due date (todo.add_item). */

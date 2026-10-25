@@ -51,14 +51,21 @@ export const TasksMixin = (Base) =>
       return this._tEvCache.list.filter((e) => e.start < end && e.end > start);
     }
 
+    /** Concluir/Reabrir; a task with ResolvIA points goes to whoever did it (asks when unknown). */
     async _todoDone(t, done) {
-      try {
-        await this.api.setTodo(t.list, t.uid, done);
-        this._haptic(done ? "success" : "light");
-        this._showToast(`${clip(t.summary, 28)}: ${done ? "concluída" : "reaberta"}`, { label: "Desfazer", run: () => this.api.setTodo(t.list, t.uid, !done).catch((err) => this._showToast(err.message)) });
-      } catch (err) {
-        this._showToast(`Não consegui: ${err.message}`);
-      }
+      const run = async (who) => {
+        if (this._sheet === "who") await this._closeSheet();
+        try {
+          const r = await this.api.setTodo(t.list, t.uid, done, who);
+          this._haptic(done ? "success" : "light");
+          if (done && r && r.points) this._doneToast(t, r.who, r.points, { reassignKey: r.key });
+          else this._showToast(`${clip(t.summary, 28)}: ${done ? "concluída" : "reaberta"}`, { label: "Desfazer", run: () => this.api.setTodo(t.list, t.uid, !done).catch((err) => this._showToast(err.message)) });
+        } catch (err) {
+          this._showToast(`Não consegui: ${err.message}`);
+        }
+      };
+      if (done && t.points > 0) return this._withWho(t.points, t.summary, run);
+      return run("");
     }
 
     _renderTodosPanel() {
@@ -81,6 +88,7 @@ export const TasksMixin = (Base) =>
           (t) => html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
             <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
             <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${dueText(t, now)} · ${t.listName}</small></button>
+            ${t.points > 0 && this._scoreOn() ? html`<span class="pts ${t.done ? "got" : ""}">+${t.points}</span>` : nothing}
           </div>`,
         )}
         ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosAll = !this._todosAll), this.requestUpdate())}>${icon(this._todosAll ? "chevron-up" : "chevron-down")}${this._todosAll ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
@@ -102,13 +110,14 @@ export const TasksMixin = (Base) =>
         <div class="ev-facts">
           <div class="fact">${icon("calendar-clock")}<span>Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
+          ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
         </div>
         <p class="sheet-note">${icon("info")} O prazo, as notas e a repetição se mudam no ResolvIA.</p>
         <div class="sheet-actions">
           ${t.done
-            ? html`<button class="btn outline" @click=${() => this._todoDone(t, false).then(() => this._closeSheet())}>${icon("undo-2")}Reabrir</button>`
-            : html`<button class="btn primary" @click=${() => this._todoDone(t, true).then(() => this._closeSheet())}>${icon("check")}Concluir</button>`}
+            ? html`<button class="btn outline" @click=${() => this._closeSheet().then(() => this._todoDone(t, false))}>${icon("undo-2")}Reabrir</button>`
+            : html`<button class="btn primary" @click=${() => this._closeSheet().then(() => this._todoDone(t, true))}>${icon("check")}Concluir${t.points > 0 && this._scoreOn() ? ` · +${t.points}` : ""}</button>`}
         </div>`;
     }
 

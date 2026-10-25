@@ -342,8 +342,8 @@ export class Api {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }
 
-  setTodo(entityId, uid, done) {
-    return this.call("cronologia/todo/set", { entity_id: entityId, uid, done });
+  setTodo(entityId, uid, done, who = "") {
+    return this.call("cronologia/todo/set", { entity_id: entityId, uid, done, who });
   }
 
   testAlert(target) {

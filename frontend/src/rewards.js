@@ -246,9 +246,12 @@ export const RewardsMixin = (Base) =>
       const now = new Date(this._now);
       const chores = (ix.routines || []).filter((r) => r.points > 0);
       const maint = (ix.maint || []).filter((m) => m.points > 0 && m.state !== "ok");
-      const done = chores.filter((r) => r.done).length;
+      // ResolvIA tasks with points that are due (or were done) today
+      const tasks = ((ix.todos && ix.todos.items) || []).filter((t) => t.points > 0 && (t.done ? t.days === 0 : t.overdue || t.days === 0));
+      const done = chores.filter((r) => r.done).length + tasks.filter((t) => t.done).length;
+      const total = chores.length + tasks.length;
       return html`<div class="panel chores score-today">
-        <div class="chores-head"><span class="overline">Para pontuar hoje</span>${chores.length ? html`<small>${done} de ${chores.length}</small>` : nothing}</div>
+        <div class="chores-head"><span class="overline">Para pontuar hoje</span>${total ? html`<small>${done} de ${total}</small>` : nothing}</div>
         ${repeat(chores, (r) => r.key, (r) => {
           const by = r.done && r.done.by;
           return html`<div class="chore ${r.done ? "done" : ""}">
@@ -258,6 +261,15 @@ export const RewardsMixin = (Base) =>
           </div>`;
         })}
         ${repeat(
+          tasks,
+          (t) => t.key,
+          (t) => html`<div class="chore ${t.done ? "done" : ""}">
+            <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
+            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${t.overdue ? "atrasada" : "hoje"} · ${t.listName} · ResolvIA</small></button>
+            <span class="pts ${t.done ? "got" : ""}">+${t.points}</span>
+          </div>`,
+        )}
+        ${repeat(
           maint,
           (m) => m.key,
           (m) => html`<div class="chore maint-score">
@@ -266,8 +278,8 @@ export const RewardsMixin = (Base) =>
             <button class="pts btn-pts" @click=${() => this._maintDone(m)}>+${m.points}</button>
           </div>`,
         )}
-        ${!chores.length && !maint.length
-          ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>.</p>`
+        ${!chores.length && !maint.length && !tasks.length
+          ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>, ou a uma tarefa no ResolvIA.</p>`
           : nothing}
         <div class="score-actions">
           <button class="btn outline sm" @click=${() => this._openKindForm({ kind: "rotina" })}>${icon("plus")}Tarefa com pontos</button>
@@ -292,7 +304,7 @@ export const RewardsMixin = (Base) =>
           (e) => e.key,
           (e) => html`<div class="feed-row" style=${colorVars(this._pColor(e.who), this._dark)}>
             <span class="avatar sm2">${initial(e.who)}</span>
-            <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : ""}</small></span>
+            <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : e.kind === "tarefa" ? " · ResolvIA" : ""}</small></span>
             <span class="pts got">${e.points > 0 ? "+" : ""}${e.points}</span>
             ${e.kind === "extra" ? html`<button class="icon-btn mini" aria-label="Tirar ${e.title}" @click=${() => this._removeExtra(e)}>${icon("x")}</button>` : nothing}
           </div>`,

@@ -22,7 +22,7 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.5.2";
+const VERSION = "1.6.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -56,6 +56,7 @@ let registryCache = null;
 
 const pushHome = (index) => {
   for (const w of homeWatchers) w.session.event(w.id, index);
+  publishPresence(); // people or scoreboard may have changed (writes only on a change)
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
 const todos = new Todos({ ha, log, onChange: () => home.changed(), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
@@ -315,9 +316,13 @@ class Session {
         return this.result(id);
       }
 
-      case "cronologia/todo/set":
+      case "cronologia/todo/set": {
         await todos.setDone(msg.entity_id, msg.uid, !!msg.done);
-        return this.result(id);
+        const summary = todos.summaryOf(msg.entity_id, msg.uid);
+        const points = todos.pointsOf(msg.entity_id, summary);
+        const who = String(msg.who || home.personOfUser(this.user.id, this.user.name) || "");
+        return this.result(id, points ? home.todoPoints(msg.entity_id, msg.uid, summary, points, !!msg.done, who) : null);
+      }
 
       // ---- Dados: versions, backups in share/cronologia
       case "cronologia/versions/list":
@@ -375,7 +380,10 @@ class Session {
         this.result(id, prefs);
         if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs)) {
           // a new setup (or a different period length) starts counting from the current period, without closing one
-          if ("score" in msg.prefs || "week_start" in msg.prefs) home.resetPeriod();
+          if ("score" in msg.prefs || "week_start" in msg.prefs) {
+            home.resetPeriod();
+            publishPresence();
+          }
           home.changed();
         }
         return pushPrefs();
@@ -655,6 +663,36 @@ server.on("upgrade", (req, socket, head) => {
   const ws = acceptUpgrade(req, socket, head);
   if (ws) new Session(ws, req.headers);
 });
+
+/**
+ * Tells the other apps (ResolvIA) that the CronologIA runs here and how its
+ * scoreboard is set up: share/cronologia/integracao.json. Rewritten when the
+ * scoreboard or the people change, and every 15 minutes. No key: the points
+ * come back as the cronologia_pontos event.
+ */
+let presenceLast = "";
+let presenceAt = 0;
+let presenceWarned = false;
+function publishPresence() {
+  const placar = home.placarInfo();
+  const body = JSON.stringify(placar);
+  if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
+  try {
+    const dir = path.join(SHARE_DIR, "cronologia");
+    fs.mkdirSync(dir, { recursive: true });
+    const tmp = path.join(dir, ".integracao.json.tmp");
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), placar }, null, 1));
+    fs.renameSync(tmp, path.join(dir, "integracao.json"));
+    presenceLast = body;
+    presenceAt = Date.now();
+    presenceWarned = false;
+  } catch (err) {
+    if (!presenceWarned) log.warn(`Não consegui gravar share/cronologia/integracao.json: ${err.message}`);
+    presenceWarned = true;
+  }
+}
+publishPresence();
+setInterval(publishPresence, 30 * 1000);
 
 server.listen(PORT, () => log.info(`CronologIA ${VERSION} ouvindo na porta ${PORT}${DEV ? " (modo dev)" : ""}`));
 home.start();

@@ -16,7 +16,7 @@ export class MockApi {
     this.prefSubs = new Set();
     this.homeSubs = new Set();
     this.todoModel = createTodos();
-    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {}, readApp: () => ({ app: "ResolvIA", versao: "2.6.0", gravado_em: new Date().toISOString() }) });
+    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {}, readApp: () => ({ app: "ResolvIA", versao: "2.8.0", gravado_em: new Date().toISOString(), pontos: { "todo.casa": { "levar o carro na revisao": 20 }, "todo.trabalho": { "enviar proposta para o cliente": 10 } } }) });
     for (const id of this.todoModel.ids()) {
       this.todos.states.set(id, this.todoModel.stateOf(id));
       this.todos.items.set(id, this.todoModel.items(id));
@@ -303,11 +303,23 @@ export class MockApi {
     this._pushHome();
   }
 
-  async setTodo(id, uid, done) {
+  async setTodo(id, uid, done, who = "") {
     await wait(80);
     this.todoModel.update(id, { item: uid, status: done ? "completed" : "needs_action" });
     this.todos.items.set(id, this.todoModel.items(id));
+    // like the server: the ResolvIA points of the task go to whoever did it
+    const summary = this.todos.summaryOf(id, uid);
+    const points = this.todos.pointsOf(id, summary);
+    const d = new Date();
+    const key = `resolvia|${id}|${uid}|${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let out = null;
+    this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    if (done && points && who) {
+      this.score.entries.push({ key, at: new Date().toISOString(), who, points, title: summary, kind: "tarefa" });
+      out = { key, who, points };
+    }
     this._pushHome();
+    return out;
   }
 
   async testAlert() {
@@ -327,7 +339,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.5.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.6.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {
