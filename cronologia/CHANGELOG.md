@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.0
+
+- **Mais › Placar › Marcar pontos em Recompensas**: liga o card **Para pontuar hoje** (marcar tarefas, Tarefa com pontos e Pontos avulsos) na aba Recompensas. Começa desligado; as tarefas continuam sendo marcadas na Agora e no ResolvIA.
+- **Deméritos**: a lista agora se monta em **Mais › Placar** (criar, mudar, apagar e as sugestões). A aba Recompensas só mostra os deméritos e marca quem foi; sem deméritos, o card não aparece.
+- Saiu o atalho "Ajustes do placar" da aba Recompensas.
+- **Tarefas sem prazo na Agora** (Mais › Integrações): o card de tarefas mostra também as pendentes sem data, num grupo **Sem prazo** depois das que têm prazo. Concluir ali conclui no ResolvIA (e dá os pontos, se a tarefa valer).
+
 ## 1.8.0
 
 - **Prêmio por pessoa**: em Recompensas, **Definir** abre a escolha entre **O mesmo para todos** e **Um para cada pessoa** ("Se Diego vencer: jantar fora · Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; o aviso no celular e o histórico mostram o prêmio de quem venceu. O sensor do placar ganhou o atributo `premios`.

@@ -21,7 +21,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 - **Mais**, em abas no alto (ficam presas no topo ao rolar):
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
-  - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, resultado no celular, desligar).
+  - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, resultado no celular, desligar) e a lista de **deméritos**.
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado) e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema, cor do app e início da semana (domingo ou segunda).
@@ -86,11 +86,11 @@ Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **R
 - **Prêmio do período**: toque em **Definir** e escolha **O mesmo para todos** (quem somar mais pontos leva) ou **Um para cada pessoa** ("Se Diego vencer: jantar fora", "Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; empate fica registrado como empate. Dá para deixar já o do próximo período.
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Aparência**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
-- **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". Crie em **Novo demérito** (ou toque numa das sugestões) e, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. Toque no nome do demérito para mudar os pontos ou apagar (o que já foi descontado continua no placar e sai pelo × nos pontos do período).
+- **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". A lista se monta em **Mais › Placar** (**Novo demérito** ou uma das sugestões; toque num deles para mudar os pontos ou apagar). Na aba Recompensas, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. O que já foi descontado sai pelo × nos pontos do período.
 - **Tarefas do ResolvIA**: no ResolvIA (2.8.0 ou mais novo), ligue **Mais › Integrações › Recompensas › Pontos nas tarefas** e, em cada tarefa, escolha **Pontos para quem concluir**. Quem concluir a tarefa no ResolvIA ganha os pontos neste placar (o ResolvIA sabe quem é pelo usuário do Home Assistant; se não souber, pergunta). Concluir aqui, no card **Tarefas com prazo**, dá os mesmos pontos, e as de hoje aparecem em **Para pontuar hoje**. A mesma tarefa no mesmo dia conta uma vez só; reabrir tira os pontos. No placar elas aparecem com "· ResolvIA".
-- **Para pontuar hoje**: as tarefas e manutenções com pontos de hoje, para marcar direto da aba.
+- **Para pontuar hoje** (ligue em **Mais › Placar › Marcar pontos em Recompensas**): as tarefas e manutenções com pontos de hoje, para marcar direto da aba, mais **Tarefa com pontos** e **Pontos avulsos**. Desligado, as tarefas são marcadas na Agora e no ResolvIA.
 
-Em **Mais › Placar** (ou pelo atalho **Ajustes do placar** no fim da aba Recompensas): quem participa, de quanto em quanto tempo fecha, se o resultado vai para o celular e desligar o placar. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
+Em **Mais › Placar**: quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, se o resultado vai para o celular, desligar o placar e a lista de deméritos. Trocar o período recomeça a contagem no período de agora, sem apagar os pontos.
 
 ## Avisos de remédio no celular
 
@@ -116,6 +116,8 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 - no card **Tarefas com prazo** da tela Agora: atrasadas em vermelho, as de hoje e as de amanhã, com o quadradinho de **Concluir** (e **Desfazer**). As de hoje que você concluir ficam com ✓;
 - no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;
 - tocando numa delas: prazo, lista, notas e **Concluir** / **Reabrir**.
+
+Com **Mais › Integrações › Tarefas sem prazo na Agora** ligado, o card mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), num grupo **Sem prazo** depois das que têm prazo.
 
 Para criar, use **Novo › Tarefa**: nome, lista do ResolvIA, prazo (dia, ou dia e horário, ou sem prazo) e notas. A tarefa entra direto na lista do Home Assistant e aparece no ResolvIA na hora; o app lembra a última lista usada. Listas que não aceitam prazo (as do Alexa, por exemplo) recebem a tarefa sem data.
 

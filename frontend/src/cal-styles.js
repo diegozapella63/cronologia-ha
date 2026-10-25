@@ -2493,4 +2493,16 @@ export const calStyles = css`
   .dm-ideas {
     padding: 2px 16px 8px;
   }
+  .demerit.dm-edit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+  }
+  .demerit.dm-edit > .i {
+    flex: none;
+    color: var(--rv-muted);
+  }
 `;

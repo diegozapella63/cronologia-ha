@@ -22,7 +22,7 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.8.0";
+const VERSION = "1.9.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -386,7 +386,7 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs)) {
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs)) {
           // a new setup (or a different period length) starts counting from the current period, without closing one
           if ("score" in msg.prefs || "week_start" in msg.prefs) {
             home.resetPeriod();

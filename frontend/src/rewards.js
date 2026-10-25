@@ -141,11 +141,10 @@ export const RewardsMixin = (Base) =>
           <div class="board-foot">${lead ? html`${icon("crown")}<span><b>${lead}</b> na frente${s.rows[1] ? ` por ${plural(s.rows[0].points - s.rows[1].points, "ponto", "pontos")}` : ""}</span>` : html`<span>${total ? "Empatados" : "Ninguém pontuou ainda"}</span>`}</div>
         </div>
         ${this._renderPrize(s)}
-        ${this._renderToScore()}
+        ${s.manual ? this._renderToScore() : nothing}
         ${this._renderDemerits(s)}
         ${this._renderFeed(s)}
         ${this._renderHistory(s)}
-        <button class="add-line center" @click=${() => this._go("/mais/placar")}>${icon("sliders-horizontal")}Ajustes do placar</button>
       </section>`;
     }
 
@@ -317,7 +316,7 @@ export const RewardsMixin = (Base) =>
       const chores = (ix.routines || []).filter((r) => r.points > 0);
       const maint = (ix.maint || []).filter((m) => m.points > 0 && m.state !== "ok");
       // ResolvIA tasks with points that are due (or were done) today
-      const tasks = ((ix.todos && ix.todos.items) || []).filter((t) => t.points > 0 && (t.done ? t.days === 0 : t.overdue || t.days === 0));
+      const tasks = ((ix.todos && ix.todos.items) || []).filter((t) => t.points > 0 && (t.undated || (t.done ? t.days === 0 : t.overdue || t.days === 0)));
       const done = chores.filter((r) => r.done).length + tasks.filter((t) => t.done).length;
       const total = chores.length + tasks.length;
       return html`<div class="panel chores score-today">
@@ -335,7 +334,7 @@ export const RewardsMixin = (Base) =>
           (t) => t.key,
           (t) => html`<div class="chore ${t.done ? "done" : ""}">
             <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${t.overdue ? "atrasada" : "hoje"} · ${t.listName} · ResolvIA</small></button>
+            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${t.undated ? "sem prazo" : t.overdue ? "atrasada" : "hoje"} · ${t.listName} · ResolvIA</small></button>
             <span class="pts ${t.done ? "got" : ""}">+${t.points}</span>
           </div>`,
         )}
@@ -419,9 +418,10 @@ export const RewardsMixin = (Base) =>
       });
     }
 
-    /** Recompensas › Deméritos: what costs points, and who did it. */
+    /** Recompensas › Deméritos: only the existing ones, to mark who did it (the list is set up in Mais › Placar). */
     _renderDemerits(s) {
       const list = this._demerits();
+      if (!list.length) return nothing;
       // how many times each one was marked this period, by person
       const marks = (d) => {
         const by = {};
@@ -431,30 +431,47 @@ export const RewardsMixin = (Base) =>
       const total = s.entries.filter((e) => e.kind === "demerito").length;
       return html`<div class="panel chores demerits" id="demeritos">
         <div class="chores-head"><span class="overline">Deméritos</span><small>${total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos"}</small></div>
+        <p class="dm-lead">Toque em quem foi para descontar.</p>
+        ${repeat(
+          list,
+          (d) => d.id,
+          (d) => {
+            const m = marks(d);
+            return html`<div class="demerit">
+              <div class="dm-top">
+                <div class="dm-tx"><b>${d.title}</b>${m ? html`<small>${m} ${IN[s.period]}</small>` : nothing}</div>
+                <span class="pts neg">−${d.points}</span>
+              </div>
+              <div class="dm-who">
+                ${s.participants.map(
+                  (p) => html`<button class="dm-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${d.title}: descontar de ${p}" @click=${() => this._markDemerit(d, p)}>
+                    <span class="avatar sm2">${initial(p)}</span><span>${p}</span>
+                  </button>`,
+                )}
+              </div>
+            </div>`;
+          },
+        )}
+      </div>`;
+    }
+
+    /** Mais › Placar › Deméritos: create, change and delete. */
+    _renderDemeritsSettings() {
+      const list = this._demerits();
+      return html`<div class="panel chores demerits-set" id="demeritos-ajustes">
+        <div class="chores-head"><span class="overline">Deméritos</span><small>${list.length ? plural(list.length, "demérito", "deméritos") : "tiram pontos"}</small></div>
+        <p class="dm-lead">O que tira pontos de quem fizer. Em Recompensas, toque em quem foi para descontar.</p>
         ${list.length
-          ? html`<p class="dm-lead">Toque em quem foi para descontar.</p>
-              ${repeat(
-                list,
-                (d) => d.id,
-                (d) => {
-                  const m = marks(d);
-                  return html`<div class="demerit">
-                    <div class="dm-top">
-                      <button class="dm-tx" @click=${() => this._openDemeritForm(d)}><b>${d.title}</b>${m ? html`<small>${m} ${IN[s.period]}</small>` : nothing}</button>
-                      <span class="pts neg">−${d.points}</span>
-                    </div>
-                    <div class="dm-who">
-                      ${s.participants.map(
-                        (p) => html`<button class="dm-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${d.title}: descontar de ${p}" @click=${() => this._markDemerit(d, p)}>
-                          <span class="avatar sm2">${initial(p)}</span><span>${p}</span>
-                        </button>`,
-                      )}
-                    </div>
-                  </div>`;
-                },
-              )}`
-          : html`<p class="empty-line">O que tira pontos de quem fizer, como deixar a toalha molhada na cama. Crie a lista e, quando acontecer, toque em quem foi.</p>
-              <div class="chip-row dm-ideas">${DEMERIT_IDEAS.map(([t, n]) => html`<button class="pick" @click=${() => this._addDemerit(t, n)}>${icon("plus")}<span>${t} −${n}</span></button>`)}</div>`}
+          ? repeat(
+              list,
+              (d) => d.id,
+              (d) => html`<button class="demerit dm-edit" @click=${() => this._openDemeritForm(d)}>
+                <span class="dm-tx"><b>${d.title}</b></span>
+                <span class="pts neg">−${d.points}</span>
+                ${icon("chevron-right")}
+              </button>`,
+            )
+          : html`<div class="chip-row dm-ideas">${DEMERIT_IDEAS.map(([t, n]) => html`<button class="pick" @click=${() => this._addDemerit(t, n)}>${icon("plus")}<span>${t} −${n}</span></button>`)}</div>`}
         <div class="score-actions">
           <button class="btn outline sm" @click=${() => this._openDemeritForm()}>${icon("plus")}Novo demérito</button>
         </div>
@@ -579,7 +596,7 @@ export const RewardsMixin = (Base) =>
 
     _scorePrefs(changes) {
       const s = this._score() || {};
-      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false };
+      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false, manual: !!s.manual };
       return this._saveAppPrefs({ score: { ...cur, ...changes } });
     }
 
@@ -593,6 +610,10 @@ export const RewardsMixin = (Base) =>
           <div class="score-actions" style="padding-left:0;padding-right:0;border:0"><button class="btn primary sm" @click=${() => this._go("/recompensas", true)}>${icon("trophy")}Ir para Recompensas</button></div>
         </div>`;
       }
+      return html`${this._renderScoreSettingsPanel(s)} ${this._renderDemeritsSettings()}`;
+    }
+
+    _renderScoreSettingsPanel(s) {
       const people = (this._ix().people || []).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
@@ -606,6 +627,10 @@ export const RewardsMixin = (Base) =>
         <div class="field"><span class="flabel">O placar fecha</span>
           <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
           <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais › Aparência).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
+        </div>
+        <div class="row switch-row">
+          <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">Mostra o card <b>Para pontuar hoje</b>: marcar as tarefas do dia, criar tarefa com pontos e dar pontos avulsos ali mesmo. Desligado, as tarefas são marcadas na Agora e no ResolvIA.</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.manual} @change=${(e) => this._scorePrefs({ manual: e.target.checked })} aria-label="Marcar pontos em Recompensas" /><span class="track"></span></label>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quando o período fecha, quem participa recebe quem venceu e o prêmio.</div></div>

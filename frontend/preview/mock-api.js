@@ -10,7 +10,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: { todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
+    this.prefs = { calendars: {}, app: { todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true, manual: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
@@ -123,7 +123,7 @@ export class MockApi {
       tracked: ["calendar.remedios", "calendar.casa"],
       gerencia: clone(this.gerencia),
       score: this._scoreIndex(now),
-      todos: this.todos.index(now, this.prefs.app.todo_hidden || []),
+      todos: this.todos.index(now, this.prefs.app.todo_hidden || [], { undated: !!this.prefs.app.todo_undated }),
     };
   }
 
@@ -359,7 +359,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.8.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.9.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

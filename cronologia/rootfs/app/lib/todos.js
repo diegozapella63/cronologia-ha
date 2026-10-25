@@ -122,7 +122,7 @@ export class Todos {
    * Lists and the items with a due date around today: open ones from the last
    * 2 months to the next 2, done ones from 2 days back (to show ✓).
    */
-  index(now = Date.now(), hidden = []) {
+  index(now = Date.now(), hidden = [], { undated = false } = {}) {
     const today = new Date(now);
     const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const off = new Set(hidden);
@@ -141,7 +141,15 @@ export class Todos {
       const info = !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : turnedOff.has(id) ? "resolvia" : null;
       const withDue = info ? [] : all.filter((i) => i.due && i.status !== "completed");
       lists.push({ id, name, features, info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
-      if (off.has(id) || info) continue;
+      if (off.has(id)) continue;
+      if (undated) {
+        // Agora › tasks without a due date (or whose dates aren't deadlines), pending only
+        for (const i of all) {
+          if (!i.uid || i.status === "completed" || (i.due && !info)) continue;
+          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app) });
+        }
+      }
+      if (info) continue;
       for (const i of all) {
         if (!i.due || !i.uid) continue;
         const at = dueMs(i.due);
@@ -165,7 +173,15 @@ export class Todos {
         });
       }
     }
-    items.sort((a, b) => dueMs(a.due) - dueMs(b.due) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
+    // with a due date first (by date), then the ones without, by list and name
+    const order = (t) => (t.undated ? Infinity : dueMs(t.due));
+    items.sort((a, b) => order(a) - order(b) || (a.undated && b.undated ? a.listName.localeCompare(b.listName, "pt-BR") : 0) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
+    // keep the card light: at most 60 tasks without a due date
+    let n = 0;
+    for (let k = 0; k < items.length; ) {
+      if (items[k].undated && ++n > 60) items.splice(k, 1);
+      else k++;
+    }
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     return { lists, items, today: ymd(today), app: app ? { versao: app.versao } : null };
   }

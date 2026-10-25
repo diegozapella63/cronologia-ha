@@ -15,6 +15,7 @@ export const TODO_COLOR = "laranja";
 const dueDate = (t) => (t.allDay ? fromYmd(t.due) : new Date(t.due));
 
 function dueText(t, now) {
+  if (t.undated) return "sem prazo";
   const d = dueDate(t);
   const days = dayDiff(d, now);
   const time = t.allDay ? "" : ` às ${hm(d)}`;
@@ -42,7 +43,7 @@ export const TasksMixin = (Base) =>
       if (!this._tEvCache || this._tEvCache.t !== t) {
         this._tEvCache = {
           t,
-          list: t.items.map((it) => {
+          list: t.items.filter((it) => !it.undated).map((it) => {
             const s = dueDate(it);
             return { key: it.key, cal: "todo", uid: null, rid: null, rrule: null, summary: it.summary, description: it.description, location: "", allDay: it.allDay, start: s, end: it.allDay ? addDays(s, 1) : new Date(s.getTime() + 30 * 60000), raw: {}, kind: null, todo: it };
           }),
@@ -71,26 +72,35 @@ export const TasksMixin = (Base) =>
     _renderTodosPanel() {
       const now = new Date(this._now);
       const all = this._todos().items;
-      // late, today and tomorrow (done ones of today stay with ✓)
-      const items = all.filter((t) => (t.done ? t.days === 0 : t.overdue || t.days <= 1));
+      // late, today and tomorrow (done ones of today stay with ✓), then the ones without a due date (option)
+      const items = all.filter((t) => (t.undated ? true : t.done ? t.days === 0 : t.overdue || t.days <= 1));
       if (!items.length) return nothing;
       const late = items.filter((t) => t.overdue);
       const open = items.filter((t) => !t.done);
       const shown = this._todosAll ? items : items.slice(0, 6);
+      const row = (t) => html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
+        <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
+        <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${t.undated ? t.listName : `${dueText(t, now)} · ${t.listName}`}</small></button>
+        ${t.points > 0 && this._scoreOn() ? html`<span class="pts ${t.done ? "got" : ""}">+${t.points}</span>` : nothing}
+      </div>`;
       return html`<div class="panel todos ${late.length ? "alert" : ""}" id="tarefas">
         <div class="chores-head">
-          <span class="overline">Tarefas com prazo</span>
+          <span class="overline">${items.some((t) => t.undated) ? "Tarefas" : "Tarefas com prazo"}</span>
           <small class=${late.length ? "late" : ""}>${late.length ? plural(late.length, "atrasada", "atrasadas") : open.length ? `${open.length} para fazer` : "tudo feito"}</small>
         </div>
         ${repeat(
-          shown,
+          shown.filter((t) => !t.undated),
           (t) => t.key,
-          (t) => html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
-            <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${dueText(t, now)} · ${t.listName}</small></button>
-            ${t.points > 0 && this._scoreOn() ? html`<span class="pts ${t.done ? "got" : ""}">+${t.points}</span>` : nothing}
-          </div>`,
+          (t) => row(t),
         )}
+        ${shown.some((t) => t.undated)
+          ? html`${shown.some((t) => !t.undated) ? html`<div class="chores-head sub"><span class="overline">Sem prazo</span></div>` : nothing}
+              ${repeat(
+                shown.filter((t) => t.undated),
+                (t) => t.key,
+                (t) => row(t),
+              )}`
+          : nothing}
         ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosAll = !this._todosAll), this.requestUpdate())}>${icon(this._todosAll ? "chevron-up" : "chevron-down")}${this._todosAll ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
         <div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais.</span></div>
       </div>`;
@@ -100,7 +110,7 @@ export const TasksMixin = (Base) =>
       const now = new Date(this._now);
       const t = this._todos().items.find((x) => x.key === this._form.key);
       if (!t) return html`${this._sheetHead("Tarefa")}<p class="sheet-note top">Essa tarefa não está mais na lista.</p>`;
-      const d = dueDate(t);
+      const d = t.undated ? null : dueDate(t);
       return html`
         <div class="ev-head">
           <span class="ev-swatch"></span>
@@ -108,7 +118,7 @@ export const TasksMixin = (Base) =>
           <button class="icon-btn" @click=${() => this._closeSheet()} aria-label="Fechar">${icon("x")}</button>
         </div>
         <div class="ev-facts">
-          <div class="fact">${icon("calendar-clock")}<span>Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}</span></div>
+          <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
@@ -225,6 +235,10 @@ export const TasksMixin = (Base) =>
           ? html`<div class="row switch-row">
                 <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">As tarefas aparecem no dia do prazo (ou no horário, se tiver), além do card da Agora.</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
+              </div>
+              <div class="row switch-row">
+                <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), depois das que têm prazo.</div></div>
+                <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label="Tarefas sem prazo na Agora" /><span class="track"></span></label>
               </div>
               <div class="sub-overline">Listas</div>`
           : nothing}

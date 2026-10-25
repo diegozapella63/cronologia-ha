@@ -32,6 +32,7 @@ export function scoreSettings(app = {}) {
     period: PERIODS[s.period] ? s.period : "semana",
     anchor: s.anchor || null,
     notify: s.notify !== false,
+    manual: !!s.manual,
     weekStart: app.week_start === 0 ? 0 : 1,
   };
 }

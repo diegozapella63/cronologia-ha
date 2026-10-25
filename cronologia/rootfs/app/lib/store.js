@@ -54,6 +54,8 @@ function cleanApp(raw) {
     out.todo_hidden = ids.length ? ids : null;
   }
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
+  // Agora also lists the pending tasks without a due date
+  if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
   if ("people" in raw) {
     // {"Andressa": {notify: "mobile_app_galaxy_s23"}}: whose phone gets the alerts of each person
     const people = {};
@@ -74,6 +76,8 @@ function cleanApp(raw) {
       period: SCORE_PERIODS.includes(a.period) ? a.period : "semana",
       anchor: YMD_RE.test(a.anchor || "") ? a.anchor : null,
       notify: a.notify !== false,
+      // Para pontuar hoje in Recompensas: mark tasks and give points by hand there
+      manual: !!a.manual,
     };
   }
   if ("demerits" in raw) {
