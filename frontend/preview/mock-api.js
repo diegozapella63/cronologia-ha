@@ -16,7 +16,7 @@ export class MockApi {
     this.prefSubs = new Set();
     this.homeSubs = new Set();
     this.todoModel = createTodos();
-    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {}, readApp: () => ({ app: "ResolvIA", versao: "2.5.1", gravado_em: new Date().toISOString() }) });
+    this.todos = new Todos({ ha: { subscribe: () => ({ unsubscribe() {} }), send: async () => ({}) }, log: console, onChange() {}, readApp: () => ({ app: "ResolvIA", versao: "2.6.0", gravado_em: new Date().toISOString() }) });
     for (const id of this.todoModel.ids()) {
       this.todos.states.set(id, this.todoModel.stateOf(id));
       this.todos.items.set(id, this.todoModel.items(id));

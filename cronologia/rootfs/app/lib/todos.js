@@ -104,7 +104,9 @@ export class Todos {
     try {
       const j = this.readApp();
       const t = Date.parse(j && j.gravado_em);
-      if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) value = { versao: String(j.versao || "").slice(0, 20) };
+      if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) {
+        value = { versao: String(j.versao || "").slice(0, 20), semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [] };
+      }
     } catch (e) {
       /* not installed, or no share folder */
     }
@@ -120,15 +122,22 @@ export class Todos {
     const today = new Date(now);
     const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const off = new Set(hidden);
+    const app = this.app(now);
+    const turnedOff = new Set((app && app.semPrazo) || []);
     const lists = [];
     const items = [];
     for (const [id, st] of this.states) {
       const name = (st.attributes && st.attributes.friendly_name) || id;
       const all = this.items.get(id) || [];
-      const withDue = all.filter((i) => i.due && i.status !== "completed");
       const features = Number((st.attributes && st.attributes.supported_features) || 0);
-      lists.push({ id, name, features, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
-      if (off.has(id)) continue;
+      // A deadline is only what someone set. A list that doesn't let you set
+      // one gets its dates from the integration ("unavailable since…"): those
+      // are never tasks with a deadline. The ResolvIA can also turn a list's
+      // deadlines off (sem_prazo).
+      const info = !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : turnedOff.has(id) ? "resolvia" : null;
+      const withDue = info ? [] : all.filter((i) => i.due && i.status !== "completed");
+      lists.push({ id, name, features, info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
+      if (off.has(id) || info) continue;
       for (const i of all) {
         if (!i.due || !i.uid) continue;
         const at = dueMs(i.due);
@@ -153,7 +162,7 @@ export class Todos {
     }
     items.sort((a, b) => dueMs(a.due) - dueMs(b.due) || a.summary.localeCompare(b.summary, "pt-BR", { numeric: true }));
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    return { lists, items, today: ymd(today), app: this.app(now) };
+    return { lists, items, today: ymd(today), app: app ? { versao: app.versao } : null };
   }
 
   /** New task with a due date (todo.add_item). */

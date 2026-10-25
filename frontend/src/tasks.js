@@ -224,7 +224,7 @@ export const TasksMixin = (Base) =>
           (l) => l.id,
           (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
             <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
-            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div></div>
+            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div></div>
             <label class="switch"><input type="checkbox" role="switch" .checked=${!l.hidden} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
           </div>`,
         )}
