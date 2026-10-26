@@ -233,7 +233,7 @@ Em **Mais › Dados**, como nos outros apps:
 - **Exportar**: **Tudo (ZIP)**, com os dados do app (`cronologia.json`), os eventos de cada calendário em .ics (do último ano aos próximos 13 meses), `eventos.csv` e `pontos.csv` para o Excel; **Eventos (CSV)**; **Dados (JSON)**; e **Agenda (.ics)**, escolhendo os calendários e o período.
 - **Backup na pasta share**: cria o mesmo ZIP em `share/cronologia`, que você acessa pela rede do Home Assistant, com **Restaurar** em cada um.
 - **Importar backup ou JSON**: traz os dados do app de um .zip ou .json do CronologIA (nome e cor das agendas, preferências, pessoas e avisos, placar e marcações). Os eventos não mudam: para trazê-los, use **Importar eventos (.ics)** com o .ics do calendário que está no ZIP.
-- **Versões anteriores**: o app guarda sozinho uma cópia dos dados a cada 10 minutos de uso (as últimas 60) e antes de cada importação ou restauração.
+- **Versões anteriores**: o app guarda sozinho uma cópia dos dados a cada 10 minutos de uso e antes de cada importação ou restauração, e mantém só as 3 mais recentes.
 
 Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 

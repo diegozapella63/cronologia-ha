@@ -5626,7 +5626,7 @@ ${s}`:e.join(`
           <div class="btn-row sec-actions"><button class="btn outline sm" ?disabled=${!t.length} @click=${()=>this._openImport("ics")}>${se("upload")}Escolher .ics</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("archive-restore","Vers\xF5es anteriores","O app guarda sozinho uma c\xF3pia dos dados a cada 10 minutos de uso. Se algo sair errado, volte para uma vers\xE3o anterior.")}
+          ${this._secHead("archive-restore","Vers\xF5es anteriores","O app guarda sozinho uma c\xF3pia dos dados a cada 10 minutos de uso e antes de importar ou restaurar, e mant\xE9m as 3 mais recentes. Se algo sair errado, volte para uma delas.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${()=>this._openVersions()}>${se("archive-restore")}Ver versões</button></div>
         </div>
         <div class="panel">

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.1
+
+- **Versões anteriores**: o app mantém só as 3 cópias mais recentes (antes eram até 60). As que sobram são apagadas quando o app inicia.
+
 ## 1.12.0
 
 - **Mais › Integrações › Usar IA**: desligada, somem do Novo o Colar mensagem, o Escolher fotos e o Digitalizar com IA, e o app não chama a IA. A importação de .ics continua em Mais › Dados. Começa ligada.
