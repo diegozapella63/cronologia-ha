@@ -56,6 +56,15 @@ function cleanApp(raw) {
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
   // Agora also lists the pending tasks without a due date
   if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
+  // Tarefas do ResolvIA: whose each list is ({"todo.tarefas_dessa": "Andressa"}); a list with an owner only shows to them
+  if ("todo_owner" in raw) {
+    const owners = {};
+    for (const [id, name] of Object.entries(raw.todo_owner && typeof raw.todo_owner === "object" ? raw.todo_owner : {}).slice(0, 100)) {
+      const n = String(name || "").trim().slice(0, 40);
+      if (/^todo\.[a-z0-9_]+$/.test(id) && n) owners[id] = n;
+    }
+    out.todo_owner = Object.keys(owners).length ? owners : null;
+  }
   // Mais › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
   if ("ai_off" in raw) out.ai_off = raw.ai_off ? true : null;
   // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list

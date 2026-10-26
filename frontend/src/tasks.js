@@ -4,6 +4,7 @@
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks } from "./util.js";
+import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
@@ -36,8 +37,36 @@ const everyLabel = (days) => (!days ? "" : days === 1 ? "todo dia" : days === 7 
 
 export const TasksMixin = (Base) =>
   class extends Base {
-    _todos() {
+    /** Every list and task, whoever they belong to (for the settings). */
+    _todosAll() {
       return this._ix().todos || { lists: [], items: [] };
+    }
+
+    /**
+     * The lists and tasks this person sees: a list with an owner (Mais › Integrações ›
+     * Tarefas do ResolvIA › De quem é) only shows to them. A device whose user isn't a
+     * person of the house (a shared tablet) sees everything.
+     */
+    _todos() {
+      const t = this._todosAll();
+      const owners = this._app("todo_owner", null) || {};
+      const me = this._me();
+      const known = me && (this._ix().people || []).some((p) => p.person && foldText(p.name) === foldText(me));
+      if (!Object.keys(owners).length || !known) return t;
+      const c = this._todosView;
+      const key = JSON.stringify(owners);
+      if (c && c.src === t && c.me === me && c.key === key) return c.view;
+      const mine = (id) => !owners[id] || foldText(owners[id]) === foldText(me);
+      const view = { ...t, lists: t.lists.filter((l) => mine(l.id)), items: t.items.filter((i) => mine(i.list)) };
+      this._todosView = { src: t, me, key, view };
+      return view;
+    }
+
+    /** Who can be the owner of a list: the people of the house (Home Assistant persons). */
+    _todoOwners() {
+      const people = (this._ix().people || []).filter((p) => p.person).map((p) => p.name);
+      const s = this._score && this._score();
+      return [...new Set([...people, ...((s && s.participants) || [])])];
     }
 
     /** Tasks as events for the calendar screens. */
@@ -81,7 +110,7 @@ export const TasksMixin = (Base) =>
       if (!items.length) return nothing;
       const late = items.filter((t) => t.overdue);
       const open = items.filter((t) => !t.done);
-      const shown = this._todosAll ? items : items.slice(0, 6);
+      const shown = this._todosOpen ? items : items.slice(0, 6);
       // tasks worth points: one quick button per person (up to 3) concludes and gives them the points
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
@@ -117,7 +146,7 @@ export const TasksMixin = (Base) =>
                 (t) => row(t),
               )}`
           : nothing}
-        ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosAll = !this._todosAll), this.requestUpdate())}>${icon(this._todosAll ? "chevron-up" : "chevron-down")}${this._todosAll ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
+        ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosOpen = !this._todosOpen), this.requestUpdate())}>${icon(this._todosOpen ? "chevron-up" : "chevron-down")}${this._todosOpen ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
         <div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais.</span></div>
       </div>`;
     }
@@ -263,7 +292,15 @@ export const TasksMixin = (Base) =>
     }
 
     _renderTodosSettings() {
-      const { lists, app } = this._todos();
+      const { lists, app } = this._todosAll();
+      const owners = this._app("todo_owner", null) || {};
+      const people = this._todoOwners();
+      const setOwner = (id, name) => {
+        const next = { ...owners };
+        if (name) next[id] = name;
+        else delete next[id];
+        this._saveAppPrefs({ todo_owner: Object.keys(next).length ? next : null });
+      };
       const hidden = this._app("todo_hidden", null) || [];
       const toggle = (id, show) => this._saveAppPrefs({ todo_hidden: show ? hidden.filter((x) => x !== id) : [...hidden, id] });
       const shown = lists.filter((l) => !l.hidden);
@@ -287,14 +324,25 @@ export const TasksMixin = (Base) =>
                 <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), depois das que têm prazo.</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label="Tarefas sem prazo na Agora" /><span class="track"></span></label>
               </div>
-              <div class="sub-overline">Listas</div>`
+              <div class="sub-overline">Listas</div>
+              ${this._todoOwners().length ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>` : nothing}`
           : nothing}
         ${repeat(
           lists,
           (l) => l.id,
           (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
             <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
-            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div></div>
+            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div>
+              ${people.length && !l.hidden
+                ? html`<div class="owner-pick" role="radiogroup" aria-label="De quem é ${l.name}">
+                    <span class="op-l">De quem é</span>
+                    ${["", ...people].map((p) => {
+                      const on = p ? foldText(owners[l.id] || "") === foldText(p) : !owners[l.id];
+                      return html`<button class=${on ? "on" : ""} role="radio" aria-checked=${on ? "true" : "false"} @click=${() => setOwner(l.id, p)}>${p || "Todos"}</button>`;
+                    })}
+                  </div>`
+                : nothing}
+            </div>
             <label class="switch"><input type="checkbox" role="switch" .checked=${!l.hidden} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
           </div>`,
         )}
@@ -387,7 +435,7 @@ export const TasksMixin = (Base) =>
             <button class="btn primary" ?disabled=${!f.chosen.length || f.busy} @click=${() => this._bringRun()}>${icon("download")}${f.busy ? "Trazendo…" : f.chosen.length ? `Trazer ${plural(f.chosen.length, "tarefa", "tarefas")}` : "Nenhuma marcada"}</button>
           </div>`;
       }
-      const lists = this._todos().lists.filter((l) => !l.unavailable);
+      const lists = this._todosAll().lists.filter((l) => !l.unavailable);
       return html`
         ${head("Trazer do ResolvIA")}
         <p class="sheet-note top">Escolha a lista. Você revisa as tarefas antes de trazer.</p>

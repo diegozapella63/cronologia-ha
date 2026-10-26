@@ -2360,6 +2360,33 @@ export const calStyles = css`
   .chk.sq {
     border-radius: 9px;
   }
+  /* Tarefas do ResolvIA › De quem é (Todos, or one person) */
+  .owner-pick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin-top: 8px;
+  }
+  .owner-pick .op-l {
+    flex-basis: 100%;
+    font-size: 12.5px;
+    color: var(--rv-muted);
+  }
+  .owner-pick button {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--rv-line-strong);
+    color: var(--rv-text-2);
+  }
+  .owner-pick button.on {
+    background: var(--rv-accent-soft);
+    border-color: transparent;
+    color: var(--rv-accent-ink);
+    font-weight: 600;
+  }
   /* Trazer do ResolvIA: review of the tasks of a list */
   .bring-list {
     display: grid;

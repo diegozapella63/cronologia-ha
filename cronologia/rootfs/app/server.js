@@ -24,7 +24,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.14.0";
+const VERSION = "1.15.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -190,6 +190,8 @@ class Session {
     this.ws = ws;
     this.subs = new Map(); // client subscription id -> {unsubscribe}
     this.user = { id: headers["x-remote-user-id"] || "", name: headers["x-remote-user-display-name"] || headers["x-remote-user-name"] || "" };
+    // dev only (tests): the browser can't send the ingress headers on a WebSocket
+    if (DEV && !this.user.id && process.env.CRONOLOGIA_DEV_USER_ID) this.user = { id: process.env.CRONOLOGIA_DEV_USER_ID, name: process.env.CRONOLOGIA_DEV_USER_NAME || "" };
     ws.on("message", (text) => this.onMessage(text));
     ws.on("close", () => this.dispose());
   }

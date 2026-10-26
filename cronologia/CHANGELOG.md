@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.15.0
+
+- **De quem é cada lista do ResolvIA** (Mais › Integrações › Tarefas do ResolvIA): Todos ou uma pessoa da casa. A lista de uma pessoa só aparece no CronologIA dela, na Agora, no calendário, em Para pontuar hoje e no Novo › Tarefa. Lista sem dono aparece para todos, e um aparelho sem pessoa da casa vê todas.
+
 ## 1.14.0
 
 - **Mais › Integrações › Uso da IA**, como no EconomIA: o app conta cada leitura por IA (mensagem ou foto) e estima os tokens pelo tamanho do texto.

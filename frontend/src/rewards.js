@@ -317,7 +317,7 @@ export const RewardsMixin = (Base) =>
       const chores = (ix.routines || []).filter((r) => r.points > 0);
       const maint = (ix.maint || []).filter((m) => m.points > 0 && m.state !== "ok");
       // ResolvIA tasks with points that are due (or were done) today
-      const tasks = ((ix.todos && ix.todos.items) || []).filter((t) => t.points > 0 && (t.undated || (t.done ? t.days === 0 : t.overdue || t.days === 0)));
+      const tasks = this._todos().items.filter((t) => t.points > 0 && (t.undated || (t.done ? t.days === 0 : t.overdue || t.days === 0)));
       const done = chores.filter((r) => r.done).length + tasks.filter((t) => t.done).length;
       const total = chores.length + tasks.length;
       return html`<div class="panel chores score-today">

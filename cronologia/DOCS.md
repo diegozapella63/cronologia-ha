@@ -133,6 +133,8 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 
 Nas tarefas que valem pontos (com o placar ligado), o card mostra um botão com a inicial de cada pessoa: tocar em **D** conclui a tarefa e dá os pontos para o Diego, sem perguntar. O quadradinho conclui do jeito de sempre (para quem está usando o app, ou pergunta **Quem fez?**).
 
+**De quem é cada lista**: em **Mais › Integrações › Tarefas do ResolvIA**, cada lista tem **De quem é**: **Todos** (o padrão) ou uma pessoa da casa. A lista de uma pessoa (por exemplo, "Tarefas Dessa") só aparece no CronologIA dela, na Agora, no calendário, em Para pontuar hoje e no Novo › Tarefa. Quem é quem vem do usuário do Home Assistant ligado a cada pessoa. Num aparelho cujo usuário não é uma pessoa da casa (um tablet da cozinha, por exemplo), aparecem todas.
+
 Com **Mais › Integrações › Tarefas sem prazo na Agora** ligado, o card mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), num grupo **Sem prazo** depois das que têm prazo.
 
 A ordem segue a **frequência** de cada tarefa no ResolvIA (2.9.1 ou mais novo): primeiro as que voltam **todo dia**, depois a cada 2 dias, a cada 3, toda semana… e por último as que não se repetem. Nas que têm prazo, a data vem antes; no mesmo dia, vale a mesma ordem. Cada tarefa mostra a frequência embaixo do nome ("+5 · todo dia · Casa") e na ficha ("Volta todo dia depois de concluída").
