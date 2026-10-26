@@ -928,8 +928,7 @@ export const ModelsMixin = (Base) =>
         this._saveAppPrefs({ people: next });
       };
       return html`<div class="panel" id="avisos">
-        <div class="overline">Avisos de remédio no celular</div>
-        <p class="panel-lead">Na hora de cada dose, o celular de quem toma recebe um aviso com <b>Tomei</b> e <b>Adiar 15 min</b>. Se não tomar, avisa de novo, também para quem cuida. Usa o app Home Assistant do celular.</p>
+        ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora de cada dose, o celular de quem toma recebe um aviso com <b>Tomei</b> e <b>Adiar 15 min</b>. Se não tomar, avisa de novo, também para quem cuida. Usa o app Home Assistant do celular.`)}
         <div class="row switch-row">
           <div class="grow"><div class="label">Avisar no celular</div><div class="hint">Vale para todos os remédios (dá para desligar em cada um).</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => setAlerts({ meds: e.target.checked })} aria-label="Avisar no celular" /><span class="track"></span></label>
@@ -981,7 +980,7 @@ export const ModelsMixin = (Base) =>
       const open = (g.contas || []).filter((c) => !c.pago).length;
       const tone = g.ligado ? (g.erro ? "warn" : "ok") : "off";
       return html`<div class="panel" id="gerencia">
-        <div class="overline">Contas do GerencIA</div>
+        ${this._secHead("wallet", "Contas do GerencIA")}
         <div class="ai-state ${tone}"><span class="dot"></span><div>
           <b>${g.ligado ? (g.erro ? "Não consegui falar com o GerencIA" : `Conectado ao GerencIA ${g.versao || ""}`) : "GerencIA não encontrado"}</b>
           <span>${g.ligado

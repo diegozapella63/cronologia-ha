@@ -1547,7 +1547,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`
       ${groups.map(
         (g) => html`<div class="panel">
-          <div class="overline">${g.label}</div>
+          ${this._secHead("calendar-days", g.label)}
           ${g.list.map(
             (c) => html`<div class="row cal-row ${c.hidden ? "off" : ""}" style=${colorVars(c.color, this._dark)}>
               <button class="tile" @click=${() => this._openCalSheet(c)} aria-label="Personalizar ${c.name}">${icon(c.icon)}</button>
@@ -1561,7 +1561,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         </div>`,
       )}
       <div class="panel" id="novos-eventos">
-        <div class="overline">Novos eventos</div>
+        ${this._secHead("calendar-plus", "Novos eventos")}
         ${writable.length
           ? html`<label class="field" style="margin:4px 0 14px">
               <span class="flabel">Calendário padrão</span>
@@ -1585,7 +1585,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     </button>`;
     const add = (domain) => () => (admin ? this._openInHA(`/config/integrations/dashboard/add?domain=${domain}`) : this._showToast("Peça para um administrador do Home Assistant adicionar."));
     return html`<div class="panel">
-      <div class="overline">Adicionar calendários</div>
+      ${this._secHead("plus", "Adicionar calendários")}
       ${row("calendar-plus", "Calendário local", "Fica no próprio Home Assistant e aceita tudo: criar, editar, repetir.", add("local_calendar"))}
       ${row("calendar-days", "Google Agenda", "Integração oficial do Home Assistant. Atualiza a cada 15 minutos.", add("google"))}
       ${row("briefcase", "Outlook / Microsoft 365", "Pelo MS365 Calendar (HACS) ou por um link .ics. Toque para ver como.", () => this._openSheet("outlook", {}))}
@@ -1658,7 +1658,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const ws = this._app("week_start", 0);
     return html`
       <div class="panel">
-        <div class="overline">Aparência</div>
+        ${this._secHead("palette", "Aparência")}
         <div class="row col">
           <div class="label">Tema</div>
           <div class="seg" role="radiogroup" aria-label="Tema">
@@ -1690,7 +1690,30 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     `;
   }
 
+  /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
+  _secHead(ic, title, lead = null) {
+    return html`<div class="mais-head"><span class="mais-ic" aria-hidden="true">${icon(ic)}</span><h2>${title}</h2></div>${lead ? html`<p class="panel-lead">${lead}</p>` : nothing}`;
+  }
+
+  /** Mais › Integrações › Usar IA: off hides everything that reads messages and photos with AI. */
+  _aiOn() {
+    return !this._app("ai_off", false);
+  }
+
   _renderAiPanel() {
+    const on = this._aiOn();
+    const sw = html`<div class="row switch-row">
+        <div class="grow"><div class="label">Usar IA</div><div class="hint" style="white-space:normal">${on
+          ? "Ligado: em Novo aparecem Colar mensagem, Escolher fotos e Digitalizar com IA."
+          : "Desligado: Colar mensagem, Escolher fotos e Digitalizar com IA somem do Novo. O arquivo .ics continua em Mais › Dados."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ ai_off: e.target.checked ? null : true })} aria-label="Usar IA" /><span class="track"></span></label>
+      </div>`;
+    if (!on) {
+      return html`<div class="panel" id="leitura-ia">
+        ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens coladas, prints, convites e cartões de consulta, com a IA configurada no Home Assistant.")}
+        ${sw}
+      </div>`;
+    }
     const ai = this._ai || {};
     const ents = ai.entities || [];
     const sel = this._app("ai_entity", "");
@@ -1703,8 +1726,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     if (ai.reason) detail = `${detail} ${ai.reason}`.trim();
     return html`<div class="panel" id="leitura-ia">
-      <div class="overline">Leitura por IA</div>
-      <p class="panel-lead">Encontra eventos em mensagens coladas, prints, convites e cartões de consulta. Usa a integração de IA configurada no Home Assistant (Anthropic Claude, OpenAI, Google Gemini ou um modelo local pelo Ollama); o app não guarda nenhuma chave.</p>
+      ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens coladas, prints, convites e cartões de consulta. Usa a integração de IA configurada no Home Assistant (Anthropic Claude, OpenAI, Google Gemini ou um modelo local pelo Ollama); o app não guarda nenhuma chave.")}
+      ${sw}
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>
       ${ents.length || sel
         ? html`<label class="field" style="margin:14px 0 0">
@@ -1875,7 +1898,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`
       ${this._sheetHead(f.mode === "add" ? "Novo" : "Editar evento")}
       ${f.mode === "add" ? this._renderModelChips("") : nothing}
-      ${f.mode === "add"
+      ${f.mode === "add" && this._aiOn()
         ? html`<div class="imp-strip">
             <button @click=${() => this._openImport("text")}>${icon("clipboard-paste")}<span>Colar mensagem</span></button>
             <button @click=${() => this._openImport("photos")}>${icon("images")}<span>Escolher fotos</span></button>
@@ -1977,7 +2000,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   _renderImportSheet() {
     const f = this._form;
-    const ai = this._ai || {};
+    const aiOn = this._aiOn();
+    const ai = aiOn ? this._ai || {} : {};
     const writable = this._writable();
     const target = this._cal(f.target);
     const toPick = () => {
@@ -2060,9 +2084,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     return html`
       ${this._sheetHead("Trazer eventos")}
-      <p class="sheet-note top">Crie eventos a partir de uma mensagem, de uma foto (convite, cartaz, cartão de consulta) ou de um arquivo .ics. Você revisa antes de adicionar.</p>
+      <p class="sheet-note top">${aiOn ? "Crie eventos a partir de uma mensagem, de uma foto (convite, cartaz, cartão de consulta) ou de um arquivo .ics. Você revisa antes de adicionar." : "Crie eventos a partir de um arquivo .ics (convite de e-mail ou outra agenda). Você revisa antes de adicionar."}</p>
       <div class="imp-options">
-        <button class="imp-opt" ?disabled=${!ai.ready} @click=${() => (this._setForm({ step: "text", error: null }), this._focusSheetText())}>
+        ${aiOn ? html`<button class="imp-opt" ?disabled=${!ai.ready} @click=${() => (this._setForm({ step: "text", error: null }), this._focusSheetText())}>
           <span class="imp-ic">${icon("message-square-text")}</span><span class="imp-tx"><b>Colar mensagem</b><small>WhatsApp, e-mail, convite</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._pickFiles("photos")}>
@@ -2070,12 +2094,12 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._openCamera()}>
           <span class="imp-ic">${icon("scan-text")}</span><span class="imp-tx"><b>Digitalizar com IA</b><small>Fotografe um convite ou cartão de consulta</small></span>${icon("chevron-right")}
-        </button>
+        </button>` : nothing}
         <button class="imp-opt" @click=${() => this._pickFiles("ics")}>
           <span class="imp-ic">${icon("file-text")}</span><span class="imp-tx"><b>Arquivo .ics</b><small>Convite de e-mail ou exportação de outra agenda</small></span>${icon("chevron-right")}
         </button>
       </div>
-      ${!ai.images ? aiHint : nothing}
+      ${aiOn && !ai.images ? aiHint : nothing}
       ${error}
     `;
   }

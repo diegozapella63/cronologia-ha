@@ -56,6 +56,8 @@ function cleanApp(raw) {
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
   // Agora also lists the pending tasks without a due date
   if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
+  // Mais › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
+  if ("ai_off" in raw) out.ai_off = raw.ai_off ? true : null;
   // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
   if ("mirror" in raw) {
     const m = raw.mirror && typeof raw.mirror === "object" ? raw.mirror : {};

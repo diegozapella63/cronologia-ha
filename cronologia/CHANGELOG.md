@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0
+
+- **Mais › Integrações › Usar IA**: desligada, somem do Novo o Colar mensagem, o Escolher fotos e o Digitalizar com IA, e o app não chama a IA. A importação de .ics continua em Mais › Dados. Começa ligada.
+- **Mais** com cabeçalhos como os do InventarIA e do ResolvIA: cada seção abre com o ícone num quadrado e o título grande (calendários, avisos, placar, deméritos, GerencIA, ResolvIA, IA, aparência).
+- **Mais › Dados** separado em seções: Exportar, Backup na pasta share, Importar, Importar eventos (.ics), Versões anteriores e Onde ficam os dados.
+
 ## 1.11.0
 
 - **Rotina da casa › Depois de feita**: para o que volta N dias depois de feito ("trocar a areia 3 dias depois"), com a data da primeira vez.

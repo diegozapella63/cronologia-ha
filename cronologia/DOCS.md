@@ -205,6 +205,8 @@ Você revisa título, data e horário de cada evento e escolhe o calendário ant
 
 ### Leitura por IA
 
+**Usar IA** (em **Mais › Integrações › Leitura por IA**) liga ou desliga tudo o que usa IA. Desligada, somem do **Novo** o **Colar mensagem**, o **Escolher fotos** e o **Digitalizar com IA**, e o app não chama a IA. O **arquivo .ics** continua em **Mais › Dados**. Começa ligada.
+
 O CronologIA não tem IA própria e não guarda chave de API. Ele usa a ação `ai_task.generate_data` do Home Assistant, então funciona com a integração de IA que você configurar lá, e dá para trocar quando quiser:
 
 | Integração | Observação |

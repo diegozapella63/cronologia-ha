@@ -276,7 +276,7 @@ export const TasksMixin = (Base) =>
           ? { tone: "ok", title: `Conectado ao ResolvIA ${app.versao || ""}`.trim(), text: `${counts} Concluir aqui conclui lá, e a repetição do ResolvIA continua valendo.` }
           : { tone: "ok", title: "Lendo as listas de tarefas do Home Assistant", text: `${counts} Concluir aqui conclui lá.` };
       return html`<div class="panel" id="resolvia">
-        <div class="overline">Tarefas do ResolvIA</div>
+        ${this._secHead("list-checks", "Tarefas do ResolvIA")}
         <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
         ${lists.length
           ? html`<div class="row switch-row">
