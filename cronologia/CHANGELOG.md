@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16.4
+
+- **Calendário › Lista** e **Próximos dias**: cada dia começa com uma folhinha de calendário (dia da semana e número) e uma linha mais forte, para ver bem onde muda o dia. Hoje fica com a folhinha na cor do app.
+
 ## 1.16.3
 
 - **Recompensas**: a cor de cada pessoa é a cor da agenda dela (a que tem o nome dela, como "Pessoal (Andressa)"). Quem não tem agenda própria fica com uma cor que ninguém usa.

@@ -123,24 +123,65 @@ export const calStyles = css`
     width: 18px;
     height: 18px;
   }
+  /* a day in a list: a calendar leaf (weekday, day), the date, how many */
   .day-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     width: 100%;
-    padding: 14px 4px 4px;
+    margin-top: 10px;
+    padding: 16px 4px 6px;
     font-family: var(--rv-display);
     font-size: 19px;
     font-weight: 600;
     text-align: left;
-    border-top: 1px solid var(--rv-line);
+    border-top: 2px solid var(--rv-line);
   }
   .panel.agenda > .overline + .day-head,
   .panel.agenda > .day-head:first-child {
+    margin-top: 0;
     border-top: 0;
     padding-top: 10px;
   }
-  .day-head span {
+  .dh-cal {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 42px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--rv-line-strong);
+    background: var(--rv-surface-2);
+    text-align: center;
+  }
+  .dh-cal small {
+    font-family: var(--rv-body);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 0 1px;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .dh-cal b {
+    font-size: 19px;
+    line-height: 1;
+    padding: 4px 0 5px;
+  }
+  .day-head.today .dh-cal {
+    border-color: var(--rv-accent);
+  }
+  .day-head.today .dh-cal small {
+    background: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  .dh-label {
+    flex: 1;
+    min-width: 0;
+  }
+  .dh-count {
     font-family: var(--rv-body);
     font-size: 12px;
     font-weight: 600;

@@ -1128,6 +1128,16 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return (c && c.color) || this._accent();
   }
 
+  /** The header of a day in a list: a little calendar leaf (weekday and day), the date and how many. */
+  _dayHead(d, count, open) {
+    const now = new Date(this._now);
+    return html`<button class="day-head ${sameDay(d, now) ? "today" : ""}" @click=${open}>
+      <span class="dh-cal" aria-hidden="true"><small>${WEEKDAYS_SHORT[d.getDay()].slice(0, 3)}</small><b>${d.getDate()}</b></span>
+      <span class="dh-label">${dayLabel(d, now)}</span>
+      <span class="dh-count">${count}</span>
+    </button>`;
+  }
+
   /**
    * The lines of one day: the real events and the medicine doses first (those with a time,
    * then the all-day ones), then, under their own label, what can be done at any time:
@@ -1265,7 +1275,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ? html`<div class="panel agenda">
             <div class="overline">Próximos dias</div>
             ${days.map(
-              ({ d, list }) => html`<button class="day-head" @click=${() => this._openDay(d)}>${dayLabel(d, now)}<span>${list.length}</span></button>
+              ({ d, list }) => html`${this._dayHead(d, list.length, () => this._openDay(d))}
                 ${this._renderDayRows(list, d)}`,
             )}
           </div>`
@@ -1546,7 +1556,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ${needle ? html`<p class="page-sub" style="margin-top:0">${loading ? "Buscando…" : plural(events.length, "evento encontrado", "eventos encontrados")} · do último ano ao próximo</p>` : nothing}
       ${byDay.length
         ? html`<div class="panel agenda">
-            ${byDay.map(({ d, list }) => html`<button class="day-head ${sameDay(d, now) ? "today" : ""}" @click=${() => this._openDay(d, "dia")}>${dayLabel(d, now)}<span>${list.length}</span></button>${this._renderDayRows(list, d)}`)}
+            ${byDay.map(({ d, list }) => html`${this._dayHead(d, list.length, () => this._openDay(d, "dia"))}${this._renderDayRows(list, d)}`)}
           </div>`
         : html`<div class="panel"><div class="empty"><div class="em-icon">${icon(needle ? "search" : "calendar-check")}</div><h3>${needle ? "Nada encontrado" : loading ? "Carregando…" : "Nada marcado"}</h3><p>${needle ? `Nenhum evento com “${clip(q, 30)}”.` : "Nenhum evento nos próximos 30 dias."}</p></div></div>`}
     `;
