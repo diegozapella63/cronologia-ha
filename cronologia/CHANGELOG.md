@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.16.1
+
+- **Criar tarefas nas listas dos outros** (Mais › Integrações › Tarefas do ResolvIA, desligado por padrão): o Novo › Tarefa oferece também as listas que são de outra pessoa da casa, com o aviso "Lista de Andressa". A tarefa continua aparecendo só para quem é a lista, e o próximo Novo › Tarefa volta a começar numa lista sua.
+- **Marcar por outras pessoas** (opções do placar, desligado por padrão): as rotinas e manutenções da tela inicial mostram as iniciais de cada pessoa (D, A), e um toque marca como feito por ela, sem abrir outra tela. Na tela do evento, um botão por pessoa no lugar do Feito. Os pontos vão para quem você escolher.
+- **Novo › Evento**: Colar mensagem, Escolher fotos e Digitalizar com IA em quadros tracejados, no padrão do InventarIA e do ResolvIA.
+- **Repete** da rotina, do remédio e da manutenção em duas linhas no máximo, em vez de quatro.
+- Manutenção: **Mostrar na tela inicial, antes da data** (era "Mostrar na Agora"), numa linha só e com a opção de **1 dia**.
+
 ## 1.16.0
 
 - **Usar a integração** em **Mais › Integrações › Tarefas do ResolvIA** e em **Contas do GerencIA**, as duas **desligadas por padrão**. Desligada, o ResolvIA some do CronologIA (tarefas, Levar para o ResolvIA, Trazer uma lista, pontos de lá) e o GerencIA não é consultado (contas na Agora, no calendário e no Novo › Conta). Quem já usava precisa ligar de novo depois de atualizar.

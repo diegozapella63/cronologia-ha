@@ -339,8 +339,12 @@ export const ModelsMixin = (Base) =>
                 (r) => r.key,
                 (r) => html`<div class="chore ${r.done ? "done" : ""}">
                   <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
-                  ${r.points > 0 && this._scoreOn() ? html`<span class="pts ${r.done ? "got" : ""}">+${r.points}</span>` : nothing}
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+                  ${!r.done && this._pickWho()
+                    ? this._renderQuickWho(r.summary, r.points || 0, (p) => this._markDone(r, "rotina", p))
+                    : r.points > 0 && this._scoreOn()
+                      ? html`<span class="pts ${r.done ? "got" : ""}">+${r.points}</span>`
+                      : nothing}
                 </div>`,
               )}`
           : nothing}
@@ -360,7 +364,11 @@ export const ModelsMixin = (Base) =>
           ${this._ring(m.progress, tone, null, icon("wrench"))}
           <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
         </button>
-        ${m.canMove ? html`<button class="dose-btn ${m.state === "vencida" ? "atrasado" : m.state === "perto" ? "agora" : "later"}" @click=${() => this._maintDone(m)}>Feito</button>` : nothing}
+        ${m.canMove
+          ? this._pickWho()
+            ? this._renderQuickWho(m.summary, m.points || 0, (p) => this._maintDone(m, p))
+            : html`<button class="dose-btn ${m.state === "vencida" ? "atrasado" : m.state === "perto" ? "agora" : "later"}" @click=${() => this._maintDone(m)}>Feito</button>`
+          : nothing}
       </div>`;
     }
 
@@ -398,18 +406,20 @@ export const ModelsMixin = (Base) =>
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
-        facts.push(["bell-ring", `Aparece na Agora ${plural(k.warn, "dia", "dias")} antes`]);
+        facts.push(["bell-ring", `Aparece na tela inicial ${plural(k.warn, "dia", "dias")} antes`]);
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }
       const ui = KIND_UI[k.kind];
       let action = nothing;
       if (k.kind === "manutencao") {
         const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid);
-        if (m && m.canMove) action = html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>`;
+        if (m && m.canMove) action = this._pickWho() ? this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p)) : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>`;
       } else if (e.start < addDays(startOfDay(now), 2)) {
         const it = { key: e.key, summary: e.summary };
         action = chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
+          : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
+            ? this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))
           : k.kind === "rotina" || k.kind === "manutencao"
             ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>`
             : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${ui.verb}</button>`;
@@ -672,7 +682,7 @@ export const ModelsMixin = (Base) =>
       const f = this._form;
       return html`<div class="model-strip" role="radiogroup" aria-label="Modelo">
         ${Object.entries(KIND_UI)
-          .filter(([k]) => k !== "tarefa" || this._todos().lists.length)
+          .filter(([k]) => k !== "tarefa" || this._todoLists().length)
           .map(
             ([k, ui]) => html`<button class="model ${current === k ? "on" : ""}" role="radio" aria-checked=${current === k ? "true" : "false"} @click=${() => {
               if (current === k) return;
@@ -742,7 +752,15 @@ export const ModelsMixin = (Base) =>
       const allowed = f.mode !== "edit" || f.kind !== "rotina" ? opts : f.wasAfter ? opts.filter(([k]) => k === "depois") : f.rid || f.freq !== "uma" ? opts.filter(([k]) => k !== "depois") : opts;
       return html`<div class="field">
         <span class="flabel">${label}</span>
-        <div class="chip-row">${allowed.map(([k, l]) => html`<button class="pick ${f.freq === k ? "on" : ""}" @click=${() => this._setForm({ freq: k })}>${k !== "uma" ? icon(k === "depois" ? "rotate-ccw" : "repeat") : nothing}<span>${l}</span></button>`)}</div>
+        ${(() => {
+          // two lines at most: 7 -> 4 + 3, 5 or 6 -> 3 + the rest; the last one fills the gap
+          const n = allowed.length;
+          const cols = n <= 4 ? n : n <= 6 ? 3 : 4;
+          const span = n % cols ? cols - (n % cols) + 1 : 1;
+          return html`<div class="seg seg-grid" role="radiogroup" aria-label=${label} style="grid-template-columns:repeat(${cols},1fr)">${allowed.map(
+            ([k, l], i) => html`<button class=${f.freq === k ? "on" : ""} role="radio" aria-checked=${f.freq === k ? "true" : "false"} style=${i === n - 1 && span > 1 ? `grid-column:span ${span}` : ""} @click=${() => this._setForm({ freq: k })}>${l}</button>`,
+          )}</div>`;
+        })()}
         ${f.freq === "semana"
           ? html`<div class="wdp-row" role="group" aria-label="Dias da semana">
               ${[0, 1, 2, 3, 4, 5, 6].map((d) => {
@@ -890,7 +908,7 @@ export const ModelsMixin = (Base) =>
             : this._dateField("Próxima vez", f.date, (v) => this._setForm({ date: v }), "kf-date", { quick: false })}
           <p class="next-line">${icon("calendar-check")}<span>Próxima: <b>${cap(dayLabel(next, now, { long: false }))}</b>${dayDiff(next, now) > 1 ? ` · em ${plural(dayDiff(next, now), "dia", "dias")}` : ""}</span></p>
           ${this._pointsField()}
-          <div class="field"><span class="flabel">Mostrar na Agora</span><div class="chip-row">${[3, 7, 15, 30].map((n) => html`<button class="pick ${f.warn === n ? "on" : ""}" @click=${() => this._setForm({ warn: n })}>${n} dias antes</button>`)}</div></div>
+          <div class="field"><span class="flabel">Mostrar na tela inicial, antes da data</span><div class="seg seg-grid" role="radiogroup" aria-label="Mostrar na tela inicial" style="grid-template-columns:repeat(5,1fr)">${[1, 3, 7, 15, 30].map((n) => html`<button class=${f.warn === n ? "on" : ""} role="radio" aria-checked=${f.warn === n ? "true" : "false"} @click=${() => this._setForm({ warn: n })}>${n === 1 ? "1 dia" : `${n} dias`}</button>`)}</div></div>
           ${this._calField()}
           ${notes}`;
       }

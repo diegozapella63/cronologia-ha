@@ -1702,6 +1702,25 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     `;
   }
 
+  /** Novo › Evento: Colar mensagem / Escolher fotos / Digitalizar com IA, dashed tiles like the InventarIA and the ResolvIA. */
+  _renderImportTiles() {
+    const ai = this._ai || {};
+    const android = this._isHaAndroid();
+    const tile = (start, ic, text, off = false) => html`<button type="button" class="imp-tile" ?disabled=${off} @click=${() => this._openImport(start)}>${icon(ic)}<span>${text}</span></button>`;
+    return html`<div class="field imp-field">
+        <span class="flabel">Trazer de mensagem ou foto</span>
+        <div class="imp-tiles">
+          ${tile("text", "clipboard-paste", "Colar mensagem")}
+          ${tile("photos", "images", "Escolher fotos", !ai.images)}
+          ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images)}
+        </div>
+        ${android && ai.images ? html`<p class="imp-help">No app do Home Assistant, Escolher fotos abre a galeria (uma foto por vez). Para fotografar um convite ou cartão na hora, use Digitalizar com IA, que abre a câmera aqui dentro.</p>` : nothing}
+      </div>
+      <div class="ai-box">${icon("scan-text")}<span>${ai.ready
+        ? "Com uma mensagem ou foto, a IA encontra os eventos, com data, horário e local. Você confere antes de criar."
+        : "Para ler mensagens e fotos, configure a Leitura por IA em Mais › Integrações."}</span></div>`;
+  }
+
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
   _secHead(ic, title, lead = null) {
     return html`<div class="mais-head"><span class="mais-ic" aria-hidden="true">${icon(ic)}</span><h2>${title}</h2></div>${lead ? html`<p class="panel-lead">${lead}</p>` : nothing}`;
@@ -1935,13 +1954,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`
       ${this._sheetHead(f.mode === "add" ? "Novo" : "Editar evento")}
       ${f.mode === "add" ? this._renderModelChips("") : nothing}
-      ${f.mode === "add" && this._aiOn()
-        ? html`<div class="imp-strip">
-            <button @click=${() => this._openImport("text")}>${icon("clipboard-paste")}<span>Colar mensagem</span></button>
-            <button @click=${() => this._openImport("photos")}>${icon("images")}<span>Escolher fotos</span></button>
-            <button @click=${() => this._openImport("scan")}>${icon("scan-text")}<span>Digitalizar com IA</span></button>
-          </div>`
-        : nothing}
+      ${f.mode === "add" && this._aiOn() ? this._renderImportTiles() : nothing}
       <label class="field">
         <span class="flabel">Título</span>
         <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder="Ex.: Dentista, Reunião, Aniversário" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveForm())}></textarea>

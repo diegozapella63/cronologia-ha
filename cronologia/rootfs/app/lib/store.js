@@ -61,6 +61,10 @@ function cleanApp(raw) {
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
   // Agora also lists the pending tasks without a due date
   if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
+  // Novo › Tarefa also offers the lists of another person (De quem é)
+  if ("todo_create_any" in raw) out.todo_create_any = raw.todo_create_any ? true : null;
+  // Mais › Placar › Marcar por outras pessoas: Feito asks who did it
+  if ("who_pick" in raw) out.who_pick = raw.who_pick ? true : null;
   // Tarefas do ResolvIA: whose each list is ({"todo.tarefas_dessa": "Andressa"}); a list with an owner only shows to them
   if ("todo_owner" in raw) {
     const owners = {};

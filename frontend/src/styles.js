@@ -389,6 +389,24 @@ export const styles = css`
     height: 21px;
     stroke-width: 1.9;
   }
+  /* Novo › Rotina, Remédio, Manutenção › Repete: a grid of two lines, the choice filled like the chips */
+  .seg.seg-grid {
+    display: grid;
+  }
+  .seg.seg-grid button {
+    padding: 8px 4px;
+    min-height: 46px;
+    font-size: 13.5px;
+    line-height: 1.2;
+    text-align: center;
+    text-wrap: balance;
+    min-width: 0;
+  }
+  .seg.seg-grid button.on,
+  :host([dark]) .seg.seg-grid button.on {
+    background: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
   /* Novo › Evento › Repetir: one line, the choice filled like the chips */
   .seg.rep-seg button {
     padding: 9px 2px;
@@ -1471,33 +1489,69 @@ export const styles = css`
     width: 20px;
     height: 20px;
   }
-  .imp-strip {
+  /* Novo › Evento: Colar mensagem / Escolher fotos / Digitalizar com IA, dashed tiles like the InventarIA and the ResolvIA */
+  .imp-field {
+    margin-bottom: 12px;
+  }
+  .imp-tiles {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin: -4px 0 18px;
+    gap: 10px;
   }
-  .imp-strip button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 11px 6px;
-    border-radius: 14px;
-    background: var(--rv-surface-2);
-    font-size: 13px;
+  .imp-tile {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 1.5px dashed var(--rv-line-strong);
+    background: transparent;
+    color: var(--rv-text);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    padding: 8px;
+    font-size: 14px;
     font-weight: 500;
+    line-height: 1.3;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .imp-tile .i {
+    width: 22px;
+    height: 22px;
     color: var(--rv-text-2);
   }
-  .imp-strip span {
-    text-wrap: balance;
-    text-align: center;
-    line-height: 1.3;
+  .imp-tile:hover:not([disabled]),
+  .imp-tile:focus-visible {
+    border-color: var(--rv-text-2);
+    background: var(--rv-surface-2);
   }
-  .imp-strip .i {
-    width: 21px;
-    height: 21px;
-    color: var(--rv-accent-ink);
+  .imp-tile[disabled] {
+    opacity: 0.45;
+  }
+  .imp-help {
+    margin: 10px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--rv-muted);
+  }
+  .ai-box {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--rv-surface-2);
+    border: 1px solid var(--rv-line);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--rv-muted);
+    margin-bottom: 18px;
+  }
+  .ai-box .i {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
   }
   .imp-options {
     display: flex;

@@ -59,8 +59,26 @@ export const RewardsMixin = (Base) =>
 
     // ------------------------------------------------------------ who did it
 
-    /** Runs `run(who)`: the person using the app when they are on the scoreboard, otherwise asks. */
-    _withWho(points, title, run) {
+    /** Mais › Placar › Marcar por outras pessoas: the initials of each person next to Feito, one tap each. */
+    _pickWho() {
+      return this._scoreOn() && this._app("who_pick", false) === true;
+    }
+
+    /** The initials buttons (A, D) of a routine or maintenance row: `go(person)` marks it done by them. */
+    _renderQuickWho(title, points, go) {
+      const s = this._score() || { participants: [] };
+      const people = s.participants.slice(0, 4);
+      return html`<div class="qwho" role="group" aria-label="Quem fez ${title}">
+        ${people.map((p) => html`<button class="qw-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${p} fez ${title}${points > 0 ? ` (+${points})` : ""}" title="${p} fez${points > 0 ? ` (+${points})` : ""}" @click=${() => go(p)}>${initial(p)}</button>`)}
+      </div>`;
+    }
+
+    /**
+     * Runs `run(who)`: `preset` when given (a person's button), else the person using the app
+     * when they are on the scoreboard, otherwise asks.
+     */
+    _withWho(points, title, run, preset = null) {
+      if (preset) return run(preset);
       if (!this._scoreOn() || !(points > 0)) return run("");
       const me = this._participant(this._me());
       if (me) return run(me);
@@ -78,8 +96,8 @@ export const RewardsMixin = (Base) =>
       } else this._showToast(text, undo ? { label: "Desfazer", run: undo } : null);
     }
 
-    /** Chore (or repeating maintenance) done. */
-    _markDone(it, kind) {
+    /** Chore (or repeating maintenance) done; `by`: the person chosen on the sheet. */
+    _markDone(it, kind, by = null) {
       return this._withWho(it.points || 0, it.summary, async (who) => {
         if (this._sheet === "who") await this._closeSheet();
         try {
@@ -89,11 +107,11 @@ export const RewardsMixin = (Base) =>
         } catch (err) {
           this._showToast(`Não consegui marcar: ${err.message}`);
         }
-      });
+      }, by);
     }
 
     /** Maintenance done: moves to the next date (and the points go to who did it). */
-    _maintDone(m) {
+    _maintDone(m, by = null) {
       return this._withWho(m.points || 0, m.summary, async (who) => {
         if (this._sheet) await this._closeSheet();
         try {
@@ -105,7 +123,20 @@ export const RewardsMixin = (Base) =>
         } catch (err) {
           this._showToast(`Não consegui: ${err.message}`);
         }
-      });
+      }, by);
+    }
+
+    /** Event sheet with Marcar por outras pessoas: one button per person instead of Feito. */
+    _renderWhoButtons(points, go) {
+      const s = this._score() || { participants: [] };
+      return html`<div class="field who-act">
+        <span class="flabel">Quem fez?${points > 0 ? html` <b>+${points}</b>` : nothing}</span>
+        <div class="who-grid inline">
+          ${s.participants.map(
+            (p) => html`<button class="who-btn" style=${colorVars(this._pColor(p), this._dark)} @click=${() => go(p)}><span class="avatar">${initial(p)}</span><b>${p}</b></button>`,
+          )}
+        </div>
+      </div>`;
     }
 
     _renderWhoSheet() {
@@ -631,6 +662,10 @@ export const RewardsMixin = (Base) =>
         <div class="row switch-row">
           <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">Mostra o card <b>Para pontuar hoje</b>: marcar as tarefas do dia, criar tarefa com pontos e dar pontos avulsos ali mesmo. Desligado, as tarefas são marcadas na Agora e no ResolvIA.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.manual} @change=${(e) => this._scorePrefs({ manual: e.target.checked })} aria-label="Marcar pontos em Recompensas" /><span class="track"></span></label>
+        </div>
+        <div class="row switch-row">
+          <div class="grow"><div class="label">Marcar por outras pessoas</div><div class="hint" style="white-space:normal">Na rotina e na manutenção da tela inicial aparecem as iniciais de cada pessoa: um toque marca como feito por ela, com os pontos. Na tela do evento, um botão por pessoa.</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${this._app("who_pick", false) === true} @change=${(e) => this._saveAppPrefs({ who_pick: e.target.checked ? true : null })} aria-label="Marcar por outras pessoas" /><span class="track"></span></label>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quando o período fecha, quem participa recebe quem venceu e o prêmio.</div></div>

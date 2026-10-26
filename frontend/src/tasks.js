@@ -179,8 +179,17 @@ export const TasksMixin = (Base) =>
 
     // ------------------------------------------------------------ new task
 
+    /** Lists Novo › Tarefa offers: this person's and everyone's, plus the other people's with Criar tarefas nas listas dos outros. */
     _todoLists() {
-      return this._todos().lists.filter((l) => !l.unavailable && l.features & TF.CREATE);
+      const src = this._app("todo_create_any", false) === true ? this._todosAll() : this._todos();
+      return src.lists.filter((l) => !l.unavailable && l.features & TF.CREATE);
+    }
+
+    /** The person a list belongs to when it isn't this one (null for theirs or everyone's). */
+    _otherOwner(id) {
+      const owner = (this._app("todo_owner", null) || {})[id];
+      const me = this._me();
+      return owner && !(me && foldText(owner) === foldText(me)) ? owner : null;
     }
 
     _openTodoForm({ date = null } = {}) {
@@ -191,7 +200,7 @@ export const TasksMixin = (Base) =>
       } catch (e) {
         /* private mode */
       }
-      const pick = lists.find((l) => l.id === last) || lists.find((l) => !l.hidden && l.features & TF.DUE_DATE) || lists[0];
+      const pick = lists.find((l) => l.id === last) || lists.find((l) => !l.hidden && l.features & TF.DUE_DATE && !this._otherOwner(l.id)) || lists.find((l) => !this._otherOwner(l.id)) || lists[0];
       this._openSheet("form", { mode: "add", kind: "tarefa", title: "", list: pick ? pick.id : "", date: ymd(date ? startOfDay(date) : startOfDay(new Date())), noDue: false, timed: false, time: "09:00", notes: "" });
       this.updateComplete.then(() => {
         const ta = this.renderRoot.querySelector(".sheet .ev-title-input");
@@ -223,8 +232,9 @@ export const TasksMixin = (Base) =>
         </label>
         <div class="field">
           <span class="flabel">Lista do ResolvIA</span>
-          <div class="chip-row">${lists.map((x) => html`<button class="pick list ${f.list === x.id ? "on" : ""}" style=${colorVars(colorById(TODO_COLOR), this._dark)} title=${x.name} @click=${() => this._setForm({ list: x.id })}>${icon("list-checks")}<span>${clip(names.get(x.id).short, 30)}</span></button>`)}</div>
+          <div class="chip-row">${lists.map((x) => html`<button class="pick list ${f.list === x.id ? "on" : ""}" style=${colorVars(colorById(TODO_COLOR), this._dark)} title=${x.name} @click=${() => this._setForm({ list: x.id })}>${icon(this._otherOwner(x.id) ? "user-round" : "list-checks")}<span>${clip(names.get(x.id).short, 30)}</span></button>`)}</div>
           ${l && names.get(l.id).short !== l.name ? html`<div class="field-hint">${icon("list-checks")}<span>No Home Assistant: <b>${l.name}</b></span></div>` : nothing}
+          ${l && this._otherOwner(l.id) ? html`<div class="field-hint">${icon("user-round")}<span>Lista de <b>${this._otherOwner(l.id)}</b>: a tarefa aparece no CronologIA de ${this._otherOwner(l.id)}.</span></div>` : nothing}
         </div>
         ${canDate || canTime
           ? html`${f.noDue ? nothing : this._dateField("Prazo", f.date, (v) => this._setForm({ date: v }), "td-date")}
@@ -257,14 +267,18 @@ export const TasksMixin = (Base) =>
       this._setForm({ saving: true });
       try {
         await this.api.addTodo(l.id, task);
-        try {
-          localStorage.setItem(LAST_LIST, JSON.stringify(l.id));
-        } catch (e) {
-          /* private mode */
+        const other = this._otherOwner(l.id);
+        // another person's list isn't remembered: the next task starts on one's own
+        if (!other) {
+          try {
+            localStorage.setItem(LAST_LIST, JSON.stringify(l.id));
+          } catch (e) {
+            /* private mode */
+          }
         }
         this._haptic("success");
         await this._closeSheet();
-        this._showToast(`Tarefa criada em ${clip(l.name, 24)}${l.hidden ? " (lista oculta aqui)" : ""}`);
+        this._showToast(`Tarefa criada em ${clip(l.name, 24)}${other ? ` (lista de ${other})` : l.hidden ? " (lista oculta aqui)" : ""}`);
       } catch (err) {
         if (this._sheet === "form") this._setForm({ saving: false });
         this._showToast(`Não consegui criar: ${err.message}`);
@@ -353,6 +367,12 @@ export const TasksMixin = (Base) =>
                 <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), depois das que têm prazo.</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label="Tarefas sem prazo na Agora" /><span class="track"></span></label>
               </div>
+              ${this._todoOwners().length
+                ? html`<div class="row switch-row">
+                    <div class="grow"><div class="label">Criar tarefas nas listas dos outros</div><div class="hint" style="white-space:normal">No Novo › Tarefa aparecem também as listas que são de outra pessoa da casa, para pedir algo a ela. As tarefas continuam aparecendo só para quem é a lista.</div></div>
+                    <label class="switch"><input type="checkbox" role="switch" .checked=${this._app("todo_create_any", false) === true} @change=${(e) => this._saveAppPrefs({ todo_create_any: e.target.checked ? true : null })} aria-label="Criar tarefas nas listas dos outros" /><span class="track"></span></label>
+                  </div>`
+                : nothing}
               <div class="sub-overline">Listas</div>
               ${this._todoOwners().length ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>` : nothing}`
           : nothing}

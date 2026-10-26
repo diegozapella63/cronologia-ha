@@ -2275,6 +2275,23 @@ export const calStyles = css`
     gap: 10px;
     margin-bottom: 14px;
   }
+  /* event sheet with Marcar por outras pessoas: the people side by side, in place of Feito */
+  .who-act {
+    margin: 6px 0 4px;
+  }
+  .who-act .flabel b {
+    color: var(--rv-accent-ink);
+    font-weight: 700;
+  }
+  .who-grid.inline {
+    margin-bottom: 0;
+  }
+  .who-grid.inline .who-btn {
+    flex-direction: row;
+    justify-content: center;
+    padding: 12px 10px;
+    font-size: 15.5px;
+  }
   .who-btn {
     display: flex;
     flex-direction: column;
