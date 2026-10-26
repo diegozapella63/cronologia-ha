@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16.2
+
+- **Calendário**: em cada dia, primeiro os **eventos** (os com horário, depois os de dia todo) e, separados embaixo, **Rotinas, tarefas e lembretes** (rotinas, tarefas do ResolvIA, manutenções, remédios e contas). Vale no Mês, na Lista e nos Próximos dias da tela inicial.
+
 ## 1.16.1
 
 - **Criar tarefas nas listas dos outros** (Mais › Integrações › Tarefas do ResolvIA, desligado por padrão): o Novo › Tarefa oferece também as listas que são de outra pessoa da casa, com o aviso "Lista de Andressa". A tarefa continua aparecendo só para quem é a lista, e o próximo Novo › Tarefa volta a começar numa lista sua.

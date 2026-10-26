@@ -16,12 +16,13 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 - **Agora**: no alto, **Remédios de hoje** e **Contas a pagar** (quando há); depois o evento que está acontecendo (com quanto falta para terminar) ou o próximo, os eventos do dia todo, as **Tarefas**, a lista de hoje com a linha de "agora", a **Rotina da casa** com a **Manutenção** que está vencendo e os próximos 7 dias. Com todos os remédios do dia tomados, o card deles vai para o fim da tela.
 - **Calendário**: **Mês** (com pontinhos na cor de cada calendário), **Semana** e **Dia** (com as horas do dia; toque num horário vazio para criar um evento ali) e **Lista** (próximos 30 dias, com busca do último ano ao próximo). Arraste o mês para os lados para trocar.
+  - Em cada dia, primeiro vêm os **eventos** (os com horário, depois os de dia todo) e, separados embaixo, **Rotinas, tarefas e lembretes**: rotinas, tarefas do ResolvIA, manutenções, remédios e contas, que podem ser feitos a qualquer hora.
 - **Novo**: cria um evento, uma **tarefa do ResolvIA** ou um **modelo** (remédio, conta, rotina, manutenção), ou traz eventos de uma mensagem, foto ou arquivo .ics.
 - **Recompensas**: o placar da casa. Pontos por tarefa feita, quem está na frente, o prêmio do período e o histórico (veja abaixo).
 - **Mais**, em abas no alto (ficam presas no topo ao rolar):
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
-  - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, resultado no celular, desligar) e a lista de **deméritos**.
+  - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, marcar por outras pessoas, resultado no celular, desligar) e a lista de **deméritos**.
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA** e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema (automático, claro ou escuro) e cor do app.

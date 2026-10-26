@@ -2377,6 +2377,22 @@ export const calStyles = css`
   .chk.sq {
     border-radius: 9px;
   }
+  /* a day's list: the events, then "Rotinas, tarefas e lembretes" */
+  .day-sep {
+    margin: 10px 0 2px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rv-line);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--rv-muted);
+  }
+  .day-sep.first {
+    margin-top: 2px;
+    padding-top: 4px;
+    border-top: 0;
+  }
   /* Tarefas do ResolvIA › De quem é (Todos, or one person) */
   .owner-pick {
     display: flex;

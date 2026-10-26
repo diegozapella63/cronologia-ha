@@ -1128,6 +1128,21 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return (c && c.color) || this._accent();
   }
 
+  /**
+   * The lines of one day: the real events first (those with a time, then the all-day ones),
+   * then, under their own label, what can be done at any time: routines, tasks, maintenance,
+   * doses and bills.
+   */
+  _renderDayRows(list, day) {
+    const isEvent = (e) => !e.kind && !e.todo && !e.gerencia;
+    const order = (a, b) => Number(a.allDay) - Number(b.allDay) || a.start - b.start;
+    const events = list.filter(isEvent).sort(order);
+    const rest = list.filter((e) => !isEvent(e)).sort(order);
+    return html`${events.map((e) => this._renderRow(e, day))}${rest.length
+      ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
+      : nothing}`;
+  }
+
   /** One line of an agenda (time, color bar, title, place · calendar). */
   _renderRow(e, day, { showCal = true } = {}) {
     const now = this._now;
@@ -1251,7 +1266,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
             <div class="overline">Próximos dias</div>
             ${days.map(
               ({ d, list }) => html`<button class="day-head" @click=${() => this._openDay(d)}>${dayLabel(d, now)}<span>${list.length}</span></button>
-                ${list.map((e) => this._renderRow(e, d))}`,
+                ${this._renderDayRows(list, d)}`,
             )}
           </div>`
         : !loading
@@ -1437,7 +1452,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       </div>
       <div class="panel agenda day-panel">
         <div class="day-title"><span>${dayLabel(cur, now)}</span><button class="text-btn" @click=${() => this._openForm({ date: cur })}>${icon("plus")}Evento</button></div>
-        ${dayEvents.length ? dayEvents.map((e) => this._renderRow(e, cur)) : html`<p class="empty-line">${this._store.loading(gridStart, gridEnd) ? "Carregando…" : "Nada marcado."}</p>`}
+        ${dayEvents.length ? this._renderDayRows(dayEvents, cur) : html`<p class="empty-line">${this._store.loading(gridStart, gridEnd) ? "Carregando…" : "Nada marcado."}</p>`}
       </div>
     `;
   }
@@ -1531,7 +1546,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ${needle ? html`<p class="page-sub" style="margin-top:0">${loading ? "Buscando…" : plural(events.length, "evento encontrado", "eventos encontrados")} · do último ano ao próximo</p>` : nothing}
       ${byDay.length
         ? html`<div class="panel agenda">
-            ${byDay.map(({ d, list }) => html`<button class="day-head ${sameDay(d, now) ? "today" : ""}" @click=${() => this._openDay(d, "dia")}>${dayLabel(d, now)}<span>${list.length}</span></button>${list.map((e) => this._renderRow(e, d))}`)}
+            ${byDay.map(({ d, list }) => html`<button class="day-head ${sameDay(d, now) ? "today" : ""}" @click=${() => this._openDay(d, "dia")}>${dayLabel(d, now)}<span>${list.length}</span></button>${this._renderDayRows(list, d)}`)}
           </div>`
         : html`<div class="panel"><div class="empty"><div class="em-icon">${icon(needle ? "search" : "calendar-check")}</div><h3>${needle ? "Nada encontrado" : loading ? "Carregando…" : "Nada marcado"}</h3><p>${needle ? `Nenhum evento com “${clip(q, 30)}”.` : "Nenhum evento nos próximos 30 dias."}</p></div></div>`}
     `;
