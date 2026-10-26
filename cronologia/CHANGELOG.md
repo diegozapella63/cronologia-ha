@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.16.3
+
+- **Recompensas**: a cor de cada pessoa é a cor da agenda dela (a que tem o nome dela, como "Pessoal (Andressa)"). Quem não tem agenda própria fica com uma cor que ninguém usa.
+- **Calendário**: os **remédios** sobem para junto dos eventos, na ordem do horário, porque têm hora para tomar. Rotinas, tarefas, manutenções e contas continuam embaixo.
+
 ## 1.16.2
 
 - **Calendário**: em cada dia, primeiro os **eventos** (os com horário, depois os de dia todo) e, separados embaixo, **Rotinas, tarefas e lembretes** (rotinas, tarefas do ResolvIA, manutenções, remédios e contas). Vale no Mês, na Lista e nos Próximos dias da tela inicial.

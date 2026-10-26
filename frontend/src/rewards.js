@@ -47,10 +47,51 @@ export const RewardsMixin = (Base) =>
       return s.participants.find((p) => foldText(p) === f || foldText(p).split(" ")[0] === f.split(" ")[0]) || "";
     }
 
+    /**
+     * The color of a person: the color of their calendar when one calendar has their name
+     * ("Pessoal (Andressa)", "Agenda do Diego"); the others get the next free color.
+     */
     _pColor(name) {
+      const key = foldText(name || "");
+      const map = this._pColors();
+      if (map.has(key)) return map.get(key);
+      const own = this._personCal(name);
+      return own ? own.color : colorById(P_COLORS[0]);
+    }
+
+    _pColors() {
       const s = this._score();
-      const i = s ? Math.max(0, s.participants.findIndex((p) => foldText(p) === foldText(name))) : 0;
-      return colorById(P_COLORS[i % P_COLORS.length]);
+      const parts = (s && s.participants) || [];
+      const cals = this._cals ? this._cals() : [];
+      const c = this._pColorCache;
+      if (c && c.cals === cals && c.parts === parts.join("|")) return c.map;
+      const map = new Map();
+      const used = new Set();
+      for (const p of parts) {
+        const own = this._personCal(p);
+        if (own) {
+          map.set(foldText(p), own.color);
+          used.add(own.color.id);
+        }
+      }
+      let k = 0;
+      for (const p of parts) {
+        if (map.has(foldText(p))) continue;
+        while (k < P_COLORS.length - 1 && used.has(P_COLORS[k])) k++;
+        const id = P_COLORS[k % P_COLORS.length];
+        map.set(foldText(p), colorById(id));
+        used.add(id);
+      }
+      this._pColorCache = { cals, parts: parts.join("|"), map };
+      return map;
+    }
+
+    /** The calendar named after a person (only when exactly one visible calendar has their first name as a word). */
+    _personCal(name) {
+      const first = foldText(name || "").split(" ")[0];
+      if (!first || !this._cals) return null;
+      const hits = this._cals().filter((c) => !c.hidden && foldText(c.name).split(/[^a-z0-9]+/).includes(first));
+      return hits.length === 1 ? hits[0] : null;
     }
 
     _me() {

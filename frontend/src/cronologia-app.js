@@ -1129,12 +1129,12 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   }
 
   /**
-   * The lines of one day: the real events first (those with a time, then the all-day ones),
-   * then, under their own label, what can be done at any time: routines, tasks, maintenance,
-   * doses and bills.
+   * The lines of one day: the real events and the medicine doses first (those with a time,
+   * then the all-day ones), then, under their own label, what can be done at any time:
+   * routines, tasks, maintenance and bills.
    */
   _renderDayRows(list, day) {
-    const isEvent = (e) => !e.kind && !e.todo && !e.gerencia;
+    const isEvent = (e) => (!e.kind || e.kind.kind === "remedio") && !e.todo && !e.gerencia;
     const order = (a, b) => Number(a.allDay) - Number(b.allDay) || a.start - b.start;
     const events = list.filter(isEvent).sort(order);
     const rest = list.filter((e) => !isEvent(e)).sort(order);
