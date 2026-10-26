@@ -389,6 +389,22 @@ export const styles = css`
     height: 21px;
     stroke-width: 1.9;
   }
+  /* Novo › Evento › Repetir: one line, the choice filled like the chips */
+  .seg.rep-seg button {
+    padding: 9px 2px;
+    font-size: 14px;
+    min-width: 0;
+  }
+  .seg.rep-seg button.on,
+  :host([dark]) .seg.rep-seg button.on {
+    background: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  @media (max-width: 380px) {
+    .seg.rep-seg button {
+      font-size: 13px;
+    }
+  }
   .seg.week-seg {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2336,6 +2352,10 @@ export const extraStyles = css`
     font-size: 14px;
     line-height: 1.5;
     color: var(--rv-muted);
+  }
+  /* Mais › Integrações: Usar a integração, then how it is going */
+  .integ-switch + .ai-state {
+    margin-top: 8px;
   }
   .ai-state {
     display: flex;

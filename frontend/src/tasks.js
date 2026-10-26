@@ -3,7 +3,7 @@
 // the settings in Mais. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks } from "./util.js";
+import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
 import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
@@ -199,13 +199,20 @@ export const TasksMixin = (Base) =>
       });
     }
 
+    /** Controlar prazos in the ResolvIA (off there: new tasks go without a deadline). */
+    _todoDueOk() {
+      return ((this._todosAll().app || {}).prazos) !== false;
+    }
+
     _renderTodoForm() {
       const f = this._form;
       const lists = this._todoLists();
       const l = lists.find((x) => x.id === f.list);
+      const names = shortNames(lists);
       const feats = l ? l.features : 0;
-      const canDate = !!(feats & TF.DUE_DATE);
-      const canTime = !!(feats & TF.DUE_DATETIME);
+      const dueOk = this._todoDueOk();
+      const canDate = dueOk && !!(feats & TF.DUE_DATE);
+      const canTime = dueOk && !!(feats & TF.DUE_DATETIME);
       const canNotes = !!(feats & TF.DESCRIPTION);
       return html`
         ${this._sheetHead("Novo")}
@@ -216,7 +223,8 @@ export const TasksMixin = (Base) =>
         </label>
         <div class="field">
           <span class="flabel">Lista do ResolvIA</span>
-          <div class="chip-row">${lists.map((x) => html`<button class="pick list ${f.list === x.id ? "on" : ""}" style=${colorVars(colorById(TODO_COLOR), this._dark)} @click=${() => this._setForm({ list: x.id })}>${icon("list-checks")}<span>${clip(x.name, 26)}</span></button>`)}</div>
+          <div class="chip-row">${lists.map((x) => html`<button class="pick list ${f.list === x.id ? "on" : ""}" style=${colorVars(colorById(TODO_COLOR), this._dark)} title=${x.name} @click=${() => this._setForm({ list: x.id })}>${icon("list-checks")}<span>${clip(names.get(x.id).short, 30)}</span></button>`)}</div>
+          ${l && names.get(l.id).short !== l.name ? html`<div class="field-hint">${icon("list-checks")}<span>No Home Assistant: <b>${l.name}</b></span></div>` : nothing}
         </div>
         ${canDate || canTime
           ? html`${f.noDue ? nothing : this._dateField("Prazo", f.date, (v) => this._setForm({ date: v }), "td-date")}
@@ -227,8 +235,10 @@ export const TasksMixin = (Base) =>
                       ${f.timed ? html`<input type="time" class="inline-time" .value=${f.time} aria-label="Horário" @change=${(e) => e.target.value && this._setForm({ time: e.target.value })} />` : nothing}`
                   : nothing}
               </div>`
-          : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>Essa lista não aceita prazo (listas do Alexa, por exemplo). A tarefa entra sem data.</span></p>`}
-        ${canNotes ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
+          : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
+              ? "Essa lista não aceita prazo (listas do Alexa, por exemplo). A tarefa entra sem data."
+              : "Os prazos estão desligados no ResolvIA (Mais › Opções). A tarefa entra sem data."}</span></p>`}
+        ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
           <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim() || !l} @click=${() => this._saveTodoForm()}>${f.saving ? "Salvando…" : "Criar tarefa"}</button>
@@ -240,7 +250,7 @@ export const TasksMixin = (Base) =>
       const l = this._todoLists().find((x) => x.id === f.list);
       if (!l) return this._showToast("Escolha a lista");
       if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
-      const withDue = !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
+      const withDue = this._todoDueOk() && !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
       const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
       const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "" };
       if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
@@ -291,7 +301,25 @@ export const TasksMixin = (Base) =>
             : nothing}`;
     }
 
+    /** Mais › Integrações › Tarefas do ResolvIA › Usar a integração (off by default). */
+    _resolviaOn() {
+      return this._app("resolvia_on", false) === true;
+    }
+
     _renderTodosSettings() {
+      const on = this._resolviaOn();
+      const onSwitch = html`<div class="row switch-row integ-switch">
+        <div class="grow"><div class="label">Usar a integração</div><div class="hint" style="white-space:normal">${on
+          ? "Ligada: as tarefas das listas do ResolvIA (ou de qualquer lista de tarefas do Home Assistant) aparecem aqui."
+          : "Desligada: nenhuma tarefa do ResolvIA aparece no CronologIA, o Levar para o ResolvIA para e os pontos que vêm de lá não contam."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ resolvia_on: e.target.checked ? true : null })} aria-label="Usar a integração com o ResolvIA" /><span class="track"></span></label>
+      </div>`;
+      if (!on) {
+        return html`<div class="panel" id="resolvia">
+          ${this._secHead("list-checks", "Tarefas do ResolvIA")}
+          ${onSwitch}
+        </div>`;
+      }
       const { lists, app } = this._todosAll();
       const owners = this._app("todo_owner", null) || {};
       const people = this._todoOwners();
@@ -314,6 +342,7 @@ export const TasksMixin = (Base) =>
           : { tone: "ok", title: "Lendo as listas de tarefas do Home Assistant", text: `${counts} Concluir aqui conclui lá.` };
       return html`<div class="panel" id="resolvia">
         ${this._secHead("list-checks", "Tarefas do ResolvIA")}
+        ${onSwitch}
         <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
         ${lists.length
           ? html`<div class="row switch-row">

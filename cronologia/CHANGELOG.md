@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.16.0
+
+- **Usar a integração** em **Mais › Integrações › Tarefas do ResolvIA** e em **Contas do GerencIA**, as duas **desligadas por padrão**. Desligada, o ResolvIA some do CronologIA (tarefas, Levar para o ResolvIA, Trazer uma lista, pontos de lá) e o GerencIA não é consultado (contas na Agora, no calendário e no Novo › Conta). Quem já usava precisa ligar de novo depois de atualizar.
+- **Mais › Opções › Novo › Local e notas** (desligado por padrão): sem ele, o evento não tem Local e Notas e a tarefa não tem Notas. Um evento que já tem local ou notas continua mostrando os dois.
+- **Repetir** do evento numa linha só: Não, Diário, Semanal, Mensal, Anual.
+- **Novo › Tarefa**: sem prazo quando o ResolvIA está com Controlar prazos desligado, e as listas com o mesmo começo de nome (as da Alexa) aparecem pelo que muda, com o nome completo embaixo.
+
 ## 1.15.0
 
 - **De quem é cada lista do ResolvIA** (Mais › Integrações › Tarefas do ResolvIA): Todos ou uma pessoa da casa. A lista de uma pessoa só aparece no CronologIA dela, na Agora, no calendário, em Para pontuar hoje e no Novo › Tarefa. Lista sem dono aparece para todos, e um aparelho sem pessoa da casa vê todas.

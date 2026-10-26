@@ -116,6 +116,8 @@ export class Todos {
       if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) {
         value = {
           versao: String(j.versao || "").slice(0, 20),
+          // prazos: false when Controlar prazos is off there (2.15.0+): Novo › Tarefa offers no deadline
+          prazos: j.prazos !== false,
           semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [],
           pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {},
           // repete: how often each task comes back in the ResolvIA ({list: {uid: days}}), 2.9.1 or newer
@@ -204,7 +206,7 @@ export class Todos {
       else k++;
     }
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    return { lists, items, today: ymd(today), app: app ? { versao: app.versao } : null };
+    return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos } : null };
   }
 
   /** Points the ResolvIA gives for a task (0 when none or no ResolvIA). */

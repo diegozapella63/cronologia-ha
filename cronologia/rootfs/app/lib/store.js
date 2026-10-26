@@ -48,6 +48,11 @@ function cleanApp(raw) {
   if ("default_calendar" in raw) out.default_calendar = CAL_RE.test(raw.default_calendar || "") ? raw.default_calendar : null;
   if ("hide_past" in raw) out.hide_past = raw.hide_past ? true : null;
   if ("gerencia_hidden" in raw) out.gerencia_hidden = raw.gerencia_hidden ? true : null;
+  // Mais › Opções › Eventos › Local e notas: the two fields in the event form (off by default)
+  if ("event_details" in raw) out.event_details = raw.event_details ? true : null;
+  // Mais › Integrações: each integration is off until turned on (true = on)
+  if ("resolvia_on" in raw) out.resolvia_on = raw.resolvia_on ? true : null;
+  if ("gerencia_on" in raw) out.gerencia_on = raw.gerencia_on ? true : null;
   if ("todo_hidden" in raw) {
     // to-do lists left out of the agenda (ResolvIA lists)
     const ids = [...new Set((Array.isArray(raw.todo_hidden) ? raw.todo_hidden : []).filter((id) => /^todo\.[a-z0-9_]+$/.test(id)))].slice(0, 100);

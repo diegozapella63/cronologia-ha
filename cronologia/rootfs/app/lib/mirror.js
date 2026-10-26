@@ -33,7 +33,9 @@ function dueKeyOfItem(due) {
 }
 
 export class Mirror {
-  constructor({ ha, store, todos, home, log, onChange = () => {} }) {
+  /** enabled(): Mais › Integrações › Tarefas do ResolvIA › Usar a integração (off: the tasks leave the list). */
+  constructor({ ha, store, todos, home, log, onChange = () => {}, enabled = () => true }) {
+    this.enabled = enabled;
     this.ha = ha;
     this.store = store;
     this.todos = todos;
@@ -53,6 +55,11 @@ export class Mirror {
     return { list: m.list || null, maint: !!m.maint, routine: !!m.routine };
   }
 
+  /** What the sync works with: nothing while the ResolvIA integration is off. */
+  active() {
+    return this.enabled() ? this.settings() : { list: null, maint: false, routine: false };
+  }
+
   get recs() {
     return this.store.data.mirror || (this.store.data.mirror = {});
   }
@@ -67,6 +74,7 @@ export class Mirror {
   /** For the ResolvIA: {list: {uid: {pontos, tipo}}}. */
   published() {
     const out = {};
+    if (!this.enabled()) return out;
     for (const r of Object.values(this.recs)) {
       if (!r.uid || !r.written) continue;
       (out[r.list] || (out[r.list] = {}))[r.uid] = { pontos: r.written.points || 0, tipo: r.type };
@@ -95,7 +103,7 @@ export class Mirror {
 
   /** One entry per maintenance and per routine (the series), with its next date. */
   desired(now = Date.now()) {
-    const st = this.settings();
+    const st = this.active();
     const out = new Map();
     if (!st.list || (!st.maint && !st.routine)) return out;
     const ix = this.home.index || {};
@@ -164,7 +172,7 @@ export class Mirror {
     this.busy = true;
     let changed = false;
     try {
-      const st = this.settings();
+      const st = this.active();
       const want = this.desired();
       const recs = this.recs;
       // tasks of another list, or of something that isn't wanted anymore: out

@@ -25,7 +25,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA** e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema (automático, claro ou escuro) e cor do app.
-  - **Opções**: início da semana (domingo ou segunda).
+  - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (domingo ou segunda).
 
 ## Criar, editar e apagar
 
@@ -42,6 +42,10 @@ Depende do calendário. O CronologIA só mostra os botões que cada um permite:
 Em eventos que se repetem, ao salvar ou apagar você escolhe **só este evento** ou **este e os próximos** (para apagar, também **toda a série**). Ao apagar um evento comum, aparece **Desfazer**.
 
 Mudar o evento de calendário cria uma cópia no novo calendário e apaga a original (o Home Assistant não tem "mover").
+
+**Repetir** fica numa linha só: Não, Diário, Semanal, Mensal ou Anual.
+
+**Local e notas** (em **Mais › Opções › Novo**) vem desligado: o formulário do evento fica sem **Local** e **Notas**, e o da tarefa sem **Notas**. Ligado, os campos aparecem. Um evento que já tem local ou notas continua mostrando os dois ao editar, para nada ficar escondido.
 
 ## Modelos
 
@@ -121,11 +125,17 @@ O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home 
 
 Com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) (o app de finanças da mesma família, 1.5.0 ou mais novo) no mesmo Home Assistant, as **contas a pagar, os fixos e as faturas do cartão** aparecem no card **Contas a pagar** e no calendário, no dia do vencimento. **Paguei** dá baixa no GerencIA (o fixo do mês fica pago, a fatura fica toda paga) e **Desfazer** volta. O modelo **Conta a pagar** cria a conta lá (única, todo mês ou todo ano, com categoria), ou só no calendário, se você preferir.
 
-Não há nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação, desligue **Mais › Outros apps** no GerencIA. Em **Mais › Integrações › Contas do GerencIA** aparece se está conectado e dá para tirar as contas do calendário.
+A integração vem **desligada**: ligue em **Mais › Integrações › Contas do GerencIA › Usar a integração**. Desligada, o CronologIA não consulta o GerencIA, e as contas de lá saem da Agora, do calendário e do Novo › Conta. Ligada, não há mais nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação pelo outro lado, desligue **Mais › Outros apps** no GerencIA. No mesmo painel aparece se está conectado e dá para tirar as contas do calendário.
 
 ## Tarefas do ResolvIA
 
-O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas nas listas do próprio Home Assistant (`todo.*`), e o CronologIA lê essas mesmas listas. As tarefas **com prazo** aparecem:
+O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas nas listas do próprio Home Assistant (`todo.*`), e o CronologIA lê essas mesmas listas.
+
+A integração vem **desligada**: ligue em **Mais › Integrações › Tarefas do ResolvIA › Usar a integração**. Desligada, nenhuma tarefa aparece no CronologIA (Agora, calendário, Para pontuar hoje e Novo › Tarefa), o **Levar para o ResolvIA** para e tira as tarefas que tinha posto na lista (a escolha fica guardada para quando ligar de novo), e os pontos que o ResolvIA manda não contam. O ResolvIA 2.15.0 ou mais novo mostra em Recompensas que a integração está desligada aqui.
+
+Se o ResolvIA estiver com **Controlar prazos** desligado (2.15.0 ou mais novo), o **Novo › Tarefa** daqui também não oferece prazo: a tarefa entra sem data. Quando várias listas começam com o mesmo nome (as da Alexa, "Notas e Rotinas do Alexa Shopping list" e "… To-do list"), o Novo › Tarefa mostra só o que muda (Shopping list, To-do list) e, embaixo, o nome completo da lista escolhida.
+
+Com a integração ligada, as tarefas **com prazo** aparecem:
 
 - no card **Tarefas com prazo** da tela Agora: atrasadas em vermelho, as de hoje e as de amanhã, com o quadradinho de **Concluir** (e **Desfazer**). As de hoje que você concluir ficam com ✓;
 - no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;

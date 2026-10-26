@@ -976,11 +976,25 @@ export const ModelsMixin = (Base) =>
     }
 
     _renderGerenciaPanel() {
+      const on = this._app("gerencia_on", false) === true;
+      const toggle = html`<div class="row switch-row integ-switch">
+        <div class="grow"><div class="label">Usar a integração</div><div class="hint" style="white-space:normal">${on
+          ? "Ligada: as contas a pagar do GerencIA aparecem aqui e o Paguei daqui dá baixa lá."
+          : "Desligada: o CronologIA não consulta o GerencIA e as contas de lá não aparecem."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ gerencia_on: e.target.checked ? true : null })} aria-label="Usar a integração com o GerencIA" /><span class="track"></span></label>
+      </div>`;
+      if (!on) {
+        return html`<div class="panel" id="gerencia">
+          ${this._secHead("wallet", "Contas do GerencIA")}
+          ${toggle}
+        </div>`;
+      }
       const g = this._ix().gerencia || {};
       const open = (g.contas || []).filter((c) => !c.pago).length;
       const tone = g.ligado ? (g.erro ? "warn" : "ok") : "off";
       return html`<div class="panel" id="gerencia">
         ${this._secHead("wallet", "Contas do GerencIA")}
+        ${toggle}
         <div class="ai-state ${tone}"><span class="dot"></span><div>
           <b>${g.ligado ? (g.erro ? "Não consegui falar com o GerencIA" : `Conectado ao GerencIA ${g.versao || ""}`) : "GerencIA não encontrado"}</b>
           <span>${g.ligado

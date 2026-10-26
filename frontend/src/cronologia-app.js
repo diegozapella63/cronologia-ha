@@ -603,6 +603,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         notes: "",
       };
     }
+    // an event that already has a place or notes shows those fields even with Local e notas off
+    f.details = !!(String(f.location || "").trim() || String(f.notes || "").trim());
     this._openSheet("form", f);
     if (f.mode === "add" && !f.title) {
       this.updateComplete.then(() => {
@@ -1677,7 +1679,17 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   /** Mais › Opções: how the agenda works, for the whole house. */
   _renderOptions() {
     const ws = this._app("week_start", 0);
+    const details = this._app("event_details", false) === true;
     return html`
+      <div class="panel">
+        ${this._secHead("calendar-plus", "Novo")}
+        <div class="row switch-row">
+          <div class="grow"><div class="label">Local e notas</div><div class="hint" style="white-space:normal">${details
+            ? "Ligado: o evento tem os campos Local e Notas, e a tarefa tem Notas."
+            : "Desligado: o evento e a tarefa ficam mais curtos, sem Local e Notas. Um evento que já tem local ou notas continua mostrando os dois."}</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${details} @change=${(e) => this._saveAppPrefs({ event_details: e.target.checked ? true : null })} aria-label="Local e notas" /><span class="track"></span></label>
+        </div>
+      </div>
       <div class="panel">
         ${this._secHead("calendar-days", "Semana", "O dia em que a semana começa no calendário e no placar semanal.")}
         <div class="seg week-seg" role="radiogroup" aria-label="Início da semana">
@@ -1974,18 +1986,22 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       </div>
       <div class="field">
         <span class="flabel">Repetir</span>
-        <div class="chip-row">${REPEATS.map((r) => html`<button class="pick ${f.repeat === r.id ? "on" : ""}" @click=${() => this._setForm({ repeat: r.id })}>${r.id ? icon("repeat") : nothing}<span>${r.label}</span></button>`)}</div>
+        <div class="seg rep-seg" role="radiogroup" aria-label="Repetir">${REPEATS.map(
+          (r) => html`<button class=${f.repeat === r.id ? "on" : ""} role="radio" aria-checked=${f.repeat === r.id ? "true" : "false"} title=${r.label} @click=${() => this._setForm({ repeat: r.id })}>${r.short}</button>`,
+        )}</div>
         ${f.rrule && freqOf(f.rrule) === f.repeat && rruleLabel(f.rrule) !== (REPEATS.find((r) => r.id === f.repeat) || {}).label ? html`<div class="field-hint">${icon("repeat")}<span>${rruleLabel(f.rrule)}</span></div>` : nothing}
         ${f.rid ? html`<div class="field-hint">${icon("info")}<span>Este evento se repete. Ao salvar, você escolhe se muda só este ou este e os próximos.</span></div>` : nothing}
       </div>
-      <label class="field">
-        <span class="flabel">Local</span>
-        <input type="text" .value=${f.location} placeholder="Endereço, sala ou link" @input=${(e) => this._setForm({ location: e.target.value })} />
-      </label>
-      <label class="field">
-        <span class="flabel">Notas</span>
-        <textarea rows="3" .value=${f.notes} placeholder="Detalhes, o que levar…" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea>
-      </label>
+      ${this._app("event_details", false) === true || f.details
+        ? html`<label class="field">
+              <span class="flabel">Local</span>
+              <input type="text" .value=${f.location} placeholder="Endereço, sala ou link" @input=${(e) => this._setForm({ location: e.target.value })} />
+            </label>
+            <label class="field">
+              <span class="flabel">Notas</span>
+              <textarea rows="3" .value=${f.notes} placeholder="Detalhes, o que levar…" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea>
+            </label>`
+        : nothing}
       <div class="sheet-actions">
         <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
         <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveForm()}>${f.saving ? "Salvando…" : f.mode === "add" ? "Criar evento" : "Salvar"}</button>

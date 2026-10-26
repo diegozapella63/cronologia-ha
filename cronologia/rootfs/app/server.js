@@ -24,7 +24,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.15.0";
+const VERSION = "1.16.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -49,6 +49,11 @@ if (!TOKEN) log.error("Sem SUPERVISOR_TOKEN. O homeassistant_api está ligado no
 
 const store = new Store(DATA_DIR, log);
 store.trimVersions(); // Versões anteriores: only the 3 newest (older installs kept up to 60)
+// Mais › Integrações: the ResolvIA and the GerencIA are off until turned on there
+const resolviaOn = () => store.data.app.resolvia_on === true;
+const gerenciaOn = () => store.data.app.gerencia_on === true;
+// dev only (tests written before 1.16.0): start with both on
+if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.resolvia_on == null && store.data.app.gerencia_on == null) store.setApp({ resolvia_on: true, gerencia_on: true });
 const ha = new HAClient(HA_URL, TOKEN, log);
 const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log });
 const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", usage });
@@ -63,12 +68,12 @@ const pushHome = (index) => {
   publishPresence(); // people or scoreboard may have changed (writes only on a change)
   mirror.schedule();
 };
-const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed() });
+const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed(), enabled: gerenciaOn });
 const todos = new Todos({ ha, log, onChange: () => (home.changed(), mirror.schedule()), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
 const backups = new Backups({ dir: path.join(SHARE_DIR, "cronologia") });
 const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
 // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
-const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed() });
+const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed(), enabled: resolviaOn });
 home.mirror = mirror;
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
@@ -329,6 +334,7 @@ class Session {
         return this.result(id);
 
       case "cronologia/todo/add": {
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
         const t = msg.task || {};
         await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
         return this.result(id);
@@ -339,9 +345,11 @@ class Session {
         return this.result(id, home.bringPreview(String(msg.entity_id || "")));
 
       case "cronologia/todo/bring":
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
         return this.result(id, await home.bring({ entity_id: String(msg.entity_id || ""), calendar: String(msg.calendar || ""), uids: msg.uids, remove: msg.remove !== false }));
 
       case "cronologia/todo/set": {
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
         await todos.setDone(msg.entity_id, msg.uid, !!msg.done);
         const summary = todos.summaryOf(msg.entity_id, msg.uid);
         const points = todos.pointsOf(msg.entity_id, summary);
@@ -407,8 +415,10 @@ class Session {
       case "cronologia/prefs/set_app": {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs)) {
-          if ("mirror" in msg.prefs) mirror.schedule(0);
+        if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
+        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs || "resolvia_on" in msg.prefs)) {
+          if ("mirror" in msg.prefs || "resolvia_on" in msg.prefs) mirror.schedule(0);
+          if ("resolvia_on" in msg.prefs) publishPresence();
           // a new setup (or a different period length) starts counting from the current period, without closing one
           if ("score" in msg.prefs || "week_start" in msg.prefs) {
             home.resetPeriod();
@@ -707,14 +717,16 @@ let presenceWarned = false;
 function publishPresence() {
   const placar = home.placarInfo();
   const espelho = mirror.published();
-  const body = JSON.stringify({ placar, espelho });
+  // resolvia: Mais › Integrações › Tarefas do ResolvIA (false: the ResolvIA gives no points and shows why)
+  const resolvia = resolviaOn();
+  const body = JSON.stringify({ placar, espelho, resolvia });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
   try {
     const dir = path.join(SHARE_DIR, "cronologia");
     fs.mkdirSync(dir, { recursive: true });
     const tmp = path.join(dir, ".integracao.json.tmp");
     // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), placar, espelho }, null, 1));
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();

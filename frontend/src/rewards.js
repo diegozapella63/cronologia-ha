@@ -349,7 +349,7 @@ export const RewardsMixin = (Base) =>
           </div>`,
         )}
         ${!chores.length && !maint.length && !tasks.length
-          ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>, ou a uma tarefa no ResolvIA.</p>`
+          ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
           : nothing}
         <div class="score-actions">
           <button class="btn outline sm" @click=${() => this._openKindForm({ kind: "rotina" })}>${icon("plus")}Tarefa com pontos</button>

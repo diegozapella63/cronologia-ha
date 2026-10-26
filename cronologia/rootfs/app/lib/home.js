@@ -233,7 +233,7 @@ export class Home {
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
+    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos && this.store.data.app.resolvia_on === true ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;
@@ -415,6 +415,8 @@ export class Home {
    */
   onPoints(data) {
     const d = data || {};
+    // Mais › Integrações › Tarefas do ResolvIA off: nothing from there counts
+    if (this.store.data.app.resolvia_on !== true) return;
     const key = String(d.chave || "");
     // a maintenance or routine taken to the ResolvIA list (Levar para o ResolvIA)
     const esp = /^espelho\|(todo\.[a-z0-9_]+)\|([^|]{1,300})$/.exec(key);
@@ -744,6 +746,7 @@ export class Home {
    * whether a routine with that name already exists here.
    */
   bringPreview(entityId) {
+    if (this.store.data.app.resolvia_on !== true) throw coded("resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
     const todos = this.todos;
     const st = todos && todos.states.get(entityId);
     if (!st) throw coded("not_found", "Essa lista não existe mais");

@@ -9,11 +9,15 @@ const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 
+const coded = (code, message) => Object.assign(new Error(message), { code });
+
 export class Gerencia {
-  constructor({ shareDir, log, onChange }) {
+  /** enabled(): Mais › Integrações › Contas do GerencIA › Usar a integração (off by default). */
+  constructor({ shareDir, log, onChange, enabled = () => true }) {
     this.file = path.join(shareDir, "gerencia", "integracao.json");
     this.log = log;
     this.onChange = onChange;
+    this.enabled = enabled;
     this.state = { ligado: false, contas: [], categorias: [], erro: null, versao: null, at: null };
     this.timer = null;
     this.busy = null;
@@ -31,6 +35,7 @@ export class Gerencia {
   }
 
   async request(method, route, body) {
+    if (!this.enabled()) throw coded("gerencia_off", "A integração com o GerencIA está desligada em Mais › Integrações.");
     const info = this.info();
     if (!info) throw Object.assign(new Error("GerencIA não encontrado no Home Assistant"), { code: "no_gerencia" });
     const urls = [info.url, info.ip_url].filter(Boolean);
@@ -59,7 +64,11 @@ export class Gerencia {
     if (this.busy) return this.busy;
     this.busy = (async () => {
       const before = JSON.stringify(this.state);
-      if (!this.info()) {
+      if (!this.enabled()) {
+        // turned off here: nothing is read; desligado tells the screen why, encontrado whether it is installed
+        this.state = { ligado: false, desligado: true, encontrado: !!this.info(), contas: [], categorias: [], erro: null, versao: null, at: null };
+        this.lastLog = "";
+      } else if (!this.info()) {
         this.state = { ligado: false, contas: [], categorias: [], erro: null, versao: null, at: null };
       } else {
         try {

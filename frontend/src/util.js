@@ -146,12 +146,13 @@ export function greeting(name, now = new Date()) {
 
 // ---------- recurrence ----------
 
+// short: the one-line choice in the event form (Repetir: Não · Diário · Semanal · Mensal · Anual)
 export const REPEATS = [
-  { id: "", label: "Não repete" },
-  { id: "DAILY", label: "Todo dia" },
-  { id: "WEEKLY", label: "Toda semana" },
-  { id: "MONTHLY", label: "Todo mês" },
-  { id: "YEARLY", label: "Todo ano" },
+  { id: "", label: "Não repete", short: "Não" },
+  { id: "DAILY", label: "Todo dia", short: "Diário" },
+  { id: "WEEKLY", label: "Toda semana", short: "Semanal" },
+  { id: "MONTHLY", label: "Todo mês", short: "Mensal" },
+  { id: "YEARLY", label: "Todo ano", short: "Anual" },
 ];
 
 /** "FREQ=WEEKLY;INTERVAL=2" -> "A cada 2 semanas". */
@@ -208,4 +209,27 @@ export async function prepareImage(file, max = 1800) {
   } catch (e) {
     return { mime: file.type || "image/jpeg", data: await toBase64(file), url: URL.createObjectURL(file) };
   }
+}
+
+/**
+ * Names of to-do lists without the words they share at the start, when 2 or
+ * more ("Notas e Rotinas do Alexa Shopping list" and "… To-do list" ->
+ * "Shopping list" and "To-do list"). id -> {short, group}.
+ */
+export function shortNames(lists) {
+  const words = new Map(lists.map((l) => [l.id, String(l.name || "").split(/\s+/).filter(Boolean)]));
+  const out = new Map();
+  for (const l of lists) {
+    const w = words.get(l.id);
+    let best = 0;
+    for (const o of lists) {
+      if (o.id === l.id) continue;
+      const v = words.get(o.id);
+      let n = 0;
+      while (n < w.length - 1 && n < v.length - 1 && w[n].toLowerCase() === v[n].toLowerCase()) n++;
+      if (n >= 2 && n > best) best = n;
+    }
+    out.set(l.id, best ? { short: w.slice(best).join(" "), group: w.slice(0, best).join(" ") } : { short: l.name, group: "" });
+  }
+  return out;
 }
