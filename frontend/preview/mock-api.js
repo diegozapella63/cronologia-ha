@@ -323,6 +323,30 @@ export class MockApi {
     this._pushHome();
   }
 
+  async aiUsage() {
+    await wait(100);
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const day = (i) => {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
+      return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
+    };
+    const per = [2, 0, 3, 1, 0, 4, 2];
+    const t = (n, e = 0) => ({ chamadas: n, erros: e, cota: 0, tokens: n * 420, imagens: Math.floor(n / 2), segundos: n * 6, tipos: { mensagem: Math.ceil(n / 2), fotos: Math.floor(n / 2) }, ias: { "ai_task.google_ai_task": n } });
+    return {
+      hoje: t(per[6]),
+      semana: t(12, 1),
+      mes: t(31, 1),
+      dias: per.map((n, k) => ({ dia: day(6 - k), chamadas: n, erros: k === 2 ? 1 : 0, cota: 0 })),
+      ultimas: [
+        { quando: new Date(Date.now() - 3600000).toISOString(), tipo: "fotos", ia: "ai_task.google_ai_task", resultado: "ok", segundos: 8.4, tokens: 610, imagens: 1 },
+        { quando: new Date(Date.now() - 7200000).toISOString(), tipo: "mensagem", ia: "ai_task.google_ai_task", resultado: "ok", segundos: 3.1, tokens: 380, imagens: 0 },
+      ],
+      desde: day(30),
+      sensor: "sensor.cronologia_ia_hoje",
+    };
+  }
+
   async bringPreview(id) {
     await wait(150);
     const d = new Date();
@@ -378,7 +402,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.13.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.14.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

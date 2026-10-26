@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.14.0
+
+- **Mais › Integrações › Uso da IA**, como no EconomIA: o app conta cada leitura por IA (mensagem ou foto) e estima os tokens pelo tamanho do texto.
+  - Mostra hoje, 7 dias e o mês, um gráfico por dia (toque numa barra), os tipos de chamada e as últimas chamadas, com o link para o consumo exato no provedor.
+  - Novo sensor `sensor.cronologia_ia_hoje`.
+  - Some junto com a chave **Usar IA**.
+- **Mais › Aparência** como no InventarIA: **Tema** em três botões grandes (Automático, Claro, Escuro) e **Cor do app** em etiquetas com o nome de cada cor.
+- Nova aba **Mais › Opções**, com o início da semana (domingo ou segunda), que saiu da Aparência.
+
 ## 1.13.0
 
 - **Trazer uma lista para o CronologIA** (Mais › Integrações › Tarefas do ResolvIA): escolha uma lista do ResolvIA, revise e cada tarefa vira uma **Rotina da casa**.

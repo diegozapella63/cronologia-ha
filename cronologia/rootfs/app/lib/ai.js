@@ -3,6 +3,7 @@
 // apps (InventarIA, GerencIA, EconomIA), it only uses the AI configured in Home
 // Assistant (ai_task.generate_data) and keeps no API key: the person picks
 // which AI in Mais > Leitura por IA.
+import { resultOf } from "./usage.js";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -111,7 +112,8 @@ export function cleanEvents(raw) {
 
 export class AI {
   /** `selected()` returns the entity chosen in the app ("" = Home Assistant's default). */
-  constructor({ ha, log, mediaDir, selected }) {
+  constructor({ ha, log, mediaDir, selected, usage = null }) {
+    this.usage = usage; // Uso da IA: every call to ai_task.generate_data is counted
     this.ha = ha;
     this.log = log;
     this.mediaDir = mediaDir;
@@ -225,8 +227,26 @@ export class AI {
     const entity = await this.resolve(images.length > 0);
     if (images.length && !this.mediaWritable()) throw coded("no_media", "A pasta media do Home Assistant não está disponível para o app.");
     const prompt = instructions({ text, images: images.length, now: new Date(), tz: process.env.TZ || "" });
-    const raw = await this._viaHA(entity.id, prompt, images);
-    return { events: cleanEvents(raw), provider: entity.name, entity: entity.id };
+    const started = Date.now();
+    let raw = null;
+    let failure = null;
+    try {
+      raw = await this._viaHA(entity.id, prompt, images);
+      return { events: cleanEvents(raw), provider: entity.name, entity: entity.id };
+    } catch (err) {
+      failure = err;
+      throw err;
+    } finally {
+      if (this.usage) {
+        let output = 0;
+        try {
+          output = raw == null ? 0 : (typeof raw === "string" ? raw : JSON.stringify(raw)).length;
+        } catch (e) {
+          /* not serializable */
+        }
+        this.usage.record({ kind: images.length ? "fotos" : "mensagem", entity: entity.id, input: prompt.length, output, images: images.length, seconds: (Date.now() - started) / 1000, result: resultOf(failure) });
+      }
+    }
   }
 
   async _viaHA(entityId, prompt, images) {

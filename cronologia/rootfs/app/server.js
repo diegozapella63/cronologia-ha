@@ -15,6 +15,7 @@ import { acceptUpgrade } from "./lib/ws.js";
 import { HAClient } from "./lib/ha.js";
 import { Store } from "./lib/store.js";
 import { AI } from "./lib/ai.js";
+import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
@@ -23,7 +24,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.13.0";
+const VERSION = "1.14.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -49,7 +50,8 @@ if (!TOKEN) log.error("Sem SUPERVISOR_TOKEN. O homeassistant_api está ligado no
 const store = new Store(DATA_DIR, log);
 store.trimVersions(); // Versões anteriores: only the 3 newest (older installs kept up to 60)
 const ha = new HAClient(HA_URL, TOKEN, log);
-const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "" });
+const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log });
+const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", usage });
 const calStates = new Map();
 const calWatchers = new Set(); // {session, id}
 const prefWatchers = new Set();
@@ -381,6 +383,10 @@ class Session {
 
       case "cronologia/ai/status":
         return this.result(id, await ai.status());
+
+      // Mais › Integrações › Uso da IA
+      case "cronologia/ai/usage":
+        return this.result(id, usage.summary());
 
       case "cronologia/subscribe_calendars":
         this.watch(calWatchers, id);

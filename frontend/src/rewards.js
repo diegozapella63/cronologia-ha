@@ -626,7 +626,7 @@ export const RewardsMixin = (Base) =>
         </div>
         <div class="field"><span class="flabel">O placar fecha</span>
           <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
-          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais › Aparência).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
+          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais › Opções).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">Mostra o card <b>Para pontuar hoje</b>: marcar as tarefas do dia, criar tarefa com pontos e dar pontos avulsos ali mesmo. Desligado, as tarefas são marcadas na Agora e no ResolvIA.</div></div>

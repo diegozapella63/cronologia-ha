@@ -350,6 +350,11 @@ export class Api {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }
 
+  /** Mais › Integrações › Uso da IA. */
+  aiUsage() {
+    return this.call("cronologia/ai/usage");
+  }
+
   /** Trazer uma lista do ResolvIA: what each task would become, then create the routines. */
   bringPreview(entityId) {
     return this.call("cronologia/todo/bring_preview", { entity_id: entityId });

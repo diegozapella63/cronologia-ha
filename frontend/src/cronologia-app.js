@@ -1,4 +1,6 @@
-import { LitElement, html, svg, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
+import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS } from "../vendor/lit-all.min.js";
+import { usagePanel, usageStyles } from "./usage-panel.js";
+import { themePicker, colorPicker, lookStyles } from "./look.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
 import { styles, extraStyles } from "./styles.js";
@@ -115,7 +117,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles];
+  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles)];
 
   constructor() {
     super();
@@ -205,7 +207,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         else if (r > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = r - bar.clientWidth + 8;
       }
       const tab = this._view().tab;
-      if (tab === "integracoes") this._refreshAi(false);
+      if (tab === "integracoes") {
+        this._refreshAi(false);
+        this._loadUsage();
+      }
       if (tab === "dados") this._loadBackups();
     }
   }
@@ -399,7 +404,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (p === "/calendario") return { name: "calendar" };
     if (p === "/agendas") return { name: "more", tab: "calendarios" }; // old address of the Agendas page
     if (p === "/recompensas") return { name: "rewards" };
-    const more = /^\/mais(?:\/(avisos|placar|integracoes|dados|aparencia))?$/.exec(p);
+    const more = /^\/mais(?:\/(avisos|placar|integracoes|dados|aparencia|opcoes))?$/.exec(p);
     if (more) return { name: "more", tab: more[1] || "calendarios" };
     return { name: "now" };
   }
@@ -1612,7 +1617,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   /**
    * Mais is split in tabs at the top: /mais (Calendários), /mais/avisos,
-   * /mais/integracoes, /mais/dados, /mais/aparencia. Switching tabs replaces
+   * /mais/integracoes, /mais/dados, /mais/aparencia, /mais/opcoes. Switching tabs replaces
    * the history entry, so Back leaves Mais.
    */
   _renderMore() {
@@ -1624,6 +1629,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ["integracoes", "Integrações", "blocks"],
       ["dados", "Dados", "archive"],
       ["aparencia", "Aparência", "palette"],
+      ["opcoes", "Opções", "toggle-right"],
     ];
     const go = (k) => {
       if (k === tab) return;
@@ -1634,9 +1640,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let status = { text: `CronologIA ${this._version}` };
     if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "placar") body = this._renderScoreSettings();
-    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()}`;
+    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() ? this._renderUsage() : nothing}`;
     else if (tab === "dados") body = this._renderDataPanel();
     else if (tab === "aparencia") body = this._renderAppearance();
+    else if (tab === "opcoes") body = this._renderOptions();
     else {
       body = this._renderCalendarsTab();
       const cals = this._cals();
@@ -1655,44 +1662,61 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   _renderAppearance() {
     const accent = this._app("accent", "turquesa");
+    return html`
+      <div class="panel">
+        ${this._secHead("contrast", "Tema", "Automático segue o modo claro ou escuro do Home Assistant. Cada aparelho guarda a sua escolha.")}
+        ${themePicker({ theme: this._theme, onTheme: (k) => this._setTheme(k), icon })}
+      </div>
+      <div class="panel">
+        ${this._secHead("palette", "Cor do app", "Muda os botões principais, a aba escolhida e os destaques. Vale para todos os aparelhos.")}
+        ${colorPicker({ palette: PALETTE, value: accent, onPick: (id) => this._saveAppPrefs({ accent: id }) })}
+      </div>
+    `;
+  }
+
+  /** Mais › Opções: how the agenda works, for the whole house. */
+  _renderOptions() {
     const ws = this._app("week_start", 0);
     return html`
       <div class="panel">
-        ${this._secHead("palette", "Aparência")}
-        <div class="row col">
-          <div class="label">Tema</div>
-          <div class="seg" role="radiogroup" aria-label="Tema">
-            ${[
-              ["auto", "Automático", "sun-moon"],
-              ["light", "Claro", "sun"],
-              ["dark", "Escuro", "moon"],
-            ].map(([k, label, ic]) => html`<button class=${this._theme === k ? "on" : ""} role="radio" aria-checked=${this._theme === k ? "true" : "false"} @click=${() => this._setTheme(k)}>${icon(ic)}${label}</button>`)}
-          </div>
-          <div class="hint" style="white-space:normal">${this._theme === "auto" ? "Segue o modo claro/escuro do Home Assistant." : "Vale só para este aparelho."}</div>
-        </div>
-        <div class="row col">
-          <div class="label">Cor do app</div>
-          <div class="swatches">
-            ${PALETTE.map((c) => html`<button class="sw ${accent === c.id ? "on" : ""}" style="--c:${c.fill}" aria-label=${c.label} @click=${() => this._saveAppPrefs({ accent: c.id })}>${accent === c.id ? icon("check") : nothing}</button>`)}
-          </div>
-        </div>
-        <div class="row col">
-          <div class="label">A semana começa no</div>
-          <div class="seg" role="radiogroup" aria-label="Início da semana">
-            ${[
-              [0, "Domingo"],
-              [1, "Segunda"],
-            ].map(([k, label]) => html`<button class=${ws === k ? "on" : ""} role="radio" aria-checked=${ws === k ? "true" : "false"} @click=${() => this._saveAppPrefs({ week_start: k })}>${label}</button>`)}
-          </div>
+        ${this._secHead("calendar-days", "Semana", "O dia em que a semana começa no calendário e no placar semanal.")}
+        <div class="seg week-seg" role="radiogroup" aria-label="Início da semana">
+          ${[
+            [0, "Domingo"],
+            [1, "Segunda"],
+          ].map(([k, label]) => html`<button class=${ws === k ? "on" : ""} role="radio" aria-checked=${ws === k ? "true" : "false"} @click=${() => this._saveAppPrefs({ week_start: k })}>${label}</button>`)}
         </div>
       </div>
-
     `;
   }
 
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
   _secHead(ic, title, lead = null) {
     return html`<div class="mais-head"><span class="mais-ic" aria-hidden="true">${icon(ic)}</span><h2>${title}</h2></div>${lead ? html`<p class="panel-lead">${lead}</p>` : nothing}`;
+  }
+
+  /** Mais › Integrações › Uso da IA: the calls counted by the server (uso_ia.json). */
+  async _loadUsage() {
+    if (!this.api.aiUsage) return;
+    try {
+      this._usage = await this.api.aiUsage();
+    } catch (err) {
+      this._usage = null;
+    }
+    this.requestUpdate();
+  }
+
+  _renderUsage() {
+    const ai = this._ai || {};
+    return usagePanel({
+      u: this._usage,
+      day: this._usageDay,
+      onDay: (d) => ((this._usageDay = d), this.requestUpdate()),
+      head: this._secHead("chart-column", "Uso da IA", "Cada mensagem ou foto lida é uma chamada para a IA do Home Assistant. O Home Assistant não informa tokens nem custo, então o CronologIA conta as chamadas e estima os tokens pelo tamanho do texto."),
+      app: "CronologIA",
+      using: (ai.using && ai.using.id) || "",
+      names: Object.fromEntries((ai.entities || []).map((e) => [e.id, e.name])),
+    });
   }
 
   /** Mais › Integrações › Usar IA: off hides everything that reads messages and photos with AI. */

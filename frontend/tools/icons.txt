@@ -11,3 +11,9 @@ archive archive-restore sheet braces
 blocks
 
 database thumbs-down
+
+chart-column
+
+contrast
+
+toggle-right

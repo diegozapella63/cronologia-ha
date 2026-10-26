@@ -389,6 +389,11 @@ export const styles = css`
     height: 21px;
     stroke-width: 1.9;
   }
+  .seg.week-seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 2px 0 18px;
+  }
   .mais-head + .panel-lead {
     margin-top: 0;
   }
