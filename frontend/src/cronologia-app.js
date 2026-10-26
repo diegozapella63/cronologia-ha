@@ -1787,6 +1787,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       body = this._renderTodoSheet();
       tint = colorById(TODO_COLOR);
     }
+    else if (this._sheet === "bring") body = this._renderBringSheet();
     else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "demerit") body = this._renderDemeritSheet();
     else if (this._sheet === "prize") body = this._renderPrizeSheet();

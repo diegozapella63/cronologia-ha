@@ -350,6 +350,15 @@ export class Api {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }
 
+  /** Trazer uma lista do ResolvIA: what each task would become, then create the routines. */
+  bringPreview(entityId) {
+    return this.call("cronologia/todo/bring_preview", { entity_id: entityId });
+  }
+
+  bring(entityId, calendar, uids, remove = true) {
+    return this.call("cronologia/todo/bring", { entity_id: entityId, calendar, uids, remove });
+  }
+
   setTodo(entityId, uid, done, who = "") {
     return this.call("cronologia/todo/set", { entity_id: entityId, uid, done, who });
   }

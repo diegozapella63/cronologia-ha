@@ -209,6 +209,11 @@ class Conn {
           }
           fail("not_found", "Service not found");
           break;
+        case "fire_event": {
+          fire(msg.event_type, msg.event_data || {});
+          console.log("fired", msg.event_type, JSON.stringify(msg.event_data || {}));
+          return ok();
+        }
         default:
           fail("unknown_command", `Unknown command ${msg.type}`);
       }

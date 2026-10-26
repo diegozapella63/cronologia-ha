@@ -299,6 +299,107 @@ export const TasksMixin = (Base) =>
           </div>`,
         )}
         ${lists.length ? this._renderMirrorSettings(lists) : nothing}
+        ${lists.length && this._writable().length
+          ? html`<button class="row" @click=${() => this._openBring()}>
+              <span class="tile" style=${colorVars(this._accent(), this._dark)}>${icon("download")}</span>
+              <span class="grow"><div class="label">Trazer uma lista para o CronologIA</div><div class="hint" style="white-space:normal">Cada tarefa vira uma Rotina da casa, com os pontos e a repetição, e sai do ResolvIA.</div></span>
+              ${icon("chevron-right")}
+            </button>`
+          : nothing}
       </div>`;
+    }
+
+    // ------------------------------------------------------------ Trazer uma lista do ResolvIA
+
+    _openBring() {
+      this._openSheet("bring", { step: "pick", listId: null, preview: null, chosen: [], cal: this._kindCal("rotina"), error: null, busy: false });
+    }
+
+    async _bringLoad(listId) {
+      this._setForm({ listId, step: "loading", error: null });
+      try {
+        const p = await this.api.bringPreview(listId);
+        if (this._sheet !== "bring") return;
+        this._setForm({ step: "review", preview: p, chosen: p.items.filter((i) => !i.exists).map((i) => i.uid) });
+      } catch (err) {
+        this._setForm({ step: "pick", error: err.message });
+      }
+    }
+
+    async _bringRun() {
+      const f = this._form;
+      if (!f.chosen.length || f.busy) return;
+      this._setForm({ busy: true, error: null });
+      try {
+        const r = await this.api.bring(f.listId, f.cal, f.chosen, true);
+        const cal = this._cal(r.calendar);
+        await this._closeSheet();
+        this._haptic("success");
+        this._showToast(`${plural(r.created, "rotina criada", "rotinas criadas")}${cal ? ` em ${clip(cal.name, 18)}` : ""}${r.removed ? " · tiradas do ResolvIA" : ""}`);
+      } catch (err) {
+        if (this._sheet === "bring") this._setForm({ busy: false, error: err.message });
+      }
+    }
+
+    _renderBringSheet() {
+      const f = this._form;
+      const now = new Date(this._now);
+      const head = (title, back) => html`<div class="sheet-head">
+        ${back ? html`<button class="icon-btn back" @click=${back} aria-label="Voltar">${icon("chevron-left")}</button>` : nothing}
+        <h3 class="display">${title}</h3>
+        <button class="icon-btn" @click=${() => this._closeSheet()} aria-label="Fechar">${icon("x")}</button>
+      </div>`;
+      const error = f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing;
+      if (f.step === "loading") return html`${head("Trazer do ResolvIA")}<div class="imp-loading"><span class="spin">${icon("loader-circle")}</span><span>Lendo a lista…</span></div>`;
+      if (f.step === "review" && f.preview) {
+        const p = f.preview;
+        const on = new Set(f.chosen);
+        const toggle = (uid) => this._setForm({ chosen: on.has(uid) ? f.chosen.filter((x) => x !== uid) : [...f.chosen, uid] });
+        const writable = this._writable();
+        const when = (it) => {
+          const d = fromYmd(it.date);
+          const day = dayDiff(d, now) === 0 ? "hoje" : dayLabel(d, now, { long: false, cap: false });
+          return `${it.every ? `a partir de ${day}` : day}${it.time ? ` às ${it.time}` : ""}`;
+        };
+        return html`
+          ${head(p.name, () => this._setForm({ step: "pick", preview: null, error: null }))}
+          <p class="sheet-note top">Cada tarefa marcada vira uma <b>Rotina da casa</b>: as que repetem no ResolvIA voltam N dias depois de feitas; as outras são de uma vez só. ${p.canDelete ? "Depois, elas saem da lista do ResolvIA." : "Essa lista não deixa apagar: as tarefas ficam lá também."}</p>
+          ${p.items.length
+            ? html`<div class="bring-list">
+                ${p.items.map(
+                  (it) => html`<button class="bring-row ${on.has(it.uid) ? "" : "off"}" role="checkbox" aria-checked=${on.has(it.uid) ? "true" : "false"} @click=${() => toggle(it.uid)}>
+                    <span class="chk sq ${on.has(it.uid) ? "on" : ""}">${on.has(it.uid) ? icon("check") : nothing}</span>
+                    <span class="bring-tx"><b>${it.summary}</b><small>${[it.points > 0 ? `+${it.points}` : "", it.every ? `volta ${plural(it.every, "dia", "dias")} depois de feita` : "só uma vez", when(it), it.exists ? "já existe uma rotina com esse nome" : ""].filter(Boolean).join(" · ")}</small></span>
+                  </button>`,
+                )}
+              </div>`
+            : html`<p class="empty-line">Nenhuma tarefa para trazer nessa lista.</p>`}
+          ${p.items.length > 1
+            ? html`<div class="bring-all"><button class="text-btn" @click=${() => this._setForm({ chosen: f.chosen.length === p.items.length ? [] : p.items.map((i) => i.uid) })}>${f.chosen.length === p.items.length ? "Desmarcar todas" : "Marcar todas"}</button></div>`
+            : nothing}
+          ${writable.length > 1
+            ? html`<div class="field"><span class="flabel">Calendário das rotinas</span>
+                <div class="chip-row">${writable.map((c) => html`<button class="pick list ${f.cal === c.id ? "on" : ""}" style=${colorVars(c.color, this._dark)} @click=${() => this._setForm({ cal: c.id })}><span class="dot"></span><span>${clip(c.name, 22)}</span></button>`)}</div>
+              </div>`
+            : nothing}
+          ${error}
+          <div class="sheet-actions">
+            <button class="btn primary" ?disabled=${!f.chosen.length || f.busy} @click=${() => this._bringRun()}>${icon("download")}${f.busy ? "Trazendo…" : f.chosen.length ? `Trazer ${plural(f.chosen.length, "tarefa", "tarefas")}` : "Nenhuma marcada"}</button>
+          </div>`;
+      }
+      const lists = this._todos().lists.filter((l) => !l.unavailable);
+      return html`
+        ${head("Trazer do ResolvIA")}
+        <p class="sheet-note top">Escolha a lista. Você revisa as tarefas antes de trazer.</p>
+        <div class="bring-lists">
+          ${lists.map(
+            (l) => html`<button class="row" @click=${() => this._bringLoad(l.id)}>
+              <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
+              <span class="grow"><div class="label">${l.name}</div><div class="hint">${plural(l.open, "tarefa pendente", "tarefas pendentes")}</div></span>
+              ${icon("chevron-right")}
+            </button>`,
+          )}
+        </div>
+        ${error}`;
     }
   };

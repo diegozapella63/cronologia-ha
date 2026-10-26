@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.0
+
+- **Trazer uma lista para o CronologIA** (Mais › Integrações › Tarefas do ResolvIA): escolha uma lista do ResolvIA, revise e cada tarefa vira uma **Rotina da casa**.
+  - A que se repete vira **Depois de feita** com os mesmos dias; as outras viram **Só uma vez**.
+  - Vêm junto os pontos, as notas e a data (o prazo, ou hoje).
+  - O que já existe como rotina vem desmarcado.
+- As tarefas trazidas saem da lista do ResolvIA. O app avisa o ResolvIA (evento `resolvia_esquecer`) para esquecer a repetição e os pontos delas, e as que já estavam concluídas não voltam sozinhas.
+
 ## 1.12.1
 
 - **Versões anteriores**: o app mantém só as 3 cópias mais recentes (antes eram até 60). As que sobram são apagadas quando o app inicia.

@@ -2360,6 +2360,55 @@ export const calStyles = css`
   .chk.sq {
     border-radius: 9px;
   }
+  /* Trazer do ResolvIA: review of the tasks of a list */
+  .bring-list {
+    display: grid;
+    gap: 2px;
+    margin: 4px 0 6px;
+  }
+  .bring-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 6px;
+    border-radius: 12px;
+    text-align: left;
+    width: 100%;
+  }
+  .bring-row:hover {
+    background: var(--rv-surface-2);
+  }
+  .bring-row .chk {
+    flex: none;
+    pointer-events: none;
+  }
+  .bring-row.off .bring-tx {
+    opacity: 0.55;
+  }
+  .bring-tx {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .bring-tx b {
+    font-weight: 600;
+    color: var(--rv-text);
+    overflow-wrap: anywhere;
+  }
+  .bring-tx small {
+    font-size: 13px;
+    color: var(--rv-muted);
+    line-height: 1.4;
+  }
+  .bring-all {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+  .bring-lists .row {
+    width: 100%;
+    text-align: left;
+  }
   .chore.todo.late .chore-tx small,
   .chore-tx small.late {
     color: var(--rv-late);

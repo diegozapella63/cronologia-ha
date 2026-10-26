@@ -323,6 +323,25 @@ export class MockApi {
     this._pushHome();
   }
 
+  async bringPreview(id) {
+    await wait(150);
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const items = this.todoModel
+      .items(id)
+      .filter((i) => i.status !== "completed")
+      .map((i, k) => ({ uid: i.uid, summary: i.summary, notes: i.description || "", points: this.todos.pointsOf(id, i.summary), every: k % 3 === 0 ? 2 : null, date: today, time: null, done: false, exists: false }));
+    return { entity_id: id, name: (this.todoModel.stateOf(id).attributes || {}).friendly_name || id, canDelete: true, items };
+  }
+
+  async bring(id, calendar, uids) {
+    await wait(300);
+    this.todoModel.remove(id, { item: uids });
+    this.todos.items.set(id, this.todoModel.items(id));
+    this._pushHome();
+    return { created: uids.length, removed: uids.length, calendar };
+  }
+
   async setTodo(id, uid, done, who = "") {
     await wait(80);
     this.todoModel.update(id, { item: uid, status: done ? "completed" : "needs_action" });
@@ -359,7 +378,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.12.1", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.13.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

@@ -23,7 +23,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.12.1";
+const VERSION = "1.13.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -329,6 +329,13 @@ class Session {
         await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
         return this.result(id);
       }
+
+      // Mais › Integrações › Trazer uma lista do ResolvIA: preview, then create the routines
+      case "cronologia/todo/bring_preview":
+        return this.result(id, home.bringPreview(String(msg.entity_id || "")));
+
+      case "cronologia/todo/bring":
+        return this.result(id, await home.bring({ entity_id: String(msg.entity_id || ""), calendar: String(msg.calendar || ""), uids: msg.uids, remove: msg.remove !== false }));
 
       case "cronologia/todo/set": {
         await todos.setDone(msg.entity_id, msg.uid, !!msg.done);

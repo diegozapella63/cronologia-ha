@@ -142,6 +142,16 @@ Concluir aqui marca a tarefa como feita no Home Assistant, então ela aparece co
 
 Em **Mais › Integrações › Tarefas do ResolvIA** aparece **Conectado ao ResolvIA** com a versão (o ResolvIA 2.5.1 ou mais novo avisa que está instalado pela pasta `share`; sem ele, o app lê as listas do Home Assistant do mesmo jeito), quantas listas e tarefas com prazo há, e você escolhe quais listas entram (deixe de fora, por exemplo, uma lista de problemas de dispositivos) e se elas aparecem no calendário.
 
+### Trazer uma lista para o CronologIA
+
+O caminho contrário: em **Mais › Integrações › Tarefas do ResolvIA › Trazer uma lista para o CronologIA**, escolha uma lista do ResolvIA. Aparece cada tarefa como ela vai virar uma **Rotina da casa**:
+
+- a que se repete no ResolvIA ("volta 2 dias depois de concluir") vira **Depois de feita** com os mesmos dias; a que não se repete vira **Só uma vez**;
+- os **pontos** da tarefa no ResolvIA vão junto, e as notas também;
+- a data: o prazo da tarefa (com o horário, se tiver); sem prazo, hoje. Uma tarefa que se repete e está atrasada continua atrasada (fica em vermelho na Agora); uma que já foi concluída e vai voltar começa na data em que voltaria.
+
+Desmarque o que não quiser trazer (o que já tem uma rotina com o mesmo nome vem desmarcado), escolha o calendário e toque em **Trazer**. As tarefas trazidas **saem da lista do ResolvIA**, junto com a repetição e os pontos delas lá (no ResolvIA 2.11.0 ou mais novo), para não ficarem duplicadas. Se a lista não deixar apagar, elas ficam lá também. As tarefas que o próprio CronologIA leva para o ResolvIA (Levar para o ResolvIA) não aparecem.
+
 ### Levar para o ResolvIA
 
 As **manutenções** e as **rotinas da casa** podem aparecer também como tarefas numa lista do ResolvIA. Em **Mais › Integrações › Tarefas do ResolvIA › Levar para o ResolvIA**, escolha a lista (a **Casa**, por exemplo) e ligue **Manutenções**, **Rotina da casa** ou as duas. Cada uma vira **uma** tarefa na lista:
@@ -239,4 +249,4 @@ Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Ou
 
 ## Segurança
 
-Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, cria, atualiza e tira as tarefas das manutenções e rotinas na lista escolhida em **Levar para o ResolvIA** (só quando ligado, e só nessa lista), envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, cria, atualiza e tira as tarefas das manutenções e rotinas na lista escolhida em **Levar para o ResolvIA** (só quando ligado, e só nessa lista), apaga da lista as tarefas que você trouxer em **Trazer uma lista** (avisando o ResolvIA pelo evento `resolvia_esquecer`), envia os avisos de remédio, publica os três sensores acima e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.

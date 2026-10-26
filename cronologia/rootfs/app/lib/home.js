@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, foldText, buildIndex, buildDescription } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, foldText, buildIndex, buildDescription, isoWithOffset } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 
@@ -734,6 +734,101 @@ export class Home {
     else if (k && k.points > 0) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
     this.changed();
     return null;
+  }
+
+  // ---------------------------------------------------------------- Trazer do ResolvIA
+
+  /**
+   * The tasks of a to-do list as routines would come out of them (Mais › Integrações ›
+   * Trazer uma lista): points and repetition from the ResolvIA, the first date, and
+   * whether a routine with that name already exists here.
+   */
+  bringPreview(entityId) {
+    const todos = this.todos;
+    const st = todos && todos.states.get(entityId);
+    if (!st) throw coded("not_found", "Essa lista não existe mais");
+    const f = Number((st.attributes && st.attributes.supported_features) || 0);
+    const app = todos.app();
+    const every = (uid) => {
+      const n = Number(app && app.repete && app.repete[entityId] && app.repete[entityId][uid]);
+      return Number.isFinite(n) && n > 0 ? Math.min(365, Math.round(n)) : null;
+    };
+    const today = new Date();
+    const t0 = ymd(today);
+    const existing = new Set([...this.occurrences()].filter((o) => o.k.kind === "rotina").map((o) => foldText(o.raw.summary)));
+    const datesAreDeadlines = !!(f & (16 | 32)) && !(app && (app.semPrazo || []).includes(entityId));
+    const out = [];
+    for (const i of todos.items.get(entityId) || []) {
+      if (!i.uid || !String(i.summary || "").trim()) continue;
+      if (/\[cr:[0-9a-f]{8}\]/.test(i.description || "")) continue; // a maintenance/routine of this app (Levar para o ResolvIA)
+      const n = every(i.uid);
+      const done = i.status === "completed";
+      if (done && !n) continue; // finished and doesn't come back: nothing to bring
+      let date = t0;
+      let time = null;
+      if (done) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + n);
+        date = ymd(d);
+      } else if (datesAreDeadlines && i.due) {
+        const due = String(i.due);
+        const day = due.slice(0, 10);
+        // a late task that repeats stays late (it shows in red); a one-off one starts today
+        date = n || day >= t0 ? day : t0;
+        if (due.length > 10) {
+          const d = new Date(due);
+          if (Number.isFinite(d.getTime())) time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        }
+      }
+      out.push({ uid: i.uid, summary: String(i.summary).trim().slice(0, 200), notes: String(i.description || "").trim().slice(0, 2000), points: todos.pointsOf(entityId, i.summary, app), every: n, date, time, done, exists: existing.has(foldText(i.summary)) });
+    }
+    out.sort((a, b) => (a.every || 999) - (b.every || 999) || a.summary.localeCompare(b.summary, "pt-BR"));
+    return { entity_id: entityId, name: (st.attributes && st.attributes.friendly_name) || entityId, canDelete: !!(f & 2), items: out };
+  }
+
+  /**
+   * Creates one Rotina da casa per chosen task ("Depois de feita" N days when it repeats in
+   * the ResolvIA, "Só uma vez" otherwise) and takes the tasks out of the list.
+   */
+  async bring({ entity_id, calendar, uids, remove = true }) {
+    const preview = this.bringPreview(entity_id);
+    const feat = this.features(calendar);
+    if (!/^calendar\.[a-z0-9_]+$/.test(calendar || "") || !(feat & F.CREATE)) throw coded("not_supported", "Esse calendário não aceita eventos novos");
+    const want = new Set(Array.isArray(uids) ? uids : []);
+    const chosen = preview.items.filter((i) => want.has(i.uid));
+    if (!chosen.length) throw coded("invalid_format", "Escolha ao menos uma tarefa");
+    const created = [];
+    for (const it of chosen) {
+      const k = { kind: "rotina", who: "", points: it.points || 0, notes: it.notes, after: it.every ? { n: it.every, unit: "dias" } : null, history: [] };
+      const event = { summary: it.summary, description: buildDescription(k) };
+      const [y, m, d] = it.date.split("-").map(Number);
+      if (it.time) {
+        const [h, mi] = it.time.split(":").map(Number);
+        const s = new Date(y, m - 1, d, h, mi);
+        event.start = isoWithOffset(s);
+        event.end = isoWithOffset(new Date(s.getTime() + 30 * 60000));
+      } else {
+        event.start = it.date;
+        event.end = ymd(new Date(y, m - 1, d + 1));
+      }
+      await this.ha.send({ type: "calendar/event/create", entity_id: calendar, event: toHAEvent(event) });
+      created.push(it);
+    }
+    this.refreshCalendar(calendar);
+    let removed = 0;
+    if (remove && preview.canDelete) {
+      // a done task that repeats would be created again by the ResolvIA: open it first, then delete it
+      const done = created.filter((i) => i.done);
+      for (const i of done) await this.todos.setDone(entity_id, i.uid, false).catch(() => {});
+      if (done.length) await new Promise((r) => setTimeout(r, 1200));
+      await this.ha.send({ type: "call_service", domain: "todo", service: "remove_item", service_data: { item: created.map((i) => i.uid) }, target: { entity_id } });
+      removed = created.length;
+      // and tell the ResolvIA (2.10.2+) to forget their repetition and points
+      await this.ha.send({ type: "fire_event", event_type: "resolvia_esquecer", event_data: { entity_id, uids: created.map((i) => i.uid), tarefas: created.map((i) => i.summary), origem: "CronologIA" } }).catch(() => {});
+      this.todos.refresh(entity_id);
+    }
+    this.log.info(`Trazidas do ResolvIA (${preview.name}): ${created.length} rotinas em ${calendar}${removed ? ", tiradas da lista" : ""}`);
+    this.changed();
+    return { created: created.length, removed, calendar };
   }
 
   /** Points of a maintenance done from the ResolvIA when the name came late (Quem fez?). */
