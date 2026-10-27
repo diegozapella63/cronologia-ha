@@ -606,9 +606,12 @@ export class Home {
     this.changed();
   }
 
-  /** Extrato: older lines (Ver mais). */
-  scoreLog(beforeId, limit) {
-    return this.store.logPage(Number(beforeId) || 0, Math.max(1, Math.min(100, Number(limit) || 40)));
+  /** Extrato: older lines of a period (Ver mais, or a period of the Histórico); from/to are YYYY-MM-DD, to not included. */
+  scoreLog(beforeId, limit, from, to) {
+    const ms = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(String(d || "")) ? new Date(`${d}T00:00:00`).getTime() : NaN);
+    const f = ms(from);
+    const t = ms(to);
+    return this.store.logPage(Number(beforeId) || 0, Math.max(1, Math.min(100, Number(limit) || 40)), Number.isFinite(f) ? f : 0, Number.isFinite(t) ? t : Infinity);
   }
 
   /** What the Recompensas screen shows. */
@@ -631,10 +634,11 @@ export class Home {
       rows,
       leader: winnerOf(rows),
       entries,
-      history: sc.history.slice(0, 26),
-      // Extrato: the newest changes; Ver mais asks for the older ones
-      log: this.store.logPage(0, 20),
-      log_count: sc.log.length,
+      // the last 10 periods; each one opens its Extrato
+      history: sc.history.slice(0, 10),
+      // Extrato of this period: the newest changes; Ver mais asks for the older ones
+      log: this.store.logPage(0, 20, t0, t1),
+      log_count: this.store.logCount(t0, t1),
     };
   }
 

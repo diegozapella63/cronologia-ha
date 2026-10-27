@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.19.2
+
+- **Extrato** só do período atual (semana, quinzena ou mês, como em Mais › Placar): "Extrato desta semana". Quando o período fecha, ele recomeça vazio.
+- **Histórico**: os últimos 10 períodos. Toque num deles para ver o extrato daquele período.
+
 ## 1.19.1
 
 - **Recompensas**: o card **Pontos desta semana** saiu, porque o **Extrato** já mostra tudo. O **×** para tirar uma pontuação errada passou para o Extrato, e a retirada vira uma linha nova ("Diego tirou 10 pontos de Andressa"), com **Desfazer** no aviso.

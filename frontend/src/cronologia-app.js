@@ -2016,6 +2016,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     else if (this._sheet === "anyday") body = this._renderAnyDaySheet();
     else if (this._sheet === "versions") body = this._renderVersions();
     else if (this._sheet === "who") body = this._renderWhoSheet();
+    else if (this._sheet === "periodlog") body = this._renderPeriodLogSheet();
     else if (this._sheet === "todo") {
       body = this._renderTodoSheet();
       tint = colorById(TODO_COLOR);

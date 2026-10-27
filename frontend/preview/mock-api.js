@@ -151,8 +151,8 @@ export class MockApi {
       leader: winnerOf(rows),
       entries: this.score.entries.filter((e) => Date.parse(e.at) >= t0).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)),
       history: this.score.history,
-      log: [...this.score.log].reverse().slice(0, 20),
-      log_count: this.score.log.length,
+      log: [...this.score.log].reverse().filter((l) => l.type !== "fechou" && Date.parse(l.at) >= t0).slice(0, 20),
+      log_count: this.score.log.filter((l) => l.type !== "fechou" && Date.parse(l.at) >= t0).length,
     };
   }
 
@@ -195,8 +195,10 @@ export class MockApi {
     this.score.log.push({ id, at: new Date().toISOString(), by: "Diego", ...rec });
   }
 
-  async scoreLog(before, limit = 40) {
-    return [...this.score.log].reverse().filter((l) => !before || l.id < before).slice(0, limit);
+  async scoreLog(before, limit = 40, from = "", to = "") {
+    const f = from ? new Date(`${from}T00:00:00`).getTime() : 0;
+    const t = to ? new Date(`${to}T00:00:00`).getTime() : Infinity;
+    return [...this.score.log].reverse().filter((l) => l.type !== "fechou" && (!before || l.id < before) && Date.parse(l.at) >= f && Date.parse(l.at) < t).slice(0, limit);
   }
 
   async scoreRemove(key) {
@@ -434,7 +436,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.19.1", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.19.2", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

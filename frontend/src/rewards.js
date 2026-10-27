@@ -623,7 +623,7 @@ export const RewardsMixin = (Base) =>
     _renderHistory(s) {
       const h = s.history || [];
       if (!h.length) return nothing;
-      const list = this._histAll ? h : h.slice(0, 5);
+      const list = h.slice(0, 10);
       const wins = {};
       for (const x of h) if (x.winner) wins[x.winner] = (wins[x.winner] || 0) + 1;
       return html`<div class="panel history">
@@ -632,34 +632,52 @@ export const RewardsMixin = (Base) =>
           list,
           (x) => x.key,
           (x) => html`<div class="hist-row">
-            <span class="hist-ic ${x.winner ? "" : "tie"}" style=${x.winner ? colorVars(this._pColor(x.winner), this._dark) : ""}>${x.winner ? initial(x.winner) : "="}</span>
-            <span class="hist-tx"><b>${x.winner ? `${x.winner} venceu` : "Empate"} · ${Object.values(x.totals || {}).join(" × ")}</b><small>${periodLabel(x.start, x.end, s.period)}${x.reward ? ` · ${x.reward}` : ""}</small></span>
+            <button class="hist-open" aria-label="Extrato de ${periodLabel(x.start, x.end, s.period)}" @click=${() => this._openPeriodLog(x)}>
+              <span class="hist-ic ${x.winner ? "" : "tie"}" style=${x.winner ? colorVars(this._pColor(x.winner), this._dark) : ""}>${x.winner ? initial(x.winner) : "="}</span>
+              <span class="hist-tx"><b>${x.winner ? `${x.winner} venceu` : "Empate"} · ${Object.values(x.totals || {}).join(" × ")}</b><small>${periodLabel(x.start, x.end, s.period)}${x.reward ? ` · ${x.reward}` : ""}</small></span>
+              ${icon("chevron-right")}
+            </button>
             ${x.reward && x.winner
               ? html`<button class="hist-gift ${x.delivered ? "on" : ""}" aria-pressed=${x.delivered ? "true" : "false"} aria-label="${x.delivered ? "Prêmio entregue" : "Marcar prêmio como entregue"}" @click=${() => this._setDelivered(x.key, !x.delivered)}>${icon(x.delivered ? "check" : "gift")}</button>`
               : nothing}
           </div>`,
         )}
-        ${h.length > 5 ? html`<button class="add-line" @click=${() => ((this._histAll = !this._histAll), this.requestUpdate())}>${icon(this._histAll ? "chevron-up" : "chevron-down")}${this._histAll ? "Mostrar menos" : `Ver tudo (${h.length})`}</button>` : nothing}
       </div>`;
     }
 
     // ------------------------------------------------------------ Extrato
 
     /** Every change to the points, newest first: who won, lost, took, gave back. */
+    /** Extrato of this period (semana, quinzena or mês, as in Mais › Placar): every change to the points. */
     _renderExtrato(s) {
+      // a new period starts a new Extrato: what Ver mais loaded belongs to the old one
+      if (this._extFor !== s.current.key) {
+        this._extFor = s.current.key;
+        this._extMore = [];
+        this._extEnd = false;
+      }
       const first = s.log || [];
-      if (!first.length) return nothing;
-      const low = Math.min(...first.map((l) => l.id));
+      const low = first.length ? Math.min(...first.map((l) => l.id)) : Infinity;
       const list = [...first, ...(this._extMore || []).filter((l) => l.id < low)];
-      const more = !this._extEnd && list.length < (s.log_count || 0);
+      const more = first.length && !this._extEnd && list.length < (s.log_count || 0);
+      return html`<div class="panel extrato">
+        <div class="chores-head"><span class="overline">Extrato ${THIS[s.period]}</span><small>${list.length ? plural(s.log_count || list.length, "mudança", "mudanças") : ""}</small></div>
+        ${list.length ? this._extRows(list, s, new Map((s.entries || []).map((e) => [e.key, e]))) : html`<p class="empty-line">Nada mexeu nos pontos ${IN[s.period]} ainda.</p>`}
+        ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)), s.current)}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
+      </div>`;
+    }
+
+    /**
+     * The lines with a header per day. `live` (this period only): the entries still on the
+     * placar; the × goes on the newest line of each.
+     */
+    _extRows(list, s, live = null) {
       const now = new Date(this._now);
       const dayOf = (iso) => {
         const d = new Date(iso);
         const diff = dayDiff(d, now);
         return diff === 0 ? "Hoje" : diff === -1 ? "Ontem" : `${cap(WEEKDAYS[d.getDay()])}, ${dateShort(d, now)}`;
       };
-      // the × goes on the newest line of each entry still on the placar of this period
-      const live = new Map((s.entries || []).map((e) => [e.key, e]));
       const seen = new Set();
       const out = [];
       let last = "";
@@ -667,22 +685,18 @@ export const RewardsMixin = (Base) =>
         const day = dayOf(l.at);
         if (day !== last) out.push(html`<div class="ext-day">${day}</div>`);
         last = day;
-        const entry = l.key && !seen.has(l.key) && ["ganhou", "perdeu", "trocou", "voltou", "ajuste"].includes(l.type) ? live.get(l.key) : null;
+        const entry = live && l.key && !seen.has(l.key) && ["ganhou", "perdeu", "trocou", "voltou", "ajuste"].includes(l.type) ? live.get(l.key) : null;
         if (l.key) seen.add(l.key);
-        out.push(this._renderExtLine(l, s, entry));
+        out.push(this._renderExtLine(l, s, entry, !!live));
       }
-      return html`<div class="panel extrato">
-        <div class="chores-head"><span class="overline">Extrato</span><small>tudo que mexeu nos pontos</small></div>
-        ${out}
-        ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)))}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
-      </div>`;
+      return out;
     }
 
-    async _loadExtrato(before) {
+    async _loadExtrato(before, period) {
       this._extBusy = true;
       this.requestUpdate();
       try {
-        const got = (await this.api.scoreLog(before, 40)) || [];
+        const got = (await this.api.scoreLog(before, 40, period.start, period.end)) || [];
         const seen = new Set((this._extMore || []).map((l) => l.id));
         this._extMore = [...(this._extMore || []), ...got.filter((l) => !seen.has(l.id))];
         if (got.length < 40) this._extEnd = true;
@@ -691,6 +705,48 @@ export const RewardsMixin = (Base) =>
       }
       this._extBusy = false;
       this.requestUpdate();
+    }
+
+    /** Histórico › a period: its result and its Extrato (no ×: it is closed). */
+    async _openPeriodLog(x) {
+      await this._openSheet("periodlog", { period: x, lines: null, end: false, busy: true });
+      this._morePeriodLog();
+    }
+
+    async _morePeriodLog() {
+      const f = this._form;
+      if (!f || !f.period) return;
+      const x = f.period;
+      this._setForm({ busy: true });
+      try {
+        const before = f.lines && f.lines.length ? Math.min(...f.lines.map((l) => l.id)) : 0;
+        const got = (await this.api.scoreLog(before, 60, x.start, x.end)) || [];
+        if (!this._form || this._form.period !== x) return;
+        this._setForm({ lines: [...(this._form.lines || []), ...got], end: got.length < 60, busy: false });
+      } catch (err) {
+        if (this._form && this._form.period === x) this._setForm({ busy: false, lines: this._form.lines || [], end: true });
+        this._showToast(err.message);
+      }
+    }
+
+    _renderPeriodLogSheet() {
+      const f = this._form;
+      const s = this._score() || {};
+      const x = f.period;
+      const totals = Object.entries(x.totals || {});
+      return html`${this._sheetHead(`Extrato · ${periodLabel(x.start, x.end, s.period)}`)}
+        <div class="plog-result">
+          <span class="hist-ic ${x.winner ? "" : "tie"}" style=${x.winner ? colorVars(this._pColor(x.winner), this._dark) : ""}>${x.winner ? initial(x.winner) : "="}</span>
+          <span class="hist-tx"><b>${x.winner ? `${x.winner} venceu` : "Empate"}</b><small>${totals.map(([n, p]) => `${n} ${p}`).join(" × ")}${x.reward ? ` · ${x.reward}` : ""}</small></span>
+        </div>
+        <div class="extrato plog">
+          ${f.lines == null
+            ? html`<p class="empty-line">Carregando…</p>`
+            : f.lines.length
+              ? this._extRows(f.lines, s)
+              : html`<p class="empty-line">Nada registrado nesse período. O extrato começou na versão 1.19.0.</p>`}
+          ${f.lines && f.lines.length && !f.end ? html`<button class="add-line" ?disabled=${f.busy} @click=${() => this._morePeriodLog()}>${icon("chevron-down")}${f.busy ? "Carregando…" : "Ver mais"}</button>` : nothing}
+        </div>`;
     }
 
     /** One line: "Diego tirou 10 pontos de Andressa", "Andressa ganhou 10 pontos, marcado por Diego". */
@@ -725,7 +781,7 @@ export const RewardsMixin = (Base) =>
       }
     }
 
-    _renderExtLine(l, s, entry) {
+    _renderExtLine(l, s, entry, current = true) {
       const time = hm(new Date(l.at));
       if (l.type === "fechou") {
         const totals = Object.values(l.totals || {}).join(" × ");
@@ -744,7 +800,9 @@ export const RewardsMixin = (Base) =>
           : html`<span class="pts ${l.points < 0 ? "neg" : "got"}">${l.points > 0 ? "+" : l.points < 0 ? "−" : ""}${n}</span>`}
         ${entry
           ? html`<button class="icon-btn mini" aria-label="${entry.points < 0 ? "Cancelar o demérito" : "Tirar os pontos"}: ${entry.title}" title=${entry.points < 0 ? "Cancelar o demérito" : "Tirar os pontos"} @click=${() => this._removePoints(entry)}>${icon("x")}</button>`
-          : html`<span class="ext-x-gap"></span>`}
+          : current
+            ? html`<span class="ext-x-gap"></span>`
+            : nothing}
       </div>`;
     }
 

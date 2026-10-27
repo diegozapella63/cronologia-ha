@@ -282,8 +282,8 @@ export class Api {
     return this.call("cronologia/score/remove", { key });
   }
 
-  scoreLog(before, limit) {
-    return this.call("cronologia/score/log", { before, limit });
+  scoreLog(before, limit, from, to) {
+    return this.call("cronologia/score/log", { before, limit, ...(from ? { from, to } : {}) });
   }
 
   scoreRestore(key) {

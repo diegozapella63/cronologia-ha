@@ -358,12 +358,31 @@ export class Store {
     if (sc.log.length > MAX_LOG) sc.log = sc.log.slice(-MAX_LOG);
   }
 
-  /** Extrato: the lines before `beforeId` (newest first). */
-  logPage(beforeId, limit = 40) {
+  /**
+   * Extrato of a period: its lines (from `from` to before `to`, in ms) before `beforeId`,
+   * newest first. The close of a period is in the Histórico, not here.
+   */
+  logPage(beforeId, limit = 40, from = 0, to = Infinity) {
     const out = [];
     const log = this.data.score.log;
-    for (let i = log.length - 1; i >= 0 && out.length < limit; i--) if (!beforeId || log[i].id < beforeId) out.push(log[i]);
+    for (let i = log.length - 1; i >= 0 && out.length < limit; i--) {
+      const l = log[i];
+      const t = Date.parse(l.at);
+      if (t < from) break;
+      if (l.type === "fechou" || t >= to || (beforeId && l.id >= beforeId)) continue;
+      out.push(l);
+    }
     return out;
+  }
+
+  /** How many lines the Extrato of that period has. */
+  logCount(from = 0, to = Infinity) {
+    let n = 0;
+    for (const l of this.data.score.log) {
+      const t = Date.parse(l.at);
+      if (l.type !== "fechou" && t >= from && t < to) n++;
+    }
+    return n;
   }
 
   pointsByKey(key) {

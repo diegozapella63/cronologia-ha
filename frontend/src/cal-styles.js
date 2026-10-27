@@ -2440,8 +2440,45 @@ export const calStyles = css`
     gap: 8px;
     padding: 7px 6px 7px 16px;
   }
-  .ext-row.closed {
+  .hist-row:has(.hist-open) {
+    padding: 0 8px 0 0;
+  }
+  .hist-open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px 7px 16px;
+    text-align: left;
+    border-radius: 12px;
+  }
+  .hist-open > .i {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--rv-faint);
+  }
+  .hist-open:hover {
+    background: var(--rv-surface-2);
+  }
+  .plog-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--rv-line);
+  }
+  .extrato.plog {
+    margin: 0 -16px;
+  }
+  .extrato.plog .ext-row {
     padding-right: 16px;
+  }
+  .extrato .empty-line {
+    padding: 4px 16px 10px;
+    color: var(--rv-muted);
   }
   .ext-row .icon-btn.mini,
   .ext-x-gap {
