@@ -2382,6 +2382,10 @@ export const calStyles = css`
     gap: 10px;
     padding: 7px 16px;
   }
+  .feed-row {
+    padding-right: 6px;
+    gap: 8px;
+  }
   .feed-tx,
   .hist-tx {
     flex: 1;

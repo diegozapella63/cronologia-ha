@@ -282,6 +282,10 @@ export class Api {
     return this.call("cronologia/score/remove", { key });
   }
 
+  scoreRestore(key) {
+    return this.call("cronologia/score/restore", { key });
+  }
+
   scorePrizes(period, shared, per) {
     return this.call("cronologia/score/prizes", { period, shared, per });
   }

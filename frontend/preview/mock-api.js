@@ -179,7 +179,14 @@ export class MockApi {
   }
 
   async scoreRemove(key) {
+    this._removed = this.score.entries.find((e) => e.key === key) || null;
     this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    this._pushHome();
+  }
+
+  async scoreRestore(key) {
+    if (this._removed && this._removed.key === key) this.score.entries.push(this._removed);
+    this._removed = null;
     this._pushHome();
   }
 
@@ -402,7 +409,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.18.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.18.1", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

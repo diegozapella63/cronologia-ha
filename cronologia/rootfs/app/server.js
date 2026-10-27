@@ -24,7 +24,7 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 
-const VERSION = "1.18.0";
+const VERSION = "1.18.1";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -316,6 +316,10 @@ class Session {
 
       case "cronologia/score/remove":
         home.removePoints(String(msg.key || ""));
+        return this.result(id);
+
+      case "cronologia/score/restore":
+        home.restorePoints(String(msg.key || ""));
         return this.result(id);
 
       case "cronologia/score/prizes":

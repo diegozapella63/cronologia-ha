@@ -579,9 +579,28 @@ export class Home {
     }
   }
 
+  /**
+   * Recompensas › Pontos: takes an entry off the placar (a wrong score). What was done stays
+   * done; only the points go. The entry is kept for a while so Desfazer can bring it back.
+   */
   removePoints(key) {
-    if (!/^(extra|demerito)\|/.test(String(key))) throw coded("invalid_format", "Só os pontos avulsos e os deméritos saem por aqui; desmarque a tarefa para tirar os dela");
+    const e = this.store.pointsByKey(key);
+    if (!e) throw coded("not_found", "Esse registro não existe mais");
+    this.removed = this.removed || new Map();
+    const now = Date.now();
+    for (const [k, v] of this.removed) if (now - v.t > 10 * 60000) this.removed.delete(k);
+    this.removed.set(key, { e: { ...e }, t: now });
     this.store.removePoints(key);
+    this.log.info(`Pontos tirados: ${e.title} (${e.who}, ${e.points > 0 ? "+" : ""}${e.points})`);
+    this.changed();
+  }
+
+  /** Desfazer of removePoints: the same entry, with its date, back on the placar. */
+  restorePoints(key) {
+    const r = this.removed && this.removed.get(key);
+    if (!r || Date.now() - r.t > 10 * 60000) throw coded("not_found", "Já não dá para desfazer");
+    this.removed.delete(key);
+    if (!this.store.pointsByKey(key)) this.store.addPoints(r.e);
     this.changed();
   }
 

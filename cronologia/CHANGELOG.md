@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.18.1
+
+- **Recompensas › Pontos desta semana**: todo registro tem o **×** para tirar uma pontuação errada (antes só os avulsos e os deméritos), com **Desfazer** no aviso. O que foi feito continua feito; só os pontos saem do placar.
+
 ## 1.18.0
 
 - **Calendário › 3 dias**: o dia escolhido e os dois seguintes, com as horas, como a Semana mas com colunas largas (as setas andam de 3 em 3 dias). Tem o contador de **Qualquer hora** em cada dia.

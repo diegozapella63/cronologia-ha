@@ -594,17 +594,19 @@ export const RewardsMixin = (Base) =>
             <span class="avatar sm2">${initial(e.who)}</span>
             <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : e.kind === "tarefa" ? " · ResolvIA" : e.kind === "demerito" ? " · demérito" : ""}</small></span>
             <span class="pts ${e.points < 0 ? "neg" : "got"}">${e.points > 0 ? "+" : e.points < 0 ? "−" : ""}${Math.abs(e.points)}</span>
-            ${e.kind === "extra" || e.kind === "demerito" ? html`<button class="icon-btn mini" aria-label="Tirar ${e.title}" @click=${() => this._removeExtra(e)}>${icon("x")}</button>` : nothing}
+            <button class="icon-btn mini" aria-label="Tirar os pontos: ${e.title}" title="Tirar os pontos" @click=${() => this._removePoints(e)}>${icon("x")}</button>
           </div>`,
         )}
         ${s.entries.length > 8 ? html`<button class="add-line" @click=${() => ((this._feedAll = !this._feedAll), this.requestUpdate())}>${icon(this._feedAll ? "chevron-up" : "chevron-down")}${this._feedAll ? "Mostrar menos" : `Ver todos (${s.entries.length})`}</button>` : nothing}
       </div>`;
     }
 
-    async _removeExtra(e) {
+    /** Recompensas › Pontos: a wrong score comes off the placar (what was done stays done). */
+    async _removePoints(e) {
       try {
         await this.api.scoreRemove(e.key);
-        this._showToast(e.points < 0 ? `${clip(e.title, 26)}: demérito tirado` : `${clip(e.title, 26)}: pontos tirados`);
+        const undo = () => this.api.scoreRestore(e.key).catch((err) => this._showToast(err.message));
+        this._showToast(e.points < 0 ? `${clip(e.title, 26)}: demérito tirado` : `${clip(e.title, 26)}: pontos de ${e.who.split(" ")[0]} tirados`, { label: "Desfazer", run: undo });
       } catch (err) {
         this._showToast(err.message);
       }
