@@ -152,9 +152,9 @@ export const RewardsMixin = (Base) =>
     }
 
     /** Maintenance done: moves to the next date (and the points go to who did it). */
-    _maintDone(m, by = null) {
+    _maintDone(m, by = null, keepSheet = false) {
       return this._withWho(m.points || 0, m.summary, async (who) => {
-        if (this._sheet) await this._closeSheet();
+        if (this._sheet && (!keepSheet || this._sheet === "who")) await this._closeSheet();
         try {
           const r = await this.api.maintDone(m.cal, m.uid, who);
           this._haptic("success");

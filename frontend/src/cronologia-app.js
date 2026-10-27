@@ -1128,6 +1128,69 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return (c && c.color) || this._accent();
   }
 
+  /** An event of a calendar (not a routine, task, maintenance, dose or bill). */
+  _realEvent(e) {
+    return !e.kind && !e.todo && !e.gerencia;
+  }
+
+  /** Done (or paid) as the lists show it: maintenance has no done state (it moves to its next date). */
+  _rowDone(e) {
+    if (e.todo) return !!e.todo.done;
+    if (e.gerencia) return !!this._checkOf(e);
+    return !!(e.kind && e.kind.kind !== "manutencao" && this._checkOf(e));
+  }
+
+  /** Semana / Dia › Qualquer hora: the day's routines, tasks, maintenance and bills, to mark. */
+  _openAnyDay(d) {
+    this._openSheet("anyday", { day: ymd(d) });
+  }
+
+  _renderAnyDaySheet() {
+    const now = new Date(this._now);
+    const d = fromYmd(this._form.day);
+    const list = eventsOfDay(this._events(d, addDays(d, 1)), d).filter((e) => e.allDay && !this._realEvent(e));
+    const rows = [...list.filter((e) => !this._rowDone(e)), ...list.filter((e) => this._rowDone(e))];
+    const done = list.length - list.filter((e) => !this._rowDone(e)).length;
+    const past = startOfDay(d) <= startOfDay(now);
+    return html`${this._sheetHead("Qualquer hora")}
+      <p class="sheet-note top">${cap(dayLabel(d, now))} · ${done} de ${plural(list.length, "feita", "feitas")}</p>
+      <div class="any-list">
+        ${rows.length ? rows.map((e) => this._renderAnyRow(e, past)) : html`<p class="empty-line">Nada sem horário neste dia.</p>`}
+      </div>`;
+  }
+
+  /** One line of Qualquer hora: the check (and the initials) where it can be marked here; tap the text to open it. */
+  _renderAnyRow(e, past) {
+    const k = e.kind;
+    const done = this._rowDone(e);
+    const cal = this._cal(e.cal);
+    const kind = k ? k.kind : e.todo ? "tarefa" : "conta";
+    const pts = k && k.points > 0 && this._scoreOn() ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0;
+    const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0 };
+    const m = kind === "manutencao" ? (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.canMove) : null;
+    let mark = null; // (by) => mark it done
+    let unmark = null;
+    if (kind === "rotina" && past) {
+      mark = (by) => this._markDone(it, "rotina", by);
+      unmark = () => this._undoCheck(it, "rotina");
+    } else if (kind === "remedio" && past) {
+      mark = () => this._check(it, "remedio");
+      unmark = () => this._undoCheck(it, "remedio");
+    } else if (e.todo) {
+      mark = (by) => this._todoDone(e.todo, true, by);
+      unmark = () => this._todoDone(e.todo, false);
+    } else if (m) mark = (by) => this._maintDone(m, by, true);
+    const sub = [k && k.who, e.todo ? e.todo.listName : cal ? cal.name : e.gerencia ? "GerencIA" : ""].filter(Boolean).join(" · ");
+    const quick = !done && mark && this._pickWho() && (kind === "rotina" || kind === "manutencao" || (e.todo && pts > 0));
+    return html`<div class="chore ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
+      ${mark || (done && unmark)
+        ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon("check") : nothing}</button>`
+        : html`<span class="chk ro" aria-hidden="true">${icon({ manutencao: "wrench", conta: "receipt", remedio: "pill", rotina: "spray-can", tarefa: "list-checks" }[kind] || "calendar")}</span>`}
+      <button class="chore-tx" @click=${() => this._openEvent(e)}><b>${e.summary}</b><small>${quick && pts ? html`<span class="pts-inline">+${pts}</span> · ` : nothing}${sub || { rotina: "Rotina", manutencao: "Manutenção", remedio: "Remédio", conta: "Conta", tarefa: "Tarefa" }[kind]}</small></button>
+      ${quick ? this._renderQuickWho(e.summary, pts, (p) => mark(p)) : pts ? html`<span class="pts ${done ? "got" : ""}">+${pts}</span>` : nothing}
+    </div>`;
+  }
+
   /** A routine, maintenance, dose or task without a time: done at any time of the day, not an all-day event. */
   _anyTime(e) {
     return !!e.allDay && (!!e.todo || (!!e.kind && e.kind.kind !== "conta"));
@@ -1480,9 +1543,17 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const hours = Array.from({ length: 24 }, (_, h) => h);
     const ws = this._app("week_start", 0);
     // Very long timed events (a 15-hour giveaway…) would cover the whole column: they go up with the all-day ones.
-    const banner = (e) => e.allDay || e.end - e.start >= 12 * 3600000;
+    // "Dia todo" is only for real events: routines, tasks, maintenance and bills without a time
+    // become a counter per day ("Qualquer hora", 3/46), and the list opens from it.
+    const anyTime = (e) => e.allDay && !this._realEvent(e);
+    const banner = (e) => !anyTime(e) && (e.allDay || e.end - e.start >= 12 * 3600000);
     const allDayRows = days.map((d) => eventsOfDay(events, d).filter(banner));
     const maxAllDay = Math.max(0, ...allDayRows.map((r) => r.length));
+    const anyRows = days.map((d) => eventsOfDay(events, d).filter(anyTime));
+    const counter = (d, list) => {
+      const done = list.filter((e) => this._rowDone(e)).length;
+      return { done, total: list.length, all: done === list.length };
+    };
     return html`
       ${n === 7
         ? html`<div class="week-strip">
@@ -1495,6 +1566,23 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
               (d) => html`<button class="ws-day ${sameDay(d, now) ? "today" : ""} ${sameDay(d, this._cursor) ? "sel" : ""}" @click=${() => (this._cursor = d)}><span>${WEEKDAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b></button>`,
             )}
           </div>`}
+      ${anyRows.some((l) => l.length)
+        ? n === 1
+          ? (() => {
+              const c = counter(days[0], anyRows[0]);
+              return html`<button class="any-bar ${c.all ? "all" : ""}" @click=${() => this._openAnyDay(days[0])}>
+                ${icon(c.all ? "circle-check" : "list-checks")}<span>Qualquer hora</span><b>${c.done}/${c.total}</b>${icon("chevron-right")}
+              </button>`;
+            })()
+          : html`<div class="tgrid-any" style="--n:${n}">
+              <span class="tg-label any-ic" title="Qualquer hora">${icon("list-checks")}</span>
+              ${anyRows.map((list, i) => {
+                if (!list.length) return html`<span></span>`;
+                const c = counter(days[i], list);
+                return html`<button class="tg-any ${c.all ? "all" : ""}" aria-label="Qualquer hora, ${dayLabel(days[i], now)}: ${c.done} de ${c.total} feitas" @click=${() => this._openAnyDay(days[i])}>${c.done}/${c.total}</button>`;
+              })}
+            </div>`
+        : nothing}
       ${maxAllDay
         ? html`<div class="tgrid-allday" style="--n:${n}">
             <span class="tg-label">dia todo</span>
@@ -1866,6 +1954,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     else if (this._sheet === "outlook") body = this._renderOutlookSheet();
     else if (this._sheet === "nocal") body = this._renderNoCalSheet();
     else if (this._sheet === "maint") body = this._renderMaintSheet();
+    else if (this._sheet === "anyday") body = this._renderAnyDaySheet();
     else if (this._sheet === "versions") body = this._renderVersions();
     else if (this._sheet === "who") body = this._renderWhoSheet();
     else if (this._sheet === "todo") {

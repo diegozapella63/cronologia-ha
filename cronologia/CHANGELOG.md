@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.17.0
+
+- **Semana e Dia**: a faixa **dia todo** fica só com eventos de verdade (aniversários, feriados, viagens). Rotinas, tarefas, manutenções, remédios sem horário e contas viram um **contador por dia** (feitas/total, ex.: 3/46) logo abaixo da data; no Dia, uma barra **Qualquer hora**. Tocar abre a lista do dia para marcar, com as iniciais de cada pessoa quando **Marcar por outras pessoas** está ligado.
+
 ## 1.16.5
 
 - Rotinas, manutenções, remédios e tarefas sem horário aparecem como **Qualquer hora** (na lista do calendário e na tela do item), e não mais como "Dia todo". Eventos de dia inteiro, como aniversários e feriados, continuam "Dia todo".

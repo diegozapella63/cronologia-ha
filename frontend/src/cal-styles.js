@@ -674,6 +674,79 @@ export const calStyles = css`
     color: var(--rv-on-accent);
     box-shadow: none;
   }
+  /* Semana / Dia › Qualquer hora: a counter per day (done/total), the list opens from it */
+  .tgrid-any {
+    display: grid;
+    grid-template-columns: 34px repeat(var(--n), 1fr);
+    gap: 2px;
+    align-items: center;
+    padding: 2px 0 6px;
+  }
+  .tg-label.any-ic {
+    display: grid;
+    place-items: center;
+    padding-top: 0;
+  }
+  .tg-label.any-ic .i {
+    width: 17px;
+    height: 17px;
+  }
+  .tg-any {
+    justify-self: center;
+    min-width: 0;
+    max-width: 100%;
+    padding: 3px 6px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--rv-accent-ink);
+    background: var(--rv-accent-soft);
+    white-space: nowrap;
+  }
+  .tg-any.all {
+    color: var(--rv-muted);
+    background: var(--rv-surface-2);
+  }
+  .any-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+    font-weight: 600;
+    font-size: 15px;
+    text-align: left;
+  }
+  .any-bar span {
+    flex: 1;
+  }
+  .any-bar b {
+    font-variant-numeric: tabular-nums;
+  }
+  .any-bar .i {
+    width: 18px;
+    height: 18px;
+  }
+  .any-bar.all {
+    background: var(--rv-surface-2);
+    color: var(--rv-muted);
+  }
+  .any-list .chore .chk.ro {
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: var(--cs);
+    color: var(--ci);
+  }
+  .any-list .chore .chk.ro .i {
+    width: 15px;
+    height: 15px;
+  }
   .tgrid-allday {
     display: grid;
     grid-template-columns: 34px repeat(var(--n), 1fr);
