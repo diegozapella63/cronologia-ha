@@ -1128,6 +1128,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return (c && c.color) || this._accent();
   }
 
+  /** A routine, maintenance, dose or task without a time: done at any time of the day, not an all-day event. */
+  _anyTime(e) {
+    return !!e.allDay && (!!e.todo || (!!e.kind && e.kind.kind !== "conta"));
+  }
+
   /** The header of a day in a list: a little calendar leaf (weekday and day), the date and how many. */
   _dayHead(d, count, open) {
     const now = new Date(this._now);
@@ -1162,7 +1167,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let time;
     if (e.allDay) {
       const days = dayDiff(e.end, e.start);
-      time = html`<b>Dia</b><small>${days > 1 ? `${dayDiff(day, e.start) + 1}/${days}` : "todo"}</small>`;
+      time = days <= 1 && this._anyTime(e) ? html`<b class="any">Qualquer</b><small>hora</small>` : html`<b>Dia</b><small>${days > 1 ? `${dayDiff(day, e.start) + 1}/${days}` : "todo"}</small>`;
     } else {
       const startsToday = sameDay(e.start, day);
       const endsToday = sameDay(e.end, day) || (e.end.getHours() === 0 && e.end.getMinutes() === 0 && dayDiff(e.end, day) === 1);
@@ -1900,7 +1905,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let when;
     if (e.allDay) {
       const last = addDays(e.end, -1);
-      when = sameDay(last, e.start) ? `${dayLabel(e.start, now)} · dia todo` : `${cap(dateShort(e.start, now))} – ${dateShort(last, now)} · ${plural(dayDiff(e.end, e.start), "dia", "dias")}`;
+      when = sameDay(last, e.start) ? `${dayLabel(e.start, now)} · ${this._anyTime(e) ? "qualquer hora" : "dia todo"}` : `${cap(dateShort(e.start, now))} – ${dateShort(last, now)} · ${plural(dayDiff(e.end, e.start), "dia", "dias")}`;
     } else if (sameDay(e.start, e.end) || (e.end.getHours() === 0 && e.end.getMinutes() === 0 && dayDiff(e.end, e.start) === 1)) {
       when = `${dayLabel(e.start, now)} · ${hm(e.start)} – ${hm(e.end)} (${durationLabel(e.end - e.start)})`;
     } else {

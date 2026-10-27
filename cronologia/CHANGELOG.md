@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.16.5
+
+- Rotinas, manutenções, remédios e tarefas sem horário aparecem como **Qualquer hora** (na lista do calendário e na tela do item), e não mais como "Dia todo". Eventos de dia inteiro, como aniversários e feriados, continuam "Dia todo".
+
 ## 1.16.4
 
 - **Calendário › Lista** e **Próximos dias**: cada dia começa com uma folhinha de calendário (dia da semana e número) e uma linha mais forte, para ver bem onde muda o dia. Hoje fica com a folhinha na cor do app.

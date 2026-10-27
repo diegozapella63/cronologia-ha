@@ -2686,6 +2686,12 @@ window.litDisableBundleWarning=true;
     font-weight: 600;
     line-height: 1.15;
   }
+  /* a routine or task without a time: "Qualquer hora" */
+  .ev-time b.any {
+    font-size: 13.5px;
+    letter-spacing: -0.01em;
+    padding-top: 2px;
+  }
   .ev-time small {
     font-size: 13px;
     font-weight: 500;
@@ -6033,11 +6039,11 @@ ${s}`:e.join(`
       <h1 class="page-title">${e}</h1>
       ${i?n`<p class="status"><span class="dot ${i.tone||""}" aria-hidden="true"></span><span>${i.text}</span></p>`:u}
       ${a}
-    </header>`}_colorOfEvent(e){if(e.gerencia)return U("ouro");if(e.todo)return U(De);let t=this._cal(e.cal);return t&&t.color||this._accent()}_dayHead(e,t,a){let s=new Date(this._now);return n`<button class="day-head ${P(e,s)?"today":""}" @click=${a}>
+    </header>`}_colorOfEvent(e){if(e.gerencia)return U("ouro");if(e.todo)return U(De);let t=this._cal(e.cal);return t&&t.color||this._accent()}_anyTime(e){return!!e.allDay&&(!!e.todo||!!e.kind&&e.kind.kind!=="conta")}_dayHead(e,t,a){let s=new Date(this._now);return n`<button class="day-head ${P(e,s)?"today":""}" @click=${a}>
       <span class="dh-cal" aria-hidden="true"><small>${fe[e.getDay()].slice(0,3)}</small><b>${e.getDate()}</b></span>
       <span class="dh-label">${q(e,s)}</span>
       <span class="dh-count">${t}</span>
-    </button>`}_renderDayRows(e,t){let a=c=>(!c.kind||c.kind.kind==="remedio")&&!c.todo&&!c.gerencia,s=(c,l)=>Number(c.allDay)-Number(l.allDay)||c.start-l.start,i=e.filter(a).sort(s),r=e.filter(c=>!a(c)).sort(s);return n`${i.map(c=>this._renderRow(c,t))}${r.length?n`<div class="day-sep ${i.length?"":"first"}">Rotinas, tarefas e lembretes</div>${r.map(c=>this._renderRow(c,t))}`:u}`}_renderRow(e,t,{showCal:a=!0}={}){let s=this._now,i=e.end.getTime()<=s,r=e.start.getTime()<=s&&e.end.getTime()>s&&!e.allDay,c=this._cal(e.cal),l;if(e.allDay){let m=I(e.end,e.start);l=n`<b>Dia</b><small>${m>1?`${I(t,e.start)+1}/${m}`:"todo"}</small>`}else{let m=P(e.start,t),g=P(e.end,t)||e.end.getHours()===0&&e.end.getMinutes()===0&&I(e.end,t)===1;l=n`<b>${m?C(e.start):"\u2026"}</b><small>${g?C(e.end):"segue"}</small>`}let d=e.kind,h=e.todo?e.todo.done:d&&d.kind!=="manutencao"&&this._checkOf(e),v=[...d?d.kind==="remedio"?[d.dose,d.who]:d.kind==="conta"&&d.value!=null?[this._money(d.value)]:[d.who]:[],e.location,a?c?c.name:e.gerencia?"GerencIA":e.todo?`${e.todo.listName} \xB7 ResolvIA`:"":""].filter(Boolean).join(" \xB7 ");return n`<button class="ev-row ${i?"past":""} ${r?"live":""} ${h?"done":""}" style=${S(this._colorOfEvent(e),this._dark)} @click=${()=>this._openEvent(e)}>
+    </button>`}_renderDayRows(e,t){let a=c=>(!c.kind||c.kind.kind==="remedio")&&!c.todo&&!c.gerencia,s=(c,l)=>Number(c.allDay)-Number(l.allDay)||c.start-l.start,i=e.filter(a).sort(s),r=e.filter(c=>!a(c)).sort(s);return n`${i.map(c=>this._renderRow(c,t))}${r.length?n`<div class="day-sep ${i.length?"":"first"}">Rotinas, tarefas e lembretes</div>${r.map(c=>this._renderRow(c,t))}`:u}`}_renderRow(e,t,{showCal:a=!0}={}){let s=this._now,i=e.end.getTime()<=s,r=e.start.getTime()<=s&&e.end.getTime()>s&&!e.allDay,c=this._cal(e.cal),l;if(e.allDay){let m=I(e.end,e.start);l=m<=1&&this._anyTime(e)?n`<b class="any">Qualquer</b><small>hora</small>`:n`<b>Dia</b><small>${m>1?`${I(t,e.start)+1}/${m}`:"todo"}</small>`}else{let m=P(e.start,t),g=P(e.end,t)||e.end.getHours()===0&&e.end.getMinutes()===0&&I(e.end,t)===1;l=n`<b>${m?C(e.start):"\u2026"}</b><small>${g?C(e.end):"segue"}</small>`}let d=e.kind,h=e.todo?e.todo.done:d&&d.kind!=="manutencao"&&this._checkOf(e),v=[...d?d.kind==="remedio"?[d.dose,d.who]:d.kind==="conta"&&d.value!=null?[this._money(d.value)]:[d.who]:[],e.location,a?c?c.name:e.gerencia?"GerencIA":e.todo?`${e.todo.listName} \xB7 ResolvIA`:"":""].filter(Boolean).join(" \xB7 ");return n`<button class="ev-row ${i?"past":""} ${r?"live":""} ${h?"done":""}" style=${S(this._colorOfEvent(e),this._dark)} @click=${()=>this._openEvent(e)}>
       <span class="ev-time">${l}</span>
       <span class="ev-bar"></span>
       <span class="ev-main"><span class="ev-title">${e.todo?n`<span class="kind-ic">${x("list-checks")}</span>`:this._kindIcon(e)}${e.summary}${h?n`<span class="ev-done">${x("check")}</span>`:u}</span>${v?n`<span class="ev-sub">${v}</span>`:u}</span>
@@ -6270,7 +6276,7 @@ ${s}`:e.join(`
       ${t?n`<button class="icon-btn back" @click=${t} aria-label="Voltar">${x("chevron-left")}</button>`:u}
       <h3 class="display">${e}</h3>
       <button class="icon-btn" @click=${()=>this._closeSheet()} aria-label="Fechar">${x("x")}</button>
-    </div>`}_renderEventSheet(){let e=this._form.ev,t=new Date(this._now),a=this._cal(e.cal),s;if(e.allDay){let r=_(e.end,-1);s=P(r,e.start)?`${q(e.start,t)} \xB7 dia todo`:`${H(K(e.start,t))} \u2013 ${K(r,t)} \xB7 ${k(I(e.end,e.start),"dia","dias")}`}else P(e.start,e.end)||e.end.getHours()===0&&e.end.getMinutes()===0&&I(e.end,e.start)===1?s=`${q(e.start,t)} \xB7 ${C(e.start)} \u2013 ${C(e.end)} (${Ht(e.end-e.start)})`:s=`${H(K(e.start,t))}, ${C(e.start)} \u2013 ${K(e.end,t)}, ${C(e.end)}`;let i=e.start>t?pt(e.start-t):e.end>t?"acontecendo agora":"";return n`
+    </div>`}_renderEventSheet(){let e=this._form.ev,t=new Date(this._now),a=this._cal(e.cal),s;if(e.allDay){let r=_(e.end,-1);s=P(r,e.start)?`${q(e.start,t)} \xB7 ${this._anyTime(e)?"qualquer hora":"dia todo"}`:`${H(K(e.start,t))} \u2013 ${K(r,t)} \xB7 ${k(I(e.end,e.start),"dia","dias")}`}else P(e.start,e.end)||e.end.getHours()===0&&e.end.getMinutes()===0&&I(e.end,e.start)===1?s=`${q(e.start,t)} \xB7 ${C(e.start)} \u2013 ${C(e.end)} (${Ht(e.end-e.start)})`:s=`${H(K(e.start,t))}, ${C(e.start)} \u2013 ${K(e.end,t)}, ${C(e.end)}`;let i=e.start>t?pt(e.start-t):e.end>t?"acontecendo agora":"";return n`
       <div class="ev-head">
         <span class="ev-swatch"></span>
         <div class="ev-head-text">

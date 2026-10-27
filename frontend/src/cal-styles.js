@@ -35,6 +35,12 @@ export const calStyles = css`
     font-weight: 600;
     line-height: 1.15;
   }
+  /* a routine or task without a time: "Qualquer hora" */
+  .ev-time b.any {
+    font-size: 13.5px;
+    letter-spacing: -0.01em;
+    padding-top: 2px;
+  }
   .ev-time small {
     font-size: 13px;
     font-weight: 500;
