@@ -1491,12 +1491,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       title = `${cap(MONTHS[cur.getMonth()])}${cur.getFullYear() !== now.getFullYear() ? ` ${cur.getFullYear()}` : ""}`;
       prev = () => (this._cursor = mode === "lista" ? addDays(cur, -30) : addMonths(cur, -1));
       nextFn = () => (this._cursor = mode === "lista" ? addDays(cur, 30) : addMonths(cur, 1));
-    } else if (mode === "semana") {
-      const a = startOfWeek(cur, ws);
-      const b = addDays(a, 6);
+    } else if (mode === "semana" || mode === "3dias") {
+      // 3 dias: the day on the cursor and the next two; the arrows walk 3 days
+      const span = mode === "3dias" ? 3 : 7;
+      const a = mode === "3dias" ? cur : startOfWeek(cur, ws);
+      const b = addDays(a, span - 1);
       title = a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.getDate()} ${MONTHS[b.getMonth()].slice(0, 3)}` : `${a.getDate()} ${MONTHS[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${MONTHS[b.getMonth()].slice(0, 3)}`;
-      prev = () => (this._cursor = addDays(cur, -7));
-      nextFn = () => (this._cursor = addDays(cur, 7));
+      prev = () => (this._cursor = addDays(cur, -span));
+      nextFn = () => (this._cursor = addDays(cur, span));
     } else {
       title = dayLabel(cur, now);
       prev = () => (this._cursor = addDays(cur, -1));
@@ -1504,12 +1506,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     const modes = [
       ["mes", "Mês", "layout-grid"],
-      ["semana", "Semana", "columns-3"],
+      ["semana", "Semana", "calendar-range"],
+      ["3dias", "3 dias", "columns-3"],
       ["dia", "Dia", "calendar"],
       ["lista", "Lista", "list"],
     ];
     let body;
     if (mode === "semana") body = this._renderTimeGrid(startOfWeek(cur, ws), 7);
+    else if (mode === "3dias") body = this._renderTimeGrid(cur, 3);
     else if (mode === "dia") body = this._renderTimeGrid(cur, 1);
     else if (mode === "lista") body = this._renderList();
     else body = this._renderMonth();
@@ -1606,8 +1610,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       return { done, total: list.length, all: done === list.length };
     };
     return html`
-      ${n === 7
-        ? html`<div class="week-strip">
+      ${n > 1
+        ? html`<div class="week-strip" style="--n:${n}">
             ${days.map((d) => html`<button class="ws-day ${sameDay(d, now) ? "today" : ""} ${sameDay(d, this._cursor) ? "sel" : ""}" @click=${() => (this._cursor = d)}>
               <span>${WEEKDAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b>
             </button>`)}
@@ -1643,7 +1647,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           </div>`
         : nothing}
       <div class="tgrid-scroll">
-        <div class="tgrid ${n === 1 ? "one" : "week"}" style="--n:${n};--hh:${HOUR_H}px">
+        <div class="tgrid ${n === 1 ? "one" : n === 3 ? "three" : "week"}" style="--n:${n};--hh:${HOUR_H}px">
           <div class="tg-hours">${hours.map((h) => html`<span style="top:${h * HOUR_H}px">${h ? `${String(h).padStart(2, "0")}h` : ""}</span>`)}</div>
           ${days.map((d) => {
             const items = layoutDay(eventsOfDay(events, d).filter((e) => !banner(e)), d);

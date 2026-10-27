@@ -532,9 +532,23 @@ export const calStyles = css`
     width: 16px;
     height: 16px;
   }
-  @media (max-width: 380px) {
+  /* phones: the five views fit in one line as words (Mês · Semana · 3 dias · Dia · Lista) */
+  @media (max-width: 480px) {
     .seg.compact .i {
       display: none;
+    }
+    .cal-tools .seg.compact {
+      gap: 2px;
+    }
+    .cal-tools .seg.compact button {
+      font-size: 13.5px;
+      padding-left: 2px;
+      padding-right: 2px;
+      white-space: nowrap;
+    }
+    .cal-tools > .pick {
+      padding-left: 12px;
+      padding-right: 12px;
     }
   }
   .cal-tools > .pick {
@@ -643,7 +657,7 @@ export const calStyles = css`
   /* week strip and hour grid */
   .week-strip {
     display: grid;
-    grid-template-columns: 34px repeat(7, 1fr);
+    grid-template-columns: 34px repeat(var(--n, 7), 1fr);
     gap: 2px;
     margin-bottom: 6px;
   }
@@ -863,6 +877,12 @@ export const calStyles = css`
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow-wrap: anywhere;
+  }
+  /* 3 dias: up to two lines, whole words (a narrow side-by-side block cuts the word instead of breaking it) */
+  .tgrid.three .tg-ev b {
+    -webkit-line-clamp: 2;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .tgrid.week .tg-ev b {
     display: block;

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.18.0
+
+- **Calendário › 3 dias**: o dia escolhido e os dois seguintes, com as horas, como a Semana mas com colunas largas (as setas andam de 3 em 3 dias). Tem o contador de **Qualquer hora** em cada dia.
+- No celular, as cinco visões (Mês · Semana · 3 dias · Dia · Lista) cabem numa linha só, como palavras; os ícones voltam em telas maiores.
+
 ## 1.17.5
 
 - **Editar na Google Agenda**: o Home Assistant não edita eventos do Google, então o botão Editar não aparecia (e não dava para pôr pontos nas rotinas). Agora aparece: ao salvar, o app apaga o evento e cria de novo com a mudança. Num evento que se repete, a série toda recomeça no dia editado.

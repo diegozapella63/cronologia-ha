@@ -3183,9 +3183,23 @@ window.litDisableBundleWarning=true;
     width: 16px;
     height: 16px;
   }
-  @media (max-width: 380px) {
+  /* phones: the five views fit in one line as words (Mês · Semana · 3 dias · Dia · Lista) */
+  @media (max-width: 480px) {
     .seg.compact .i {
       display: none;
+    }
+    .cal-tools .seg.compact {
+      gap: 2px;
+    }
+    .cal-tools .seg.compact button {
+      font-size: 13.5px;
+      padding-left: 2px;
+      padding-right: 2px;
+      white-space: nowrap;
+    }
+    .cal-tools > .pick {
+      padding-left: 12px;
+      padding-right: 12px;
     }
   }
   .cal-tools > .pick {
@@ -3294,7 +3308,7 @@ window.litDisableBundleWarning=true;
   /* week strip and hour grid */
   .week-strip {
     display: grid;
-    grid-template-columns: 34px repeat(7, 1fr);
+    grid-template-columns: 34px repeat(var(--n, 7), 1fr);
     gap: 2px;
     margin-bottom: 6px;
   }
@@ -3514,6 +3528,12 @@ window.litDisableBundleWarning=true;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow-wrap: anywhere;
+  }
+  /* 3 dias: up to two lines, whole words (a narrow side-by-side block cuts the word instead of breaking it) */
+  .tgrid.three .tg-ev b {
+    -webkit-line-clamp: 2;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .tgrid.week .tg-ev b {
     display: block;
@@ -6212,7 +6232,7 @@ ${s}`:e.join(`
       ${this._renderHead("Hoje",{text:"Nenhum calend\xE1rio no Home Assistant",tone:"off"})}
       <div class="panel"><div class="empty"><div class="em-icon">${x("calendar-plus")}</div><h3>Comece um calendário</h3><p>O CronologIA mostra os calendários do Home Assistant: um calendário local, o Google Agenda, o Outlook, feriados… Adicione um deles no Home Assistant e ele aparece aqui sozinho.</p></div></div>
       ${this._renderAddCalendars()}
-    </section>`}_renderCalendar(){let e=new Date(this._now),t=this._cursor,a=this._mode,s=this._app("week_start",0),i,r,c;if(a==="mes"||a==="lista")i=`${P($e[t.getMonth()])}${t.getFullYear()!==e.getFullYear()?` ${t.getFullYear()}`:""}`,r=()=>this._cursor=a==="lista"?_(t,-30):pe(t,-1),c=()=>this._cursor=a==="lista"?_(t,30):pe(t,1);else if(a==="semana"){let h=Pe(t,s),v=_(h,6);i=h.getMonth()===v.getMonth()?`${h.getDate()}\u2013${v.getDate()} ${$e[v.getMonth()].slice(0,3)}`:`${h.getDate()} ${$e[h.getMonth()].slice(0,3)} \u2013 ${v.getDate()} ${$e[v.getMonth()].slice(0,3)}`,r=()=>this._cursor=_(t,-7),c=()=>this._cursor=_(t,7)}else i=q(t,e),r=()=>this._cursor=_(t,-1),c=()=>this._cursor=_(t,1);let l=[["mes","M\xEAs","layout-grid"],["semana","Semana","columns-3"],["dia","Dia","calendar"],["lista","Lista","list"]],d;a==="semana"?d=this._renderTimeGrid(Pe(t,s),7):a==="dia"?d=this._renderTimeGrid(t,1):a==="lista"?d=this._renderList():d=this._renderMonth();let p=a==="mes"?t.getMonth()===e.getMonth()&&t.getFullYear()===e.getFullYear()&&L(t,e):L(t,e);return n`<section class="page cal-page">
+    </section>`}_renderCalendar(){let e=new Date(this._now),t=this._cursor,a=this._mode,s=this._app("week_start",0),i,r,c;if(a==="mes"||a==="lista")i=`${P($e[t.getMonth()])}${t.getFullYear()!==e.getFullYear()?` ${t.getFullYear()}`:""}`,r=()=>this._cursor=a==="lista"?_(t,-30):pe(t,-1),c=()=>this._cursor=a==="lista"?_(t,30):pe(t,1);else if(a==="semana"||a==="3dias"){let h=a==="3dias"?3:7,v=a==="3dias"?t:Pe(t,s),m=_(v,h-1);i=v.getMonth()===m.getMonth()?`${v.getDate()}\u2013${m.getDate()} ${$e[m.getMonth()].slice(0,3)}`:`${v.getDate()} ${$e[v.getMonth()].slice(0,3)} \u2013 ${m.getDate()} ${$e[m.getMonth()].slice(0,3)}`,r=()=>this._cursor=_(t,-h),c=()=>this._cursor=_(t,h)}else i=q(t,e),r=()=>this._cursor=_(t,-1),c=()=>this._cursor=_(t,1);let l=[["mes","M\xEAs","layout-grid"],["semana","Semana","calendar-range"],["3dias","3 dias","columns-3"],["dia","Dia","calendar"],["lista","Lista","list"]],d;a==="semana"?d=this._renderTimeGrid(Pe(t,s),7):a==="3dias"?d=this._renderTimeGrid(t,3):a==="dia"?d=this._renderTimeGrid(t,1):a==="lista"?d=this._renderList():d=this._renderMonth();let p=a==="mes"?t.getMonth()===e.getMonth()&&t.getFullYear()===e.getFullYear()&&L(t,e):L(t,e);return n`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
           <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName()?` \xB7 Ol\xE1, ${this._userName()}`:""}</p>
@@ -6245,7 +6265,7 @@ ${s}`:e.join(`
         ${p.length?this._renderDayRows(p,t):n`<p class="empty-line">${this._store.loading(i,r)?"Carregando\u2026":"Nada marcado."}</p>`}
       </div>
     `}_renderTimeGrid(e,t){let a=new Date(this._now),s=Array.from({length:t},(f,g)=>_(e,g)),i=this._events(s[0],_(s[t-1],1)),r=Array.from({length:24},(f,g)=>g),c=this._app("week_start",0),l=f=>f.allDay&&!this._realEvent(f),d=f=>!l(f)&&(f.allDay||f.end-f.start>=12*36e5),p=s.map(f=>ie(i,f).filter(d)),h=Math.max(0,...p.map(f=>f.length)),v=s.map(f=>ie(i,f).filter(l)),m=(f,g)=>{let $=g.filter(D=>this._rowDone(D)).length;return{done:$,total:g.length,all:$===g.length}};return n`
-      ${t===7?n`<div class="week-strip">
+      ${t>1?n`<div class="week-strip" style="--n:${t}">
             ${s.map(f=>n`<button class="ws-day ${L(f,a)?"today":""} ${L(f,this._cursor)?"sel":""}" @click=${()=>this._cursor=f}>
               <span>${be[f.getDay()]}</span><b>${f.getDate()}</b>
             </button>`)}
@@ -6263,7 +6283,7 @@ ${s}`:e.join(`
             ${p.map(f=>n`<div class="tg-adcol">${f.slice(0,3).map(g=>n`<button class="tg-ad ${g.kind&&this._checkOf(g)?"done":""}" style=${z(this._colorOfEvent(g),this._dark)} @click=${()=>this._openEvent(g)}>${g.summary}</button>`)}${f.length>3?n`<span class="tg-admore">+${f.length-3}</span>`:u}</div>`)}
           </div>`:u}
       <div class="tgrid-scroll">
-        <div class="tgrid ${t===1?"one":"week"}" style="--n:${t};--hh:${he}px">
+        <div class="tgrid ${t===1?"one":t===3?"three":"week"}" style="--n:${t};--hh:${he}px">
           <div class="tg-hours">${r.map(f=>n`<span style="top:${f*he}px">${f?`${String(f).padStart(2,"0")}h`:""}</span>`)}</div>
           ${s.map(f=>{let g=gs(ie(i,f).filter(b=>!d(b)),f),$=L(f,a),D=(a.getHours()+a.getMinutes()/60)*he;return n`<div class="tg-col ${$?"today":""}" @click=${b=>{if(b.target!==b.currentTarget)return;let F=b.offsetY;this._openForm({date:f,hour:Math.max(0,Math.min(23,Math.floor(F/he)))})}}>
               ${g.map(({event:b,top:F,height:W,lane:V,lanes:B})=>{let w=Math.max(W*he-2,he/2-2),I=!!(b.kind&&b.kind.kind==="remedio"),ee=b.kind&&this._checkOf(b);return n`<button class="tg-ev ${w<34?"short":""} ${I?"med":""} ${ee?"done":""}" style="${z(this._colorOfEvent(b),this._dark)}top:${F*he}px;height:${w}px;left:calc(${V/B*100}% + 1px);width:calc(${100/B}% - 2px)" @click=${()=>this._openEvent(b)}>
