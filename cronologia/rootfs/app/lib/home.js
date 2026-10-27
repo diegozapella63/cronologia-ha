@@ -668,8 +668,7 @@ export class Home {
       await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(event) });
       this.undo.set(`${cal}|${uid}`, { before, at: Date.now() });
     } else if (feat & F.CREATE && feat & F.DELETE) {
-      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
-      await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid });
+      await this.recreate(cal, raw, event);
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     // points: one entry per maintenance done (the event moves, so the key carries the day)
     const person = this.participant(who);
@@ -699,8 +698,7 @@ export class Home {
     let recreated = false;
     if (feat & F.UPDATE) await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
     else if (feat & F.CREATE && feat & F.DELETE) {
-      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
-      await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid: raw.uid });
+      await this.recreate(cal, raw, event);
       recreated = true;
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     const person = this.participant(who);
@@ -711,6 +709,25 @@ export class Home {
     this.refreshCalendar(cal);
     this.changed();
     return { moved: true, next: event.start.slice(0, 10) };
+  }
+
+  /**
+   * Moves an event on a calendar that can't change events (Google): the old one is deleted
+   * first, so a failure never leaves two; if the new one can't be created, the old one comes
+   * back. A copy already on the new date (left by an earlier try) is reused, not doubled.
+   */
+  async recreate(cal, raw, event) {
+    const t = this.tracked.get(cal);
+    const twin = t && t.events.find((e) => e.uid !== raw.uid && e.summary === raw.summary && !e.rrule && String(e.start).slice(0, 10) === String(event.start).slice(0, 10));
+    await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid: raw.uid });
+    if (twin) return;
+    try {
+      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
+    } catch (err) {
+      const back = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
+      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(back) }).catch(() => {});
+      throw err;
+    }
   }
 
   /** The event of a routine that moved (a recreated one has a new uid: found by its name). */
@@ -729,10 +746,8 @@ export class Home {
       const k = parseKind(raw.description);
       const description = k && k.kind === "rotina" ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
       const event = { summary: raw.summary, start: m.start, end: m.end, description, ...(raw.location ? { location: raw.location } : {}) };
-      if (m.recreated) {
-        await this.ha.send({ type: "calendar/event/create", entity_id: m.cal, event: toHAEvent(event) });
-        await this.ha.send({ type: "calendar/event/delete", entity_id: m.cal, uid: raw.uid });
-      } else await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: raw.uid, event: toHAEvent(event) });
+      if (m.recreated) await this.recreate(m.cal, raw, event);
+      else await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: raw.uid, event: toHAEvent(event) });
       this.refreshCalendar(m.cal);
     }
     this.store.setCheck(key, null);

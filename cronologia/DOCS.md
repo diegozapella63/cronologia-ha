@@ -36,7 +36,7 @@ Depende do calendário. O CronologIA só mostra os botões que cada um permite:
 | Calendário | Ler | Criar | Editar e apagar |
 |---|---|---|---|
 | Calendário local | sim | sim | sim |
-| Google Agenda | sim | sim | apagar sim; editar não (a integração do Google no HA não permite) |
+| Google Agenda | sim | sim | sim: a integração do Google no HA não edita, então o app apaga e cria de novo (num evento que se repete, a série toda recomeça no dia editado) |
 | Outlook pelo MS365 Calendar (HACS) | sim | sim, com a opção de editar ligada | sim, com a opção de editar ligada |
 | CalDAV | sim | sim | não (a integração não permite) |
 | Calendário remoto (.ics), feriados | sim | não | não |

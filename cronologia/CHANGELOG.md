@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.17.5
+
+- **Editar na Google Agenda**: o Home Assistant não edita eventos do Google, então o botão Editar não aparecia (e não dava para pôr pontos nas rotinas). Agora aparece: ao salvar, o app apaga o evento e cria de novo com a mudança. Num evento que se repete, a série toda recomeça no dia editado.
+- Rotina "depois de feita" e manutenção na Google Agenda: o Feito apaga primeiro e depois cria, então uma falha não deixa mais o evento duplicado; e uma cópia que já estava na próxima data é aproveitada.
+- Calendário: rotinas, manutenções e tarefas que valem pontos mostram **+N** na linha.
+
 ## 1.17.4
 
 - Corrigido: a **Rotina que volta depois de feita** dava "Esse calendário não deixa mudar eventos" na **Google Agenda** (a integração do Google no Home Assistant não edita eventos). Agora o Feito cria o evento na próxima data e apaga o antigo; continua aparecendo como feito hoje, com os pontos, e o Desfazer volta para o dia certo.

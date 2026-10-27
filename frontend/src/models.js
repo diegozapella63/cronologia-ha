@@ -532,6 +532,14 @@ export const ModelsMixin = (Base) =>
         // a routine that comes back N days after done (one event, no repetition rule)
         if (k.kind === "rotina" && k.after && !ev.rrule) Object.assign(f, { freq: "depois", afterN: Math.max(1, Math.round(k.after.n * UNITS[k.after.unit][0])) });
         f.wasAfter = f.freq === "depois";
+        // editing on a calendar that can't change events: how it was, to put back if saving fails
+        if (f.mode === "edit") {
+          try {
+            f.before = this._kindEvents(f)[0];
+          } catch (e) {
+            f.before = null;
+          }
+        }
       }
       this._openSheet("form", f);
       if (f.mode === "add") {
@@ -651,7 +659,7 @@ export const ModelsMixin = (Base) =>
       const cal = this._cal(f.cal);
       if (!cal) return this._showToast("Escolha o calendário");
       const ev = evs[0];
-      if (f.mode === "edit" && f.rid) {
+      if (f.mode === "edit" && f.rid && cal.canUpdate) {
         this._openSheet("scope", { action: "edit", ...f, event: ev });
         return;
       }
@@ -668,8 +676,8 @@ export const ModelsMixin = (Base) =>
           this._store.refresh(f.origCal);
           this._done(`${label} movid${o} para ${clip(cal.name, 24)}`, f.cal, ev.start);
         } else {
-          await this.api.updateEvent(f.cal, f.uid, ev);
-          this._done(`${label} salv${o}`, f.cal, ev.start);
+          await this._saveInPlace(f, ev);
+          this._done(`${label} salv${o}${f.rid && !cal.canUpdate ? " · a série recomeça neste dia" : ""}`, f.cal, ev.start);
         }
       } catch (err) {
         if (this._sheet === "form") this._setForm({ saving: false });

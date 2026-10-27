@@ -605,6 +605,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     // an event that already has a place or notes shows those fields even with Local e notas off
     f.details = !!(String(f.location || "").trim() || String(f.notes || "").trim());
+    // editing on a calendar that can't change events: how it was, to put back if saving fails
+    if (f.mode === "edit") {
+      try {
+        f.before = this._eventFromForm(f);
+      } catch (e) {
+        f.before = null;
+      }
+    }
     this._openSheet("form", f);
     if (f.mode === "add" && !f.title) {
       this.updateComplete.then(() => {
@@ -658,7 +666,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     const cal = this._cal(f.cal);
     if (!cal) return this._showToast("Escolha o calendário");
-    if (f.mode === "edit" && f.rid) {
+    if (f.mode === "edit" && f.rid && cal.canUpdate) {
       // A repeating event: ask what to change.
       this._openSheet("scope", { action: "edit", ...f, event: ev });
       return;
@@ -675,13 +683,38 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         this._store.refresh(f.origCal);
         this._done(`Evento movido para ${clip(cal.name, 24)}`, f.cal, ev.start);
       } else {
-        await this.api.updateEvent(f.cal, f.uid, ev);
-        this._done("Evento salvo", f.cal, ev.start);
+        await this._saveInPlace(f, ev);
+        this._done(f.rid && !cal.canUpdate ? "Evento salvo · a série recomeça neste dia" : "Evento salvo", f.cal, ev.start);
       }
     } catch (err) {
       if (this._sheet === "form") this._setForm({ saving: false });
       this._showToast(`Não consegui salvar: ${err.message}`);
     }
+  }
+
+  /**
+   * Saves an edited event where it is. A calendar that can't change events (the Google one in
+   * Home Assistant) gets it deleted and created again: deleted first, so a failure never leaves
+   * two, and put back as it was if the new one can't be created. A repeating one is the whole
+   * series, starting on the day that was edited.
+   */
+  async _saveInPlace(f, ev) {
+    const cal = this._cal(f.cal);
+    if (!cal || cal.canUpdate) return this.api.updateEvent(f.cal, f.uid, ev);
+    if (!(cal.canCreate && cal.canDelete)) throw new Error("Esse calendário não deixa mudar eventos");
+    await this.api.deleteEvent(f.cal, f.uid);
+    try {
+      await this.api.createEvent(f.cal, ev);
+    } catch (err) {
+      if (f.before) await this.api.createEvent(f.cal, f.before).catch(() => {});
+      throw err;
+    }
+  }
+
+  /** Editar: calendars that change events, and those that create and delete them (Google). */
+  _canEdit(calId) {
+    const c = this._cal(calId);
+    return !!c && (c.canUpdate || (c.canCreate && c.canDelete));
   }
 
   _done(text, calId, start) {
@@ -1255,10 +1288,12 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : ""].filter(Boolean).join(" · ");
     // Marcar por outras pessoas: the initials on the right, one tap marks it done by that person
     const mk = (k || e.todo) && this._pickWho() ? this._markerOf(e, day) : null;
+    // what it gives on the scoreboard (routines, maintenance, tasks with points)
+    const pts = this._scoreOn() && !done ? (k && (k.kind === "rotina" || k.kind === "manutencao") && k.points > 0 ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0) : 0;
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${mk && mk.quick && mk.pts ? html`<span class="pts-inline">+${mk.pts}</span> · ` : nothing}${sub}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub || pts ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub ? " · " : ""}` : nothing}${sub}</span>` : nothing}</span>
       ${e.rrule && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
@@ -2043,7 +2078,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       <div class="sheet-actions">
         ${cal && cal.canDelete && e.uid ? html`<button class="btn danger" @click=${() => this._askDelete(e)} aria-label="Apagar">${icon("trash")}</button>` : nothing}
         ${this._writable().length ? html`<button class="btn outline" @click=${() => this._openForm({ ev: e, copy: true })}>${icon("copy")}Duplicar</button>` : nothing}
-        ${cal && cal.canUpdate && e.uid ? html`<button class="btn primary" @click=${() => this._openForm({ ev: e })}>${icon("pencil")}Editar</button>` : nothing}
+        ${cal && this._canEdit(e.cal) && e.uid ? html`<button class="btn primary" @click=${() => this._openForm({ ev: e })}>${icon("pencil")}Editar</button>` : nothing}
       </div>
     `;
   }
