@@ -1118,6 +1118,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <div class="app">
           ${!this.env || this.env.topbar ? html`<header class="topbar"><div class="title">Cronolog<b>IA</b></div></header>` : nothing}
           ${!this._online ? html`<div class="offline">${icon("wifi-off")}<span>Sem conexão com o CronologIA. Reconectando…</span></div>` : nothing}
+          ${this._renderSide(view)}
           <main>${page}</main>
           ${this._renderNav(view)}
         </div>
@@ -1143,11 +1144,75 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     </nav>`;
   }
 
+  /**
+   * Computador (1000 px ou mais): a barra lateral no lugar das abas de baixo, como no
+   * InventarIA. O Novo, as seções, um mês pequeno para pular para um dia e os calendários
+   * (tocar mostra ou esconde, como em Mais › Calendários).
+   */
+  _renderSide(view) {
+    const on = (name) => view.name === name;
+    const item = (name, path, label, ic) => html`<button class="side-link" aria-current=${on(name) ? "page" : "false"} @click=${() => this._goTab(path)}>${icon(ic)}<span>${label}</span></button>`;
+    const cals = this._cals();
+    const shown = cals.filter((c) => !c.hidden).length;
+    return html`<aside class="side" aria-label="Navegação">
+      <div class="side-brand">Cronolog<span>IA</span></div>
+      <button class="btn primary side-add" @click=${() => this._openForm({ date: on("calendar") ? this._cursor : null })}>${icon("plus")}Novo</button>
+      <div class="side-nav">
+        ${item("now", "", "Agora", "clock-3")} ${item("calendar", "/calendario", "Calendário", "calendar-days")}
+        ${item("rewards", "/recompensas", "Recompensas", "trophy")} ${item("more", "/mais", "Mais", "sliders-horizontal")}
+      </div>
+      ${this._renderSideMonth(view)}
+      ${cals.length
+        ? html`<div class="side-h"><span>Calendários</span><small>${shown === cals.length ? cals.length : `${shown} de ${cals.length}`}</small></div>
+            <div class="side-lists">
+              ${cals.map(
+                (c) => html`<button class="side-cal ${c.hidden ? "off" : ""}" role="switch" aria-checked=${c.hidden ? "false" : "true"} title=${c.hidden ? "Mostrar na agenda" : "Esconder da agenda"} style=${colorVars(c.color, this._dark)} @click=${() => this._saveCalPrefs(c.id, { hidden: c.hidden ? null : true })}>
+                  <span class="sc-box">${c.hidden ? nothing : icon("check")}</span><span class="sl-name">${c.name}</span>
+                </button>`,
+              )}
+            </div>`
+        : nothing}
+      <div class="side-foot">CronologIA${this._version ? ` ${this._version}` : ""}</div>
+    </aside>`;
+  }
+
+  /** The small month of the sidebar: a tap opens that day in the Calendário. */
+  _renderSideMonth(view) {
+    const now = new Date(this._now);
+    const base = this._sideMonth || this._cursor;
+    const first = new Date(base.getFullYear(), base.getMonth(), 1);
+    const ws = this._app("week_start", 0);
+    const start = startOfWeek(first, ws);
+    const weeks = addDays(start, 35).getMonth() === first.getMonth() ? 6 : 5;
+    const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i));
+    const sel = view.name === "calendar" ? this._cursor : null;
+    const move = (n) => {
+      this._sideMonth = addMonths(first, n);
+      this.requestUpdate();
+    };
+    return html`<div class="side-month">
+      <div class="sm-head">
+        <b>${cap(MONTHS[first.getMonth()])}${first.getFullYear() !== now.getFullYear() ? ` ${first.getFullYear()}` : ""}</b>
+        <button class="icon-btn mini" aria-label="Mês anterior" @click=${() => move(-1)}>${icon("chevron-left")}</button>
+        <button class="icon-btn mini" aria-label="Próximo mês" @click=${() => move(1)}>${icon("chevron-right")}</button>
+      </div>
+      <div class="sm-grid">
+        ${[0, 1, 2, 3, 4, 5, 6].map((i) => html`<span class="sm-wd">${WEEKDAYS_SHORT[(i + ws) % 7].slice(0, 1).toUpperCase()}</span>`)}
+        ${days.map(
+          (d) => html`<button class="sm-day ${d.getMonth() !== first.getMonth() ? "out" : ""} ${sameDay(d, now) ? "today" : ""} ${sel && sameDay(d, sel) ? "sel" : ""}" aria-label=${dayLabel(d, now)} @click=${() => {
+            this._sideMonth = null;
+            this._openDay(d);
+          }}>${d.getDate()}</button>`,
+        )}
+      </div>
+    </div>`;
+  }
+
   _renderHead(title, status, extra = nothing) {
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
-      <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? ` · Olá, ${name}` : ""}</p>
+      <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
@@ -1521,7 +1586,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
-          <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? ` · Olá, ${this._userName()}` : ""}</p>
+          <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">

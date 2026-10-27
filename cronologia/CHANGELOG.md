@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.0
+
+- **No computador** (tela de 1000 pixels ou mais), como no InventarIA: uma **barra lateral** no lugar das abas de baixo, com o **Novo**, as seções, um **mês pequeno** para pular para um dia e os **calendários** (tocar mostra ou esconde). O Calendário usa a largura toda e as janelas abrem no meio da tela. No celular nada muda.
+
 ## 1.19.2
 
 - **Extrato** só do período atual (semana, quinzena ou mês, como em Mais › Placar): "Extrato desta semana". Quando o período fecha, ele recomeça vazio.
