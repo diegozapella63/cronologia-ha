@@ -235,7 +235,12 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
   const seenMaint = new Set();
   // routines that come back N days after being done: done today = a check that moved the event (by event)
   const movedToday = new Map();
-  for (const [ck, v] of Object.entries(checks)) if (v && v.moved && Date.parse(v.at) >= t0) movedToday.set(`${v.moved.cal}|${v.moved.uid}`, [ck, v]);
+  for (const [ck, v] of Object.entries(checks)) {
+    if (!v || !v.moved || Date.parse(v.at) < t0) continue;
+    movedToday.set(`${v.moved.cal}|${v.moved.uid}`, [ck, v]);
+    // recreated on a calendar that can't change events (Google): the new event has another uid
+    if (v.moved.recreated && v.moved.summary) movedToday.set(`${v.moved.cal}|name:${v.moved.summary}`, [ck, v]);
+  }
   for (const o of occurrences) {
     const { cal, raw } = o;
     const k = o.k || parseKind(raw.description);
@@ -257,7 +262,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       if (seenMaint.has(`r|${id}`)) continue;
       seenMaint.add(`r|${id}`);
       const due = allDay ? raw.start : ymdOf(new Date(start));
-      const doneToday = movedToday.get(id);
+      const doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
       const common = { kind: "rotina", who: k.who, points: k.points || 0, after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
       if (doneToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
       else if (start < t1) out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - dateOf(due).getTime()) / DAY)) });

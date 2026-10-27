@@ -67,6 +67,7 @@ Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias d
 Na **Rotina da casa**, a frequência **Depois de feita** serve para o que conta a partir da última vez, e não de um dia fixo: "trocar a areia 3 dias depois de trocada", "passar pano 2 dias depois". Escolha em quantos dias volta e a **Primeira vez** (hoje, amanhã ou outra data).
 
 - Na agenda fica **só a próxima vez**: um evento só, e não um por dia para sempre.
+- Funciona em qualquer calendário que cria e apaga eventos. Na **Google Agenda**, que não deixa editar pelo Home Assistant, o Feito cria o evento na próxima data e apaga o antigo.
 - Na Agora, ela aparece na **Rotina da casa** no dia em que vence. Se não for feita, continua lá nos dias seguintes, no alto e em vermelho ("atrasada há 2 dias").
 - **Feito** (o círculo, os botões de quem fez, a ficha do evento, o Alexa ou NFC com `cronologia_feito`, ou o ResolvIA) leva a próxima vez para **hoje + N dias**, guarda o dia em "Feito em" e dá os pontos. Ela fica marcada como feita na lista de hoje ("feito por Diego · volta terça").
 - **Desmarcar** (ou **Desfazer**) volta o evento para onde estava e tira os pontos.

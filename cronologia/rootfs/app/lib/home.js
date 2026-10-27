@@ -691,13 +691,20 @@ export class Home {
     const { cal, raw, k } = o;
     const today = new Date();
     // already done today (the moved event marked again from the calendar): nothing to do
-    if (Object.values(this.store.data.checks).some((v) => v && v.moved && v.moved.cal === cal && v.moved.uid === raw.uid && v.moved.day === ymd(today))) return { moved: false };
+    const same = (v) => v && v.moved && v.moved.cal === cal && v.moved.day === ymd(today) && (v.moved.uid === raw.uid || (v.moved.recreated && v.moved.summary === raw.summary));
+    if (Object.values(this.store.data.checks).some(same)) return { moved: false };
     const event = maintDone(raw, { ...k, every: k.after }, today);
     const feat = this.features(cal);
-    if (!(feat & F.UPDATE)) throw coded("not_supported", "Esse calendário não deixa mudar eventos");
-    await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+    // a calendar that can't change events (Google): a new event on the next date, the old one deleted
+    let recreated = false;
+    if (feat & F.UPDATE) await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+    else if (feat & F.CREATE && feat & F.DELETE) {
+      await this.ha.send({ type: "calendar/event/create", entity_id: cal, event: toHAEvent(event) });
+      await this.ha.send({ type: "calendar/event/delete", entity_id: cal, uid: raw.uid });
+      recreated = true;
+    } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     const person = this.participant(who);
-    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today) } });
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), ...(recreated ? { recreated: true, summary: raw.summary } : {}) } });
     if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
     else this.store.removePoints(key);
     this.log.info(`Rotina feita: ${raw.summary} (${person || who || by}); volta em ${event.start.slice(0, 10)}`);
@@ -706,15 +713,26 @@ export class Home {
     return { moved: true, next: event.start.slice(0, 10) };
   }
 
+  /** The event of a routine that moved (a recreated one has a new uid: found by its name). */
+  movedRaw(m) {
+    const raw = this.findRaw(m.cal, m.uid);
+    if (raw || !m.recreated) return raw;
+    const t = this.tracked.get(m.cal);
+    return (t && t.events.find((e) => e.summary === m.summary && !e.rrule && (parseKind(e.description) || {}).after)) || null;
+  }
+
   /** Desfazer of a routine that moved: back to where it was, without today in its history. */
   async afterUndo(key, c) {
     const m = c.moved;
-    const raw = this.findRaw(m.cal, m.uid);
+    const raw = this.movedRaw(m);
     if (raw) {
       const k = parseKind(raw.description);
       const description = k && k.kind === "rotina" ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
       const event = { summary: raw.summary, start: m.start, end: m.end, description, ...(raw.location ? { location: raw.location } : {}) };
-      await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: m.uid, event: toHAEvent(event) });
+      if (m.recreated) {
+        await this.ha.send({ type: "calendar/event/create", entity_id: m.cal, event: toHAEvent(event) });
+        await this.ha.send({ type: "calendar/event/delete", entity_id: m.cal, uid: raw.uid });
+      } else await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: raw.uid, event: toHAEvent(event) });
       this.refreshCalendar(m.cal);
     }
     this.store.setCheck(key, null);
@@ -729,7 +747,7 @@ export class Home {
     const c = this.store.data.checks[key];
     if (!c || !person) return null;
     this.store.setCheck(key, { ...c, by: person });
-    const raw = this.findRaw(c.moved.cal, c.moved.uid);
+    const raw = this.movedRaw(c.moved);
     const k = raw && parseKind(raw.description);
     const e = this.store.pointsByKey(key);
     if (e) this.store.addPoints({ ...e, who: person });

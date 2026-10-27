@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.17.4
+
+- Corrigido: a **Rotina que volta depois de feita** dava "Esse calendário não deixa mudar eventos" na **Google Agenda** (a integração do Google no Home Assistant não edita eventos). Agora o Feito cria o evento na próxima data e apaga o antigo; continua aparecendo como feito hoje, com os pontos, e o Desfazer volta para o dia certo.
+
 ## 1.17.3
 
 - Tela inicial: o card **Tarefas** desceu para o fim, depois dos Próximos dias e logo acima dos remédios já tomados. A agenda de hoje e a rotina da casa ficam em cima.

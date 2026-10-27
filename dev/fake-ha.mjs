@@ -20,6 +20,8 @@ const MEDIA_DIR = process.env.FAKE_MEDIA_DIR || process.env.MEDIA_DIR || "./.dat
 const WITH_AI = process.env.FAKE_HA_NO_AI !== "1";
 
 const model = createCalendars();
+// FAKE_NO_UPDATE=calendar.casa: that calendar creates and deletes but can't change events (like Google)
+for (const id of (process.env.FAKE_NO_UPDATE || "").split(",").filter(Boolean)) if (model.calendars[id]) model.calendars[id].features = 3;
 const todos = createTodos();
 const notifications = [];
 const restStates = new Map();
