@@ -623,7 +623,7 @@ export class Home {
     const entries = sc.entries
       .filter((e) => Date.parse(e.at) >= t0 && Date.parse(e.at) < t1)
       .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
-      .slice(0, 80);
+      .slice(0, 1000);
     return {
       ...st,
       current: { ...cur, reward: sc.rewards[cur.key] || "", prizes: sc.prizes[cur.key] || {} },

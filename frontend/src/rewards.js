@@ -216,9 +216,8 @@ export const RewardsMixin = (Base) =>
         ${this._renderPrize(s)}
         ${s.manual ? this._renderToScore() : nothing}
         ${this._renderDemerits(s)}
-        ${this._renderFeed(s)}
-        ${this._renderHistory(s)}
         ${this._renderExtrato(s)}
+        ${this._renderHistory(s)}
       </section>`;
     }
 
@@ -577,31 +576,6 @@ export const RewardsMixin = (Base) =>
         </div>`;
     }
 
-    _renderFeed(s) {
-      if (!s.entries.length) return nothing;
-      const now = new Date(this._now);
-      const list = this._feedAll ? s.entries : s.entries.slice(0, 8);
-      const when = (iso) => {
-        const d = new Date(iso);
-        const diff = dayDiff(d, now);
-        return diff === 0 ? `hoje ${hm(d)}` : diff === -1 ? `ontem ${hm(d)}` : `${WEEKDAYS[d.getDay()].slice(0, 3)} ${hm(d)}`;
-      };
-      return html`<div class="panel feed">
-        <div class="chores-head"><span class="overline">Pontos ${THIS[s.period]}</span><small>${plural(s.entries.length, "registro", "registros")}</small></div>
-        ${repeat(
-          list,
-          (e) => e.key,
-          (e) => html`<div class="feed-row" style=${colorVars(this._pColor(e.who), this._dark)}>
-            <span class="avatar sm2">${initial(e.who)}</span>
-            <span class="feed-tx"><b>${e.title}</b><small>${e.who} · ${when(e.at)}${e.kind === "extra" ? " · avulso" : e.kind === "manutencao" ? " · manutenção" : e.kind === "tarefa" ? " · ResolvIA" : e.kind === "demerito" ? " · demérito" : ""}</small></span>
-            <span class="pts ${e.points < 0 ? "neg" : "got"}">${e.points > 0 ? "+" : e.points < 0 ? "−" : ""}${Math.abs(e.points)}</span>
-            <button class="icon-btn mini" aria-label="Tirar os pontos: ${e.title}" title="Tirar os pontos" @click=${() => this._removePoints(e)}>${icon("x")}</button>
-          </div>`,
-        )}
-        ${s.entries.length > 8 ? html`<button class="add-line" @click=${() => ((this._feedAll = !this._feedAll), this.requestUpdate())}>${icon(this._feedAll ? "chevron-up" : "chevron-down")}${this._feedAll ? "Mostrar menos" : `Ver todos (${s.entries.length})`}</button>` : nothing}
-      </div>`;
-    }
-
     /** Recompensas › Pontos: a wrong score comes off the placar (what was done stays done). */
     async _removePoints(e) {
       try {
@@ -684,13 +658,18 @@ export const RewardsMixin = (Base) =>
         const diff = dayDiff(d, now);
         return diff === 0 ? "Hoje" : diff === -1 ? "Ontem" : `${cap(WEEKDAYS[d.getDay()])}, ${dateShort(d, now)}`;
       };
+      // the × goes on the newest line of each entry still on the placar of this period
+      const live = new Map((s.entries || []).map((e) => [e.key, e]));
+      const seen = new Set();
       const out = [];
       let last = "";
       for (const l of list) {
         const day = dayOf(l.at);
         if (day !== last) out.push(html`<div class="ext-day">${day}</div>`);
         last = day;
-        out.push(this._renderExtLine(l, s));
+        const entry = l.key && !seen.has(l.key) && ["ganhou", "perdeu", "trocou", "voltou", "ajuste"].includes(l.type) ? live.get(l.key) : null;
+        if (l.key) seen.add(l.key);
+        out.push(this._renderExtLine(l, s, entry));
       }
       return html`<div class="panel extrato">
         <div class="chores-head"><span class="overline">Extrato</span><small>tudo que mexeu nos pontos</small></div>
@@ -746,7 +725,7 @@ export const RewardsMixin = (Base) =>
       }
     }
 
-    _renderExtLine(l, s) {
+    _renderExtLine(l, s, entry) {
       const time = hm(new Date(l.at));
       if (l.type === "fechou") {
         const totals = Object.values(l.totals || {}).join(" × ");
@@ -763,6 +742,9 @@ export const RewardsMixin = (Base) =>
         ${l.type === "trocou"
           ? html`<span class="pts swap" title="Passaram de ${l.from} para ${l.who}">${icon("repeat")}${n}</span>`
           : html`<span class="pts ${l.points < 0 ? "neg" : "got"}">${l.points > 0 ? "+" : l.points < 0 ? "−" : ""}${n}</span>`}
+        ${entry
+          ? html`<button class="icon-btn mini" aria-label="${entry.points < 0 ? "Cancelar o demérito" : "Tirar os pontos"}: ${entry.title}" title=${entry.points < 0 ? "Cancelar o demérito" : "Tirar os pontos"} @click=${() => this._removePoints(entry)}>${icon("x")}</button>`
+          : html`<span class="ext-x-gap"></span>`}
       </div>`;
     }
 

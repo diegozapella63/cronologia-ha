@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.19.1
+
+- **Recompensas**: o card **Pontos desta semana** saiu, porque o **Extrato** já mostra tudo. O **×** para tirar uma pontuação errada passou para o Extrato, e a retirada vira uma linha nova ("Diego tirou 10 pontos de Andressa"), com **Desfazer** no aviso.
+- O Extrato subiu: fica acima do Histórico.
+
 ## 1.19.0
 
 - **Recompensas › Extrato**, no fim da aba: tudo que mexe nos pontos, com quem fez. "Andressa ganhou 10 pontos, marcado por Diego", "Diego tirou 5 pontos de Andressa" (demérito), "Diego tirou os próprios 10 pontos" (o ×), "10 pontos passaram de Andressa para Diego", desmarcados, Desfazer, o que veio do ResolvIA ou de automações e o fechamento de cada período. Separado por dia, com **Ver mais**.

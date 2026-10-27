@@ -73,14 +73,14 @@ export class MockApi {
     ];
     this.score.rewards[cur.key] = "Quem ganhar escolhe a série da semana";
     // Extrato: the points above, plus a few changes (marked by someone else, taken off, passed on)
-    const seq = [...this.score.entries].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((e) => ({ at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", who: e.who, points: e.points, title: e.title, kind: e.kind, ...(e.kind === "demerito" ? { by: "Andressa" } : e.title === "Tirar o lixo" ? { by: "Diego" } : {}) }));
+    const seq = [...this.score.entries].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((e) => ({ at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", key: e.key, who: e.who, points: e.points, title: e.title, kind: e.kind, ...(e.kind === "demerito" ? { by: "Andressa" } : e.title === "Tirar o lixo" ? { by: "Diego" } : {}) }));
     const h1 = this.score.history[0];
     seq.unshift({ at: new Date(`${h1.end}T00:00:05`).toISOString(), type: "fechou", period: { start: h1.start, end: h1.end }, totals: h1.totals, winner: h1.winner, reward: h1.reward, points: 0 });
     const later = (iso, min) => new Date(Date.parse(iso) + min * 60000).toISOString();
     const wash = seq.find((l) => l.title === "Lavar a louça" && l.who === "Diego");
-    if (wash) seq.push({ at: later(wash.at, 40), type: "trocou", from: "Diego", who: "Andressa", points: 10, title: "Lavar a louça", by: "Diego" }, { at: later(wash.at, 42), type: "trocou", from: "Andressa", who: "Diego", points: 10, title: "Lavar a louça", by: "Diego" });
+    if (wash) seq.push({ at: later(wash.at, 40), type: "trocou", key: wash.key, from: "Diego", who: "Andressa", points: 10, title: "Lavar a louça", by: "Diego" }, { at: later(wash.at, 42), type: "trocou", key: wash.key, from: "Andressa", who: "Diego", points: 10, title: "Lavar a louça", by: "Diego" });
     const plants = seq.find((l) => l.title === "Regar as plantas");
-    if (plants) seq.push({ at: later(plants.at, 90), type: "tirou", who: "Diego", points: -5, title: "Regar as plantas", by: "Andressa" }, { at: later(plants.at, 91), type: "voltou", who: "Diego", points: 5, title: "Regar as plantas", by: "Andressa" });
+    if (plants) seq.push({ at: later(plants.at, 90), type: "tirou", key: plants.key, who: "Diego", points: -5, title: "Regar as plantas", by: "Andressa" }, { at: later(plants.at, 91), type: "voltou", key: plants.key, who: "Diego", points: 5, title: "Regar as plantas", by: "Andressa" });
     this.score.log = seq.filter((l) => Date.parse(l.at) <= Date.now()).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((l, i) => ({ id: i + 1, ...l }));
     // yesterday's chores were done (so only today's are open)
     for (const raw of this.model.occurrences("calendar.casa", d0.getTime() - 86400000, d0.getTime())) {
@@ -201,7 +201,7 @@ export class MockApi {
 
   async scoreRemove(key) {
     this._removed = this.score.entries.find((e) => e.key === key) || null;
-    if (this._removed) this._log({ type: "tirou", who: this._removed.who, points: -this._removed.points, title: this._removed.title, kind: this._removed.kind });
+    if (this._removed) this._log({ type: "tirou", key, who: this._removed.who, points: -this._removed.points, title: this._removed.title, kind: this._removed.kind });
     this.score.entries = this.score.entries.filter((e) => e.key !== key);
     this._pushHome();
   }
@@ -209,7 +209,7 @@ export class MockApi {
   async scoreRestore(key) {
     if (this._removed && this._removed.key === key) {
       this.score.entries.push(this._removed);
-      this._log({ type: "voltou", who: this._removed.who, points: this._removed.points, title: this._removed.title, kind: this._removed.kind });
+      this._log({ type: "voltou", key, who: this._removed.who, points: this._removed.points, title: this._removed.title, kind: this._removed.kind });
     }
     this._removed = null;
     this._pushHome();
@@ -434,7 +434,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.19.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.19.1", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

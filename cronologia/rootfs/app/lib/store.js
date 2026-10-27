@@ -193,11 +193,17 @@ function normalize(raw, strict = false) {
   if (Array.isArray(sc.log)) {
     out.score.log = sc.log.filter((l) => l && Number.isInteger(l.id) && LOG_TYPES.includes(l.type) && Number.isFinite(Date.parse(l.at))).slice(-MAX_LOG);
     out.score.log_seq = Math.max(Number(sc.log_seq) || 0, ...out.score.log.map((l) => l.id));
+    // 1.19.0 lines had no key (the × of the Extrato needs it): the entry with the same person, title and time
+    for (const l of out.score.log) {
+      if (l.key || l.type === "fechou") continue;
+      const e = out.score.entries.find((x) => x.who === l.who && x.title === (l.title || "") && Math.abs(Date.parse(x.at) - Date.parse(l.at)) < 3000);
+      if (e) l.key = e.key;
+    }
   } else {
     // before the Extrato (1.19.0): it starts with the points already on the placar
     out.score.log = [...out.score.entries]
       .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-      .map((e, i) => ({ id: i + 1, at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", who: e.who, points: e.points, title: e.title, kind: e.kind }));
+      .map((e, i) => ({ id: i + 1, at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", key: e.key, who: e.who, points: e.points, title: e.title, kind: e.kind }));
     out.score.log_seq = out.score.log.length;
   }
   return out;
@@ -325,7 +331,7 @@ export class Store {
     const e = { key: String(entry.key).slice(0, 600), at: entry.at || new Date().toISOString(), who: String(entry.who).slice(0, 40), points: Math.max(-1000, Math.min(1000, Math.round(Number(entry.points) || 0))), title: String(entry.title || "").slice(0, 120), kind: String(entry.kind || "").slice(0, 20) };
     sc.entries = sc.entries.filter((x) => x.key !== entry.key);
     sc.entries.push(e);
-    const base = { who: e.who, title: e.title, kind: e.kind };
+    const base = { key: e.key, who: e.who, title: e.title, kind: e.kind };
     if (!old) this.logPoints({ ...base, type: why === "voltou" ? "voltou" : e.points < 0 ? "perdeu" : "ganhou", points: e.points });
     else if (old.who !== e.who) this.logPoints({ ...base, type: "trocou", from: old.who, points: e.points });
     else if (old.points !== e.points) this.logPoints({ ...base, type: "ajuste", points: e.points - old.points });
@@ -338,7 +344,7 @@ export class Store {
     const old = sc.entries.find((e) => e.key === key);
     if (!old) return false;
     sc.entries = sc.entries.filter((e) => e.key !== key);
-    this.logPoints({ type: why === "tirou" ? "tirou" : "desmarcou", who: old.who, points: -old.points, title: old.title, kind: old.kind });
+    this.logPoints({ type: why === "tirou" ? "tirou" : "desmarcou", key: old.key, who: old.who, points: -old.points, title: old.title, kind: old.kind });
     this.save();
     return true;
   }

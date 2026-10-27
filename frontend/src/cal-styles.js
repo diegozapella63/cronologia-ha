@@ -2371,20 +2371,14 @@ export const calStyles = css`
     padding: 4px 16px 8px;
   }
 
-  .panel.feed,
   .panel.history {
     padding: 0 0 6px;
   }
-  .feed-row,
   .hist-row {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 7px 16px;
-  }
-  .feed-row {
-    padding-right: 6px;
-    gap: 8px;
   }
   .feed-tx,
   .hist-tx {
@@ -2444,7 +2438,16 @@ export const calStyles = css`
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    padding: 7px 16px;
+    padding: 7px 6px 7px 16px;
+  }
+  .ext-row.closed {
+    padding-right: 16px;
+  }
+  .ext-row .icon-btn.mini,
+  .ext-x-gap {
+    flex: none;
+    width: 36px;
+    margin-top: -1px;
   }
   .ext-row .avatar,
   .ext-row .hist-ic {
