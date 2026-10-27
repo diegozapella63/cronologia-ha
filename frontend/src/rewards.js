@@ -703,7 +703,7 @@ export const RewardsMixin = (Base) =>
       const pts = plural(n, "ponto", "pontos");
       const via = l.via === "ResolvIA" ? " no ResolvIA" : l.via === "Automação" ? " por automação" : "";
       const t = l.title || "";
-      const kindTag = l.kind === "extra" ? "Avulso: " : l.kind === "demerito" ? "Demérito: " : l.kind === "manutencao" ? "Manutenção: " : "";
+      const kindTag = l.kind === "extra" ? "Avulso: " : l.kind === "demerito" ? "Demérito: " : l.kind === "manutencao" ? "Manutenção: " : l.kind === "tarefa" ? "Tarefa do ResolvIA: " : "";
       switch (l.type) {
         case "ganhou":
           return [`${who} ganhou ${pts}${by ? `, marcado por ${by}` : ""}${via}`, `${kindTag}${t}`];
