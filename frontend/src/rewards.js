@@ -692,7 +692,7 @@ export const RewardsMixin = (Base) =>
         last = day;
         out.push(this._renderExtLine(l, s));
       }
-      return html`<div class="panel feed extrato">
+      return html`<div class="panel extrato">
         <div class="chores-head"><span class="overline">Extrato</span><small>tudo que mexeu nos pontos</small></div>
         ${out}
         ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)))}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
@@ -750,14 +750,14 @@ export const RewardsMixin = (Base) =>
       const time = hm(new Date(l.at));
       if (l.type === "fechou") {
         const totals = Object.values(l.totals || {}).join(" × ");
-        return html`<div class="feed-row ext-row closed">
+        return html`<div class="ext-row closed">
           <span class="hist-ic" style=${l.winner ? colorVars(this._pColor(l.winner), this._dark) : ""}>${icon("trophy")}</span>
           <span class="feed-tx"><b>${l.winner ? `${l.winner} venceu` : "Empate"}${totals ? ` · ${totals}` : ""}</b><small>Fechou: ${l.period ? periodLabel(l.period.start, l.period.end, s.period) : ""}${l.reward && l.winner ? ` · ${l.reward}` : ""} · ${time}</small></span>
         </div>`;
       }
       const [main, sub] = this._extText(l);
       const n = Math.abs(l.points || 0);
-      return html`<div class="feed-row ext-row" style=${colorVars(this._pColor(l.who), this._dark)}>
+      return html`<div class="ext-row" style=${colorVars(this._pColor(l.who), this._dark)}>
         <span class="avatar sm2">${initial(l.who)}</span>
         <span class="feed-tx"><b>${main}</b><small>${sub ? `${sub} · ` : ""}${time}</small></span>
         ${l.type === "trocou"

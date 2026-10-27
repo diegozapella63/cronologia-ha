@@ -2437,9 +2437,14 @@ export const calStyles = css`
   .extrato .ext-day:first-of-type {
     padding-top: 0;
   }
+  .panel.extrato {
+    padding: 0 0 6px;
+  }
   .ext-row {
-    padding-right: 16px;
+    display: flex;
     align-items: flex-start;
+    gap: 8px;
+    padding: 7px 16px;
   }
   .ext-row .avatar,
   .ext-row .hist-ic {
