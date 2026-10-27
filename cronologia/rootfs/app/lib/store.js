@@ -4,6 +4,7 @@
 // Events stay in Home Assistant.
 import fs from "node:fs";
 import path from "node:path";
+import { actor } from "./actor.js";
 
 export const COLORS = ["vermelho", "coral", "laranja", "ouro", "verde", "menta", "turquesa", "azul", "indigo", "lilas", "rosa", "grafite"];
 const CAL_RE = /^calendar\.[a-z0-9_]+$/;
@@ -19,6 +20,8 @@ const stamp = (d = new Date()) => {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 };
 const KEEP_POINTS_DAYS = 400;
+const MAX_LOG = 3000; // Extrato: every change to the points, newest last
+const LOG_TYPES = ["ganhou", "perdeu", "tirou", "desmarcou", "trocou", "voltou", "ajuste", "fechou"];
 const SCORE_PERIODS = ["semana", "quinzena", "mes"];
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -139,7 +142,7 @@ const merge = (target, changes) => {
   return next;
 };
 
-const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null } });
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null, log: [], log_seq: 0 } });
 
 /**
  * The saved data, checked field by field. `strict` (imports) also runs the
@@ -184,7 +187,19 @@ function normalize(raw, strict = false) {
         .filter(([, v]) => Object.keys(v).length),
     ),
     current: sc.current && YMD_RE.test(sc.current.key || "") ? sc.current : null,
+    log: [],
+    log_seq: 0,
   };
+  if (Array.isArray(sc.log)) {
+    out.score.log = sc.log.filter((l) => l && Number.isInteger(l.id) && LOG_TYPES.includes(l.type) && Number.isFinite(Date.parse(l.at))).slice(-MAX_LOG);
+    out.score.log_seq = Math.max(Number(sc.log_seq) || 0, ...out.score.log.map((l) => l.id));
+  } else {
+    // before the Extrato (1.19.0): it starts with the points already on the placar
+    out.score.log = [...out.score.entries]
+      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+      .map((e, i) => ({ id: i + 1, at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", who: e.who, points: e.points, title: e.title, kind: e.kind }));
+    out.score.log_seq = out.score.log.length;
+  }
   return out;
 }
 
@@ -299,20 +314,50 @@ export class Store {
 
   // ---------------------------------------------------------------- Recompensas
 
-  /** A point entry {key, at, who, points, title, kind}; the same key replaces the old one. */
-  addPoints(entry) {
+  /**
+   * A point entry {key, at, who, points, title, kind}; the same key replaces the old one.
+   * Every change goes to the Extrato: new points, points that went to someone else, a
+   * different value. `why` "voltou" is Desfazer of a removal.
+   */
+  addPoints(entry, why = "") {
     const sc = this.data.score;
-    sc.entries = sc.entries.filter((e) => e.key !== entry.key);
-    sc.entries.push({ key: String(entry.key).slice(0, 600), at: entry.at || new Date().toISOString(), who: String(entry.who).slice(0, 40), points: Math.max(-1000, Math.min(1000, Math.round(Number(entry.points) || 0))), title: String(entry.title || "").slice(0, 120), kind: String(entry.kind || "").slice(0, 20) });
+    const old = sc.entries.find((e) => e.key === entry.key);
+    const e = { key: String(entry.key).slice(0, 600), at: entry.at || new Date().toISOString(), who: String(entry.who).slice(0, 40), points: Math.max(-1000, Math.min(1000, Math.round(Number(entry.points) || 0))), title: String(entry.title || "").slice(0, 120), kind: String(entry.kind || "").slice(0, 20) };
+    sc.entries = sc.entries.filter((x) => x.key !== entry.key);
+    sc.entries.push(e);
+    const base = { who: e.who, title: e.title, kind: e.kind };
+    if (!old) this.logPoints({ ...base, type: why === "voltou" ? "voltou" : e.points < 0 ? "perdeu" : "ganhou", points: e.points });
+    else if (old.who !== e.who) this.logPoints({ ...base, type: "trocou", from: old.who, points: e.points });
+    else if (old.points !== e.points) this.logPoints({ ...base, type: "ajuste", points: e.points - old.points });
     this.save();
   }
 
-  removePoints(key) {
+  /** `why`: "tirou" (the × in Recompensas) or "desmarcou" (unchecked, reopened, undone). */
+  removePoints(key, why = "desmarcou") {
     const sc = this.data.score;
-    const before = sc.entries.length;
+    const old = sc.entries.find((e) => e.key === key);
+    if (!old) return false;
     sc.entries = sc.entries.filter((e) => e.key !== key);
-    if (sc.entries.length !== before) this.save();
-    return sc.entries.length !== before;
+    this.logPoints({ type: why === "tirou" ? "tirou" : "desmarcou", who: old.who, points: -old.points, title: old.title, kind: old.kind });
+    this.save();
+    return true;
+  }
+
+  /** One line of the Extrato, with who did it (the person of the app, ResolvIA, an automation). */
+  logPoints(rec) {
+    const sc = this.data.score;
+    const a = actor();
+    sc.log_seq = (sc.log_seq || 0) + 1;
+    sc.log.push({ id: sc.log_seq, at: new Date().toISOString(), ...rec, ...(a.by ? { by: a.by } : {}), ...(a.via ? { via: a.via } : {}) });
+    if (sc.log.length > MAX_LOG) sc.log = sc.log.slice(-MAX_LOG);
+  }
+
+  /** Extrato: the lines before `beforeId` (newest first). */
+  logPage(beforeId, limit = 40) {
+    const out = [];
+    const log = this.data.score.log;
+    for (let i = log.length - 1; i >= 0 && out.length < limit; i--) if (!beforeId || log[i].id < beforeId) out.push(log[i]);
+    return out;
   }
 
   pointsByKey(key) {
@@ -369,6 +414,7 @@ export class Store {
     const sc = this.data.score;
     sc.history = [record, ...sc.history.filter((h) => h.key !== record.key)].slice(0, 104);
     sc.current = next;
+    this.logPoints({ type: "fechou", period: { start: record.start, end: record.end }, totals: record.totals, winner: record.winner || "", reward: record.reward || "", points: 0 });
     this.save();
   }
 
@@ -381,6 +427,7 @@ export class Store {
     const now = Date.now();
     const sc = this.data.score;
     sc.entries = sc.entries.filter((e) => now - Date.parse(e.at) < KEEP_POINTS_DAYS * 86400000);
+    sc.log = sc.log.filter((l) => now - Date.parse(l.at) < KEEP_POINTS_DAYS * 86400000);
     const oldest = new Date(now - 2 * 365 * 86400000).toISOString().slice(0, 10);
     for (const k of Object.keys(sc.rewards)) if (k < oldest) delete sc.rewards[k];
     for (const k of Object.keys(sc.prizes)) if (k < oldest) delete sc.prizes[k];

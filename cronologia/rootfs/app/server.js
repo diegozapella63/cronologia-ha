@@ -23,8 +23,9 @@ import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
+import { asActor } from "./lib/actor.js";
 
-const VERSION = "1.18.1";
+const VERSION = "1.19.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -236,7 +237,9 @@ class Session {
     const { id, type } = msg || {};
     if (!Number.isInteger(id)) return;
     try {
-      await this.handle(id, type, msg);
+      // the Extrato of the placar says who did it: the person of this Home Assistant user
+      const person = home.personOfUser(this.user.id, this.user.name) || this.user.name || "";
+      await asActor({ by: home.participant(person) || person }, () => this.handle(id, type, msg));
     } catch (err) {
       this.error(id, err.code || "failed", err.message || String(err));
     }
@@ -317,6 +320,9 @@ class Session {
       case "cronologia/score/remove":
         home.removePoints(String(msg.key || ""));
         return this.result(id);
+
+      case "cronologia/score/log":
+        return this.result(id, home.scoreLog(msg.before, msg.limit));
 
       case "cronologia/score/restore":
         home.restorePoints(String(msg.key || ""));

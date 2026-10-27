@@ -218,6 +218,7 @@ export const RewardsMixin = (Base) =>
         ${this._renderDemerits(s)}
         ${this._renderFeed(s)}
         ${this._renderHistory(s)}
+        ${this._renderExtrato(s)}
       </section>`;
     }
 
@@ -665,6 +666,103 @@ export const RewardsMixin = (Base) =>
           </div>`,
         )}
         ${h.length > 5 ? html`<button class="add-line" @click=${() => ((this._histAll = !this._histAll), this.requestUpdate())}>${icon(this._histAll ? "chevron-up" : "chevron-down")}${this._histAll ? "Mostrar menos" : `Ver tudo (${h.length})`}</button>` : nothing}
+      </div>`;
+    }
+
+    // ------------------------------------------------------------ Extrato
+
+    /** Every change to the points, newest first: who won, lost, took, gave back. */
+    _renderExtrato(s) {
+      const first = s.log || [];
+      if (!first.length) return nothing;
+      const low = Math.min(...first.map((l) => l.id));
+      const list = [...first, ...(this._extMore || []).filter((l) => l.id < low)];
+      const more = !this._extEnd && list.length < (s.log_count || 0);
+      const now = new Date(this._now);
+      const dayOf = (iso) => {
+        const d = new Date(iso);
+        const diff = dayDiff(d, now);
+        return diff === 0 ? "Hoje" : diff === -1 ? "Ontem" : `${cap(WEEKDAYS[d.getDay()])}, ${dateShort(d, now)}`;
+      };
+      const out = [];
+      let last = "";
+      for (const l of list) {
+        const day = dayOf(l.at);
+        if (day !== last) out.push(html`<div class="ext-day">${day}</div>`);
+        last = day;
+        out.push(this._renderExtLine(l, s));
+      }
+      return html`<div class="panel feed extrato">
+        <div class="chores-head"><span class="overline">Extrato</span><small>tudo que mexeu nos pontos</small></div>
+        ${out}
+        ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)))}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
+      </div>`;
+    }
+
+    async _loadExtrato(before) {
+      this._extBusy = true;
+      this.requestUpdate();
+      try {
+        const got = (await this.api.scoreLog(before, 40)) || [];
+        const seen = new Set((this._extMore || []).map((l) => l.id));
+        this._extMore = [...(this._extMore || []), ...got.filter((l) => !seen.has(l.id))];
+        if (got.length < 40) this._extEnd = true;
+      } catch (err) {
+        this._showToast(err.message);
+      }
+      this._extBusy = false;
+      this.requestUpdate();
+    }
+
+    /** One line: "Diego tirou 10 pontos de Andressa", "Andressa ganhou 10 pontos, marcado por Diego". */
+    _extText(l) {
+      const same = (a, b) => foldText(a || "").split(" ")[0] === foldText(b || "").split(" ")[0];
+      const who = l.who || "";
+      const by = l.by && !same(l.by, who) ? l.by : "";
+      const self = !!l.by && !by;
+      const n = Math.abs(l.points || 0);
+      const pts = plural(n, "ponto", "pontos");
+      const via = l.via === "ResolvIA" ? " no ResolvIA" : l.via === "Automação" ? " por automação" : "";
+      const t = l.title || "";
+      const kindTag = l.kind === "extra" ? "Avulso: " : l.kind === "demerito" ? "Demérito: " : l.kind === "manutencao" ? "Manutenção: " : "";
+      switch (l.type) {
+        case "ganhou":
+          return [`${who} ganhou ${pts}${by ? `, marcado por ${by}` : ""}${via}`, `${kindTag}${t}`];
+        case "perdeu":
+          return [by ? `${by} tirou ${pts} de ${who}${via}` : `${who} perdeu ${pts}${via}`, `${kindTag}${t}`];
+        case "tirou":
+          if (l.points > 0) return [by ? `${by} devolveu ${pts} para ${who}` : `${who} recebeu ${pts} de volta`, `Demérito cancelado: ${t}`];
+          return [by ? `${by} tirou ${pts} de ${who}` : self ? `${who} tirou os próprios ${pts}` : `${who} perdeu ${pts}`, `Pontos cancelados: ${t}`];
+        case "desmarcou":
+          return [`${who} ${l.points > 0 ? "recebeu de volta" : "perdeu"} ${pts}${by ? `, desmarcado por ${by}` : self ? " ao desmarcar" : via ? `, reaberto${via}` : ""}`, `Desmarcado: ${t}`];
+        case "trocou":
+          return [`${pts} passaram de ${l.from || "?"} para ${who}${by ? `, por ${by}` : ""}${via}`, t];
+        case "voltou":
+          return [l.points < 0 ? `${who} perdeu ${pts} de novo${by ? `, ${by} desfez` : ""}` : by ? `${by} desfez: ${pts} voltaram para ${who}` : `${pts} voltaram para ${who}`, `Desfeito: ${t}`];
+        case "ajuste":
+          return [`${who} ${l.points > 0 ? "ganhou mais" : "perdeu"} ${pts}${by ? `, por ${by}` : ""}`, `Pontos mudaram: ${t}`];
+        default:
+          return [`${who} ${l.points < 0 ? "perdeu" : "ganhou"} ${pts}`, t];
+      }
+    }
+
+    _renderExtLine(l, s) {
+      const time = hm(new Date(l.at));
+      if (l.type === "fechou") {
+        const totals = Object.values(l.totals || {}).join(" × ");
+        return html`<div class="feed-row ext-row closed">
+          <span class="hist-ic" style=${l.winner ? colorVars(this._pColor(l.winner), this._dark) : ""}>${icon("trophy")}</span>
+          <span class="feed-tx"><b>${l.winner ? `${l.winner} venceu` : "Empate"}${totals ? ` · ${totals}` : ""}</b><small>Fechou: ${l.period ? periodLabel(l.period.start, l.period.end, s.period) : ""}${l.reward && l.winner ? ` · ${l.reward}` : ""} · ${time}</small></span>
+        </div>`;
+      }
+      const [main, sub] = this._extText(l);
+      const n = Math.abs(l.points || 0);
+      return html`<div class="feed-row ext-row" style=${colorVars(this._pColor(l.who), this._dark)}>
+        <span class="avatar sm2">${initial(l.who)}</span>
+        <span class="feed-tx"><b>${main}</b><small>${sub ? `${sub} · ` : ""}${time}</small></span>
+        ${l.type === "trocou"
+          ? html`<span class="pts swap" title="Passaram de ${l.from} para ${l.who}">${icon("repeat")}${n}</span>`
+          : html`<span class="pts ${l.points < 0 ? "neg" : "got"}">${l.points > 0 ? "+" : l.points < 0 ? "−" : ""}${n}</span>`}
       </div>`;
     }
 

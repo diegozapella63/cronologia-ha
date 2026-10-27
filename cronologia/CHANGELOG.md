@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.19.0
+
+- **Recompensas › Extrato**, no fim da aba: tudo que mexe nos pontos, com quem fez. "Andressa ganhou 10 pontos, marcado por Diego", "Diego tirou 5 pontos de Andressa" (demérito), "Diego tirou os próprios 10 pontos" (o ×), "10 pontos passaram de Andressa para Diego", desmarcados, Desfazer, o que veio do ResolvIA ou de automações e o fechamento de cada período. Separado por dia, com **Ver mais**.
+- O extrato começa com os pontos que já estavam no placar.
+
 ## 1.18.1
 
 - **Recompensas › Pontos desta semana**: todo registro tem o **×** para tirar uma pontuação errada (antes só os avulsos e os deméritos), com **Desfazer** no aviso. O que foi feito continua feito; só os pontos saem do placar.

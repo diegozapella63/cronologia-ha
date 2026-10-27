@@ -11,6 +11,7 @@ import os from "node:os";
 import { parseKind, occurrenceKey, maintDone, foldText, buildIndex, buildDescription, isoWithOffset } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
+import { asActor } from "./actor.js";
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
@@ -64,9 +65,10 @@ export class Home {
 
   start() {
     this.ha.subscribe({ type: "subscribe_events", event_type: "mobile_app_notification_action" }, (ev) => this.onAction(ev && ev.data));
-    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_feito" }, (ev) => this.onFeito(ev && ev.data, ev && ev.context));
-    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_pontos" }, (ev) => this.onPoints(ev && ev.data));
-    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_demerito" }, (ev) => this.onDemerit(ev && ev.data));
+    // the Extrato says where these came from
+    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_feito" }, (ev) => asActor({ by: this.participant(String((ev && ev.data && ev.data.quem) || "")), via: "Automação" }, () => this.onFeito(ev && ev.data, ev && ev.context)));
+    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_pontos" }, (ev) => asActor({ by: this.participant(String((ev && ev.data && ev.data.quem) || "")), via: "ResolvIA" }, () => this.onPoints(ev && ev.data)));
+    this.ha.subscribe({ type: "subscribe_events", event_type: "cronologia_demerito" }, (ev) => asActor({ via: "Automação" }, () => this.onDemerit(ev && ev.data)));
     this.ha.on("ready", () => {
       this.loadPeople().catch((err) => this.log.warn(`Pessoas: ${err.message}`));
       for (const id of this.store.data.kind_cals) this.track(id);
@@ -590,7 +592,7 @@ export class Home {
     const now = Date.now();
     for (const [k, v] of this.removed) if (now - v.t > 10 * 60000) this.removed.delete(k);
     this.removed.set(key, { e: { ...e }, t: now });
-    this.store.removePoints(key);
+    this.store.removePoints(key, "tirou");
     this.log.info(`Pontos tirados: ${e.title} (${e.who}, ${e.points > 0 ? "+" : ""}${e.points})`);
     this.changed();
   }
@@ -600,8 +602,13 @@ export class Home {
     const r = this.removed && this.removed.get(key);
     if (!r || Date.now() - r.t > 10 * 60000) throw coded("not_found", "Já não dá para desfazer");
     this.removed.delete(key);
-    if (!this.store.pointsByKey(key)) this.store.addPoints(r.e);
+    if (!this.store.pointsByKey(key)) this.store.addPoints(r.e, "voltou");
     this.changed();
+  }
+
+  /** Extrato: older lines (Ver mais). */
+  scoreLog(beforeId, limit) {
+    return this.store.logPage(Number(beforeId) || 0, Math.max(1, Math.min(100, Number(limit) || 40)));
   }
 
   /** What the Recompensas screen shows. */
@@ -625,6 +632,9 @@ export class Home {
       leader: winnerOf(rows),
       entries,
       history: sc.history.slice(0, 26),
+      // Extrato: the newest changes; Ver mais asks for the older ones
+      log: this.store.logPage(0, 20),
+      log_count: sc.log.length,
     };
   }
 

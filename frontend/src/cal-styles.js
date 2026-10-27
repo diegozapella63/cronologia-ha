@@ -2425,6 +2425,50 @@ export const calStyles = css`
   .hist-ic.tie {
     box-shadow: none;
   }
+
+  /* ---------- Recompensas: Extrato ---------- */
+  .extrato .ext-day {
+    padding: 10px 16px 2px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--rv-muted);
+  }
+  .extrato .ext-day:first-of-type {
+    padding-top: 0;
+  }
+  .ext-row {
+    padding-right: 16px;
+    align-items: flex-start;
+  }
+  .ext-row .avatar,
+  .ext-row .hist-ic {
+    margin-top: 2px;
+  }
+  .ext-row .feed-tx b {
+    white-space: normal;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .ext-row .pts {
+    margin-top: 2px;
+  }
+  .ext-row.closed .hist-ic .i {
+    width: 17px;
+    height: 17px;
+  }
+  .pts.swap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: var(--rv-surface-2);
+    color: var(--rv-muted);
+  }
+  .pts.swap .i {
+    width: 13px;
+    height: 13px;
+  }
   .hist-gift {
     width: 36px;
     height: 36px;
