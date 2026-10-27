@@ -203,7 +203,8 @@ export function layoutDay(events, day) {
   const b = a + 86400000;
   const items = events
     .filter((e) => !e.allDay)
-    .map((e) => ({ e, s: Math.max(e.start.getTime(), a), t: Math.min(Math.max(e.end.getTime(), e.start.getTime() + 15 * 60000), b) }))
+    // a short event (a 15-minute dose) takes at least half an hour on the grid, so its name fits
+    .map((e) => ({ e, s: Math.max(e.start.getTime(), a), t: Math.min(Math.max(e.end.getTime(), e.start.getTime() + 30 * 60000), b) }))
     .sort((x, y) => x.s - y.s || y.t - x.t);
   const out = [];
   let cluster = [];

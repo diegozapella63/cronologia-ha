@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.17.1
+
+- **Semana e Dia**: o que dura menos de meia hora (uma dose de 15 minutos) ocupa no mínimo **30 minutos** na grade, para o nome caber.
+- **Remédios** com cara própria na grade: ícone de pílula, borda tracejada e listras (✓ e borda cheia quando tomado). No Dia aparece também a dose.
+
 ## 1.17.0
 
 - **Semana e Dia**: a faixa **dia todo** fica só com eventos de verdade (aniversários, feriados, viagens). Rotinas, tarefas, manutenções, remédios sem horário e contas viram um **contador por dia** (feitas/total, ex.: 3/46) logo abaixo da data; no Dia, uma barra **Qualquer hora**. Tocar abre a lista do dia para marcar, com as iniciais de cada pessoa quando **Marcar por outras pessoas** está ligado.

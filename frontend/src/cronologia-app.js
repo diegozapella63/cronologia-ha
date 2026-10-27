@@ -1604,9 +1604,13 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
               this._openForm({ date: d, hour: Math.max(0, Math.min(23, Math.floor(y / HOUR_H))) });
             }}>
               ${items.map(({ event: e, top, height, lane, lanes }) => {
-                const h = Math.max(height * HOUR_H - 2, 18);
-                return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${e.kind && this._checkOf(e) ? "done" : ""}" style="${colorVars(this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
-                  <b>${e.kind && this._checkOf(e) ? "✓ " : ""}${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}</small>` : nothing}
+                // at least half an hour tall (layoutDay already counts a short event as 30 minutes)
+                const h = Math.max(height * HOUR_H - 2, HOUR_H / 2 - 2);
+                // a medicine dose looks different from an event: pill icon, dashed border, stripes
+                const med = !!(e.kind && e.kind.kind === "remedio");
+                const done = e.kind && this._checkOf(e);
+                return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${med ? "med" : ""} ${done ? "done" : ""}" style="${colorVars(this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
+                  <b>${med ? icon(done ? "check" : "pill") : done ? "✓ " : ""}${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}${n === 1 && med && e.kind.dose ? ` · ${e.kind.dose}` : ""}</small>` : nothing}
                 </button>`;
               })}
               ${isToday ? html`<i class="tg-now" style="top:${nowTop}px"></i>` : nothing}

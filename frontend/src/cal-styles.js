@@ -864,6 +864,24 @@ export const calStyles = css`
     display: block;
     max-width: 100%;
   }
+  /* a medicine dose: pill icon, dashed border all around and stripes, so it doesn't look like an event */
+  .tg-ev.med {
+    border: 1.5px dashed var(--c);
+    border-radius: 10px;
+    background-image: repeating-linear-gradient(135deg, var(--cs) 0 6px, transparent 6px 11px), linear-gradient(var(--cs), var(--cs));
+  }
+  .tg-ev.med b .i {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 3px;
+    vertical-align: -2px;
+    color: var(--ci);
+  }
+  .tg-ev.med.done {
+    border-style: solid;
+    opacity: 0.6;
+  }
   .tg-ev small {
     font-size: 12px;
     color: var(--rv-muted);
