@@ -1342,7 +1342,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
             ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
           </div>`
         : nothing}
-      ${this._renderTodosPanel()}
       <div class="panel agenda">
         <div class="overline">Hoje · ${dateShort(now, now)}</div>
         ${timed.length
@@ -1366,6 +1365,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         : !loading
           ? html`<p class="page-sub">Nada marcado nos próximos 7 dias.</p>`
           : nothing}
+      ${this._renderTodosPanel()}
       ${medsLast ? this._renderMedsPanel() : nothing}
     </section>`;
   }

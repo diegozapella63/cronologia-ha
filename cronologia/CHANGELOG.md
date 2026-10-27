@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.17.3
+
+- Tela inicial: o card **Tarefas** desceu para o fim, depois dos Próximos dias e logo acima dos remédios já tomados. A agenda de hoje e a rotina da casa ficam em cima.
+
 ## 1.17.2
 
 - **Marcar por outras pessoas** também no calendário (Mês, Lista, Próximos dias): cada rotina de hoje, manutenção e tarefa com pontos ganha as iniciais (D, A) à direita, e um toque marca como feito por aquela pessoa. Dias que ainda não chegaram não mostram as iniciais nas rotinas.

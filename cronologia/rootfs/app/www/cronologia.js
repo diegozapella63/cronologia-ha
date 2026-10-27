@@ -6175,7 +6175,6 @@ ${s}`:e.join(`
             ${S.map($=>n`<button class="ad-chip" style=${z(this._colorOfEvent($),this._dark)} @click=${()=>this._openEvent($)}><span class="dot"></span><span>${$.summary}</span></button>`)}
             ${l.length>S.length?n`<button class="ad-chip more" @click=${()=>(this._showAllDay=!0,this.requestUpdate())}>+${l.length-S.length} o dia todo</button>`:u}
           </div>`:u}
-      ${this._renderTodosPanel()}
       <div class="panel agenda">
         <div class="overline">Hoje · ${Q(e,e)}</div>
         ${d.length?d.map($=>{let I=!W&&$.start>e?(W=!0,F):u;return n`${I}${this._renderRow($,t)}`}):n`<p class="empty-line">${s?"Carregando\u2026":"Nenhum hor\xE1rio marcado hoje."}</p>`}
@@ -6188,6 +6187,7 @@ ${s}`:e.join(`
             ${b.map(({d:$,list:I})=>n`${this._dayHead($,I.length,()=>this._openDay($))}
                 ${this._renderDayRows(I,$)}`)}
           </div>`:s?u:n`<p class="page-sub">Nada marcado nos próximos 7 dias.</p>`}
+      ${this._renderTodosPanel()}
       ${B?this._renderMedsPanel():u}
     </section>`}_ticket(e,{label:t,pill:a,when:s,stub:i,now:r,live:c=!1}){return n`<button class="hero-ev ticket ${c?"live":""}" style=${z(this._colorOfEvent(e),this._dark)} @click=${()=>this._openEvent(e)}>
       <span class="tk-main">
