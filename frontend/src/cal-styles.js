@@ -20,6 +20,20 @@ export const calStyles = css`
   .ev-row:active {
     background: var(--rv-surface-2);
   }
+  /* a line with the initials of each person on the right (Marcar por outras pessoas) */
+  .ev-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ev-line > .ev-row {
+    flex: 1;
+    min-width: 0;
+  }
+  .ev-line > .qwho {
+    flex: none;
+    padding-right: 2px;
+  }
   .ev-time {
     width: 46px;
     flex: none;

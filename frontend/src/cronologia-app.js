@@ -1151,24 +1151,26 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const list = eventsOfDay(this._events(d, addDays(d, 1)), d).filter((e) => e.allDay && !this._realEvent(e));
     const rows = [...list.filter((e) => !this._rowDone(e)), ...list.filter((e) => this._rowDone(e))];
     const done = list.length - list.filter((e) => !this._rowDone(e)).length;
-    const past = startOfDay(d) <= startOfDay(now);
     return html`${this._sheetHead("Qualquer hora")}
       <p class="sheet-note top">${cap(dayLabel(d, now))} · ${done} de ${plural(list.length, "feita", "feitas")}</p>
       <div class="any-list">
-        ${rows.length ? rows.map((e) => this._renderAnyRow(e, past)) : html`<p class="empty-line">Nada sem horário neste dia.</p>`}
+        ${rows.length ? rows.map((e) => this._renderAnyRow(e, d)) : html`<p class="empty-line">Nada sem horário neste dia.</p>`}
       </div>`;
   }
 
-  /** One line of Qualquer hora: the check (and the initials) where it can be marked here; tap the text to open it. */
-  _renderAnyRow(e, past) {
+  /**
+   * How a line can be marked here: `mark(by)` and `unmark()` (null when it can't), and `quick` when
+   * Marcar por outras pessoas shows the initials. Routines and doses only on today or before;
+   * maintenance moves to its next date; tasks of the ResolvIA any day.
+   */
+  _markerOf(e, day) {
     const k = e.kind;
-    const done = this._rowDone(e);
-    const cal = this._cal(e.cal);
     const kind = k ? k.kind : e.todo ? "tarefa" : "conta";
+    const done = this._rowDone(e);
     const pts = k && k.points > 0 && this._scoreOn() ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0;
+    const past = startOfDay(day) <= startOfDay(new Date(this._now));
     const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0 };
-    const m = kind === "manutencao" ? (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.canMove) : null;
-    let mark = null; // (by) => mark it done
+    let mark = null;
     let unmark = null;
     if (kind === "rotina" && past) {
       mark = (by) => this._markDone(it, "rotina", by);
@@ -1179,9 +1181,20 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     } else if (e.todo) {
       mark = (by) => this._todoDone(e.todo, true, by);
       unmark = () => this._todoDone(e.todo, false);
-    } else if (m) mark = (by) => this._maintDone(m, by, true);
+    } else if (kind === "manutencao") {
+      const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.canMove);
+      if (m) mark = (by) => this._maintDone(m, by, true);
+    }
+    const quick = !done && !!mark && this._pickWho() && (kind === "rotina" || kind === "manutencao" || (!!e.todo && pts > 0));
+    return { kind, done, pts, mark, unmark, quick };
+  }
+
+  /** One line of Qualquer hora: the check (and the initials) where it can be marked here; tap the text to open it. */
+  _renderAnyRow(e, day) {
+    const k = e.kind;
+    const { kind, done, pts, mark, unmark, quick } = this._markerOf(e, day);
+    const cal = this._cal(e.cal);
     const sub = [k && k.who, e.todo ? e.todo.listName : cal ? cal.name : e.gerencia ? "GerencIA" : ""].filter(Boolean).join(" · ");
-    const quick = !done && mark && this._pickWho() && (kind === "rotina" || kind === "manutencao" || (e.todo && pts > 0));
     return html`<div class="chore ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
       ${mark || (done && unmark)
         ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon("check") : nothing}</button>`
@@ -1240,12 +1253,15 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const done = e.todo ? e.todo.done : k && k.kind !== "manutencao" && this._checkOf(e);
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
     const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : ""].filter(Boolean).join(" · ");
-    return html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
+    // Marcar por outras pessoas: the initials on the right, one tap marks it done by that person
+    const mk = (k || e.todo) && this._pickWho() ? this._markerOf(e, day) : null;
+    const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${sub}</span>` : nothing}</span>
-      ${e.rrule ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub ? html`<span class="ev-sub">${mk && mk.quick && mk.pts ? html`<span class="pts-inline">+${mk.pts}</span> · ` : nothing}${sub}</span>` : nothing}</span>
+      ${e.rrule && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
     </button>`;
+    return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
   }
 
   // ---------- Agora

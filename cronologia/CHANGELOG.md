@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.17.2
+
+- **Marcar por outras pessoas** também no calendário (Mês, Lista, Próximos dias): cada rotina de hoje, manutenção e tarefa com pontos ganha as iniciais (D, A) à direita, e um toque marca como feito por aquela pessoa. Dias que ainda não chegaram não mostram as iniciais nas rotinas.
+
 ## 1.17.1
 
 - **Semana e Dia**: o que dura menos de meia hora (uma dose de 15 minutos) ocupa no mínimo **30 minutos** na grade, para o nome caber.
