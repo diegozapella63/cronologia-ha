@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21.2
+
+- **Agora**: quando o único compromisso do dia já está no cartão **A seguir** (ou **Agora**), o cartão **Hoje** some, para não mostrar o mesmo duas vezes. Com dois ou mais, ou depois que ele passou, o **Hoje** volta.
+
 ## 1.21.1
 
 - **Falar**: corrigido o erro "Missing X-Speech-Content header". O Home Assistant só recebia o áudio sem a descrição do formato: o proxy do Supervisor só repassa esse cabeçalho escrito exatamente assim, e ele ia em minúsculas.

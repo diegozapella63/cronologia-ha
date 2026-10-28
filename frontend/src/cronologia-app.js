@@ -1540,7 +1540,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           text: `${cap(dateLong(now))} · ${todays.length ? `${plural(todays.length, "evento", "eventos")} hoje` : "nada hoje"}${left && left < timed.length ? ` · ${left} pela frente` : ""}`,
         };
     let hero;
+    let heroEv = null;
     if (current.length) {
+      heroEv = current[0];
       const e = current[0];
       const cal = this._cal(e.cal);
       hero = this._ticket(e, {
@@ -1552,6 +1554,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         live: true,
       });
     } else if (next) {
+      heroEv = next;
       const cal = this._cal(next.cal);
       hero = this._ticket(next, {
         label: "A seguir",
@@ -1561,6 +1564,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         now,
       });
     }
+    // the only appointment of today is already the "Agora"/"A seguir" card: no second copy below it
+    const sameAsHero = heroEv && timed.length === 1 && timed[0] === heroEv;
     const shownAllDay = this._showAllDay || allDay.length <= 3 ? allDay : allDay.slice(0, 2);
     const nowLine = html`<div class="now-line"><span>${hm(now)}</span></div>`;
     let lineDone = false;
@@ -1580,7 +1585,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
             ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
           </div>`
         : nothing}
-      <div class="panel agenda">
+      ${sameAsHero
+        ? nothing
+        : html`<div class="panel agenda">
         ${this._panelHead("calendar-days", "accent", `Hoje · ${dateShort(now, now)}`)}
         ${timed.length
           ? timed.map((e) => {
@@ -1590,7 +1597,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           : html`<p class="empty-line">${loading ? "Carregando…" : "Nenhum horário marcado hoje."}</p>`}
         ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
-      </div>
+      </div>`}
       ${this._renderHomePanel()}
       ${this._renderTodosPanel()}
     </section>`;
