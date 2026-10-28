@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.23.0
+
+- **No computador, com cara de InventarIA**: tela mais larga; **Agora em duas colunas** (à esquerda o próximo compromisso, Hoje e tarefas; à direita remédios, contas e a casa); seções direto na página em vez de cartões, com título grande e ícone; no alto à direita, **Falar**, **Ler com IA** e **Novo** (saiu o botão da barra lateral). O calendário continua com seus quadros. No celular nada muda.
+
 ## 1.22.0
 
 - **Mais › Rotinas**: tudo que está cadastrado, separado em **Rotina da casa**, **Remédios**, **Manutenção da casa** e **Contas a pagar**. Uma linha por cadastro (não uma por dia), com quem faz, de quanto em quanto tempo, horário, pontos e a próxima vez (atrasadas em vermelho). Remédio com vários horários fica numa linha só, com todos os horários. Tem **Buscar** (pelo nome ou pela pessoa), um toque abre para ver e editar, e cada seção tem o botão para cadastrar um novo.

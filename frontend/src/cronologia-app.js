@@ -98,6 +98,7 @@ const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encode
 
 class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))) {
   static properties = {
+    _desk: { state: true },
     api: { attribute: false },
     env: { attribute: false },
     _ready: { state: true },
@@ -154,6 +155,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     this._onVisible = this._onVisible.bind(this);
     this._mql = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
     this._onScheme = () => this._syncDark();
+    // computador (1000 px or more, the same as the CSS): Agora in two columns
+    this._deskMq = window.matchMedia ? window.matchMedia("(min-width: 1000px)") : null;
+    this._desk = !!(this._deskMq && this._deskMq.matches);
+    this._onDesk = () => (this._desk = !!this._deskMq.matches);
   }
 
   // ------------------------------------------------------------ lifecycle
@@ -165,6 +170,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     window.addEventListener("keydown", this._onKey);
     document.addEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.addEventListener) this._mql.addEventListener("change", this._onScheme);
+    if (this._deskMq && this._deskMq.addEventListener) this._deskMq.addEventListener("change", this._onDesk);
     this._tick = setInterval(() => (this._now = Date.now()), 30000);
     this._themeTimer = setInterval(() => this._syncDark(), 3000);
     this._syncDark();
@@ -177,6 +183,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     window.removeEventListener("keydown", this._onKey);
     document.removeEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.removeEventListener) this._mql.removeEventListener("change", this._onScheme);
+    if (this._deskMq && this._deskMq.removeEventListener) this._deskMq.removeEventListener("change", this._onDesk);
     clearInterval(this._tick);
     clearInterval(this._themeTimer);
     clearTimeout(this._toastTimer);
@@ -1297,7 +1304,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const shown = cals.filter((c) => !c.hidden).length;
     return html`<aside class="side" aria-label="Navegação">
       <div class="side-brand">Cronolog<span>IA</span></div>
-      <button class="btn primary side-add" @click=${() => this._openForm({ date: on("calendar") ? this._cursor : null })}>${icon("plus")}Novo</button>
       <div class="side-nav">
         ${item("now", "", "Agora", "clock-3")}
         <button class="side-link" @click=${() => this._toSearch()}>${icon("search")}<span>Buscar</span><kbd>/</kbd></button>
@@ -1355,11 +1361,22 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
-      <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}</div>
+      <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
     </header>`;
+  }
+
+  /** Computador: the actions at the top right, like the InventarIA (Ler com IA, Novo). */
+  _renderTopActs() {
+    const ai = this._aiOn() && this._ai && this._ai.ready;
+    const onCal = this._view().name === "calendar";
+    return html`<div class="top-acts">
+      ${this._renderMicBtn()}
+      ${ai ? html`<button class="btn outline sm" @click=${() => this._openImport("pick")}>${icon("scan-text")}Ler com IA</button>` : nothing}
+      <button class="btn primary sm" @click=${() => this._openForm({ date: onCal ? this._cursor : null })}>${icon("plus")}Novo</button>
+    </div>`;
   }
 
   _colorOfEvent(e) {
@@ -1573,12 +1590,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     // right after the last Tomei here, until you leave Agora, so it doesn't vanish from under the finger.
     const meds = this._ix().meds || [];
     const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
-    return html`<section class="page">
-      ${this._renderHead("Hoje", status)}
-      ${this._renderNowSearch()}
-      ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
-      ${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}
-      ${hero || nothing}
+    const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing;
+    const medsPart = html`${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}`;
+    const dayPart = html`${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
             ${shownAllDay.map((e) => html`<button class="ad-chip" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}><span class="dot"></span><span>${e.summary}</span></button>`)}
@@ -1597,7 +1611,24 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           : html`<p class="empty-line">${loading ? "Carregando…" : "Nenhum horário marcado hoje."}</p>`}
         ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
-      </div>`}
+      </div>`}`;
+    // Computador, like the InventarIA: the day on the left (next appointment, Hoje, tasks), doses, bills
+    // and the house on the right. Phone: one column, the doses first.
+    if (this._desk) {
+      return html`<section class="page now-page">
+        ${this._renderHead("Hoje", status)}
+        ${this._renderNowSearch()} ${hidden}
+        <div class="now-cols">
+          <div class="now-main">${dayPart} ${this._renderTodosPanel()}</div>
+          <div class="now-side">${medsPart} ${this._renderHomePanel()}</div>
+        </div>
+      </section>`;
+    }
+    return html`<section class="page">
+      ${this._renderHead("Hoje", status)}
+      ${this._renderNowSearch()} ${hidden}
+      ${medsPart}
+      ${dayPart}
       ${this._renderHomePanel()}
       ${this._renderTodosPanel()}
     </section>`;
@@ -1736,7 +1767,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
-          <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}</div>
+          <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">

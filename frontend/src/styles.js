@@ -359,6 +359,10 @@ export const styles = css`
   .panel > .overline {
     padding: 16px 0 6px;
   }
+  /* computer only: the actions at the top right */
+  .top-acts {
+    display: none;
+  }
   /* Mais: section headings like the InventarIA (icon in a soft square + big title) */
   .mais-head {
     display: flex;
@@ -2865,6 +2869,140 @@ export const extraStyles = css`
   @media (min-width: 1000px) {
     .page.cal-page {
       max-width: 1240px;
+    }
+  }
+  /*
+   * Computador, like the InventarIA: wider, the actions at the top right, sections on the page instead
+   * of cards (a big title with its icon, lines between the rows) and Agora in two columns.
+   * The calendar keeps its cards (the grid needs them).
+   */
+  @media (min-width: 1000px) {
+    .page {
+      max-width: 1040px;
+      padding: 28px 40px 72px;
+    }
+    .head-row {
+      min-height: 44px;
+    }
+    .page > .brand-head {
+      margin-bottom: 22px;
+    }
+    .top-acts {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+    }
+    .top-acts .btn {
+      min-height: 40px;
+      border-radius: 10px;
+      padding: 0 16px;
+    }
+    .mic-top {
+      margin: 0;
+      width: 40px;
+      height: 40px;
+    }
+    /* the microphone goes with the actions (the one by the title is for the phone) */
+    .head-row > .mic-top {
+      display: none;
+    }
+    .page:not(.cal-page) .panel {
+      background: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
+      margin: 0 0 36px;
+      overflow: visible;
+    }
+    /* Calendário: the actions at the top right, above the arrows */
+    .cal-top {
+      position: relative;
+    }
+    .cal-title {
+      flex: 1;
+    }
+    .cal-page .top-acts {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+    .cal-page .head-row {
+      min-height: 56px;
+    }
+    /* the inside of the sections lines up with the page (the phone keeps the card's padding) */
+    .page:not(.cal-page) .panel.meds.alert {
+      box-shadow: none;
+    }
+    .page:not(.cal-page) .chores-head.sec-head,
+    .page:not(.cal-page) .meds-head,
+    .page:not(.cal-page) .bills-head {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .page:not(.cal-page) .meds-alert {
+      margin: 0 0 8px;
+    }
+    .page:not(.cal-page) .meds-who {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .page:not(.cal-page) .panel .dose,
+    .page:not(.cal-page) .panel .bill,
+    .page:not(.cal-page) .panel .maint {
+      margin-left: 0;
+      margin-right: 0;
+    }
+    .page:not(.cal-page) .panel .chore {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .page:not(.cal-page) .panel-foot,
+    .page:not(.cal-page) .panel.bills .add-line,
+    .page:not(.cal-page) .panel.chores .add-line,
+    .page:not(.cal-page) .panel.todos .add-line {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .page:not(.cal-page) .panel.agenda {
+      padding: 0;
+      margin-left: -4px;
+      margin-right: -4px;
+    }
+    /* section titles: big, like the InventarIA */
+    .page .sec-head .overline,
+    .page .meds-head .overline,
+    .page .bills-head .overline {
+      font-family: var(--rv-display);
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: 0.005em;
+      text-transform: none;
+      color: var(--rv-text);
+    }
+    .page:not(.cal-page) .chores-head.sec-head,
+    .page:not(.cal-page) .meds-head,
+    .page:not(.cal-page) .bills-head {
+      padding-top: 0;
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--rv-line);
+    }
+    .page:not(.cal-page) .panel.agenda > .chores-head.sec-head {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+    .now-cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 0 48px;
+      align-items: start;
+    }
+    .now-main,
+    .now-side {
+      min-width: 0;
     }
   }
 
