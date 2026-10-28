@@ -827,7 +827,8 @@ export const ModelsMixin = (Base) =>
       const f = this._form;
       return html`<div class="model-strip" role="radiogroup" aria-label="Modelo">
         ${Object.entries(KIND_UI)
-          .filter(([k]) => k !== "tarefa" || this._todoLists().length)
+          // "evento" is only for marking a plain event Feito: the Evento of this strip is ""
+          .filter(([k]) => k !== "evento" && (k !== "tarefa" || this._todoLists().length))
           .map(
             ([k, ui]) => html`<button class="model ${current === k ? "on" : ""}" role="radio" aria-checked=${current === k ? "true" : "false"} @click=${() => {
               if (current === k) return;

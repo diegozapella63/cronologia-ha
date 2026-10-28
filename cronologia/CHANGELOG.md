@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.25.1
+
+- **Novo**: o modelo **Evento** aparecia duas vezes na faixa de modelos (desde a 1.24.0). Agora aparece uma só.
+
 ## 1.25.0
 
 - **Sensores no Home Assistant desligados por padrão**: o app só cria os sensores (remédios de hoje, remédio atrasado, manutenções vencidas, placar e chamadas de IA) se você ligar em **Mais › Integrações › Sensores no Home Assistant**. Desligado, apaga os que tinha criado. Quem atualizar fica com eles desligados até ligar.
