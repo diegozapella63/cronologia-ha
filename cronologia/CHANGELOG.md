@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.3
+
+- **Agora** é só o dia de hoje: saiu o **Próximos dias** (está no Calendário) e o cartão "Agenda livre".
+
 ## 1.20.2
 
 - **Rotina da casa**: as já feitas ficam recolhidas em **Mostrar concluídas (N)**; um toque mostra, outro esconde. Em cima ficam só as que faltam (com tudo feito, "Tudo feito hoje").

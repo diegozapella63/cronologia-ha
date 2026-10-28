@@ -1370,8 +1370,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const now = new Date(this._now);
     const today = startOfDay(now);
     // Doses, chores, bills and maintenance have their own panels: the agenda shows appointments.
-    const events = this._events(addDays(today, -1), addDays(today, 9)).filter((e) => !e.kind && !e.todo);
-    const loading = this._store.loading(addDays(today, -1), addDays(today, 9));
+    // Agora is today: the days ahead are in the Calendário
+    const events = this._events(addDays(today, -1), addDays(today, 2)).filter((e) => !e.kind && !e.todo);
+    const loading = this._store.loading(addDays(today, -1), addDays(today, 2));
     const lateMeds = this._ix().meds.filter((m) => m.state === "atrasado");
     const todays = eventsOfDay(events, today);
     // Very long timed events (a 15-hour giveaway…) read like all-day ones: chips, not "Agora".
@@ -1379,7 +1380,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const allDay = todays.filter((e) => e.allDay || long(e));
     const timed = todays.filter((e) => !e.allDay && !long(e));
     const current = timed.filter((e) => e.start <= now && e.end > now).sort((a, b) => b.start - a.start);
-    // A seguir: only what is still ahead today; tomorrow's are in Próximos dias
+    // A seguir: only what is still ahead today (tomorrow's are in the Calendário)
     const tomorrow = addDays(today, 1);
     const upcoming = events.filter((e) => !e.allDay && e.start > now && e.start < tomorrow && !long(e)).sort((a, b) => a.start - b.start);
     const next = upcoming[0];
@@ -1412,22 +1413,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         stub: html`<span class="dot"></span><span>${[cal && cal.name, next.location].filter(Boolean).join(" · ")}</span>`,
         now,
       });
-    } else if (!loading && !events.some((e) => e.start >= tomorrow)) {
-      // nothing left today and nothing in the next days either: say so (with something ahead, Próximos dias shows it)
-      hero = html`<div class="hero-ev ticket empty" style=${colorVars(this._accent(), this._dark)}>
-        <span class="tk-main">
-          <span class="tk-clock">${this._clock(null, now)}</span>
-          <span class="tk-info"><span class="tk-top"><span class="overline">A seguir</span></span><span class="hero-title">Agenda livre</span><span class="tk-when">Nada marcado nos próximos dias</span></span>
-        </span>
-      </div>`;
     }
     const shownAllDay = this._showAllDay || allDay.length <= 3 ? allDay : allDay.slice(0, 2);
-    const days = [];
-    for (let i = 1; i <= 7; i++) {
-      const d = addDays(today, i);
-      const list = eventsOfDay(events, d).filter((e) => !(e.allDay && e.start < d)); // multi-day all-day: only on its first day here
-      if (list.length) days.push({ d, list });
-    }
     const nowLine = html`<div class="now-line"><span>${hm(now)}</span></div>`;
     let lineDone = false;
     // All of today's doses taken: the card goes to the end of the page (it stays put
@@ -1457,17 +1444,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
       </div>
       ${this._renderHomePanel()}
-      ${days.length
-        ? html`<div class="panel agenda">
-            <div class="overline">Próximos dias</div>
-            ${days.map(
-              ({ d, list }) => html`${this._dayHead(d, list.length, () => this._openDay(d))}
-                ${this._renderDayRows(list, d)}`,
-            )}
-          </div>`
-        : !loading
-          ? html`<p class="page-sub">Nada marcado nos próximos 7 dias.</p>`
-          : nothing}
       ${this._renderTodosPanel()}
       ${medsLast ? this._renderMedsPanel() : nothing}
     </section>`;
