@@ -343,7 +343,9 @@ export const ModelsMixin = (Base) =>
                   ${!r.done && this._pickWho()
                     ? this._renderQuickWho(r.summary, r.points || 0, (p) => this._markDone(r, "rotina", p))
                     : r.points > 0 && this._scoreOn()
-                      ? html`<span class="pts ${r.done ? "got" : ""}">+${r.points}</span>`
+                      ? r.done
+                        ? this._renderWon(this._pointsWho(r.key, r.done.by), r.points)
+                        : html`<span class="pts">+${r.points}</span>`
                       : nothing}
                 </div>`,
               )}`

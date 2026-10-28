@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.1
+
+- **Recompensas › Para pontuar hoje** igual à tela inicial: com **Marcar por outras pessoas** ligado, as iniciais (**D**, **A**) à direita de cada rotina, manutenção e tarefa do ResolvIA; um toque marca por aquela pessoa.
+- O que já foi feito mostra **quem ganhou os pontos**: a inicial na cor da pessoa, ao lado dos pontos (também na tela inicial). Um "Foi Diego" troca a inicial.
+
 ## 1.20.0
 
 - **No computador** (tela de 1000 pixels ou mais), como no InventarIA: uma **barra lateral** no lugar das abas de baixo, com o **Novo**, as seções, um **mês pequeno** para pular para um dia e os **calendários** (tocar mostra ou esconde). O Calendário usa a largura toda e as janelas abrem no meio da tela. No celular nada muda.

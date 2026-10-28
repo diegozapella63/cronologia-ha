@@ -2331,6 +2331,35 @@ export const calStyles = css`
   .chore.done .pts.got {
     text-decoration: none;
   }
+  /* done with points: who got them (initial in their color) and the points */
+  .won {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 46px;
+    padding: 3px 10px 3px 3px;
+    border-radius: 12px;
+    background: var(--cs, var(--rv-ok-soft));
+    color: var(--ci, var(--rv-ok));
+    font-family: var(--rv-display);
+    font-weight: 700;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .won-who {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--c);
+    color: #fff;
+    font-size: 13px;
+  }
+  :host([dark]) .won-who {
+    color: #1b1b1b;
+  }
   .btn-pts {
     min-width: 58px;
     padding: 8px 10px;
