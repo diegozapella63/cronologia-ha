@@ -226,8 +226,10 @@ export const ModelsMixin = (Base) =>
       </span>`;
     }
 
+    /** The icon of the kind before the name; a plain event gets the Evento one (the calendar), like in Novo. */
     _kindIcon(e) {
-      return e.kind ? html`<span class="kind-ic">${icon(KIND_UI[e.kind.kind].icon)}</span>` : nothing;
+      const ui = KIND_UI[e.kind ? e.kind.kind : ""] || KIND_UI[""];
+      return html`<span class="kind-ic">${icon(ui.icon)}</span>`;
     }
 
     // ------------------------------------------------------------ Agora panels

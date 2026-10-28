@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.4
+
+- Nas listas do dia, os **eventos** também têm ícone antes do nome (o do **Evento** no Novo), como os remédios, rotinas, manutenções, tarefas e contas.
+
 ## 1.20.3
 
 - **Agora** é só o dia de hoje: saiu o **Próximos dias** (está no Calendário) e o cartão "Agenda livre".
