@@ -1132,7 +1132,9 @@ export const ModelsMixin = (Base) =>
           : nothing}
         <div class="steps-box">
           <b>No Home Assistant</b>
-          <p class="data-note">Sensores para painéis e automações: <code>sensor.cronologia_remedios_hoje</code>, <code>binary_sensor.cronologia_remedio_atrasado</code> e <code>sensor.cronologia_manutencoes_vencidas</code>.</p>
+          <p class="data-note">${this._app("sensors_on", false) === true
+            ? html`Sensores para painéis e automações: <code>sensor.cronologia_remedios_hoje</code>, <code>binary_sensor.cronologia_remedio_atrasado</code> e <code>sensor.cronologia_manutencoes_vencidas</code>.`
+            : html`Para ter sensores dos remédios (doses de hoje, remédio atrasado) em painéis e automações, ligue <b>Sensores no Home Assistant</b> em Mais › Integrações.`}</p>
           <p class="data-note">Para marcar de fora do app (uma automação, uma etiqueta NFC na geladeira), dispare o evento <code>cronologia_feito</code> com <code>nome: Filtro de água</code>: manutenção, rotina ou remédio de hoje com esse nome ficam feitos.</p>
         </div>
       </div>`;

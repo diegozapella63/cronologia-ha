@@ -79,6 +79,8 @@ function cleanApp(raw) {
   }
   // Mais › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
   if ("ai_off" in raw) out.ai_off = raw.ai_off ? true : null;
+  // Mais › Integrações › Sensores no Home Assistant: off unless turned on
+  if ("sensors_on" in raw) out.sensors_on = raw.sensors_on ? true : null;
   // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
   if ("mirror" in raw) {
     const m = raw.mirror && typeof raw.mirror === "object" ? raw.mirror : {};

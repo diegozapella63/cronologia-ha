@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.24.0";
+const VERSION = "1.25.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -59,7 +59,7 @@ if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.res
 const ha = new HAClient(HA_URL, TOKEN, log);
 // Falar: the speech-to-text of Home Assistant (Assist)
 const voice = new Voice({ ha, rest: HA_REST, token: TOKEN, log });
-const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log });
+const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log, enabled: () => store.data.app.sensors_on === true });
 const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", usage });
 const calStates = new Map();
 const calWatchers = new Set(); // {session, id}
@@ -117,8 +117,15 @@ ha.subscribe({ type: "subscribe_events", event_type: "state_changed" }, (ev) => 
   setCalState(id, ev.data.new_state);
 });
 
+let sensorsCleaned = false;
 ha.on("ready", async () => {
   registryCache = null;
+  // Sensores no Home Assistant off (the default): the ones left by an older version go away, once
+  if (!sensorsCleaned && store.data.app.sensors_on !== true) {
+    sensorsCleaned = true;
+    home.removeSensors().catch(() => {});
+    usage.remove().catch(() => {});
+  }
   try {
     const config = await ha.send({ type: "get_config" });
     if (config && config.time_zone && process.env.TZ !== config.time_zone) {
@@ -432,6 +439,17 @@ class Session {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
         if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
+        // Sensores no Home Assistant: on creates them now, off removes them
+        if (msg.prefs && "sensors_on" in msg.prefs) {
+          if (store.data.app.sensors_on === true) {
+            home.sensorsJson = "";
+            home.publishSensors().catch(() => {});
+            usage.publish().catch(() => {});
+          } else {
+            home.removeSensors().catch(() => {});
+            usage.remove().catch(() => {});
+          }
+        }
         if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs || "resolvia_on" in msg.prefs)) {
           if ("mirror" in msg.prefs || "resolvia_on" in msg.prefs) mirror.schedule(0);
           if ("resolvia_on" in msg.prefs) publishPresence();

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.25.0
+
+- **Sensores no Home Assistant desligados por padrão**: o app só cria os sensores (remédios de hoje, remédio atrasado, manutenções vencidas, placar e chamadas de IA) se você ligar em **Mais › Integrações › Sensores no Home Assistant**. Desligado, apaga os que tinha criado. Quem atualizar fica com eles desligados até ligar.
+
 ## 1.24.0
 
 - **Feito em qualquer evento**: ao abrir um evento (de hoje, de amanhã ou que já passou) tem o botão **Feito**. Marcado, ele fica **verde** no calendário, como o remédio tomado, aparece com o ✓ na lista e sai do cartão **A seguir**. Abrindo de novo, mostra quando foi feito e tem **Desfazer**.

@@ -288,6 +288,12 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, restStates.get(st[1]));
   }
   if (st && req.method === "GET") return restStates.has(st[1]) ? sendJson(res, restStates.get(st[1])) : res.writeHead(404).end();
+  // DELETE /api/states/<entity>: the app removes its sensors (Sensores no Home Assistant off)
+  if (st && req.method === "DELETE") {
+    const had = restStates.delete(st[1]);
+    console.log("delete state", st[1], had);
+    return had ? sendJson(res, { message: "Entity removed." }) : res.writeHead(404).end();
+  }
   const m = url.pathname.match(/^\/api\/calendars\/(calendar\.[a-z0-9_]+)$/);
   if (m && req.method === "GET") {
     if (!model.calendars[m[1]]) return res.writeHead(400).end();

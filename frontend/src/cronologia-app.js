@@ -2084,7 +2084,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
     } else if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "placar") body = this._renderScoreSettings();
-    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() ? this._renderUsage() : nothing}`;
+    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
     else if (tab === "dados") body = this._renderDataPanel();
     else if (tab === "aparencia") body = this._renderAppearance();
     else if (tab === "opcoes") body = this._renderOptions();
@@ -2195,6 +2195,26 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   /** Mais › Integrações › Usar IA: off hides everything that reads messages and photos with AI. */
   _aiOn() {
     return !this._app("ai_off", false);
+  }
+
+  /** Mais › Integrações › Sensores no Home Assistant: off unless turned on; off removes them. */
+  _renderSensorsPanel() {
+    const on = this._app("sensors_on", false) === true;
+    const list = [
+      ["sensor.cronologia_remedios_hoje", "doses a tomar hoje (com as atrasadas e a próxima)"],
+      ["binary_sensor.cronologia_remedio_atrasado", "liga quando um remédio atrasa"],
+      ["sensor.cronologia_manutencoes_vencidas", "manutenções vencidas e as próximas"],
+      ["sensor.cronologia_placar", "quem lidera o placar e os pontos (com o placar ligado)"],
+      ["sensor.cronologia_ia_hoje", "chamadas de IA hoje"],
+    ];
+    return html`<div class="panel" id="sensores">
+      ${this._secHead("activity", "Sensores no Home Assistant", "Para usar em painéis e automações do Home Assistant, como um aviso na TV quando um remédio atrasa.")}
+      <div class="row switch-row">
+        <div class="grow"><div class="label">Criar sensores</div><div class="hint" style="white-space:normal">${on ? "Ligado: o app mantém estes sensores atualizados." : "Desligado: o app não cria sensores no Home Assistant, e apaga os que tinha criado."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ sensors_on: e.target.checked ? true : null })} aria-label="Criar sensores" /><span class="track"></span></label>
+      </div>
+      ${on ? html`<div class="sensor-list">${list.map(([id, t]) => html`<div class="sensor-row"><code>${id}</code><span>${t}</span></div>`)}</div>` : nothing}
+    </div>`;
   }
 
   _renderAiPanel() {

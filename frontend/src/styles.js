@@ -359,6 +359,29 @@ export const styles = css`
   .panel > .overline {
     padding: 16px 0 6px;
   }
+  /* Sensores no Home Assistant: the entities, one per line */
+  .sensor-list {
+    display: grid;
+    gap: 2px;
+    padding: 4px 0 14px;
+  }
+  .sensor-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--rv-line);
+    font-size: 13.5px;
+    color: var(--rv-muted);
+  }
+  .sensor-row code {
+    font-size: 13px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--rv-surface-2);
+    color: var(--rv-text);
+  }
   /* computer only: the actions at the top right */
   .top-acts {
     display: none;

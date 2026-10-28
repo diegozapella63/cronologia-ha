@@ -15,6 +15,8 @@ import { asActor } from "./actor.js";
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
+// what Sensores no Home Assistant creates (and removes when turned off)
+const SENSORS = ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"];
 const AHEAD_DAYS = 800;
 const SNOOZE_MIN = 15;
 const F = { CREATE: 1, DELETE: 2, UPDATE: 4 };
@@ -923,8 +925,26 @@ export class Home {
 
   // ---------------------------------------------------------------- sensors
 
+  /** Mais › Integrações › Sensores no Home Assistant (off unless turned on). */
+  sensorsOn() {
+    return this.store.data.app.sensors_on === true;
+  }
+
+  /** Off: the sensors go away from Home Assistant (states made by the app; nothing else to clean). */
+  async removeSensors() {
+    this.sensorsJson = "";
+    if (!this.token) return;
+    for (const entity of SENSORS) {
+      try {
+        await fetch(`${this.rest}/states/${entity}`, { method: "DELETE", headers: { authorization: `Bearer ${this.token}` }, signal: AbortSignal.timeout(10000) });
+      } catch (err) {
+        /* offline: they go with the next restart of Home Assistant */
+      }
+    }
+  }
+
   async publishSensors() {
-    if (!this.index || !this.token) return;
+    if (!this.index || !this.token || !this.sensorsOn()) return;
     const ix = this.index;
     const pending = ix.meds.filter((m) => !m.taken);
     const late = ix.meds.filter((m) => m.state === "atrasado");
