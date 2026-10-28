@@ -5,7 +5,7 @@ import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js"
 import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
-import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
+import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
@@ -425,6 +425,95 @@ export const ModelsMixin = (Base) =>
         <p class="sheet-note top">O prazo conta a partir da última vez. Cada item aparece na tela Agora alguns dias antes de vencer.</p>
         <div class="maint-list">${list.length ? repeat(list, (m) => m.key, (m) => this._renderMaintRow(m)) : html`<p class="empty-line">Nenhuma manutenção ainda.</p>`}</div>
         <div class="sheet-actions"><button class="btn primary" @click=${() => this._openKindForm({ kind: "manutencao" })}>${icon("plus")}Nova manutenção</button></div>`;
+    }
+
+    // ------------------------------------------------------------ Mais › Rotinas
+
+    /**
+     * Everything registered, by section: one line per routine, maintenance and bill (at its next time),
+     * one per medicine with its times. A tap opens it (and from there, Editar).
+     */
+    /** Lines of Mais › Rotinas: a medicine with several times counts once. */
+    _catalogCount() {
+      const seen = new Set();
+      for (const c of this._ix().catalog || []) seen.add(c.kind === "remedio" ? `${c.cal}|${foldText(c.summary)}|${foldText(c.who)}|${foldText(c.dose)}` : `${c.key}`);
+      return seen.size;
+    }
+
+    _renderCatalog() {
+      const now = new Date(this._now);
+      const all = this._ix().catalog || [];
+      const q = (this._catQ || "").trim();
+      const needle = foldText(q);
+      const found = needle ? all.filter((c) => foldText(`${c.summary} ${c.who} ${c.dose} ${c.location}`).includes(needle)) : all;
+      const low = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : "");
+      const daily = (c) => /FREQ=DAILY/.test(c.rrule || "") && !/INTERVAL=([2-9]|\d\d)/.test(c.rrule || "");
+      const freq = (c) => (c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? low(rruleLabel(c.rrule)) : "uma vez");
+      const when = (c) => {
+        const d = dayDiff(fromYmd(c.next), now);
+        if (c.late || d < 0) {
+          const verb = c.kind === "rotina" ? "atrasada" : "venceu";
+          return { text: d === -1 ? `${verb} ontem` : `${verb} há ${-d} dias`, late: true };
+        }
+        if (daily(c) && d <= 1) return null;
+        const pre = c.kind === "conta" ? "vence" : c.kind === "manutencao" ? "próxima" : "próxima";
+        return { text: `${pre} ${dayLabel(fromYmd(c.next), now, { long: false, cap: false })}` };
+      };
+      const pts = (c) => (c.points > 0 && this._scoreOn() ? `+${c.points}` : "");
+      // medicines: one line per medicine (same name, person and dose), with all its times
+      const meds = [];
+      for (const c of found.filter((x) => x.kind === "remedio")) {
+        const id = `${c.cal}|${foldText(c.summary)}|${foldText(c.who)}|${foldText(c.dose)}`;
+        const m = meds.find((x) => x.id === id);
+        if (m) {
+          if (c.time && !m.times.includes(c.time)) m.times.push(c.time);
+          if (c.next < m.first.next || (c.next === m.first.next && c.time < m.first.time)) m.first = c;
+        } else meds.push({ id, first: c, times: c.time ? [c.time] : [] });
+      }
+      const row = (c, hint, w = null) => html`<button class="row cat-row" style=${colorVars(this._colorOfEvent(c), this._dark)} @click=${() => this._openIndexItem(c)}>
+        <span class="tile" aria-hidden="true">${icon(KIND_UI[c.kind].icon)}</span>
+        <span class="grow"><div class="label">${c.summary}</div><div class="hint">${hint}${w ? html`${hint ? " · " : ""}<span class=${w.late ? "late" : ""}>${w.text}</span>` : nothing}</div></span>
+        ${icon("chevron-right")}
+      </button>`;
+      const line = (c, parts) => {
+        return row(c, parts.filter(Boolean).join(" · "), when(c));
+      };
+      const SECS = [
+        { kind: "rotina", ic: "spray-can", tone: "ok", title: "Rotina da casa", add: "Nova rotina", none: "Nenhuma rotina cadastrada." },
+        { kind: "remedio", ic: "pill", tone: "accent", title: "Remédios", add: "Novo remédio", none: "Nenhum remédio cadastrado." },
+        { kind: "manutencao", ic: "wrench", tone: "gold", title: "Manutenção da casa", add: "Nova manutenção", none: "Nenhuma manutenção cadastrada." },
+        { kind: "conta", ic: "receipt", tone: "violet", title: "Contas a pagar", add: "Nova conta", none: "Nenhuma conta cadastrada aqui." },
+      ];
+      const g = this._ix().gerencia || {};
+      const body = (sec) => {
+        if (sec.kind === "remedio")
+          return meds.map(({ first: c, times }) => {
+            const t = [...times].sort();
+            return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
+          });
+        const list = found.filter((c) => c.kind === sec.kind);
+        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time, pts(c)]));
+        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)]));
+        return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
+      };
+      return html`
+        <label class="search-box cat-search">
+          ${icon("search")}
+          <input type="search" placeholder="Buscar nas rotinas, remédios…" .value=${q} @input=${(e) => ((this._catQ = e.target.value), this.requestUpdate())} enterkeyhint="search" aria-label="Buscar nos cadastros" />
+          ${q ? html`<button class="icon-btn" style="width:40px;height:40px" @click=${() => ((this._catQ = ""), this.requestUpdate())} aria-label="Limpar">${icon("x")}</button>` : nothing}
+        </label>
+        ${needle && !found.length ? html`<div class="panel"><div class="empty"><div class="em-icon">${icon("search")}</div><h3>Nada encontrado</h3><p>Nenhum cadastro com “${clip(q, 30)}”.</p></div></div>` : nothing}
+        ${SECS.map((sec) => {
+          const rows = body(sec);
+          if (needle && !rows.length) return nothing;
+          return html`<div class="panel cat-sec" id="cat-${sec.kind}">
+            ${this._panelHead(sec.ic, sec.tone, sec.title, rows.length ? String(rows.length) : "")}
+            ${rows.length ? rows : html`<p class="empty-line">${sec.none}</p>`}
+            ${sec.kind === "conta" && g.ligado ? html`<p class="cat-note">${icon("info")}As contas do GerencIA ficam no GerencIA.</p>` : nothing}
+            ${needle ? nothing : html`<button class="add-line" @click=${() => this._openKindForm({ kind: sec.kind })}>${icon("plus")}${sec.add}</button>`}
+          </div>`;
+        })}
+      `;
     }
 
     // ------------------------------------------------------------ event sheet

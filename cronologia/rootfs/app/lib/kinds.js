@@ -230,7 +230,9 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const t1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
   const lateMs = (late || 30) * 60000;
-  const out = { at: new Date(now).toISOString(), late: late || 30, meds: [], routines: [], bills: [], maint: [], names: [], checks: {} };
+  const out = { at: new Date(now).toISOString(), late: late || 30, meds: [], routines: [], bills: [], maint: [], catalog: [], names: [], checks: {} };
+  // Mais › Rotinas: what is registered, one line per event or repeating series, at its next time
+  const series = new Map();
   const names = new Set();
   const seenMaint = new Set();
   // routines that come back N days after being done: done today = a check that moved the event (by event)
@@ -251,6 +253,13 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
     const allDay = /^\d{4}-\d{2}-\d{2}$/.test(raw.start);
     const base = { key, cal, uid: raw.uid || null, rid: raw.recurrence_id || null, rrule: raw.rrule || null, summary: raw.summary || "", description: raw.description || "", location: raw.location || "", start: raw.start, end: raw.end, allDay, notes: k.notes || "" };
     if (k.who) names.add(k.who);
+    const sid = `${cal}|${raw.uid || raw.summary || ""}`;
+    let ser = series.get(sid);
+    if (!ser) series.set(sid, (ser = { k, next: null, last: null }));
+    const occ = { base, start, allDay };
+    if (end > t0) {
+      if (!ser.next || start < ser.next.start) ser.next = occ;
+    } else if (!ser.last || start > ser.last.start) ser.last = occ;
     if (k.kind === "remedio") {
       if (start < t0 || start >= t1) continue;
       const taken = checks[key] || null;
@@ -288,6 +297,29 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
     }
   }
+  for (const ser of series.values()) {
+    const k = ser.k;
+    // one event that moves after it is done (maintenance, "volta N dias depois"): late is still registered;
+    // a bill: unpaid ones from the last 2 months too
+    const moving = k.kind === "manutencao" || (k.kind === "rotina" && k.after);
+    const o = ser.next || (ser.last && (moving || (k.kind === "conta" && !checks[ser.last.base.key] && ser.last.start >= t0 - 62 * DAY)) ? ser.last : null);
+    if (!o) continue;
+    out.catalog.push({
+      ...o.base,
+      kind: k.kind,
+      who: k.who || "",
+      dose: k.dose || "",
+      alert: k.kind === "remedio" ? !!k.alert : null,
+      points: k.points || 0,
+      every: k.every || null,
+      after: k.after || null,
+      value: k.value ?? null,
+      time: o.allDay ? "" : hmOf(o.start),
+      next: o.allDay ? o.base.start : ymdOf(new Date(o.start)),
+      late: !ser.next,
+    });
+  }
+  out.catalog.sort((a, b) => a.summary.localeCompare(b.summary, "pt-BR") || a.next.localeCompare(b.next) || a.time.localeCompare(b.time));
   out.meds.sort((a, b) => msOf(a.start) - msOf(b.start) || a.summary.localeCompare(b.summary, "pt-BR"));
   const behind = (r) => Number(!!r.yesterday || r.late > 0);
   out.routines.sort((a, b) => behind(b) - behind(a) || Number(b.allDay) - Number(a.allDay) || msOf(a.start) - msOf(b.start));

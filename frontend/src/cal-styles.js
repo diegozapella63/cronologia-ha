@@ -1828,6 +1828,42 @@ export const calStyles = css`
     opacity: 0.5;
   }
   /* done in the grid: green (the color comes from the element), a bit faded */
+  /* Mais › Rotinas: everything registered, one line each */
+  .cat-search {
+    margin-bottom: 14px;
+  }
+  .cat-sec .chores-head.sec-head {
+    padding: 4px 0 8px;
+  }
+  .cat-row > .i {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--rv-muted);
+  }
+  .cat-row .hint {
+    white-space: normal;
+    line-height: 1.35;
+  }
+  .cat-row .hint .late {
+    color: var(--rv-late);
+  }
+  .cat-sec .chores-head + .cat-row {
+    border-top: 0;
+  }
+  .cat-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--rv-muted);
+  }
+  .cat-note .i {
+    width: 15px;
+    height: 15px;
+    flex: none;
+  }
   .tg-ev.done,
   .tg-ad.done {
     opacity: 0.8;

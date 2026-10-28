@@ -438,7 +438,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (p === "/calendario") return { name: "calendar" };
     if (p === "/agendas") return { name: "more", tab: "calendarios" }; // old address of the Agendas page
     if (p === "/recompensas") return { name: "rewards" };
-    const more = /^\/mais(?:\/(avisos|placar|integracoes|dados|aparencia|opcoes))?$/.exec(p);
+    const more = /^\/mais(?:\/(rotinas|avisos|placar|integracoes|dados|aparencia|opcoes))?$/.exec(p);
     if (more) return { name: "more", tab: more[1] || "calendarios" };
     return { name: "now" };
   }
@@ -2024,6 +2024,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const tab = this._view().tab;
     const tabs = [
       ["calendarios", "Calendários", "layers"],
+      ["rotinas", "Rotinas", "repeat"],
       ["avisos", "Avisos", "bell-ring"],
       ["placar", "Placar", "trophy"],
       ["integracoes", "Integrações", "blocks"],
@@ -2038,7 +2039,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     };
     let body;
     let status = { text: `CronologIA ${this._version}` };
-    if (tab === "avisos") body = this._renderAlertsPanel();
+    if (tab === "rotinas") {
+      body = this._renderCatalog();
+      const n = this._catalogCount();
+      status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
+    } else if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "placar") body = this._renderScoreSettings();
     else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() ? this._renderUsage() : nothing}`;
     else if (tab === "dados") body = this._renderDataPanel();

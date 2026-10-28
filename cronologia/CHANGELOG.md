@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.22.0
+
+- **Mais › Rotinas**: tudo que está cadastrado, separado em **Rotina da casa**, **Remédios**, **Manutenção da casa** e **Contas a pagar**. Uma linha por cadastro (não uma por dia), com quem faz, de quanto em quanto tempo, horário, pontos e a próxima vez (atrasadas em vermelho). Remédio com vários horários fica numa linha só, com todos os horários. Tem **Buscar** (pelo nome ou pela pessoa), um toque abre para ver e editar, e cada seção tem o botão para cadastrar um novo.
+
 ## 1.21.3
 
 - **Semana, 3 dias e Dia**: o que já foi feito fica **verde**. O contador de rotinas do dia com tudo feito (7/7), a barra **Qualquer hora** completa, a dose tomada e a rotina ou tarefa marcada no horário.
