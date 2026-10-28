@@ -407,26 +407,21 @@ export const RewardsMixin = (Base) =>
       const total = chores.length + tasks.length;
       // Marcar por outras pessoas: the initials on each row, as on the start screen
       const pick = this._pickWho();
+      // only what still gives points: the done ones are on the start screen and in the Extrato
+      const openChores = chores.filter((r) => !r.done);
+      const openTasks = tasks.filter((t) => !t.done);
       return html`<div class="panel chores score-today">
         <div class="chores-head"><span class="overline">Para pontuar hoje</span>${total ? html`<small>${done} de ${total}</small>` : nothing}</div>
-        ${repeat(chores, (r) => r.key, (r) => {
-          const by = r.done ? this._pointsWho(r.key, r.done.by) : "";
-          const quick = !r.done && pick;
-          return html`<div class="chore ${r.done ? "done" : ""}">
-            <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${quick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito por ${by || r.done.by || "alguém"}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
-            ${quick ? this._renderQuickWho(r.summary, r.points, (p) => this._markDone(r, "rotina", p)) : r.done ? this._renderWon(by, r.points) : html`<span class="pts">+${r.points}</span>`}
-          </div>`;
-        })}
-        ${repeat(tasks, (t) => t.key, (t) => {
-          const quick = !t.done && pick;
-          const by = t.done ? this._pointsWho(`resolvia|${t.list}|${t.uid}|${ymd(new Date(this._now))}`) : "";
-          return html`<div class="chore ${t.done ? "done" : ""}">
-            <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ` : nothing}${t.done && by ? `feita por ${by}` : t.undated ? "sem prazo" : t.overdue ? "atrasada" : "hoje"} · ${t.listName} · ResolvIA</small></button>
-            ${quick ? this._renderQuickWho(t.summary, t.points, (p) => this._todoDone(t, true, p)) : t.done ? this._renderWon(by, t.points) : html`<span class="pts">+${t.points}</span>`}
-          </div>`;
-        })}
+        ${repeat(openChores, (r) => r.key, (r) => html`<div class="chore">
+            <button class="chk" @click=${() => this._markDone(r, "rotina")} aria-label="Marcar ${r.summary}"></button>
+            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${pick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+            ${pick ? this._renderQuickWho(r.summary, r.points, (p) => this._markDone(r, "rotina", p)) : html`<span class="pts">+${r.points}</span>`}
+          </div>`)}
+        ${repeat(openTasks, (t) => t.key, (t) => html`<div class="chore">
+            <button class="chk sq" @click=${() => this._todoDone(t, true)} aria-label="Concluir ${t.summary}"></button>
+            <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${pick ? html`<span class="pts-inline">+${t.points}</span> · ` : nothing}${t.undated ? "sem prazo" : t.overdue ? "atrasada" : "hoje"} · ${t.listName} · ResolvIA</small></button>
+            ${pick ? this._renderQuickWho(t.summary, t.points, (p) => this._todoDone(t, true, p)) : html`<span class="pts">+${t.points}</span>`}
+          </div>`)}
         ${repeat(
           maint,
           (m) => m.key,
@@ -436,6 +431,7 @@ export const RewardsMixin = (Base) =>
             ${pick ? this._renderQuickWho(m.summary, m.points, (p) => this._maintDone(m, p)) : html`<button class="pts btn-pts" @click=${() => this._maintDone(m)}>+${m.points}</button>`}
           </div>`,
         )}
+        ${total && !openChores.length && !openTasks.length && !maint.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo pontuado hoje.</p>` : nothing}
         ${!chores.length && !maint.length && !tasks.length
           ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
           : nothing}

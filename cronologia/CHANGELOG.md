@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.5
+
+- **Para pontuar hoje** mostra só o que ainda dá pontos: o que já foi feito sai da lista (fica na tela inicial, em Mostrar concluídas, e no Extrato). Com tudo feito, "Tudo pontuado hoje".
+
 ## 1.20.4
 
 - Nas listas do dia, os **eventos** também têm ícone antes do nome (o do **Evento** no Novo), como os remédios, rotinas, manutenções, tarefas e contas.
