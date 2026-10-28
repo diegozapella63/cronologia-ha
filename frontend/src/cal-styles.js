@@ -206,10 +206,12 @@ export const calStyles = css`
     line-height: 1;
     padding: 4px 0 5px;
   }
-  .day-head.today .dh-cal {
+  .day-head.today .dh-cal,
+  .day-title.today .dh-cal {
     border-color: var(--rv-accent);
   }
-  .day-head.today .dh-cal small {
+  .day-head.today .dh-cal small,
+  .day-title.today .dh-cal small {
     background: var(--rv-accent);
     color: var(--rv-on-accent);
   }
@@ -653,11 +655,16 @@ export const calStyles = css`
   .day-title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 4px 4px;
+    gap: 12px;
+    padding: 12px 4px 6px;
     font-family: var(--rv-display);
     font-size: 21px;
     font-weight: 600;
+  }
+  /* the day of Mês: the same calendar leaf as the days of Lista */
+  .day-title .dt-label {
+    flex: 1;
+    min-width: 0;
   }
   .day-title .text-btn {
     display: inline-flex;
@@ -1813,6 +1820,10 @@ export const calStyles = css`
   }
   .ev-row.done .ev-title {
     color: var(--rv-muted);
+  }
+  /* done: faded like the ones whose time has passed */
+  .ev-row.done {
+    opacity: 0.5;
   }
   .tg-ev.done,
   .tg-ad.done {

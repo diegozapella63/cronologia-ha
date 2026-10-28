@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.8
+
+- **Calendário**: o que já foi feito (rotinas, tarefas, contas, doses) fica **apagado**, como o que já passou da hora.
+- **Mês**: o dia escolhido tem a mesma **folhinha** (dia da semana e número) dos dias da Lista.
+
 ## 1.20.7
 
 - Cada seção da **Agora** e de **Recompensas** ganhou um ícone no cabeçalho, no mesmo quadrado dos Prêmios: Hoje, Rotina da casa, Manutenção da casa, Tarefas, Contas a pagar, Para pontuar hoje, Deméritos, Extrato e Histórico.

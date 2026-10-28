@@ -1636,7 +1636,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         </div>
       </div>
       <div class="panel agenda day-panel">
-        <div class="day-title"><span>${dayLabel(cur, now)}</span><button class="text-btn" @click=${() => this._openForm({ date: cur })}>${icon("plus")}Evento</button></div>
+        <div class="day-title ${sameDay(cur, now) ? "today" : ""}">
+          <span class="dh-cal" aria-hidden="true"><small>${WEEKDAYS_SHORT[cur.getDay()].slice(0, 3)}</small><b>${cur.getDate()}</b></span>
+          <span class="dt-label">${dayLabel(cur, now)}</span>
+          <button class="text-btn" @click=${() => this._openForm({ date: cur })}>${icon("plus")}Evento</button>
+        </div>
         ${dayEvents.length ? this._renderDayRows(dayEvents, cur) : html`<p class="empty-line">${this._store.loading(gridStart, gridEnd) ? "Carregando…" : "Nada marcado."}</p>`}
       </div>
     `;
