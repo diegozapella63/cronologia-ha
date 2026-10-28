@@ -12,6 +12,7 @@ const icon = (name, cls = "") =>
 
 export const KIND_UI = {
   "": { label: "Evento", icon: "calendar" },
+  evento: { label: "Evento", icon: "calendar", verb: "Feito", done: "feito" },
   tarefa: { label: "Tarefa", icon: "list-checks", verb: "Concluir", done: "concluída" },
   remedio: { label: "Remédio", icon: "pill", verb: "Tomei", done: "tomado" },
   conta: { label: "Conta", icon: "receipt", verb: "Paguei", done: "paga" },

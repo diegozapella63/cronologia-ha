@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.24.0
+
+- **Feito em qualquer evento**: ao abrir um evento (de hoje, de amanhã ou que já passou) tem o botão **Feito**. Marcado, ele fica **verde** no calendário, como o remédio tomado, aparece com o ✓ na lista e sai do cartão **A seguir**. Abrindo de novo, mostra quando foi feito e tem **Desfazer**.
+
 ## 1.23.1
 
 - **Barra lateral (computador)**: só aparecem os calendários ligados em Mais › Calendários. Um desligado ali na barra continua na lista, desmarcado, até recarregar a página, para dar para religar com outro toque.

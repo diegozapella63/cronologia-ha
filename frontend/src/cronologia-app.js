@@ -1401,6 +1401,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _rowDone(e) {
     if (e.todo) return !!e.todo.done;
     if (e.gerencia) return !!this._checkOf(e);
+    if (!e.kind) return !!this._checkOf(e); // any event can be marked Feito
     return !!(e.kind && e.kind.kind !== "manutencao" && this._checkOf(e));
   }
 
@@ -1518,7 +1519,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       time = html`<b>${startsToday ? hm(e.start) : "…"}</b><small>${endsToday ? hm(e.end) : "segue"}</small>`;
     }
     const k = e.kind;
-    const done = e.todo ? e.todo.done : k && k.kind !== "manutencao" && this._checkOf(e);
+    const done = e.todo ? e.todo.done : k ? k.kind !== "manutencao" && this._checkOf(e) : this._checkOf(e);
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
     const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : ""].filter(Boolean).join(" · ");
     // Marcar por outras pessoas: the initials on the right, one tap marks it done by that person
@@ -1549,10 +1550,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const long = (e) => e.end - e.start >= 12 * 3600000;
     const allDay = todays.filter((e) => e.allDay || long(e));
     const timed = todays.filter((e) => !e.allDay && !long(e));
-    const current = timed.filter((e) => e.start <= now && e.end > now).sort((a, b) => b.start - a.start);
+    // one already marked Feito is not "Agora" or "A seguir" any more
+    const current = timed.filter((e) => e.start <= now && e.end > now && !this._checkOf(e)).sort((a, b) => b.start - a.start);
     // A seguir: only what is still ahead today (tomorrow's are in the Calendário)
     const tomorrow = addDays(today, 1);
-    const upcoming = events.filter((e) => !e.allDay && e.start > now && e.start < tomorrow && !long(e)).sort((a, b) => a.start - b.start);
+    const upcoming = events.filter((e) => !e.allDay && e.start > now && e.start < tomorrow && !long(e) && !this._checkOf(e)).sort((a, b) => a.start - b.start);
     const next = upcoming[0];
     const cals = this._visible();
     if (!this._cals().length) return this._renderNoCalendars();
@@ -1900,7 +1902,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ? html`<div class="tgrid-allday" style="--n:${n}">
             <span class="tg-label">dia todo</span>
             ${allDayRows.map(
-              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad ${e.kind && this._checkOf(e) ? "done" : ""}" style=${colorVars(e.kind && this._checkOf(e) ? okColor : this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
+              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad ${this._checkOf(e) ? "done" : ""}" style=${colorVars(this._checkOf(e) ? okColor : this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
             )}
           </div>`
         : nothing}
@@ -1921,7 +1923,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
                 const h = Math.max(height * HOUR_H - 2, HOUR_H / 2 - 2);
                 // a medicine dose looks different from an event: pill icon, dashed border, stripes
                 const med = !!(e.kind && e.kind.kind === "remedio");
-                const done = e.kind && this._checkOf(e);
+                const done = !!this._checkOf(e);
                 return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${med ? "med" : ""} ${done ? "done" : ""}" style="${colorVars(done ? okColor : this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
                   <b>${med ? icon(done ? "check" : "pill") : done ? "✓ " : ""}${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}${n === 1 && med && e.kind.dose ? ` · ${e.kind.dose}` : ""}</small>` : nothing}
                 </button>`;
@@ -2337,7 +2339,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <div class="fact">${icon("clock")}<span>${when}</span></div>
         ${e.rrule ? html`<div class="fact">${icon("repeat")}<span>${rruleLabel(e.rrule)}</span></div>` : nothing}
         ${e.location ? html`<a class="fact link" href=${mapsUrl(e.location)} target="_blank" rel="noopener noreferrer">${icon("map-pin")}<span>${e.location}</span>${icon("external-link", "sm")}</a>` : nothing}
-        ${e.kind ? this._renderKindFacts(e) : nothing}
+        ${e.kind ? this._renderKindFacts(e) : !e.todo && !e.gerencia ? this._renderEventDone(e) : nothing}
         ${e.description && !e.kind
           ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(e.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>`
           : nothing}
@@ -2349,6 +2351,18 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ${cal && this._canEdit(e.cal) && e.uid ? html`<button class="btn primary" @click=${() => this._openForm({ ev: e })}>${icon("pencil")}Editar</button>` : nothing}
       </div>
     `;
+  }
+
+  /** Feito on any event: it turns green in the calendar, like a dose taken. Desfazer undoes it. */
+  _renderEventDone(e) {
+    const now = new Date(this._now);
+    const chk = this._checkOf(e);
+    const it = { key: e.key, summary: e.summary };
+    if (chk)
+      return html`<div class="kind-state">${icon("circle-check")}<span>Feito${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, "evento")}>Desfazer</button></div>`;
+    // the ones of today, tomorrow and before: far ahead it is too early to say it was done
+    if (e.start >= addDays(startOfDay(now), 2)) return nothing;
+    return html`<button class="btn outline kind-act ev-done-btn" @click=${() => this._check(it, "evento").then(() => this._closeSheet())}>${icon("check")}Feito</button>`;
   }
 
   _renderFormSheet() {
