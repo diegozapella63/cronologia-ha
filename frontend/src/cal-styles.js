@@ -755,9 +755,10 @@ export const calStyles = css`
     background: var(--rv-accent-soft);
     white-space: nowrap;
   }
+  /* all done that day: green */
   .tg-any.all {
-    color: var(--rv-muted);
-    background: var(--rv-surface-2);
+    color: var(--rv-ok);
+    background: var(--rv-ok-soft);
   }
   .any-bar {
     display: flex;
@@ -784,8 +785,8 @@ export const calStyles = css`
     height: 18px;
   }
   .any-bar.all {
-    background: var(--rv-surface-2);
-    color: var(--rv-muted);
+    background: var(--rv-ok-soft);
+    color: var(--rv-ok);
   }
   .any-list .chore .chk.ro {
     display: grid;
@@ -935,9 +936,10 @@ export const calStyles = css`
     vertical-align: -2px;
     color: var(--ci);
   }
+  /* taken: solid green (the color comes from the element), no stripes */
   .tg-ev.med.done {
     border-style: solid;
-    opacity: 0.6;
+    background-image: linear-gradient(var(--cs), var(--cs));
   }
   .tg-ev small {
     font-size: 12px;
@@ -1825,9 +1827,10 @@ export const calStyles = css`
   .ev-row.done {
     opacity: 0.5;
   }
+  /* done in the grid: green (the color comes from the element), a bit faded */
   .tg-ev.done,
   .tg-ad.done {
-    opacity: 0.55;
+    opacity: 0.8;
   }
   .kind-state {
     display: flex;

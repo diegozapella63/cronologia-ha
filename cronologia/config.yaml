@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/apps/configuration
 name: CronologIA
-version: "1.21.2"
+version: "1.21.3"
 slug: cronologia
 description: Os calendários do Home Assistant numa agenda bonita, com modelos de remédio (com aviso no celular), contas, rotina e manutenção da casa, e eventos criados por mensagem ou foto.
 url: "https://github.com/diegozapella63/cronologia-ha/tree/main/cronologia"

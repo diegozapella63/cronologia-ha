@@ -1824,6 +1824,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const allDayRows = days.map((d) => eventsOfDay(events, d).filter(banner));
     const maxAllDay = Math.max(0, ...allDayRows.map((r) => r.length));
     const anyRows = days.map((d) => eventsOfDay(events, d).filter(anyTime));
+    // done (a dose taken, a routine or task marked): green, like the ✓ of the lists
+    const okColor = { fill: this._dark ? "#4fd18f" : "#1f9d63", ink: "#167a4b" };
     const counter = (d, list) => {
       const done = list.filter((e) => this._rowDone(e)).length;
       return { done, total: list.length, all: done === list.length };
@@ -1861,7 +1863,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ? html`<div class="tgrid-allday" style="--n:${n}">
             <span class="tg-label">dia todo</span>
             ${allDayRows.map(
-              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad ${e.kind && this._checkOf(e) ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
+              (list) => html`<div class="tg-adcol">${list.slice(0, 3).map((e) => html`<button class="tg-ad ${e.kind && this._checkOf(e) ? "done" : ""}" style=${colorVars(e.kind && this._checkOf(e) ? okColor : this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>${e.summary}</button>`)}${list.length > 3 ? html`<span class="tg-admore">+${list.length - 3}</span>` : nothing}</div>`,
             )}
           </div>`
         : nothing}
@@ -1883,7 +1885,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
                 // a medicine dose looks different from an event: pill icon, dashed border, stripes
                 const med = !!(e.kind && e.kind.kind === "remedio");
                 const done = e.kind && this._checkOf(e);
-                return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${med ? "med" : ""} ${done ? "done" : ""}" style="${colorVars(this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
+                return html`<button class="tg-ev ${h < 34 ? "short" : ""} ${med ? "med" : ""} ${done ? "done" : ""}" style="${colorVars(done ? okColor : this._colorOfEvent(e), this._dark)}top:${top * HOUR_H}px;height:${h}px;left:calc(${(lane / lanes) * 100}% + 1px);width:calc(${100 / lanes}% - 2px)" @click=${() => this._openEvent(e)}>
                   <b>${med ? icon(done ? "check" : "pill") : done ? "✓ " : ""}${e.summary}</b>${h >= 34 ? html`<small>${hm(e.start)}${n === 1 && e.location ? ` · ${e.location}` : ""}${n === 1 && med && e.kind.dose ? ` · ${e.kind.dose}` : ""}</small>` : nothing}
                 </button>`;
               })}

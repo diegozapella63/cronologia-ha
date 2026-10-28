@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21.3
+
+- **Semana, 3 dias e Dia**: o que já foi feito fica **verde**. O contador de rotinas do dia com tudo feito (7/7), a barra **Qualquer hora** completa, a dose tomada e a rotina ou tarefa marcada no horário.
+
 ## 1.21.2
 
 - **Agora**: quando o único compromisso do dia já está no cartão **A seguir** (ou **Agora**), o cartão **Hoje** some, para não mostrar o mesmo duas vezes. Com dois ou mais, ou depois que ele passou, o **Hoje** volta.
