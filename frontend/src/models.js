@@ -331,13 +331,10 @@ export const ModelsMixin = (Base) =>
         return total ? html`<button class="hint-card maint-ok" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}<span>Manutenção da casa em dia · ${plural(total, "item", "itens")}</span>${icon("chevron-right")}</button>` : nothing;
       }
       const done = routines.filter((r) => r.done).length;
-      return html`<div class="panel chores" id="casa">
-        ${routines.length
-          ? html`<div class="chores-head"><span class="overline">Rotina da casa</span><small>${done} de ${routines.length}</small></div>
-              ${repeat(
-                routines,
-                (r) => r.key,
-                (r) => html`<div class="chore ${r.done ? "done" : ""}">
+      // the done ones stay folded (a long day has dozens): "Mostrar concluídas" opens them
+      const open = routines.filter((r) => !r.done);
+      const shut = routines.filter((r) => r.done);
+      const row = (r) => html`<div class="chore ${r.done ? "done" : ""}">
                   <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
                   <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
                   ${!r.done && this._pickWho()
@@ -347,8 +344,18 @@ export const ModelsMixin = (Base) =>
                         ? this._renderWon(this._pointsWho(r.key, r.done.by), r.points)
                         : html`<span class="pts">+${r.points}</span>`
                       : nothing}
-                </div>`,
-              )}`
+                </div>`;
+      return html`<div class="panel chores" id="casa">
+        ${routines.length
+          ? html`<div class="chores-head"><span class="overline">Rotina da casa</span><small>${done} de ${routines.length}</small></div>
+              ${repeat(open, (r) => r.key, row)}
+              ${!open.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo feito hoje.</p>` : nothing}
+              ${shut.length
+                ? html`<button class="add-line done-fold" aria-expanded=${this._choresDoneOpen ? "true" : "false"} @click=${() => ((this._choresDoneOpen = !this._choresDoneOpen), this.requestUpdate())}>
+                      ${icon(this._choresDoneOpen ? "chevron-down" : "chevron-right")}${this._choresDoneOpen ? "Esconder concluídas" : `Mostrar concluídas (${shut.length})`}
+                    </button>
+                    ${this._choresDoneOpen ? repeat(shut, (r) => r.key, row) : nothing}`
+                : nothing}`
           : nothing}
         ${maint.length
           ? html`<div class="chores-head ${routines.length ? "sub" : ""}"><span class="overline">Manutenção da casa</span></div>

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.2
+
+- **Rotina da casa**: as já feitas ficam recolhidas em **Mostrar concluídas (N)**; um toque mostra, outro esconde. Em cima ficam só as que faltam (com tudo feito, "Tudo feito hoje").
+- **Agora › A seguir** mostra só o que ainda vem hoje. O de amanhã fica nos **próximos dias**; sem nada mais hoje, o cartão não aparece.
+
 ## 1.20.1
 
 - **Recompensas › Para pontuar hoje** igual à tela inicial: com **Marcar por outras pessoas** ligado, as iniciais (**D**, **A**) à direita de cada rotina, manutenção e tarefa do ResolvIA; um toque marca por aquela pessoa.

@@ -1379,7 +1379,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const allDay = todays.filter((e) => e.allDay || long(e));
     const timed = todays.filter((e) => !e.allDay && !long(e));
     const current = timed.filter((e) => e.start <= now && e.end > now).sort((a, b) => b.start - a.start);
-    const upcoming = events.filter((e) => !e.allDay && e.start > now && !long(e)).sort((a, b) => a.start - b.start);
+    // A seguir: only what is still ahead today; tomorrow's are in Próximos dias
+    const tomorrow = addDays(today, 1);
+    const upcoming = events.filter((e) => !e.allDay && e.start > now && e.start < tomorrow && !long(e)).sort((a, b) => a.start - b.start);
     const next = upcoming[0];
     const cals = this._visible();
     if (!this._cals().length) return this._renderNoCalendars();
@@ -1406,11 +1408,12 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       hero = this._ticket(next, {
         label: "A seguir",
         pill: untilLabel(next.start - now),
-        when: html`<b>${hm(next.start)}</b> – ${hm(next.end)} · ${sameDay(next.start, now) ? "hoje" : dayLabel(next.start, now, { long: false, cap: false })}`,
+        when: html`<b>${hm(next.start)}</b> – ${hm(next.end)} · hoje`,
         stub: html`<span class="dot"></span><span>${[cal && cal.name, next.location].filter(Boolean).join(" · ")}</span>`,
         now,
       });
-    } else if (!loading) {
+    } else if (!loading && !events.some((e) => e.start >= tomorrow)) {
+      // nothing left today and nothing in the next days either: say so (with something ahead, Próximos dias shows it)
       hero = html`<div class="hero-ev ticket empty" style=${colorVars(this._accent(), this._dark)}>
         <span class="tk-main">
           <span class="tk-clock">${this._clock(null, now)}</span>

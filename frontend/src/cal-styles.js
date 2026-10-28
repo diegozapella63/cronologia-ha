@@ -143,6 +143,22 @@ export const calStyles = css`
     width: 18px;
     height: 18px;
   }
+  /* Rotina da casa: the done ones folded */
+  .add-line.done-fold {
+    padding-left: 18px;
+    color: var(--rv-muted);
+  }
+  .empty-line.all-done {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--rv-ok);
+    font-weight: 600;
+  }
+  .empty-line.all-done .i {
+    width: 18px;
+    height: 18px;
+  }
   /* a day in a list: a calendar leaf (weekday, day), the date, how many */
   .day-head {
     display: flex;
