@@ -377,7 +377,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _events(start, end) {
     this._store.ensure(start, end);
     const list = this._store.query(start, end);
-    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end)];
+    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...this._movedDoneEvents(start, end)];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
@@ -540,6 +540,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   // ------------------------------------------------------------ events: open, create, edit, delete
 
   _openEvent(e) {
+    // a routine done that day (its event already on the next date): today's opens the routine; older ones say when
+    if (e.movedDone) {
+      if (e.movedDone.item) return this._openIndexItem(e.movedDone.item);
+      return this._showToast(`${clip(e.summary, 30)}: feita ${dayLabel(fromYmd(e.movedDone.day), new Date(this._now), { long: false, cap: false })}${e.movedDone.by ? ` por ${e.movedDone.by}` : ""}`);
+    }
     if (e.gerencia) {
       this._openSheet("bill", { b: { id: e.gerencia.id, c: e.gerencia } });
       return;
@@ -1112,7 +1117,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     else if (view.name === "more") page = this._renderMore();
     else if (view.name === "rewards") page = this._renderRewards();
     else page = this._renderNow();
-    if (view.name === "calendar" || view.name === "more" || view.name === "rewards") this._medsHold = false;
+    if (view.name === "calendar" || view.name === "more" || view.name === "rewards") this._medsHold = this._choresHold = false;
     return html`
       <div class="root" style=${style}>
         <div class="app">
@@ -1270,7 +1275,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0 };
     let mark = null;
     let unmark = null;
-    if (kind === "rotina" && past) {
+    if (e.movedDone && !e.movedDone.item) {
+      // done on an earlier day (the routine is already on its next date): just shown
+    } else if (kind === "rotina" && past) {
       mark = (by) => this._markDone(it, "rotina", by);
       unmark = () => this._undoCheck(it, "rotina");
     } else if (kind === "remedio" && past) {
@@ -1296,7 +1303,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<div class="chore ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
       ${mark || (done && unmark)
         ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon("check") : nothing}</button>`
-        : html`<span class="chk ro" aria-hidden="true">${icon({ manutencao: "wrench", conta: "receipt", remedio: "pill", rotina: "spray-can", tarefa: "list-checks" }[kind] || "calendar")}</span>`}
+        : done
+          ? html`<span class="chk on" aria-label="Feito">${icon("check")}</span>`
+          : html`<span class="chk ro" aria-hidden="true">${icon({ manutencao: "wrench", conta: "receipt", remedio: "pill", rotina: "spray-can", tarefa: "list-checks" }[kind] || "calendar")}</span>`}
       <button class="chore-tx" @click=${() => this._openEvent(e)}><b>${e.summary}</b><small>${quick && pts ? html`<span class="pts-inline">+${pts}</span> · ` : nothing}${sub || { rotina: "Rotina", manutencao: "Manutenção", remedio: "Remédio", conta: "Conta", tarefa: "Tarefa" }[kind]}</small></button>
       ${quick ? this._renderQuickWho(e.summary, pts, (p) => mark(p)) : pts ? html`<span class="pts ${done ? "got" : ""}">+${pts}</span>` : nothing}
     </div>`;
@@ -1417,14 +1426,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const shownAllDay = this._showAllDay || allDay.length <= 3 ? allDay : allDay.slice(0, 2);
     const nowLine = html`<div class="now-line"><span>${hm(now)}</span></div>`;
     let lineDone = false;
-    // All of today's doses taken: the card goes to the end of the page (it stays put
-    // right after the last Tomei here, until you leave Agora, so it doesn't jump from under the finger).
+    // All of today's doses taken: the card leaves Agora (the calendar has them, done). It stays put
+    // right after the last Tomei here, until you leave Agora, so it doesn't vanish from under the finger.
     const meds = this._ix().meds || [];
-    const medsLast = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
+    const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
-      ${medsLast ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}
+      ${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}
       ${hero || nothing}
       ${allDay.length
         ? html`<div class="allday">
@@ -1445,7 +1454,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       </div>
       ${this._renderHomePanel()}
       ${this._renderTodosPanel()}
-      ${medsLast ? this._renderMedsPanel() : nothing}
     </section>`;
   }
 

@@ -735,7 +735,7 @@ export class Home {
       recreated = true;
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     const person = this.participant(who);
-    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), ...(recreated ? { recreated: true, summary: raw.summary } : {}) } });
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) } });
     if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
     else this.store.removePoints(key);
     this.log.info(`Rotina feita: ${raw.summary} (${person || who || by}); volta em ${event.start.slice(0, 10)}`);

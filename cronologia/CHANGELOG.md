@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.20.6
+
+- **Calendário**: a rotina que volta depois de feita continua no dia em que foi feita, como concluída (antes sumia do dia e só aparecia na próxima data). Hoje dá para desmarcar ali; num dia que já passou é só para ver.
+- **Agora**: com todos os remédios tomados, ou todas as rotinas feitas, o card sai da tela (fica até você sair da Agora). O Calendário mostra tudo, feito.
+
 ## 1.20.5
 
 - **Para pontuar hoje** mostra só o que ainda dá pontos: o que já foi feito sai da lista (fica na tela inicial, em Mostrar concluídas, e no Extrato). Com tudo feito, "Tudo pontuado hoje".

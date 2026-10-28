@@ -115,6 +115,38 @@ export const ModelsMixin = (Base) =>
       return this._gEvCache.list.filter((e) => e.start < end && e.end > start);
     }
 
+    /**
+     * Routines that come back N days after being done: Feito moves the event to its next date,
+     * so the day it was done would lose it. The calendar keeps each one there, done (from the
+     * check, which has the day, the name and the time it had).
+     */
+    _movedDoneEvents(start, end) {
+      const ix = this._ix();
+      const today = ymd(new Date(this._now));
+      const out = [];
+      for (const [key, c] of Object.entries(ix.checks || {})) {
+        const m = c && c.moved;
+        if (!m || !m.day) continue;
+        const d = fromYmd(m.day);
+        if (!(d < end && addDays(d, 1) > start)) continue;
+        const r = m.day === today ? (ix.routines || []).find((x) => x.key === key) : null;
+        const summary = (r && r.summary) || m.summary;
+        if (!summary) continue;
+        let s = d;
+        let e = addDays(d, 1);
+        let allDay = true;
+        if (/T/.test(m.start || "")) {
+          const os = new Date(m.start);
+          const oe = new Date(m.end || m.start);
+          s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), os.getHours(), os.getMinutes());
+          e = new Date(s.getTime() + Math.max(15 * 60000, oe - os || 0));
+          allDay = false;
+        }
+        out.push({ key, cal: m.cal, uid: null, rid: null, rrule: null, summary, description: "", location: "", allDay, start: s, end: e, raw: {}, kind: { kind: "rotina", points: (r && r.points) || 0, who: (r && r.who) || "" }, movedDone: { item: r, by: c.by || "", day: m.day } });
+      }
+      return out;
+    }
+
     /** Bills of the Agora panel: GerencIA ones and the #conta events, late first. */
     _billsList() {
       const ix = this._ix();
@@ -326,7 +358,10 @@ export const ModelsMixin = (Base) =>
 
     _renderHomePanel() {
       const ix = this._ix();
-      const routines = ix.routines || [];
+      // all of today's routines done: they leave Agora (the calendar has them, done); right after the
+      // last Feito here they stay, until you leave Agora
+      const all = ix.routines || [];
+      const routines = all.length && all.every((r) => r.done) && !this._choresHold ? [] : all;
       const maint = (ix.maint || []).filter((m) => m.state !== "ok");
       const total = (ix.maint || []).length;
       if (!routines.length && !maint.length) {

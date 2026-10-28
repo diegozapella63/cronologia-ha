@@ -152,6 +152,8 @@ export const RewardsMixin = (Base) =>
 
     /** Chore (or repeating maintenance) done; `by`: the person chosen on the sheet. */
     _markDone(it, kind, by = null) {
+      // the last routine done here: Rotina da casa stays until you leave Agora (then all done = it leaves)
+      if (kind === "rotina" && this._view().name === "now") this._choresHold = true;
       return this._withWho(it.points || 0, it.summary, async (who) => {
         if (this._sheet === "who") await this._closeSheet();
         try {

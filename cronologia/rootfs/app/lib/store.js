@@ -294,8 +294,10 @@ export class Store {
       const m = value.moved;
       if (m && typeof m === "object") {
         c.moved = { cal: String(m.cal || "").slice(0, 200), uid: String(m.uid || "").slice(0, 300), start: String(m.start || "").slice(0, 40), end: String(m.end || "").slice(0, 40), day: String(m.day || "").slice(0, 10) };
+        // the name: the calendar keeps showing it, done, on the day it was done (the event is on its next date)
+        if (m.summary) c.moved.summary = String(m.summary).slice(0, 200);
         // recreated: moved by creating a new event and deleting the old one (calendars that can't change events)
-        if (m.recreated) Object.assign(c.moved, { recreated: true, summary: String(m.summary || "").slice(0, 200) });
+        if (m.recreated) c.moved.recreated = true;
       }
       this.data.checks[key] = c;
     }
