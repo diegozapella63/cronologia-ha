@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.7
+
+- Cada seção da **Agora** e de **Recompensas** ganhou um ícone no cabeçalho, no mesmo quadrado dos Prêmios: Hoje, Rotina da casa, Manutenção da casa, Tarefas, Contas a pagar, Para pontuar hoje, Deméritos, Extrato e Histórico.
+
 ## 1.20.6
 
 - **Calendário**: a rotina que volta depois de feita continua no dia em que foi feita, como concluída (antes sumia do dia e só aparecia na próxima data). Hoje dá para desmarcar ali; num dia que já passou é só para ver.

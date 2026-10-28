@@ -2231,6 +2231,71 @@ export const calStyles = css`
   :host([dark]) .prize-ic {
     color: #f2c14e;
   }
+  /* the other Recompensas sections: the same icon tile as the Prêmios one */
+  .chores-head.sec-head {
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 16px 16px 8px;
+  }
+  .sec-head .overline {
+    flex: 1;
+    min-width: 0;
+  }
+  .sec-ic {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+  }
+  .sec-ic .i {
+    width: 22px;
+    height: 22px;
+  }
+  .sec-ic.ok {
+    background: var(--rv-ok-soft);
+    color: var(--rv-ok);
+  }
+  .sec-ic.late {
+    background: var(--rv-late-soft);
+    color: var(--rv-late);
+  }
+  .sec-ic.accent {
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .sec-ic.muted {
+    background: var(--rv-surface-2);
+    color: var(--rv-muted);
+  }
+  .sec-ic.gold {
+    background: rgba(242, 193, 78, 0.22);
+    color: #b58200;
+  }
+  :host([dark]) .sec-ic.gold {
+    color: #f2c14e;
+  }
+  .sec-ic.violet {
+    background: rgba(185, 155, 255, 0.2);
+    color: #7b5cd6;
+  }
+  :host([dark]) .sec-ic.violet {
+    color: #b99bff;
+  }
+  /* inside the day's agenda (its own padding) and next to the bills' total */
+  .panel.agenda > .sec-head {
+    padding: 10px 2px 6px;
+  }
+  .bills-head {
+    align-items: center !important;
+    gap: 12px;
+  }
+  .bills-head .overline {
+    flex: 1;
+    min-width: 0;
+  }
   .panel.prize.set .prize-ic {
     background: #f2c14e;
     color: #5b3e00;

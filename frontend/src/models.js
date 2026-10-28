@@ -335,6 +335,7 @@ export const ModelsMixin = (Base) =>
       const g = this._ix().gerencia || {};
       return html`<div class="panel bills ${late.length ? "alert" : ""}" id="contas">
         <div class="bills-head">
+          <span class="sec-ic ${late.length ? "late" : "gold"}">${icon("receipt")}</span>
           <span class="overline">Contas a pagar</span>
           ${open.length ? html`<span class="bills-sum"><b>${formatMoney(sum, false)}</b><small>${late.length ? `${plural(late.length, "atrasada", "atrasadas")}` : "próximos 8 dias"}</small></span>` : html`<span class="bills-sum"><small>tudo pago</small></span>`}
         </div>
@@ -384,7 +385,7 @@ export const ModelsMixin = (Base) =>
                 </div>`;
       return html`<div class="panel chores" id="casa">
         ${routines.length
-          ? html`<div class="chores-head"><span class="overline">Rotina da casa</span><small>${done} de ${routines.length}</small></div>
+          ? html`${this._panelHead("spray-can", "ok", "Rotina da casa", `${done} de ${routines.length}`)}
               ${repeat(open, (r) => r.key, row)}
               ${!open.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo feito hoje.</p>` : nothing}
               ${shut.length
@@ -395,7 +396,7 @@ export const ModelsMixin = (Base) =>
                 : nothing}`
           : nothing}
         ${maint.length
-          ? html`<div class="chores-head ${routines.length ? "sub" : ""}"><span class="overline">Manutenção da casa</span></div>
+          ? html`${this._panelHead("wrench", "gold", "Manutenção da casa", "", { cls: routines.length ? "sub" : "" })}
               ${repeat(maint, (m) => m.key, (m) => this._renderMaintRow(m))}`
           : nothing}
         ${total ? html`<button class="add-line" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}Todas as manutenções (${total})</button>` : nothing}

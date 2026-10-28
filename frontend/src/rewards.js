@@ -119,6 +119,11 @@ export const RewardsMixin = (Base) =>
       return html`<span class="won" style=${colorVars(this._pColor(who), this._dark)} title="${who} ganhou ${points}" aria-label="${who} ganhou ${points} ${points === 1 ? "ponto" : "pontos"}"><span class="won-who">${initial(who)}</span>+${points}</span>`;
     }
 
+    /** Header of a Recompensas section: an icon tile like the Prêmios one, the name and a count. */
+    _panelHead(ic, tone, title, small = "", { cls = "", smallCls = "" } = {}) {
+      return html`<div class="chores-head sec-head ${cls}"><span class="sec-ic ${tone}">${icon(ic)}</span><span class="overline">${title}</span>${small ? html`<small class=${smallCls}>${small}</small>` : nothing}</div>`;
+    }
+
     _renderQuickWho(title, points, go) {
       const s = this._score() || { participants: [] };
       const people = s.participants.slice(0, 4);
@@ -413,7 +418,7 @@ export const RewardsMixin = (Base) =>
       const openChores = chores.filter((r) => !r.done);
       const openTasks = tasks.filter((t) => !t.done);
       return html`<div class="panel chores score-today">
-        <div class="chores-head"><span class="overline">Para pontuar hoje</span>${total ? html`<small>${done} de ${total}</small>` : nothing}</div>
+        ${this._panelHead("star", "ok", "Para pontuar hoje", total ? `${done} de ${total}` : "")}
         ${repeat(openChores, (r) => r.key, (r) => html`<div class="chore">
             <button class="chk" @click=${() => this._markDone(r, "rotina")} aria-label="Marcar ${r.summary}"></button>
             <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${pick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
@@ -517,7 +522,7 @@ export const RewardsMixin = (Base) =>
       };
       const total = s.entries.filter((e) => e.kind === "demerito").length;
       return html`<div class="panel chores demerits" id="demeritos">
-        <div class="chores-head"><span class="overline">Deméritos</span><small>${total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos"}</small></div>
+        ${this._panelHead("thumbs-down", "late", "Deméritos", total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos")}
         <p class="dm-lead">Toque em quem foi para descontar.</p>
         ${repeat(
           list,
@@ -641,7 +646,7 @@ export const RewardsMixin = (Base) =>
       const wins = {};
       for (const x of h) if (x.winner) wins[x.winner] = (wins[x.winner] || 0) + 1;
       return html`<div class="panel history">
-        <div class="chores-head"><span class="overline">Histórico</span><small>${Object.entries(wins).map(([n, c]) => `${n} ${c}`).join(" · ") || ""}</small></div>
+        ${this._panelHead("archive", "muted", "Histórico", Object.entries(wins).map(([n, c]) => `${n} ${c}`).join(" · "))}
         ${repeat(
           list,
           (x) => x.key,
@@ -675,7 +680,7 @@ export const RewardsMixin = (Base) =>
       const list = [...first, ...(this._extMore || []).filter((l) => l.id < low)];
       const more = first.length && !this._extEnd && list.length < (s.log_count || 0);
       return html`<div class="panel extrato">
-        <div class="chores-head"><span class="overline">Extrato ${THIS[s.period]}</span><small>${list.length ? plural(s.log_count || list.length, "mudança", "mudanças") : ""}</small></div>
+        ${this._panelHead("file-text", "accent", `Extrato ${THIS[s.period]}`, list.length ? plural(s.log_count || list.length, "mudança", "mudanças") : "")}
         ${list.length ? this._extRows(list, s, new Map((s.entries || []).map((e) => [e.key, e]))) : html`<p class="empty-line">Nada mexeu nos pontos ${IN[s.period]} ainda.</p>`}
         ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)), s.current)}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
       </div>`;

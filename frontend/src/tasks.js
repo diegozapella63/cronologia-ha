@@ -129,10 +129,7 @@ export const TasksMixin = (Base) =>
         </div>`;
       };
       return html`<div class="panel todos ${late.length ? "alert" : ""}" id="tarefas">
-        <div class="chores-head">
-          <span class="overline">${items.some((t) => t.undated) ? "Tarefas" : "Tarefas com prazo"}</span>
-          <small class=${late.length ? "late" : ""}>${late.length ? plural(late.length, "atrasada", "atrasadas") : open.length ? `${open.length} para fazer` : "tudo feito"}</small>
-        </div>
+        ${this._panelHead("list-checks", "violet", items.some((t) => t.undated) ? "Tarefas" : "Tarefas com prazo", late.length ? plural(late.length, "atrasada", "atrasadas") : open.length ? `${open.length} para fazer` : "tudo feito", { smallCls: late.length ? "late" : "" })}
         ${repeat(
           shown.filter((t) => !t.undated),
           (t) => t.key,

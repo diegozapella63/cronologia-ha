@@ -1442,7 +1442,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           </div>`
         : nothing}
       <div class="panel agenda">
-        <div class="overline">Hoje · ${dateShort(now, now)}</div>
+        ${this._panelHead("calendar-days", "accent", `Hoje · ${dateShort(now, now)}`)}
         ${timed.length
           ? timed.map((e) => {
               const line = !lineDone && e.start > now ? ((lineDone = true), nowLine) : nothing;
