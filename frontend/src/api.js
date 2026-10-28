@@ -388,6 +388,27 @@ export class Api {
     return u.href;
   }
 
+  // ---- Falar: the speech-to-text of Home Assistant
+  voiceStatus() {
+    return this.call("cronologia/voice/status");
+  }
+
+  /** Raw PCM (Int16, 16 kHz, mono) -> {text} */
+  async voiceText(pcm) {
+    const res = await fetch(new URL("api/voice", location.href), {
+      method: "POST",
+      headers: { "content-type": "application/octet-stream" },
+      body: pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(body.error || `Erro ${res.status}`);
+      err.code = body.code;
+      throw err;
+    }
+    return body;
+  }
+
   async extract(payload) {
     const res = await fetch(new URL("api/extract", location.href), {
       method: "POST",

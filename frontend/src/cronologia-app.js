@@ -8,6 +8,7 @@ import { calStyles } from "./cal-styles.js";
 import { parentHass, detectDark } from "./api.js";
 import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
+import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin } from "./models.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
@@ -161,6 +162,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     super.connectedCallback();
     ensureFonts();
     window.addEventListener("popstate", this._onPopState);
+    window.addEventListener("keydown", this._onKey);
     document.addEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.addEventListener) this._mql.addEventListener("change", this._onScheme);
     this._tick = setInterval(() => (this._now = Date.now()), 30000);
@@ -172,6 +174,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener("popstate", this._onPopState);
+    window.removeEventListener("keydown", this._onKey);
     document.removeEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.removeEventListener) this._mql.removeEventListener("change", this._onScheme);
     clearInterval(this._tick);
@@ -185,8 +188,38 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (changed.has("api") && this.api && !this._started && this.isConnected) this._start();
   }
 
+  /** "/" opens the search (Calendário › Lista) with the cursor in it, unless something is being typed. */
+  _onKey = (e) => {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || this._sheet) return;
+    const t = (e.composedPath && e.composedPath()[0]) || e.target;
+    if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
+    e.preventDefault();
+    this._toSearch();
+  };
+
+  /** Buscar: the search of Calendário › Lista (from the box of Agora, the sidebar or "/"), the cursor in it. */
+  _toSearch(q = null) {
+    if (q != null) this._query = q;
+    this._focusSearch = true;
+    this._mode = "lista"; // not saved: the calendar opens next time as you left it
+    if (this._view().name !== "calendar") this._go("/calendario");
+    else this.requestUpdate();
+  }
+
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
+    if (this._focusSearch) {
+      const inp = this.renderRoot.querySelector("input[data-q='buscar']");
+      if (inp) {
+        this._focusSearch = false;
+        inp.focus({ preventScroll: true });
+        try {
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        } catch (err) {
+          /* type=search may refuse */
+        }
+      }
+    }
     if (this._scrollWeek) {
       const grid = this.renderRoot.querySelector(".tgrid-scroll");
       if (grid) {
@@ -265,6 +298,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       this._user = res.user || { name: "" };
       this._ai = res.ai || this._ai;
       this._aiAt = Date.now();
+      this._loadVoice();
       this._states = res.states || {};
       this._entities = res.entities || {};
       this._devices = res.devices || {};
@@ -500,6 +534,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _closeSheet() {
     if (!this._sheet) return Promise.resolve();
     this._releaseImages();
+    this._stopVoice();
     this._sheet = null;
     this._form = null;
     return this._popEntry("rvSheet");
@@ -788,12 +823,113 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     this._releaseImages();
     this._importToken = 0;
-    const opening = this._openSheet("import", { target, step: start === "text" ? "text" : "pick", text: "", images: [], items: [], provider: null, error: null, note: null, ...extra });
+    const opening = this._openSheet("import", { target, step: start === "text" ? "text" : start === "voice" ? "voice" : "pick", rec: start === "voice" ? "starting" : "off", text: "", images: [], items: [], provider: null, error: null, note: null, ...extra });
     if (start === "photos") this._pickFiles("photos");
     if (start === "scan") this._openCamera();
     if (start === "text") this._focusSheetText();
     if (start === "ics") this._pickFiles("ics");
+    if (start === "voice") opening.then(() => this._startVoice());
     return opening;
+  }
+
+  // ------------------------------------------------------------ Falar
+
+  /** Whether Falar works here (the speech-to-text of Home Assistant). */
+  async _loadVoice() {
+    if (!this.api.voiceStatus) return;
+    try {
+      this._voice = await this.api.voiceStatus();
+    } catch (err) {
+      this._voice = { ready: false, reason: err.message };
+    }
+    this.requestUpdate();
+  }
+
+  /** Falar: the microphone opens; Pronto sends what was said to Home Assistant and the text to the AI. */
+  async _startVoice() {
+    if (this._rec) return;
+    if (!this._form) return;
+    this._setForm({ step: "voice", rec: "starting", secs: 0, level: 0, error: null, heard: "" });
+    const rec = new Recorder((lvl) => (this._voiceLevel = lvl));
+    this._rec = rec;
+    try {
+      await rec.start();
+    } catch (err) {
+      rec.cancel();
+      if (this._rec === rec) this._rec = null;
+      if (this._form && this._form.step === "voice") this._setForm({ rec: "off", error: micError(err) });
+      return;
+    }
+    if (this._rec !== rec || !this._form || this._form.step !== "voice") return rec.cancel();
+    this._setForm({ rec: "on" });
+    clearInterval(this._recTimer);
+    this._recTimer = setInterval(() => {
+      if (this._rec !== rec) return clearInterval(this._recTimer);
+      const secs = rec.seconds();
+      this._setForm({ secs, level: this._voiceLevel || 0 });
+      if (secs >= VOICE_MAX_S) this._finishVoice();
+    }, 120);
+  }
+
+  _stopVoice() {
+    clearInterval(this._recTimer);
+    if (this._rec) this._rec.cancel();
+    this._rec = null;
+  }
+
+  async _finishVoice() {
+    const rec = this._rec;
+    if (!rec) return;
+    clearInterval(this._recTimer);
+    this._rec = null;
+    const pcm = rec.stop();
+    if (pcm.length < VOICE_RATE * 0.4) {
+      this._setForm({ rec: "off", error: "Não ouvi nada. Toque no microfone e fale." });
+      return;
+    }
+    const token = (this._importToken = (this._importToken || 0) + 1);
+    this._setForm({ step: "loading", error: null, prevStep: "voice", loadingText: "Transcrevendo o que você disse…" });
+    try {
+      const r = await this.api.voiceText(pcm);
+      if (this._importToken !== token || !this._form) return;
+      this._setForm({ text: r.text, heard: r.text });
+      this._readText();
+    } catch (err) {
+      if (this._importToken !== token || !this._form) return;
+      this._setForm({ step: "voice", rec: "off", error: err.message || "Não consegui transcrever." });
+    }
+  }
+
+  /** Falar, at the top right of every screen: speak, the AI finds the events, you check and add. */
+  _renderMicBtn() {
+    const v = this._voice;
+    if (!v || !v.ready || !this._aiOn() || !(this._ai && this._ai.ready)) return nothing;
+    return html`<button class="mic-top" aria-label="Falar: criar evento falando" title="Falar" @click=${() => this._openImport("voice")}>${icon("mic")}</button>`;
+  }
+
+  _renderVoiceStep(toPick) {
+    const f = this._form;
+    const ai = this._ai || {};
+    const v = this._voice || {};
+    const on = f.rec === "on";
+    const mm = Math.floor((f.secs || 0) / 60);
+    const ss = String(Math.floor((f.secs || 0) % 60)).padStart(2, "0");
+    return html`
+      ${this._sheetHead("Falar")}
+      <div class="voice ${on ? "on" : ""}">
+        <button class="voice-mic" style="--lvl:${on ? (f.level || 0).toFixed(2) : 0}" aria-label=${on ? "Pronto: enviar o que falei" : "Começar a falar"} @click=${() => (on ? this._finishVoice() : this._startVoice())}>
+          <span class="voice-ring"></span>${icon(on ? "check" : "mic")}
+        </button>
+        <div class="voice-state">${on ? html`<b>Ouvindo…</b> <span class="voice-time">${mm}:${ss}</span>` : f.rec === "starting" ? "Abrindo o microfone…" : "Toque no microfone e fale"}</div>
+        <p class="voice-hint">${on ? "Toque de novo quando terminar." : html`Por exemplo: <i>“Dentista quinta às 15h na Clínica Sorriso”</i> ou <i>“Aniversário da Ana sábado, o dia todo”</i>.`}</p>
+      </div>
+      ${f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing}
+      <div class="sheet-actions">
+        <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
+        <button class="btn primary" ?disabled=${!on} @click=${() => this._finishVoice()}>${icon("sparkles")}Pronto</button>
+      </div>
+      <p class="sheet-note">${v.ready ? `O Home Assistant transcreve${v.name ? ` (${v.name})` : ""} e ${ai.using ? ai.using.name : "a IA"} encontra os eventos. Você revisa antes de adicionar.` : v.reason || ""}</p>
+    `;
   }
 
   _focusSheetText() {
@@ -1163,7 +1299,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       <div class="side-brand">Cronolog<span>IA</span></div>
       <button class="btn primary side-add" @click=${() => this._openForm({ date: on("calendar") ? this._cursor : null })}>${icon("plus")}Novo</button>
       <div class="side-nav">
-        ${item("now", "", "Agora", "clock-3")} ${item("calendar", "/calendario", "Calendário", "calendar-days")}
+        ${item("now", "", "Agora", "clock-3")}
+        <button class="side-link" @click=${() => this._toSearch()}>${icon("search")}<span>Buscar</span><kbd>/</kbd></button>
+        ${item("calendar", "/calendario", "Calendário", "calendar-days")}
         ${item("rewards", "/recompensas", "Recompensas", "trophy")} ${item("more", "/mais", "Mais", "sliders-horizontal")}
       </div>
       ${this._renderSideMonth(view)}
@@ -1217,7 +1355,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
-      <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>
+      <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}</div>
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
@@ -1432,6 +1570,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
+      ${this._renderNowSearch()}
       ${!cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing}
       ${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}
       ${hero || nothing}
@@ -1455,6 +1594,23 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ${this._renderHomePanel()}
       ${this._renderTodosPanel()}
     </section>`;
+  }
+
+  /** The box of Agora (like the InventarIA and the ResolvIA): the first letter opens the search with it. */
+  _renderNowSearch() {
+    return html`<form class="search-box home-search" role="search" @submit=${(e) => {
+      e.preventDefault();
+      this._toSearch(e.target.q.value.trim());
+    }}>
+      ${icon("search")}
+      <input type="search" name="q" placeholder="Buscar nos eventos" aria-label="Buscar nos eventos" autocomplete="off" enterkeyhint="search" @input=${(e) => {
+        if (!e.target.value.trim()) return;
+        const v = e.target.value;
+        e.target.value = "";
+        this._toSearch(v);
+      }} />
+      <kbd>/</kbd>
+    </form>`;
   }
 
   /** Appointment card: a clock with the event on the dial, and a ticket stub. */
@@ -1573,7 +1729,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
-          <p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>
+          <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}</div>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">
@@ -1758,7 +1914,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`
       <label class="search-box">
         ${icon("search")}
-        <input type="search" placeholder="Buscar em todos os eventos" .value=${this._query} @input=${(e) => (this._query = e.target.value)} enterkeyhint="search" aria-label="Buscar" />
+        <input type="search" data-q="buscar" placeholder="Buscar em todos os eventos" .value=${this._query} @input=${(e) => (this._query = e.target.value)} enterkeyhint="search" aria-label="Buscar" />
         ${this._query ? html`<button class="icon-btn" style="width:40px;height:40px" @click=${() => (this._query = "")} aria-label="Limpar">${icon("x")}</button>` : nothing}
       </label>
       ${needle ? html`<p class="page-sub" style="margin-top:0">${loading ? "Buscando…" : plural(events.length, "evento encontrado", "eventos encontrados")} · do último ano ao próximo</p>` : nothing}
@@ -2302,9 +2458,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const aiHint = html`<div class="imp-error soft">${icon("sparkles")}<span>${ai.reason || "Para ler mensagens e fotos, o Home Assistant precisa de uma integração de IA com tarefa de IA."}
       <button class="text-btn inline" @click=${() => this._goAiSettings()}>Ver Leitura por IA</button></span></div>`;
 
+    if (f.step === "voice") return this._renderVoiceStep(toPick);
     if (f.step === "text") {
       return html`
-        ${this._sheetHead("Colar mensagem", toPick)}
+        ${this._sheetHead(f.heard ? "O que você disse" : "Colar mensagem", toPick)}
         <label class="field">
           <span class="flabel">Mensagem</span>
           <textarea rows="7" .value=${f.text} placeholder="Cole aqui o convite, a mensagem do WhatsApp ou o e-mail…" @input=${(e) => this._setForm({ text: e.target.value, error: null })}></textarea>
@@ -2332,6 +2489,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       return html`
         ${this._sheetHead("Revisar eventos", toPick)}
         ${thumbs}
+        ${f.heard ? html`<p class="heard">${icon("mic")}<span>“${f.heard}”</span></p>` : nothing}
         <p class="sheet-note top">${plural(f.items.length, "evento encontrado", "eventos encontrados")}${from ? ` · ${from}` : ""}. Confira datas e horários.</p>
         ${f.note ? html`<div class="imp-error soft">${icon("sparkles")}<span>${f.note}</span></div>` : nothing}
         <div class="rv-list">

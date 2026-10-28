@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.21.0
+
+- **Falar**: o microfone no alto de cada tela, à direita. Fale o compromisso; o Home Assistant transcreve (fala para texto do Assist, como o Home Assistant Cloud) e a IA encontra os eventos, para você conferir e adicionar.
+- **Buscar** na tela Agora: o campo **Buscar nos eventos** abre a busca do Calendário › Lista já com o que você digitou. No computador, também no **Buscar** da barra lateral e na tecla **/**.
+
 ## 1.20.8
 
 - **Calendário**: o que já foi feito (rotinas, tarefas, contas, doses) fica **apagado**, como o que já passou da hora.

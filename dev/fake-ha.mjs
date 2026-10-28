@@ -137,6 +137,9 @@ class Conn {
                 ]
               : []),
           ]);
+        // Falar: the Assist pipelines (FAKE_NO_STT=1: none, like a Home Assistant without voice)
+        case "assist_pipeline/pipeline/list":
+          return ok(process.env.FAKE_NO_STT ? { pipelines: [], preferred_pipeline: null } : { pipelines: [{ id: "p1", name: "Home Assistant", language: "pt", stt_engine: "stt.home_assistant_cloud", stt_language: "pt-BR" }], preferred_pipeline: "p1" });
         case "ai_task/preferences/get":
           return ok({ gen_data_entity_id: WITH_AI ? "ai_task.google_ai_task" : null });
         case "get_config":
@@ -262,6 +265,17 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, { ok: true });
   }
   if (req.headers.authorization !== `Bearer ${TOKEN}`) return res.writeHead(401).end("401: Unauthorized");
+  // Falar: speech-to-text like Home Assistant's REST API (the transcript is FAKE_STT_TEXT)
+  const stt = url.pathname.match(/^\/api\/stt\/(stt\.[a-z0-9_]+)$/);
+  if (stt && req.method === "POST") {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const bytes = Buffer.concat(chunks).length;
+    const head = String(req.headers["x-speech-content"] || "");
+    console.log("stt", stt[1], bytes, head);
+    if (!/format=wav/.test(head) || !/sample_rate=16000/.test(head) || !/language=pt-BR/.test(head)) return res.writeHead(415).end("Unsupported");
+    return sendJson(res, process.env.FAKE_STT_FAIL ? { text: null, result: "error" } : { text: process.env.FAKE_STT_TEXT || "Dentista quinta às 15 horas na Clínica Sorriso", result: "success" });
+  }
   const st = url.pathname.match(/^\/api\/states\/([a-z_]+\.[a-z0-9_]+)$/);
   if (st && req.method === "POST") {
     const b = await readBody(req);

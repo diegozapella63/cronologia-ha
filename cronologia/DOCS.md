@@ -34,6 +34,14 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 Com a tela larga (1000 pixels ou mais, como no InventarIA), as abas de baixo viram uma **barra lateral**: o botão **Novo**, as seções (Agora, Calendário, Recompensas, Mais), um **mês pequeno** (toque num dia para abri-lo no Calendário; as setas trocam o mês) e os **calendários**, cada um com a sua cor: tocar mostra ou esconde, como em **Mais › Calendários**. O Calendário usa a largura toda, e as janelas (Novo, editar, escolher) abrem no meio da tela. No celular e no tablet nada muda.
 
+### Falar
+
+O **microfone** no alto de cada tela, à direita: toque, fale o compromisso ("Dentista quinta às 15h na Clínica Sorriso", "Aniversário da Ana sábado, o dia todo") e toque de novo. O Home Assistant transcreve o que você disse com a **fala para texto do Assist** (Configurações › Assistentes de voz; com o Home Assistant Cloud já vem pronta, em português), e a IA da Leitura por IA encontra os eventos, como numa mensagem colada. Você confere a lista (com o que foi ouvido no alto) e adiciona. Até 2 minutos por vez. O microfone só aparece quando há fala para texto e Leitura por IA; o navegador ou o app do celular pede permissão na primeira vez.
+
+### Buscar
+
+Na **Agora**, o campo **Buscar nos eventos** logo abaixo do título: a primeira letra já abre a busca do **Calendário › Lista** (do último ano ao próximo) com o que foi digitado. No computador, também pelo **Buscar** da barra lateral e pela tecla **/** de qualquer tela.
+
 ## Criar, editar e apagar
 
 Depende do calendário. O CronologIA só mostra os botões que cada um permite:

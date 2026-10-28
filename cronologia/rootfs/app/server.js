@@ -24,8 +24,9 @@ import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 import { asActor } from "./lib/actor.js";
+import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.20.8";
+const VERSION = "1.21.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -56,6 +57,8 @@ const gerenciaOn = () => store.data.app.gerencia_on === true;
 // dev only (tests written before 1.16.0): start with both on
 if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.resolvia_on == null && store.data.app.gerencia_on == null) store.setApp({ resolvia_on: true, gerencia_on: true });
 const ha = new HAClient(HA_URL, TOKEN, log);
+// Falar: the speech-to-text of Home Assistant (Assist)
+const voice = new Voice({ ha, rest: HA_REST, token: TOKEN, log });
 const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log });
 const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", usage });
 const calStates = new Map();
@@ -404,6 +407,9 @@ class Session {
       case "cronologia/ai/status":
         return this.result(id, await ai.status());
 
+      case "cronologia/voice/status":
+        return this.result(id, await voice.status());
+
       // Mais › Integrações › Uso da IA
       case "cronologia/ai/usage":
         return this.result(id, usage.summary());
@@ -582,6 +588,20 @@ function handleExtract(req, res) {
   });
 }
 
+/** POST /api/voice (raw PCM, 16 kHz, 16-bit, mono) -> {text, engine}: Falar, through the speech-to-text of Home Assistant */
+async function handleVoice(req, res) {
+  const started = Date.now();
+  try {
+    const pcm = await readRaw(req, MAX_VOICE_BYTES + 1024);
+    const out = await voice.text(pcm);
+    log.info(`Falar: ${(pcm.length / 32000).toFixed(1)}s de áudio, texto em ${((Date.now() - started) / 1000).toFixed(1)}s (${out.engine})`);
+    sendJson(res, 200, out);
+  } catch (err) {
+    log.warn(`Falar: ${err.message}`);
+    sendJson(res, err.code === "too_big" ? 413 : err.code === "no_stt" ? 409 : err.code === "invalid_format" || err.code === "not_understood" ? 422 : 502, { error: err.message, code: err.code || "failed" });
+  }
+}
+
 /** GET /api/export/ics?calendars=a,b&start=ISO&end=ISO -> .ics file */
 function download(res, body, type, name) {
   res.writeHead(200, { "Content-Type": type, "Content-Length": body.length, "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "no-store" });
@@ -672,6 +692,7 @@ const server = http.createServer((req, res) => {
   }
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
+  if (url.pathname === "/api/voice" && req.method === "POST") return handleVoice(req, res);
   if (url.pathname === "/api/export/ics" && req.method === "GET") return handleExport(url, res);
   const exp = url.pathname.match(/^\/api\/export\/(json|csv|zip)$/);
   if (exp && req.method === "GET") return handleData(exp[1], res);

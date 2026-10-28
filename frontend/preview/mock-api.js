@@ -436,7 +436,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.20.8", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.21.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {
@@ -527,6 +527,15 @@ export class MockApi {
   // In the preview nothing leaves the page.
   exportUrl() {
     return null;
+  }
+
+  async voiceStatus() {
+    return { ready: true, engine: "stt.home_assistant_cloud", language: "pt-BR", name: "Home Assistant" };
+  }
+
+  async voiceText() {
+    await wait(700);
+    return { text: "Dentista quinta às 15 horas na Clínica Sorriso", engine: "stt.home_assistant_cloud" };
   }
 
   async extract({ text, images }) {
