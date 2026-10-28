@@ -7025,7 +7025,7 @@ ${s}`:e.join(`
         </button>
         ${a("rewards","/recompensas","Recompensas","trophy")} ${a("more","/mais","Mais","sliders-horizontal")}
       </div>
-    </nav>`}_renderSide(e){let t=r=>e.name===r,a=(r,l,c,d)=>n`<button class="side-link" aria-current=${t(r)?"page":"false"} @click=${()=>this._goTab(l)}>${x(d)}<span>${c}</span></button>`,s=this._cals(),i=s.filter(r=>!r.hidden).length;return n`<aside class="side" aria-label="Navegação">
+    </nav>`}_renderSide(e){let t=l=>e.name===l,a=(l,c,d,h)=>n`<button class="side-link" aria-current=${t(l)?"page":"false"} @click=${()=>this._goTab(c)}>${x(h)}<span>${d}</span></button>`,s=this._sideHeld||(this._sideHeld=new Set),i=this._cals().filter(l=>!l.hidden||s.has(l.id)),r=i.filter(l=>!l.hidden).length;return n`<aside class="side" aria-label="Navegação">
       <div class="side-brand">Cronolog<span>IA</span></div>
       <div class="side-nav">
         ${a("now","","Agora","clock-3")}
@@ -7034,10 +7034,10 @@ ${s}`:e.join(`
         ${a("rewards","/recompensas","Recompensas","trophy")} ${a("more","/mais","Mais","sliders-horizontal")}
       </div>
       ${this._renderSideMonth(e)}
-      ${s.length?n`<div class="side-h"><span>Calendários</span><small>${i===s.length?s.length:`${i} de ${s.length}`}</small></div>
+      ${i.length?n`<div class="side-h"><span>Calendários</span><small>${r===i.length?i.length:`${r} de ${i.length}`}</small></div>
             <div class="side-lists">
-              ${s.map(r=>n`<button class="side-cal ${r.hidden?"off":""}" role="switch" aria-checked=${r.hidden?"false":"true"} title=${r.hidden?"Mostrar na agenda":"Esconder da agenda"} style=${C(r.color,this._dark)} @click=${()=>this._saveCalPrefs(r.id,{hidden:r.hidden?null:!0})}>
-                  <span class="sc-box">${r.hidden?u:x("check")}</span><span class="sl-name">${r.name}</span>
+              ${i.map(l=>n`<button class="side-cal ${l.hidden?"off":""}" role="switch" aria-checked=${l.hidden?"false":"true"} title=${l.hidden?"Mostrar na agenda":"Esconder da agenda"} style=${C(l.color,this._dark)} @click=${()=>{l.hidden||s.add(l.id),this._saveCalPrefs(l.id,{hidden:l.hidden?null:!0})}}>
+                  <span class="sc-box">${l.hidden?u:x("check")}</span><span class="sl-name">${l.name}</span>
                 </button>`)}
             </div>`:u}
       <div class="side-foot">CronologIA${this._version?` ${this._version}`:""}</div>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.23.1
+
+- **Barra lateral (computador)**: só aparecem os calendários ligados em Mais › Calendários. Um desligado ali na barra continua na lista, desmarcado, até recarregar a página, para dar para religar com outro toque.
+
 ## 1.23.0
 
 - **No computador, com cara de InventarIA**: tela mais larga; **Agora em duas colunas** (à esquerda o próximo compromisso, Hoje e tarefas; à direita remédios, contas e a casa); seções direto na página em vez de cartões, com título grande e ícone; no alto à direita, **Falar**, **Ler com IA** e **Novo** (saiu o botão da barra lateral). O calendário continua com seus quadros. No celular nada muda.

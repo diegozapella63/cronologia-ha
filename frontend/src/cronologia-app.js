@@ -1300,7 +1300,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _renderSide(view) {
     const on = (name) => view.name === name;
     const item = (name, path, label, ic) => html`<button class="side-link" aria-current=${on(name) ? "page" : "false"} @click=${() => this._goTab(path)}>${icon(ic)}<span>${label}</span></button>`;
-    const cals = this._cals();
+    // only the calendars that are on (Mais › Calendários); one turned off here stays, unchecked,
+    // until the page is reloaded, so it can be turned back on with another tap
+    const held = this._sideHeld || (this._sideHeld = new Set());
+    const cals = this._cals().filter((c) => !c.hidden || held.has(c.id));
     const shown = cals.filter((c) => !c.hidden).length;
     return html`<aside class="side" aria-label="Navegação">
       <div class="side-brand">Cronolog<span>IA</span></div>
@@ -1315,7 +1318,10 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ? html`<div class="side-h"><span>Calendários</span><small>${shown === cals.length ? cals.length : `${shown} de ${cals.length}`}</small></div>
             <div class="side-lists">
               ${cals.map(
-                (c) => html`<button class="side-cal ${c.hidden ? "off" : ""}" role="switch" aria-checked=${c.hidden ? "false" : "true"} title=${c.hidden ? "Mostrar na agenda" : "Esconder da agenda"} style=${colorVars(c.color, this._dark)} @click=${() => this._saveCalPrefs(c.id, { hidden: c.hidden ? null : true })}>
+                (c) => html`<button class="side-cal ${c.hidden ? "off" : ""}" role="switch" aria-checked=${c.hidden ? "false" : "true"} title=${c.hidden ? "Mostrar na agenda" : "Esconder da agenda"} style=${colorVars(c.color, this._dark)} @click=${() => {
+                  if (!c.hidden) held.add(c.id);
+                  this._saveCalPrefs(c.id, { hidden: c.hidden ? null : true });
+                }}>
                   <span class="sc-box">${c.hidden ? nothing : icon("check")}</span><span class="sl-name">${c.name}</span>
                 </button>`,
               )}
