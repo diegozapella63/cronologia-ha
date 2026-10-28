@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21.1
+
+- **Falar**: corrigido o erro "Missing X-Speech-Content header". O Home Assistant só recebia o áudio sem a descrição do formato: o proxy do Supervisor só repassa esse cabeçalho escrito exatamente assim, e ele ia em minúsculas.
+
 ## 1.21.0
 
 - **Falar**: o microfone no alto de cada tela, à direita. Fale o compromisso; o Home Assistant transcreve (fala para texto do Assist, como o Home Assistant Cloud) e a IA encontra os eventos, para você conferir e adicionar.

@@ -271,8 +271,13 @@ const server = http.createServer(async (req, res) => {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const bytes = Buffer.concat(chunks).length;
-    const head = String(req.headers["x-speech-content"] || "");
+    // like the Supervisor's proxy (supervisor/api/proxy.py, FORWARD_HEADERS): only "X-Speech-Content",
+    // spelled exactly like that, reaches Home Assistant; otherwise HA answers 400
+    const raw = req.rawHeaders;
+    const at = raw.findIndex((h, i) => i % 2 === 0 && h === "X-Speech-Content");
+    const head = at >= 0 ? String(raw[at + 1]) : "";
     console.log("stt", stt[1], bytes, head);
+    if (!head) return res.writeHead(400).end("Missing X-Speech-Content header");
     if (!/format=wav/.test(head) || !/sample_rate=16000/.test(head) || !/language=pt-BR/.test(head)) return res.writeHead(415).end("Unsupported");
     return sendJson(res, process.env.FAKE_STT_FAIL ? { text: null, result: "error" } : { text: process.env.FAKE_STT_TEXT || "Dentista quinta às 15 horas na Clínica Sorriso", result: "success" });
   }
