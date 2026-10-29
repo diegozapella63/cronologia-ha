@@ -580,7 +580,7 @@ export const RewardsMixin = (Base) =>
         </label>
         <div class="field">
           <span class="flabel">Quantos pontos tira</span>
-          <div class="chip-row">
+          <div class="chip-row c4">
             ${DEMERIT_PICKS.map((v) => html`<button class="pick ${n === v && !custom ? "on" : ""}" @click=${() => this._setForm({ points: v, custom: false })}>−${v}</button>`)}
             <button class="pick ${custom ? "on" : ""}" @click=${() => this._setForm({ custom: true })}>Outro</button>
           </div>
@@ -616,7 +616,7 @@ export const RewardsMixin = (Base) =>
           <div class="chip-row">${s.participants.map((p) => html`<button class="pick person ${f.who === p ? "on" : ""}" @click=${() => this._setForm({ who: p })}><span class="avatar sm">${initial(p)}</span><span>${p}</span></button>`)}</div>
         </div>
         <div class="field"><span class="flabel">Pontos</span>
-          <div class="chip-row">
+          <div class="chip-row c3">
             ${[5, 10, 20, 30, 50].map((n) => html`<button class="pick ${Number(f.points) === n ? "on" : ""}" @click=${() => this._setForm({ points: n })}>+${n}</button>`)}
             <input type="number" class="num-input" min="-100" max="1000" .value=${String(f.points)} aria-label="Outro valor" @input=${(e) => this._setForm({ points: e.target.value })} />
           </div>

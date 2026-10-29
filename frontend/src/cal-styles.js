@@ -2047,6 +2047,12 @@ export const calStyles = css`
     padding: 9px 34px 9px 12px;
     border-radius: 12px;
   }
+  /* "No Home Assistant": information, not a warning */
+  .steps-box .data-note {
+    color: var(--rv-text-2);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
   .steps-box .data-note code,
   .panel-lead code {
     font-size: 12.5px;

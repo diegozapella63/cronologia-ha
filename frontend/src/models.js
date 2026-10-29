@@ -853,7 +853,7 @@ export const ModelsMixin = (Base) =>
       const isQuick = opts.some(([, v]) => v === value);
       return html`<div class="field">
         <span class="flabel">${label}</span>
-        <div class="chip-row">
+        <div class="chip-row c3">
           ${opts.map(([l, v]) => html`<button class="pick ${value === v ? "on" : ""}" @click=${() => onPick(v)}>${l}</button>`)}
           <button class="pick ${!isQuick ? "on" : ""}" @click=${() => {
             const input = this.renderRoot.querySelector(`#${id}`);
@@ -931,7 +931,7 @@ export const ModelsMixin = (Base) =>
       const n = Number(f.points) || 0;
       return html`<div class="field">
         <span class="flabel">Pontos para quem fizer</span>
-        <div class="chip-row">
+        <div class="chip-row c4">
           ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${n === v ? "on" : ""}" @click=${() => this._setForm({ points: v })}>${v ? `+${v}` : "Sem pontos"}</button>`)}
           <input type="number" class="num-input" min="0" max="1000" .value=${String(n)} aria-label="Outro valor de pontos" @input=${(e) => this._setForm({ points: e.target.value })} />
         </div>
@@ -1007,7 +1007,7 @@ export const ModelsMixin = (Base) =>
         body = html`
           <label class="field"><span class="flabel">Valor</span><span class="money"><span>R$</span><input type="text" inputmode="decimal" .value=${f.value} placeholder="0,00" @input=${(e) => this._setForm({ value: e.target.value })} /></span></label>
           ${this._dateField(f.repeat === "nao" ? "Vence" : "Primeiro vencimento", f.date, (v) => this._setForm({ date: v }), "kf-date")}
-          <div class="field"><span class="flabel">Repete</span><div class="chip-row">${[["nao", "Não"], ["mensal", "Todo mês"], ["anual", "Todo ano"]].map(([k, l]) => html`<button class="pick ${f.repeat === k ? "on" : ""}" @click=${() => this._setForm({ repeat: k })}>${k !== "nao" ? icon("repeat") : nothing}<span>${l}</span></button>`)}</div></div>
+          <div class="field"><span class="flabel">Repete</span><div class="chip-row c3">${[["nao", "Não"], ["mensal", "Todo mês"], ["anual", "Todo ano"]].map(([k, l]) => html`<button class="pick ${f.repeat === k ? "on" : ""}" @click=${() => this._setForm({ repeat: k })}>${k !== "nao" ? icon("repeat") : nothing}<span>${l}</span></button>`)}</div></div>
           ${g.ligado && f.mode === "add"
             ? html`<div class="field"><span class="flabel">Onde guardar</span>
                 <div class="chip-row">
@@ -1042,7 +1042,7 @@ export const ModelsMixin = (Base) =>
         body = html`
           ${this._whoField("Quem faz")}
           <div class="field"><span class="flabel">A cada</span>
-            <div class="chip-row" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${everyLabel(p)}</button>`)}</div>
+            <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${everyLabel(p)}</button>`)}</div>
             <div class="time-row">
               <input type="number" class="num-input" min="1" max="999" .value=${String(f.every.n)} @input=${(e) => this._setForm({ every: { ...f.every, n: Math.max(1, Number(e.target.value) || 1) } })} aria-label="Quantidade" />
               <div class="seg compact">${Object.keys(UNITS).map((u) => html`<button class=${f.every.unit === u ? "on" : ""} @click=${() => this._setForm({ every: { ...f.every, unit: u } })}>${u}</button>`)}</div>

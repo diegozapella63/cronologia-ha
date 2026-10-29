@@ -1042,10 +1042,50 @@ export const styles = css`
   .pick.ghost {
     border-style: dashed;
   }
+  /* choices: buttons of the same width, in columns, like the EconomIA */
   .chip-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+    gap: 8px;
+  }
+  .chip-row > .pick {
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 10px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    min-width: 0;
+  }
+  .chip-row > .pick > span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* short labels (dates, durations, points): three or four in a row */
+  .chip-row.c3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .chip-row.c4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .chip-row.c3 > .pick,
+  .chip-row.c4 > .pick {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  /* a number or a time typed in the same row: as wide as a button */
+  .chip-row > .num-input,
+  .chip-row > .inline-time {
+    width: 100% !important;
+    min-height: 44px;
+  }
+  /* ideas to tap (Deméritos): they keep flowing like tags */
+  .chip-row.dm-ideas {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+  }
+  .chip-row.dm-ideas > .pick {
+    min-height: 0;
   }
   .hidden-input {
     position: absolute;
@@ -1416,6 +1456,11 @@ export const styles = css`
     width: auto;
     padding: 9px 12px;
     font-size: 16px;
+  }
+  /* from and until: the two times share the width */
+  .field .time-row input[type="time"] {
+    flex: 1;
+    min-width: 0;
   }
   .field .time-row .tl {
     color: var(--rv-muted);
@@ -2577,6 +2622,39 @@ export const extraStyles = css`
   }
   .btn.danger.sm {
     color: var(--rv-late);
+  }
+  /* Exportar (like the InventarIA and the ResolvIA): one line per file, with a border between them */
+  .opts {
+    list-style: none;
+    margin: 0 0 6px;
+    padding: 0;
+    border-top: 1px solid var(--rv-line);
+  }
+  .opts > li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--rv-line);
+  }
+  .opts .ot {
+    flex: 1;
+    min-width: 0;
+  }
+  .opts .ot b {
+    display: block;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .opts .ot span {
+    display: block;
+    margin-top: 2px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--rv-muted);
+  }
+  .opts .btn {
+    flex: none;
   }
   .data-note {
     margin: 8px 0 0;

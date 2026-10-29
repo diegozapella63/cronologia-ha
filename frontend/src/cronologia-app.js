@@ -2445,7 +2445,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <div class="flabel-row"><span class="flabel">Quando</span>
           <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${f.allDay} @change=${(e) => this._setForm({ allDay: e.target.checked })} aria-label="Dia todo" /><span class="track"></span></span></label>
         </div>
-        <div class="chip-row">
+        <div class="chip-row c3">
           ${quick.map((q) => html`<button class="pick ${f.date === ymd(q.d) ? "on" : ""}" @click=${() => this._setForm({ date: ymd(q.d), endDate: f.endDate && f.endDate < ymd(q.d) ? "" : f.endDate })}>${q.label}</button>`)}
           <button class="pick ${!isQuick ? "on" : ""}" @click=${() => openPicker("#cr-date")}>
             ${icon("calendar")}<span>${!isQuick ? cap(dayLabel(fromYmd(f.date), now, { long: false })) : "Outra data"}</span>
@@ -2463,7 +2463,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
                 <span class="tl">até</span>
                 <input type="time" .value=${f.end} aria-label="Termina" @change=${(e) => e.target.value && this._setForm({ end: e.target.value })} />
               </div>
-              <div class="chip-row dur">
+              <div class="chip-row dur c4">
                 ${[
                   [15, "15 min"],
                   [30, "30 min"],

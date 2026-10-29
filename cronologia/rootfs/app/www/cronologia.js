@@ -1117,10 +1117,50 @@ window.litDisableBundleWarning=true;
   .pick.ghost {
     border-style: dashed;
   }
+  /* choices: buttons of the same width, in columns, like the EconomIA */
   .chip-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+    gap: 8px;
+  }
+  .chip-row > .pick {
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 10px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    min-width: 0;
+  }
+  .chip-row > .pick > span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* short labels (dates, durations, points): three or four in a row */
+  .chip-row.c3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .chip-row.c4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .chip-row.c3 > .pick,
+  .chip-row.c4 > .pick {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  /* a number or a time typed in the same row: as wide as a button */
+  .chip-row > .num-input,
+  .chip-row > .inline-time {
+    width: 100% !important;
+    min-height: 44px;
+  }
+  /* ideas to tap (Deméritos): they keep flowing like tags */
+  .chip-row.dm-ideas {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+  }
+  .chip-row.dm-ideas > .pick {
+    min-height: 0;
   }
   .hidden-input {
     position: absolute;
@@ -1491,6 +1531,11 @@ window.litDisableBundleWarning=true;
     width: auto;
     padding: 9px 12px;
     font-size: 16px;
+  }
+  /* from and until: the two times share the width */
+  .field .time-row input[type="time"] {
+    flex: 1;
+    min-width: 0;
   }
   .field .time-row .tl {
     color: var(--rv-muted);
@@ -2650,6 +2695,39 @@ window.litDisableBundleWarning=true;
   }
   .btn.danger.sm {
     color: var(--rv-late);
+  }
+  /* Exportar (like the InventarIA and the ResolvIA): one line per file, with a border between them */
+  .opts {
+    list-style: none;
+    margin: 0 0 6px;
+    padding: 0;
+    border-top: 1px solid var(--rv-line);
+  }
+  .opts > li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--rv-line);
+  }
+  .opts .ot {
+    flex: 1;
+    min-width: 0;
+  }
+  .opts .ot b {
+    display: block;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .opts .ot span {
+    display: block;
+    margin-top: 2px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--rv-muted);
+  }
+  .opts .btn {
+    flex: none;
   }
   .data-note {
     margin: 8px 0 0;
@@ -5284,6 +5362,12 @@ window.litDisableBundleWarning=true;
     padding: 9px 34px 9px 12px;
     border-radius: 12px;
   }
+  /* "No Home Assistant": information, not a warning */
+  .steps-box .data-note {
+    color: var(--rv-text-2);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
   .steps-box .data-note code,
   .panel-lead code {
     font-size: 12.5px;
@@ -6439,7 +6523,7 @@ ${s}`:e.join(`
         ${Object.entries(xe).filter(([a])=>a!=="evento"&&(a!=="tarefa"||this._todoLists().length)).map(([a,s])=>n`<button class="model ${e===a?"on":""}" role="radio" aria-checked=${e===a?"true":"false"} @click=${()=>{if(e===a)return;let i=t.date?T(t.date):null;a==="tarefa"?this._openTodoForm({date:i}):a?this._openKindForm({kind:a,date:i}):this._openForm({date:i})}}>${y(s.icon)}<span>${s.label}</span></button>`)}
       </div>`}_dateField(e,t,a,s,{quick:i=!0}={}){let r=new Date,l=E(r),c=i?[["Hoje",D(l)],["Amanh\xE3",D(k(l,1))]]:[],d=c.some(([,h])=>h===t);return n`<div class="field">
         <span class="flabel">${e}</span>
-        <div class="chip-row">
+        <div class="chip-row c3">
           ${c.map(([h,p])=>n`<button class="pick ${t===p?"on":""}" @click=${()=>a(p)}>${h}</button>`)}
           <button class="pick ${d?"":"on"}" @click=${()=>{let h=this.renderRoot.querySelector(`#${s}`);try{h.showPicker()}catch{h.focus(),h.click()}}}>${y("calendar")}<span>${!d&&t?N(H(T(t),r,{long:!1})):"Outra data"}</span>
             <input id=${s} class="hidden-input" type="date" tabindex="-1" .value=${t} @change=${h=>h.target.value&&a(h.target.value)} />
@@ -6463,7 +6547,7 @@ ${s}`:e.join(`
               <span class="field-hint">${y("rotate-ccw")}<span>Conta a partir de quando é feita: o Feito leva a próxima vez para ${Number(t.afterN)===1?"amanh\xE3":`daqui a ${Math.max(1,Number(t.afterN)||2)} dias`}. Na agenda fica só a próxima, e na Agora ela aparece no dia e continua lá até ser feita.</span></span>`:u}
       </div>`}_pointsField(){let e=this._form,t=Number(e.points)||0;return n`<div class="field">
         <span class="flabel">Pontos para quem fizer</span>
-        <div class="chip-row">
+        <div class="chip-row c4">
           ${[0,5,10,20,30,50].map(a=>n`<button class="pick ${t===a?"on":""}" @click=${()=>this._setForm({points:a})}>${a?`+${a}`:"Sem pontos"}</button>`)}
           <input type="number" class="num-input" min="0" max="1000" .value=${String(t)} aria-label="Outro valor de pontos" @input=${a=>this._setForm({points:a.target.value})} />
         </div>
@@ -6498,7 +6582,7 @@ ${s}`:e.join(`
           ${c}`}else if(t==="conta")d=n`
           <label class="field"><span class="flabel">Valor</span><span class="money"><span>R$</span><input type="text" inputmode="decimal" .value=${e.value} placeholder="0,00" @input=${h=>this._setForm({value:h.target.value})} /></span></label>
           ${this._dateField(e.repeat==="nao"?"Vence":"Primeiro vencimento",e.date,h=>this._setForm({date:h}),"kf-date")}
-          <div class="field"><span class="flabel">Repete</span><div class="chip-row">${[["nao","N\xE3o"],["mensal","Todo m\xEAs"],["anual","Todo ano"]].map(([h,p])=>n`<button class="pick ${e.repeat===h?"on":""}" @click=${()=>this._setForm({repeat:h})}>${h!=="nao"?y("repeat"):u}<span>${p}</span></button>`)}</div></div>
+          <div class="field"><span class="flabel">Repete</span><div class="chip-row c3">${[["nao","N\xE3o"],["mensal","Todo m\xEAs"],["anual","Todo ano"]].map(([h,p])=>n`<button class="pick ${e.repeat===h?"on":""}" @click=${()=>this._setForm({repeat:h})}>${h!=="nao"?y("repeat"):u}<span>${p}</span></button>`)}</div></div>
           ${i.ligado&&e.mode==="add"?n`<div class="field"><span class="flabel">Onde guardar</span>
                 <div class="chip-row">
                   <button class="pick ${e.dest==="gerencia"?"on":""}" @click=${()=>this._setForm({dest:"gerencia"})}>${y("wallet")}<span>GerencIA</span></button>
@@ -6524,7 +6608,7 @@ ${s}`:e.join(`
           ${c}`;else{let h=e.mode==="edit"?T(e.date):Bt(T(e.last||D(s)),e.every);d=n`
           ${this._whoField("Quem faz")}
           <div class="field"><span class="flabel">A cada</span>
-            <div class="chip-row" style="margin-bottom:10px">${Ei.map(p=>n`<button class="pick ${e.every.n===p.n&&e.every.unit===p.unit?"on":""}" @click=${()=>this._setForm({every:{...p}})}>${X(p)}</button>`)}</div>
+            <div class="chip-row c4" style="margin-bottom:10px">${Ei.map(p=>n`<button class="pick ${e.every.n===p.n&&e.every.unit===p.unit?"on":""}" @click=${()=>this._setForm({every:{...p}})}>${X(p)}</button>`)}</div>
             <div class="time-row">
               <input type="number" class="num-input" min="1" max="999" .value=${String(e.every.n)} @input=${p=>this._setForm({every:{...e.every,n:Math.max(1,Number(p.target.value)||1)}})} aria-label="Quantidade" />
               <div class="seg compact">${Object.keys(Be).map(p=>n`<button class=${e.every.unit===p?"on":""} @click=${()=>this._setForm({every:{...e.every,unit:p}})}>${p}</button>`)}</div>
@@ -6740,7 +6824,7 @@ ${s}`:e.join(`
         </label>
         <div class="field">
           <span class="flabel">Quantos pontos tira</span>
-          <div class="chip-row">
+          <div class="chip-row c4">
             ${Fs.map(s=>n`<button class="pick ${t===s&&!a?"on":""}" @click=${()=>this._setForm({points:s,custom:!1})}>−${s}</button>`)}
             <button class="pick ${a?"on":""}" @click=${()=>this._setForm({custom:!0})}>Outro</button>
           </div>
@@ -6757,7 +6841,7 @@ ${s}`:e.join(`
           <div class="chip-row">${t.participants.map(a=>n`<button class="pick person ${e.who===a?"on":""}" @click=${()=>this._setForm({who:a})}><span class="avatar sm">${Q(a)}</span><span>${a}</span></button>`)}</div>
         </div>
         <div class="field"><span class="flabel">Pontos</span>
-          <div class="chip-row">
+          <div class="chip-row c3">
             ${[5,10,20,30,50].map(a=>n`<button class="pick ${Number(e.points)===a?"on":""}" @click=${()=>this._setForm({points:a})}>+${a}</button>`)}
             <input type="number" class="num-input" min="-100" max="1000" .value=${String(e.points)} aria-label="Outro valor" @input=${a=>this._setForm({points:a.target.value})} />
           </div>
@@ -6978,11 +7062,15 @@ ${s}`:e.join(`
                   ${e.list.map(t=>n`<div class="data-item"><div><b>${this._dateTime(t.when)}</b><span>${A(t.calendars,"agenda","agendas")} · ${A(t.points,"ponto","pontos")} · ${Li[t.reason]||"autom\xE1tica"}</span></div>
                       <button class="btn outline sm" @click=${()=>this._confirmRestoreVersion(t)}>Restaurar</button></div>`)}
                 </div>`:n`<p class="sheet-note top">Ainda não há versões anteriores. Elas aparecem depois das primeiras alterações.</p>`}
-      `}_renderDataPanel(){let e=this._backups,t=this._writable(),a=(s,i,r)=>n`<a class="btn outline sm" href=${this.api.dataUrl&&this.api.dataUrl(s)||"#"} download @click=${l=>this._exportData(s,l)}>${le(r)}${i}</a>`;return n`<div id="dados">
+      `}_renderDataPanel(){let e=this._backups,t=this._writable(),a=(i,r,l)=>n`<li><div class="ot"><b>${i}</b><span>${r}</span></div>${l}</li>`,s=(i,r)=>n`<a class="btn outline sm" href=${this.api.dataUrl&&this.api.dataUrl(i)||"#"} download @click=${l=>this._exportData(i,l)}>${le("download")}${r}</a>`;return n`<div id="dados">
         <div class="panel">
-          ${this._secHead("download","Exportar","Baixe para guardar ou levar para outro programa. Os arquivos s\xE3o abertos e leg\xEDveis: o ZIP tem os dados do app, os eventos de cada calend\xE1rio em .ics e as planilhas de eventos e pontos.")}
-          <div class="btn-row sec-actions">${a("zip","Tudo (ZIP)","archive")} ${a("csv","Eventos (CSV)","sheet")} ${a("json","Dados (JSON)","braces")}
-            <button class="btn outline sm" @click=${()=>this._openExport()}>${le("calendar")}Agenda (.ics)</button></div>
+          ${this._secHead("download","Exportar","Baixe para guardar ou levar para outro programa. Os arquivos s\xE3o abertos e leg\xEDveis.")}
+          <ul class="opts">
+            ${a("Eventos (CSV)","Abre no Excel e no Google Planilhas, com um evento por linha.",s("csv","Baixar CSV"))}
+            ${a("Agenda (.ics)","Os eventos dos calend\xE1rios que voc\xEA escolher, para abrir no Google Agenda, no Outlook ou no iPhone.",n`<button class="btn outline sm" @click=${()=>this._openExport()}>${le("calendar")}Escolher</button>`)}
+            ${a("Dados completos (JSON)","Os ajustes, modelos, marca\xE7\xF5es e pontos do app, para backup ou para outro sistema.",s("json","Baixar JSON"))}
+            ${a("Tudo (ZIP)","Os dados do app, os eventos de cada calend\xE1rio em .ics e as planilhas de eventos e pontos num arquivo s\xF3.",s("zip","Baixar ZIP"))}
+          </ul>
         </div>
         <div class="panel">
           ${this._secHead("archive","Backup na pasta share",n`Cria uma cópia completa em <code>share/cronologia</code>, que você acessa pela rede do Home Assistant. Os backups do próprio Home Assistant também incluem o CronologIA e os calendários locais.`)}
@@ -6991,8 +7079,8 @@ ${s}`:e.join(`
           </div>
           ${e&&e.available===!1?n`<p class="data-note">A pasta share não está disponível para o app.</p>`:u}
           ${e&&e.backups&&e.backups.length?n`<div class="data-list">
-                ${e.backups.slice(0,8).map(s=>n`<div class="data-item"><div><b>${this._dateTime(s.date)}</b><span title=${s.name}>${Pi(s.size)} · ${s.name}</span></div>
-                    <button class="btn outline sm" @click=${()=>this._confirmRestoreBackup(s)}>${le("archive-restore")}Restaurar</button></div>`)}
+                ${e.backups.slice(0,8).map(i=>n`<div class="data-item"><div><b>${this._dateTime(i.date)}</b><span title=${i.name}>${Pi(i.size)} · ${i.name}</span></div>
+                    <button class="btn outline sm" @click=${()=>this._confirmRestoreBackup(i)}>${le("archive-restore")}Restaurar</button></div>`)}
               </div>`:u}
         </div>
         <div class="panel">
@@ -7010,7 +7098,7 @@ ${s}`:e.join(`
         <div class="panel">
           ${this._secHead("database","Onde ficam os dados",n`Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda nomes, cores, preferências, pessoas, o placar e as marcações em <code>/data/cronologia.json</code>, que entra no backup do Home Assistant.`)}
         </div>
-        <input id="cr-data-import" class="sr" type="file" accept=".zip,.json,application/zip,application/json" tabindex="-1" aria-hidden="true" @change=${s=>this._onDataImport(s)} />
+        <input id="cr-data-import" class="sr" type="file" accept=".zip,.json,application/zip,application/json" tabindex="-1" aria-hidden="true" @change=${i=>this._onDataImport(i)} />
       </div>`}};var Ls="cronologia.theme",js="cronologia.mode",ea={CREATE:1,DELETE:2,UPDATE:4},ta=(o,e)=>(Number(o)&e)===e,be=48,Ui={local_calendar:{label:"Calend\xE1rio local",icon:"calendar"},google:{label:"Google Agenda",icon:"calendar-days"},caldav:{label:"CalDAV",icon:"server"},ms365_calendar:{label:"Outlook (Microsoft 365)",icon:"briefcase"},o365:{label:"Outlook (Office 365)",icon:"briefcase"},remote_calendar:{label:"Calend\xE1rio remoto (.ics)",icon:"link"},ics_calendar:{label:"Calend\xE1rio .ics",icon:"link"},holiday:{label:"Feriados",icon:"party-popper"},workday:{label:"Dias \xFAteis",icon:"briefcase"},todo:{label:"Tarefas",icon:"list-checks"}},Bi=o=>Ui[o]||{label:o?N(o.replace(/_/g," ")):"Outros",icon:"calendar"},x=(o,e="")=>n`<svg class="i ${e}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${te(W[o]||W.calendar)}</svg>`,wt={get(o,e){try{let t=localStorage.getItem(o);return t==null?e:JSON.parse(t)}catch{return e}},set(o,e){try{localStorage.setItem(o,JSON.stringify(e))}catch{}}},aa=(o,e,t,a,s)=>Se`<line class=${s} x1=${o} y1=${e} x2=${t} y2=${a}></line>`,Vs=(o,e)=>Se`<path class=${e} d=${o}></path>`,Yi=o=>o.allDay?"Dia todo":`${F(o.start)} \u2013 ${F(o.end)}`,Wi=o=>`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o)}`,sa=class extends Ps(qs(Is(Cs(ue)))){static properties={_desk:{state:!0},api:{attribute:!1},env:{attribute:!1},_ready:{state:!0},_bootError:{state:!0},_online:{state:!0},_path:{state:!0},_sheet:{state:!0},_form:{state:!0},_toast:{state:!0},_theme:{state:!0},_dark:{state:!0},_now:{state:!0},_cursor:{state:!0},_mode:{state:!0},_query:{state:!0},_cam:{state:!0},_ver:{state:!0},_home:{state:!0}};static styles=[is,os,rs,Ae(Ua),Ae(Wa)];constructor(){super(),this.api=null,this.env=null,this._ready=!1,this._bootError=null,this._online=!0,this._path=history.state&&history.state.rvPath||"",this._sheet=null,this._form=null,this._toast=null,this._theme=wt.get(Ls,"auto"),this._dark=!1,this._now=Date.now(),this._cursor=E(new Date),this._mode=wt.get(js,"mes"),this._query="",this._cam=null,this._ver=0,this._home=null,this._states={},this._entities={},this._devices={},this._prefs={calendars:{},app:{}},this._ai={ready:!1,images:!1,entities:[]},this._aiAt=0,this._user={name:""},this._version="",this._showAllDay=!1,this._scrollWeek=!0,this._onPopState=this._onPopState.bind(this),this._onVisible=this._onVisible.bind(this),this._mql=window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null,this._onScheme=()=>this._syncDark(),this._deskMq=window.matchMedia?window.matchMedia("(min-width: 1000px)"):null,this._desk=!!(this._deskMq&&this._deskMq.matches),this._onDesk=()=>this._desk=!!this._deskMq.matches}connectedCallback(){super.connectedCallback(),ss(),window.addEventListener("popstate",this._onPopState),window.addEventListener("keydown",this._onKey),document.addEventListener("visibilitychange",this._onVisible),this._mql&&this._mql.addEventListener&&this._mql.addEventListener("change",this._onScheme),this._deskMq&&this._deskMq.addEventListener&&this._deskMq.addEventListener("change",this._onDesk),this._tick=setInterval(()=>this._now=Date.now(),3e4),this._themeTimer=setInterval(()=>this._syncDark(),3e3),this._syncDark(),this.api&&!this._started&&this._start()}disconnectedCallback(){super.disconnectedCallback(),window.removeEventListener("popstate",this._onPopState),window.removeEventListener("keydown",this._onKey),document.removeEventListener("visibilitychange",this._onVisible),this._mql&&this._mql.removeEventListener&&this._mql.removeEventListener("change",this._onScheme),this._deskMq&&this._deskMq.removeEventListener&&this._deskMq.removeEventListener("change",this._onDesk),clearInterval(this._tick),clearInterval(this._themeTimer),clearTimeout(this._toastTimer),this._stopStream(),this._store&&this._store.dispose()}willUpdate(e){e.has("api")&&this.api&&!this._started&&this.isConnected&&this._start()}_onKey=e=>{if(e.key!=="/"||e.ctrlKey||e.metaKey||e.altKey||this._sheet)return;let t=e.composedPath&&e.composedPath()[0]||e.target;t&&t.closest&&t.closest("input, textarea, select, [contenteditable]")||(e.preventDefault(),this._toSearch())};_toSearch(e=null){e!=null&&(this._query=e),this._focusSearch=!0,this._mode="lista",this._view().name!=="calendar"?this._go("/calendario"):this.requestUpdate()}updated(e){if(this.toggleAttribute("dark",this._dark),this._focusSearch){let t=this.renderRoot.querySelector("input[data-q='buscar']");if(t){this._focusSearch=!1,t.focus({preventScroll:!0});try{t.setSelectionRange(t.value.length,t.value.length)}catch{}}}if(this._scrollWeek){let t=this.renderRoot.querySelector(".tgrid-scroll");if(t){this._scrollWeek=!1;let a=new Date,s=this._view().name==="calendar"&&L(this._cursor,a)?Math.max(0,a.getHours()-1):7;t.scrollTop=s*be}}if(e.has("_path")&&this._view().name==="more"){let t=this.renderRoot.querySelector(".more-tabs"),a=t&&t.querySelector("button.on");if(a){let i=a.offsetLeft,r=i+a.offsetWidth;i<t.scrollLeft?t.scrollLeft=i-8:r>t.scrollLeft+t.clientWidth&&(t.scrollLeft=r-t.clientWidth+8)}let s=this._view().tab;s==="integracoes"&&(this._refreshAi(!1),this._loadUsage()),s==="dados"&&this._loadBackups()}}_onVisible(){document.visibilityState==="visible"&&(this._now=Date.now(),this._syncDark())}_syncDark(){let e=this._theme==="dark"?!0:this._theme==="light"?!1:ls();e!==this._dark&&(this._dark=e)}_setTheme(e){this._theme=e,wt.set(Ls,e),this._syncDark()}async _start(){this._started=!0,this._store=new xt(this.api,()=>this._ver++),this.api.onStatus(e=>this._online=e),this.api.onReconnect(()=>this._boot(!0)),await this._boot(!1),this.api.subscribeCalendars(e=>this._onCalendar(e)).catch(()=>{}),this.api.subscribePrefs(e=>this._setPrefs(e)).catch(()=>{}),this.api.subscribeHome&&this.api.subscribeHome(e=>{let t=e&&e.test;t&&this._home&&t.at!==this._testSeen&&Date.now()-t.at<12e4&&(this._haptic("success"),this._showToast(`${this._targetName(t.target)}: o bot\xE3o ${t.action==="tomei"?"Tomei":"Adiar"} chegou ao app`)),this._testSeen=t&&t.at,this._home=e}).catch(()=>{})}async _boot(e){try{let t=await this.api.bootstrap();this._version=t.version||"",this._user=t.user||{name:""},this._ai=t.ai||this._ai,this._aiAt=Date.now(),this._loadVoice(),this._states=t.states||{},this._entities=t.entities||{},this._devices=t.devices||{},this._prefs=t.prefs||{calendars:{},app:{}},this._ready=!0,this._bootError=null,this._syncStore(),e&&this._store.reloadAll()}catch(t){this._ready||(this._bootError=t.message||String(t)),e||setTimeout(()=>this._boot(!1),3e3)}}_onCalendar(e){let t={...this._states},a=e.entity_id in t;e.new_state?t[e.entity_id]=e.new_state:delete t[e.entity_id],this._states=t,(!a||!e.new_state)&&this.api.registry().then(s=>{this._entities=s.entities||{},this._devices=s.devices||{},this.requestUpdate()}).catch(()=>{}),this._syncStore(),this.requestUpdate()}_setPrefs(e){e&&(this._prefs={calendars:e.calendars||{},app:e.app||{}},this._syncStore(),this.requestUpdate())}_syncStore(){this._store&&this._store.setCalendars(this._cals().filter(e=>!e.hidden).map(e=>e.id))}_app(e,t){let a=this._prefs.app?this._prefs.app[e]:void 0;return a===void 0?t:a}_accent(){return U(this._app("accent","turquesa"))||U("turquesa")}_cals(){if(this._calsCache&&this._calsCache.states===this._states&&this._calsCache.prefs===this._prefs&&this._calsCache.entities===this._entities)return this._calsCache.list;let e=Object.keys(this._states).map(a=>{let s=this._states[a],i=this._entities[a]||{},r=i.device_id?this._devices[i.device_id]:null,l=Bi(i.platform),c=s.attributes&&s.attributes.friendly_name||a;return{id:a,st:s,reg:i,dev:r,plat:l,orig:c}});e.sort((a,s)=>a.plat.label.localeCompare(s.plat.label,"pt-BR")||a.orig.localeCompare(s.orig,"pt-BR"));let t=e.map(({id:a,st:s,reg:i,dev:r,plat:l,orig:c},d)=>{let h=(this._prefs.calendars||{})[a]||{},p=Number(s.attributes&&s.attributes.supported_features)||0;return{id:a,name:h.name||c,origName:c,group:l.label,icon:l.icon,device:r?r.name_by_user||r.name:null,color:U(h.color)||ps(d),colorId:h.color||null,hidden:!!h.hidden,features:p,canCreate:ta(p,ea.CREATE),canUpdate:ta(p,ea.UPDATE),canDelete:ta(p,ea.DELETE),unavailable:s.state==="unavailable"}});return this._calsCache={states:this._states,prefs:this._prefs,entities:this._entities,list:t},t}_cal(e){return this._cals().find(t=>t.id===e)}_visible(){return this._cals().filter(e=>!e.hidden)}_writable(){return this._cals().filter(e=>e.canCreate&&!e.unavailable)}_defaultCal(){let e=this._writable(),t=this._app("default_calendar",null);return(e.find(a=>a.id===t)||e.find(a=>!a.hidden)||e[0]||{}).id||null}_events(e,t){this._store.ensure(e,t);let a=this._store.query(e,t),s=[...this._gerenciaEvents(e,t),...this._todoEvents(e,t),...this._movedDoneEvents(e,t)];return s.length?[...a,...s].sort((i,r)=>i.start-r.start||Number(r.allDay)-Number(i.allDay)||i.summary.localeCompare(r.summary,"pt-BR")):a}async _saveCalPrefs(e,t){try{this._setPrefs(await this.api.setCalendarPrefs(e,t))}catch(a){this._showToast(`N\xE3o consegui salvar: ${a.message}`)}}async _saveAppPrefs(e){try{this._setPrefs(await this.api.setAppPrefs(e))}catch(t){this._showToast(`N\xE3o consegui salvar: ${t.message}`)}}_view(){let e=(this._path||"").replace(/\/+$/,"");if(e==="/calendario")return{name:"calendar"};if(e==="/agendas")return{name:"more",tab:"calendarios"};if(e==="/recompensas")return{name:"rewards"};let t=/^\/mais(?:\/(rotinas|avisos|placar|integracoes|dados|aparencia|opcoes))?$/.exec(e);return t?{name:"more",tab:t[1]||"calendarios"}:{name:"now"}}async _go(e,t=!1){this._sheet&&this._closeSheet(),this._popping&&await this._popping;let a=(history.state&&history.state.rvDepth||0)+(t?0:1);t?history.replaceState({rvDepth:a,rvPath:e},""):history.pushState({rvDepth:a,rvPath:e},""),this._path=e,e==="/calendario"&&(this._scrollWeek=!0);let s=this.renderRoot&&this.renderRoot.querySelector("main");s&&s.scrollTo({top:0,behavior:"instant"})}_goTab(e){let t=this._view().name;if(e===""){if(t==="now"){let s=this.renderRoot.querySelector("main");s&&s.scrollTo({top:0});return}let a=history.state&&history.state.rvDepth||0;a>0?history.go(-a):this._go("",!0);return}if(e==="/calendario"&&t==="calendar"){this._cursor=E(new Date),this._scrollWeek=!0;return}this._go(e,t!=="now")}_openDay(e,t){this._cursor=E(e),t&&this._setMode(t),this._view().name!=="calendar"&&this._go("/calendario")}_setMode(e){this._mode=e,wt.set(js,e),this._scrollWeek=!0}_popEntry(e){if(!(history.state&&history.state[e]))return Promise.resolve();let t=new Promise(a=>{let s=()=>{clearTimeout(i),this._popWaiters=(this._popWaiters||[]).filter(r=>r!==s),this._popping===t&&(this._popping=null),a()},i=setTimeout(s,600);this._popWaiters=[...this._popWaiters||[],s]});return this._popping=t,history.back(),t}_onPopState(){this._cam&&!(history.state&&history.state.rvCam)&&this._closeCamera(!0),this._sheet&&!(history.state&&history.state.rvSheet)&&(this._releaseImages(),this._sheet=null,this._form=null);let e=history.state&&history.state.rvPath||"";e!==this._path&&(this._path=e);for(let t of[...this._popWaiters||[]])t()}async _openSheet(e,t=null){let a=!!this._sheet;if(!a&&this._popping&&await this._popping,this._sheet=e,this._form=t,!a)try{history.pushState({...history.state||{},rvSheet:!0},"")}catch{}}_closeSheet(){return this._sheet?(this._releaseImages(),this._stopVoice(),this._sheet=null,this._form=null,this._popEntry("rvSheet")):Promise.resolve()}_setForm(e){this._form={...this._form,...e}}_openInHA(e){this._closeSheet(),this.env&&this.env.openInHA&&this.env.openInHA(e)}_haptic(e){this.env&&this.env.haptic&&this.env.haptic(e)}_showToast(e,t=null){clearTimeout(this._toastTimer),this._toast={text:e,action:t,id:Date.now()},this._toastTimer=setTimeout(()=>this._toast=null,t?5e3:2800)}_userName(){let e=ct();return(this._user&&this._user.name||e&&e.user&&e.user.name||"").trim().split(/\s+/)[0]}_isAdmin(){let e=ct();return e&&e.user?!!e.user.is_admin:!0}_openEvent(e){if(e.movedDone)return e.movedDone.item?this._openIndexItem(e.movedDone.item):this._showToast(`${z(e.summary,30)}: feita ${H(T(e.movedDone.day),new Date(this._now),{long:!1,cap:!1})}${e.movedDone.by?` por ${e.movedDone.by}`:""}`);if(e.gerencia){this._openSheet("bill",{b:{id:e.gerencia.id,c:e.gerencia}});return}if(e.todo){this._openSheet("todo",{key:e.todo.key});return}this._openSheet("event",{ev:e})}_money(e){return e.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}_openForm({ev:e=null,date:t=null,hour:a=null,cal:s=null,copy:i=!1}={}){if(e&&e.kind)return this._openKindForm({ev:e,copy:i});if(!this._writable().length&&!(e&&!i)){this._openSheet("nocal",{});return}let l;if(e){let c=e.allDay?k(e.end,-1):e.end;l={mode:i?"add":"edit",cal:i?this._cal(e.cal)&&this._cal(e.cal).canCreate?e.cal:this._defaultCal():e.cal,origCal:e.cal,uid:e.uid,rid:i?null:e.rid,title:e.summary,allDay:e.allDay,date:D(e.start),endDate:e.allDay?R(c,e.start)>0?D(c):"":L(e.start,e.end)?"":D(e.end),start:e.allDay?"09:00":F(e.start),end:e.allDay?"10:00":F(e.end),repeat:Ue(e.rrule),rrule:e.rrule||"",location:e.location,notes:e.description}}else{let c=t?E(t):E(new Date),d=new Date,h=a??(L(c,d)?Math.min(23,d.getHours()+1):9),p=v=>String(v).padStart(2,"0");l={mode:"add",cal:s&&this._cal(s)&&this._cal(s).canCreate?s:this._defaultCal(),title:"",allDay:!1,date:D(c),endDate:"",start:`${p(h)}:00`,end:`${p(Math.min(23,h+1))}:${h+1>23?"59":"00"}`,repeat:"",rrule:"",location:"",notes:""}}if(l.details=!!(String(l.location||"").trim()||String(l.notes||"").trim()),l.mode==="edit")try{l.before=this._eventFromForm(l)}catch{l.before=null}this._openSheet("form",l),l.mode==="add"&&!l.title&&this.updateComplete.then(()=>{let c=this.renderRoot.querySelector(".sheet .ev-title-input");c&&c.focus()})}_eventFromForm(e,{keepRrule:t=!0}={}){if(e.kind)return this._kindEvents(e,{keepRrule:t})[0];let a=(e.title||"").trim();if(!a)throw new Error("D\xEA um nome ao evento");if(!/^\d{4}-\d{2}-\d{2}$/.test(e.date||""))throw new Error("Escolha a data");let s={summary:a};if(e.allDay){let i=e.endDate&&e.endDate>e.date?e.endDate:e.date;s.start=e.date,s.end=D(k(T(i),1))}else{let[i,r]=(e.start||"09:00").split(":").map(Number),[l,c]=(e.end||e.start||"10:00").split(":").map(Number),d=T(e.date),h=new Date(d.getFullYear(),d.getMonth(),d.getDate(),i,r),p=e.endDate&&e.endDate>e.date?T(e.endDate):d,v=new Date(p.getFullYear(),p.getMonth(),p.getDate(),l,c);v<=h&&(v=k(v,1)),v-h<6e4&&(v=new Date(h.getTime()+30*6e4)),s.start=J(h),s.end=J(v)}if((e.location||"").trim()&&(s.location=e.location.trim()),(e.notes||"").trim()&&(s.description=e.notes.trim()),t){let i=e.rrule&&Ue(e.rrule)===e.repeat?e.rrule:e.repeat?`FREQ=${e.repeat}`:"";i&&(s.rrule=i)}return s}async _saveForm(){let e=this._form;if(e.kind)return this._saveKindForm();let t;try{t=this._eventFromForm(e)}catch(s){this._showToast(s.message);return}let a=this._cal(e.cal);if(!a)return this._showToast("Escolha o calend\xE1rio");if(e.mode==="edit"&&e.rid&&a.canUpdate){this._openSheet("scope",{action:"edit",...e,event:t});return}this._setForm({saving:!0});try{e.mode==="add"?(await this.api.createEvent(e.cal,t),this._done(`Evento criado em ${z(a.name,24)}`,e.cal,t.start)):e.cal!==e.origCal?(await this.api.createEvent(e.cal,t),await this.api.deleteEvent(e.origCal,e.uid),this._store.refresh(e.origCal),this._done(`Evento movido para ${z(a.name,24)}`,e.cal,t.start)):(await this._saveInPlace(e,t),this._done(e.rid&&!a.canUpdate?"Evento salvo \xB7 a s\xE9rie recome\xE7a neste dia":"Evento salvo",e.cal,t.start))}catch(s){this._sheet==="form"&&this._setForm({saving:!1}),this._showToast(`N\xE3o consegui salvar: ${s.message}`)}}async _saveInPlace(e,t){let a=this._cal(e.cal);if(!a||a.canUpdate)return this.api.updateEvent(e.cal,e.uid,t);if(!(a.canCreate&&a.canDelete))throw new Error("Esse calend\xE1rio n\xE3o deixa mudar eventos");await this.api.deleteEvent(e.cal,e.uid);try{await this.api.createEvent(e.cal,t)}catch(s){throw e.before&&await this.api.createEvent(e.cal,e.before).catch(()=>{}),s}}_canEdit(e){let t=this._cal(e);return!!t&&(t.canUpdate||t.canCreate&&t.canDelete)}_done(e,t,a){this._haptic("success"),this._closeSheet(),this._store.refresh(t);let s=a?E(new Date(/^\d{4}-\d{2}-\d{2}$/.test(a)?T(a):a)):null;this._showToast(e,s&&this._view().name!=="calendar"?{label:"Ver",run:()=>this._openDay(s)}:null)}async _applyScope(e){let t=this._form,a={recurrenceId:t.rid,range:e==="future"?"THISANDFUTURE":void 0};try{if(t.action==="edit"){let s=t.event;e==="one"&&(s=this._eventFromForm(t,{keepRrule:!1})),await this.api.updateEvent(t.cal,t.uid,s,a),this._done(e==="one"?"S\xF3 este evento foi alterado":"Este e os pr\xF3ximos foram alterados",t.cal,s.start)}else await this.api.deleteEvent(t.cal,t.uid,e==="all"?{}:a),this._done(e==="all"?"A s\xE9rie toda foi apagada":e==="one"?"Evento apagado":"Este e os pr\xF3ximos foram apagados",t.cal)}catch(s){this._showToast(`N\xE3o consegui: ${s.message}`)}}_askDelete(e){if(e.rid){this._openSheet("scope",{action:"delete",cal:e.cal,uid:e.uid,rid:e.rid,title:e.summary});return}this._openSheet("confirm",{title:`Apagar \u201C${z(e.summary,28)}\u201D?`,text:`${N(H(e.start,new Date(this._now)))} \xB7 ${Yi(e)}. Ele sai do calend\xE1rio ${z((this._cal(e.cal)||{}).name||"",30)}.`,label:"Apagar",danger:!0,run:async()=>{try{await this.api.deleteEvent(e.cal,e.uid),this._haptic("medium"),this._closeSheet(),this._store.refresh(e.cal);let t={summary:e.summary,start:e.raw.start,end:e.raw.end};e.location&&(t.location=e.location),e.description&&(t.description=e.description),this._showToast("Evento apagado",{label:"Desfazer",run:()=>this.api.createEvent(e.cal,t).then(()=>this._store.refresh(e.cal)).catch(a=>this._showToast(a.message))})}catch(t){this._showToast(`N\xE3o consegui apagar: ${t.message}`)}}})}_openImport(e="pick",t={}){let a=this._defaultCal();if(!a)return this._openSheet("nocal",{}),Promise.resolve();this._releaseImages(),this._importToken=0;let s=this._openSheet("import",{target:a,step:e==="text"?"text":e==="voice"?"voice":"pick",rec:e==="voice"?"starting":"off",text:"",images:[],items:[],provider:null,error:null,note:null,...t});return e==="photos"&&this._pickFiles("photos"),e==="scan"&&this._openCamera(),e==="text"&&this._focusSheetText(),e==="ics"&&this._pickFiles("ics"),e==="voice"&&s.then(()=>this._startVoice()),s}async _loadVoice(){if(this.api.voiceStatus){try{this._voice=await this.api.voiceStatus()}catch(e){this._voice={ready:!1,reason:e.message}}this.requestUpdate()}}async _startVoice(){if(this._rec||!this._form)return;this._setForm({step:"voice",rec:"starting",secs:0,level:0,error:null,heard:""});let e=new bt(t=>this._voiceLevel=t);this._rec=e;try{await e.start()}catch(t){e.cancel(),this._rec===e&&(this._rec=null),this._form&&this._form.step==="voice"&&this._setForm({rec:"off",error:Ms(t)});return}if(this._rec!==e||!this._form||this._form.step!=="voice")return e.cancel();this._setForm({rec:"on"}),clearInterval(this._recTimer),this._recTimer=setInterval(()=>{if(this._rec!==e)return clearInterval(this._recTimer);let t=e.seconds();this._setForm({secs:t,level:this._voiceLevel||0}),t>=120&&this._finishVoice()},120)}_stopVoice(){clearInterval(this._recTimer),this._rec&&this._rec.cancel(),this._rec=null}async _finishVoice(){let e=this._rec;if(!e)return;clearInterval(this._recTimer),this._rec=null;let t=e.stop();if(t.length<16e3*.4){this._setForm({rec:"off",error:"N\xE3o ouvi nada. Toque no microfone e fale."});return}let a=this._importToken=(this._importToken||0)+1;this._setForm({step:"loading",error:null,prevStep:"voice",loadingText:"Transcrevendo o que voc\xEA disse\u2026"});try{let s=await this.api.voiceText(t);if(this._importToken!==a||!this._form)return;this._setForm({text:s.text,heard:s.text}),this._readText()}catch(s){if(this._importToken!==a||!this._form)return;this._setForm({step:"voice",rec:"off",error:s.message||"N\xE3o consegui transcrever."})}}_renderMicBtn(){let e=this._voice;return!e||!e.ready||!this._aiOn()||!(this._ai&&this._ai.ready)?u:n`<button class="mic-top" aria-label="Falar: criar evento falando" title="Falar" @click=${()=>this._openImport("voice")}>${x("mic")}</button>`}_renderVoiceStep(e){let t=this._form,a=this._ai||{},s=this._voice||{},i=t.rec==="on",r=Math.floor((t.secs||0)/60),l=String(Math.floor((t.secs||0)%60)).padStart(2,"0");return n`
       ${this._sheetHead("Falar")}
       <div class="voice ${i?"on":""}">
@@ -7383,7 +7471,7 @@ ${s}`:e.join(`
         <div class="flabel-row"><span class="flabel">Quando</span>
           <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${e.allDay} @change=${m=>this._setForm({allDay:m.target.checked})} aria-label="Dia todo" /><span class="track"></span></span></label>
         </div>
-        <div class="chip-row">
+        <div class="chip-row c3">
           ${i.map(m=>n`<button class="pick ${e.date===D(m.d)?"on":""}" @click=${()=>this._setForm({date:D(m.d),endDate:e.endDate&&e.endDate<D(m.d)?"":e.endDate})}>${m.label}</button>`)}
           <button class="pick ${r?"":"on"}" @click=${()=>l("#cr-date")}>
             ${x("calendar")}<span>${r?"Outra data":N(H(T(e.date),s,{long:!1}))}</span>
@@ -7399,7 +7487,7 @@ ${s}`:e.join(`
                 <span class="tl">até</span>
                 <input type="time" .value=${e.end} aria-label="Termina" @change=${m=>m.target.value&&this._setForm({end:m.target.value})} />
               </div>
-              <div class="chip-row dur">
+              <div class="chip-row dur c4">
                 ${[[15,"15 min"],[30,"30 min"],[60,"1 h"],[120,"2 h"]].map(([m,b])=>n`<button class="pick ${p===m&&!e.endDate?"on":""}" @click=${()=>d(m)}>${b}</button>`)}
               </div>
               ${v?n`<div class="field-hint">${x("info")}<span>Termina no dia seguinte.</span></div>`:u}`}

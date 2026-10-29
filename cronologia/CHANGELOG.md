@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.26.0
+
+- **Botões do mesmo tamanho**, como no EconomIA: as escolhas dos formulários (calendário, quando, duração, quem faz, pontos, repete, avisos, quem cuida…) ficam em colunas, com o texto no meio. As curtas (Hoje · Amanhã · Outra data, 15 min · 30 min · 1 h · 2 h, pontos) cabem três ou quatro por linha, e os dois horários dividem a largura.
+- **Mais › Dados › Exportar** como no ResolvIA: uma linha por arquivo (Eventos CSV, Agenda .ics, Dados completos JSON, Tudo ZIP), cada uma com a explicação e o botão.
+- **Avisos › No Home Assistant**: o texto voltou para a cor normal (estava na cor de alerta).
+
 ## 1.25.1
 
 - **Novo**: o modelo **Evento** aparecia duas vezes na faixa de modelos (desde a 1.24.0). Agora aparece uma só.
