@@ -460,7 +460,8 @@ export const ModelsMixin = (Base) =>
         const pre = c.kind === "conta" ? "vence" : c.kind === "manutencao" ? "próxima" : "próxima";
         return { text: `${pre} ${dayLabel(fromYmd(c.next), now, { long: false, cap: false })}` };
       };
-      const pts = (c) => (c.points > 0 && this._scoreOn() ? `+${c.points}` : "");
+      // the points in the gold of everywhere else (Agora, Para pontuar hoje)
+      const pts = (c) => (c.points > 0 && this._scoreOn() ? html`<span class="pts-inline">+${c.points}</span>` : "");
       // medicines: one line per medicine (same name, person and dose), with all its times
       const meds = [];
       for (const c of found.filter((x) => x.kind === "remedio")) {
@@ -477,7 +478,8 @@ export const ModelsMixin = (Base) =>
         ${icon("chevron-right")}
       </button>`;
       const line = (c, parts) => {
-        return row(c, parts.filter(Boolean).join(" · "), when(c));
+        const ps = parts.filter(Boolean);
+        return row(c, ps.length ? ps.map((p, i) => html`${i ? " · " : ""}${p}`) : "", when(c));
       };
       const SECS = [
         { kind: "rotina", ic: "spray-can", tone: "ok", title: "Rotina da casa", add: "Nova rotina", none: "Nenhuma rotina cadastrada." },
@@ -1131,13 +1133,6 @@ export const ModelsMixin = (Base) =>
                   </div>`
                 : nothing}`
           : nothing}
-        <div class="steps-box">
-          <b>No Home Assistant</b>
-          <p class="data-note">${this._app("sensors_on", false) === true
-            ? html`Sensores para painéis e automações: <code>sensor.cronologia_remedios_hoje</code>, <code>binary_sensor.cronologia_remedio_atrasado</code> e <code>sensor.cronologia_manutencoes_vencidas</code>.`
-            : html`Para ter sensores dos remédios (doses de hoje, remédio atrasado) em painéis e automações, ligue <b>Sensores no Home Assistant</b> em Mais › Integrações.`}</p>
-          <p class="data-note">Para marcar de fora do app (uma automação, uma etiqueta NFC na geladeira), dispare o evento <code>cronologia_feito</code> com <code>nome: Filtro de água</code>: manutenção, rotina ou remédio de hoje com esse nome ficam feitos.</p>
-        </div>
       </div>`;
     }
 

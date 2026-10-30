@@ -3046,6 +3046,13 @@ export const calStyles = css`
     flex: none;
     color: var(--rv-muted);
   }
+  /* Mais › Placar › Deméritos: the card has no padding of its own (the rows go edge to edge),
+     so the heading and the text get the same 16 px as the rows */
+  .panel.demerits-set > .mais-head,
+  .panel.demerits-set > .panel-lead {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 
   /* Agora › Tarefas: quick "who did it" buttons on tasks worth points */
   .qwho {

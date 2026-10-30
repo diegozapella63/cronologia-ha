@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.27.0
+
+- **Arrastar para o lado** troca de aba no celular: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais. Na grade do mês, arrastar continua trocando o mês. Não vale começando na borda da tela (é o Voltar do celular), num campo ou numa fileira que rola para o lado.
+- O **ícone do app** ao lado do nome, no alto e na barra lateral, na cor escolhida em Aparência.
+- **Mais › Placar › Deméritos**: o título e o texto estavam colados na borda do cartão.
+- Saiu a explicação do evento `cronologia_demerito` da janela do demérito e o quadro "No Home Assistant" de Avisos. Essas explicações (eventos `cronologia_feito` e `cronologia_demerito`) agora ficam em **Mais › Integrações › Sensores no Home Assistant**.
+- **Mais › Rotinas**: os pontos na mesma cor dourada dos outros lugares.
+
 ## 1.26.0
 
 - **Botões do mesmo tamanho**, como no EconomIA: as escolhas dos formulários (calendário, quando, duração, quem faz, pontos, repete, avisos, quem cuida…) ficam em colunas, com o texto no meio. As curtas (Hoje · Amanhã · Outra data, 15 min · 30 min · 1 h · 2 h, pontos) cabem três ou quatro por linha, e os dois horários dividem a largura.

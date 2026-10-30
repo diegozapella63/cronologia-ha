@@ -3,6 +3,8 @@ import { usagePanel, usageStyles } from "./usage-panel.js";
 import { themePicker, colorPicker, lookStyles } from "./look.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
+import { appIcon } from "./appicon.js";
+import { swipeStart, swipeEnd, slideIn } from "./swipe.js";
 import { styles, extraStyles } from "./styles.js";
 import { calStyles } from "./cal-styles.js";
 import { parentHass, detectDark } from "./api.js";
@@ -460,6 +462,29 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (path === "/calendario") this._scrollWeek = true;
     const main = this.renderRoot && this.renderRoot.querySelector("main");
     if (main) main.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  // Arrastar para o lado: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais (a grade do mês segue trocando o mês)
+  _onSwipeStart(e) {
+    this._sw = this._sheet || this._cam ? null : swipeStart(e, ".month");
+  }
+
+  _onSwipeEnd(e) {
+    const d = swipeEnd(e, this._sw);
+    this._sw = null;
+    if (!d || this._sheet) return;
+    const order = [
+      ["now", ""],
+      ["calendar", "/calendario"],
+      ["rewards", "/recompensas"],
+      ["more", "/mais"],
+    ];
+    const i = order.findIndex(([n]) => n === this._view().name);
+    const j = i + d;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    this._haptic("light");
+    this._goTab(order[j][1]);
+    slideIn(this, order[j][0], d);
   }
 
   _goTab(path) {
@@ -1267,7 +1292,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           ${!this.env || this.env.topbar ? html`<header class="topbar"><div class="title">Cronolog<b>IA</b></div></header>` : nothing}
           ${!this._online ? html`<div class="offline">${icon("wifi-off")}<span>Sem conexão com o CronologIA. Reconectando…</span></div>` : nothing}
           ${this._renderSide(view)}
-          <main>${page}</main>
+          <main @touchstart=${(e) => this._onSwipeStart(e)} @touchend=${(e) => this._onSwipeEnd(e)}>${page}</main>
           ${this._renderNav(view)}
         </div>
         ${this._renderSheet()} ${this._renderToast()} ${this._renderCamera()}
@@ -1306,7 +1331,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const cals = this._cals().filter((c) => !c.hidden || held.has(c.id));
     const shown = cals.filter((c) => !c.hidden).length;
     return html`<aside class="side" aria-label="Navegação">
-      <div class="side-brand">Cronolog<span>IA</span></div>
+      <div class="side-brand">${appIcon()}Cronolog<span>IA</span></div>
       <div class="side-nav">
         ${item("now", "", "Agora", "clock-3")}
         <button class="side-link" @click=${() => this._toSearch()}>${icon("search")}<span>Buscar</span><kbd>/</kbd></button>
@@ -1367,7 +1392,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
-      <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
+      <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
@@ -1775,7 +1800,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
-          <div class="head-row"><p class="eyebrow"><span class="brand">Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
+          <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">
@@ -2214,6 +2239,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ sensors_on: e.target.checked ? true : null })} aria-label="Criar sensores" /><span class="track"></span></label>
       </div>
       ${on ? html`<div class="sensor-list">${list.map(([id, t]) => html`<div class="sensor-row"><code>${id}</code><span>${t}</span></div>`)}</div>` : nothing}
+      <div class="ha-events">
+        <b>Eventos para automações</b>
+        <span class="ha-ev-lead">Para marcar de fora do app, numa automação, numa rotina da Alexa ou numa etiqueta NFC. Funcionam com os sensores ligados ou não.</span>
+        <div class="sensor-list">
+          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code> (e <code>quem: Diego</code>, se vale pontos): a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
+          <div class="sensor-row"><code>cronologia_demerito</code><span>com <code>nome</code> e <code>quem</code>: desconta esse demérito de quem foi.</span></div>
+        </div>
+      </div>
     </div>`;
   }
 

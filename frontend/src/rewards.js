@@ -587,7 +587,6 @@ export const RewardsMixin = (Base) =>
           ${custom
             ? html`<div class="time-row"><input type="number" inputmode="numeric" min="1" max="1000" class="num" .value=${String(n || "")} @input=${(e) => this._setForm({ points: Math.max(0, Math.min(1000, parseInt(e.target.value, 10) || 0)) })} /><span class="tl">pontos</span></div>`
             : nothing}
-          <span class="field-hint">${icon("info")}<span>Para marcar de fora do app (uma rotina da Alexa, uma etiqueta NFC), dispare o evento <code>cronologia_demerito</code> com <code>nome</code> e <code>quem</code>.</span></span>
         </div>
         <div class="sheet-actions">
           ${f.mode === "edit" ? html`<button class="btn outline danger" @click=${() => this._deleteDemerit()}>${icon("trash")}Apagar</button>` : html`<button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>`}

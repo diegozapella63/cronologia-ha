@@ -375,6 +375,24 @@ export const styles = css`
     font-size: 13.5px;
     color: var(--rv-muted);
   }
+  .ha-events {
+    display: grid;
+    gap: 4px;
+    padding: 6px 0 0;
+  }
+  .ha-events > b {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ha-ev-lead {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--rv-muted);
+  }
+  .sensor-row span code {
+    font-size: 12.5px;
+    padding: 0 4px;
+  }
   .sensor-row code {
     font-size: 13px;
     padding: 1px 6px;
@@ -1846,6 +1864,16 @@ export const styles = css`
   .brand span {
     color: var(--rv-accent-ink);
   }
+  /* the icon of the app before its name */
+  .app-ic {
+    display: inline-block;
+    width: 1.15em;
+    height: 1.15em;
+    margin-right: 0.28em;
+    vertical-align: -0.2em;
+    color: var(--rv-text);
+    overflow: visible;
+  }
   .page-title {
     font-family: var(--rv-display);
     font-size: clamp(34px, 8vw, 46px);
@@ -3055,7 +3083,11 @@ export const extraStyles = css`
       margin-left: 0;
       margin-right: 0;
     }
-    .page:not(.cal-page) .panel .chore {
+    .page:not(.cal-page) .panel .chore,
+    .page:not(.cal-page) .panel .demerit,
+    .page:not(.cal-page) .panel.demerits-set > .mais-head,
+    .page:not(.cal-page) .panel.demerits-set > .panel-lead,
+    .page:not(.cal-page) .panel .score-actions {
       padding-left: 0;
       padding-right: 0;
     }
