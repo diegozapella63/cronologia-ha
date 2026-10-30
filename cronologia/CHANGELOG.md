@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.28.2
+
+- O **ícone de repetir** aparece também nas rotinas que voltam alguns dias depois de feitas e nas manutenções (antes só nas que repetem por calendário, como todo dia ou toda semana). Tocar e segurar mostra como repete.
+
 ## 1.28.1
 
 - **Agora**: a linha do alto não conta mais os eventos marcados como **Feito** ("1 evento hoje" é o que ainda falta). Com tudo feito, diz "tudo feito hoje".

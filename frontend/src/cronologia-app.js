@@ -12,6 +12,7 @@ import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin } from "./models.js";
+import { everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { DataMixin } from "./datapanel.js";
@@ -1551,11 +1552,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const mk = (k || e.todo) && this._pickWho() ? this._markerOf(e, day) : null;
     // what it gives on the scoreboard (routines, maintenance, tasks with points)
     const pts = this._scoreOn() && !done ? (k && (k.kind === "rotina" || k.kind === "manutencao") && k.points > 0 ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0) : 0;
+    // it repeats: by the calendar (rrule), or a routine that comes back N days after done / maintenance every N
+    // (one event that moves forward when done: no rrule, but it repeats all the same)
+    const rep = e.rrule ? rruleLabel(e.rrule) : k && k.kind === "rotina" && k.after ? `Volta ${everyLabel(k.after)} depois de feita` : k && k.kind === "manutencao" && k.every ? `A cada ${everyLabel(k.every)}` : "";
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
       <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub || pts ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub ? " · " : ""}` : nothing}${sub}</span>` : nothing}</span>
-      ${e.rrule && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rruleLabel(e.rrule)}>${icon("repeat")}</span>` : nothing}
+      ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
   }
