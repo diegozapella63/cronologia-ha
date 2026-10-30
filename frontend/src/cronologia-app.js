@@ -1583,12 +1583,14 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const next = upcoming[0];
     const cals = this._visible();
     if (!this._cals().length) return this._renderNoCalendars();
-    const left = timed.filter((e) => e.end > now).length;
+    // the ones marked Feito don't count: "1 evento hoje" is what is still to do
+    const openToday = todays.filter((e) => !this._checkOf(e));
+    const openTimed = timed.filter((e) => !this._checkOf(e));
+    const left = openTimed.filter((e) => e.end > now).length;
+    const dayText = !todays.length ? "nada hoje" : !openToday.length ? "tudo feito hoje" : `${plural(openToday.length, "evento", "eventos")} hoje${left && left < openTimed.length ? ` · ${left} pela frente` : ""}`;
     const status = lateMeds.length
       ? { text: `${cap(dateLong(now))} · ${lateMeds.length === 1 ? `${lateMeds[0].summary} atrasado` : `${lateMeds.length} remédios atrasados`}`, tone: "late" }
-      : {
-          text: `${cap(dateLong(now))} · ${todays.length ? `${plural(todays.length, "evento", "eventos")} hoje` : "nada hoje"}${left && left < timed.length ? ` · ${left} pela frente` : ""}`,
-        };
+      : { text: `${cap(dateLong(now))} · ${dayText}` };
     let hero;
     let heroEv = null;
     if (current.length) {

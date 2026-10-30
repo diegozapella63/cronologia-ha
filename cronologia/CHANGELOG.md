@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.28.1
+
+- **Agora**: a linha do alto não conta mais os eventos marcados como **Feito** ("1 evento hoje" é o que ainda falta). Com tudo feito, diz "tudo feito hoje".
+
 ## 1.28.0
 
 - **Recompensas › Para pontuar hoje › Próximas rotinas** (fechado até tocar): as rotinas com pontos dos próximos dias, para marcar quando foram feitas antes do dia. Conta os pontos na hora, e a rotina que volta alguns dias depois passa a contar de hoje (não da data em que estava marcada).
