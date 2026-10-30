@@ -553,7 +553,8 @@ export const ModelsMixin = (Base) =>
       if (k.kind === "manutencao") {
         const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid);
         if (m && m.canMove) action = this._pickWho() ? this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p)) : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>`;
-      } else if (e.start < addDays(startOfDay(now), 2)) {
+      } else if (e.start < addDays(startOfDay(now), 2) || (k.kind === "rotina" && k.after && !e.rrule)) {
+        // (a routine that comes back N days after done: also earlier, any day; it then counts from today)
         const it = { key: e.key, summary: e.summary };
         action = chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`

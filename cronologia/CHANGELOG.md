@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.28.0
+
+- **Recompensas › Para pontuar hoje › Próximas rotinas** (fechado até tocar): as rotinas com pontos dos próximos dias, para marcar quando foram feitas antes do dia. Conta os pontos na hora, e a rotina que volta alguns dias depois passa a contar de hoje (não da data em que estava marcada).
+- A janela de uma rotina que volta alguns dias depois tem **Feito** em qualquer dia, para marcar antes (também em Mais › Rotinas).
+- **Agora**: o cartão **Hoje** some quando não sobra compromisso no dia (todos passaram ou foram feitos). O Calendário continua com o dia inteiro.
+
 ## 1.27.0
 
 - **Arrastar para o lado** troca de aba no celular: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais. Na grade do mês, arrastar continua trocando o mês. Não vale começando na borda da tela (é o Voltar do celular), num campo ou numa fileira que rola para o lado.

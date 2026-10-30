@@ -2,9 +2,9 @@
 // them, the period's prize and the history. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { foldText, everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
-import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, WEEKDAYS } from "./util.js";
+import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, dayLabel, WEEKDAYS } from "./util.js";
 import { afterSub } from "./models.js";
 
 const icon = (name, cls = "") =>
@@ -403,6 +403,36 @@ export const RewardsMixin = (Base) =>
     }
 
     /** Today's chores and maintenance that give points. */
+    /**
+     * Próximas rotinas (closed until tapped): the routines with points that are not for today, to do
+     * them earlier and score now. One that comes back N days after done counts from the day it is marked.
+     */
+    _renderFutureScore(chores, now, pick) {
+      const ix = this._ix();
+      const t = ymd(now);
+      const todays = new Set(chores.map((r) => `${r.cal}|${r.uid}`));
+      const list = (ix.catalog || [])
+        .filter((c) => c.kind === "rotina" && c.points > 0 && !c.late && c.next > t && !todays.has(`${c.cal}|${c.uid}`) && !this._checkOf(c))
+        .sort((a, b) => a.next.localeCompare(b.next) || a.summary.localeCompare(b.summary, "pt-BR"));
+      if (!list.length) return nothing;
+      const open = !!this._futureOpen;
+      return html`<button class="add-line done-fold future-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._futureOpen = !open), this.requestUpdate())}>
+          ${icon(open ? "chevron-down" : "chevron-right")}${open ? "Esconder próximas rotinas" : `Próximas rotinas (${list.length})`}
+        </button>
+        ${open
+          ? html`<p class="future-note">Fez antes do dia? Marque aqui: conta os pontos agora, e a que volta alguns dias depois passa a contar de hoje.</p>
+              ${repeat(list, (c) => c.key, (c) => {
+                const it = { key: c.key, summary: c.summary, points: c.points };
+                const when = dayLabel(fromYmd(c.next), now, { long: false, cap: false });
+                return html`<div class="chore future">
+                  <button class="chk" @click=${() => this._markDone(it, "rotina")} aria-label="Marcar ${c.summary} como feita hoje"></button>
+                  <button class="chore-tx" @click=${() => this._openIndexItem(c)}><b>${c.summary}</b><small>${pick ? html`<span class="pts-inline">+${c.points}</span> · ` : nothing}${[when, c.after ? `volta ${everyLabel(c.after)} depois` : "", c.who].filter(Boolean).join(" · ")}</small></button>
+                  ${pick ? this._renderQuickWho(c.summary, c.points, (p) => this._markDone(it, "rotina", p)) : html`<span class="pts">+${c.points}</span>`}
+                </div>`;
+              })}`
+          : nothing}`;
+    }
+
     _renderToScore() {
       const ix = this._ix();
       const now = new Date(this._now);
@@ -439,6 +469,7 @@ export const RewardsMixin = (Base) =>
           </div>`,
         )}
         ${total && !openChores.length && !openTasks.length && !maint.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo pontuado hoje.</p>` : nothing}
+        ${this._renderFutureScore(chores, now, pick)}
         ${!chores.length && !maint.length && !tasks.length
           ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
           : nothing}

@@ -1614,8 +1614,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         now,
       });
     }
-    // the only appointment of today is already the "Agora"/"A seguir" card: no second copy below it
-    const sameAsHero = heroEv && timed.length === 1 && timed[0] === heroEv;
+    // the only appointment of today is already the "Agora"/"A seguir" card: no second copy below it;
+    // and nothing more today (all past or done): no Hoje card (the Calendário has the day)
+    const sameAsHero = (heroEv && timed.length === 1 && timed[0] === heroEv) || !timed.some((e) => e.end > now && !this._checkOf(e));
     const shownAllDay = this._showAllDay || allDay.length <= 3 ? allDay : allDay.slice(0, 2);
     const nowLine = html`<div class="now-line"><span>${hm(now)}</span></div>`;
     let lineDone = false;

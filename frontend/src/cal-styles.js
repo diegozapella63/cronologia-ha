@@ -3046,6 +3046,20 @@ export const calStyles = css`
     flex: none;
     color: var(--rv-muted);
   }
+  /* Recompensas › Para pontuar hoje › Próximas rotinas */
+  .future-note {
+    margin: 0;
+    padding: 2px 16px 6px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--rv-muted);
+  }
+  @media (min-width: 1000px) {
+    .page:not(.cal-page) .future-note {
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
   /* Mais › Placar › Deméritos: the card has no padding of its own (the rows go edge to edge),
      so the heading and the text get the same 16 px as the rows */
   .panel.demerits-set > .mais-head,
