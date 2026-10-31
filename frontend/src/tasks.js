@@ -243,8 +243,8 @@ export const TasksMixin = (Base) =>
                   : nothing}
               </div>`
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
-              ? "Essa lista não aceita prazo (listas do Alexa, por exemplo). A tarefa entra sem data."
-              : "Os prazos estão desligados no ResolvIA (Mais › Opções). A tarefa entra sem data."}</span></p>`}
+              ? "Essa lista não aceita prazo."
+              : "Os prazos estão desligados no ResolvIA."}</span></p>`}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
@@ -321,8 +321,8 @@ export const TasksMixin = (Base) =>
       const on = this._resolviaOn();
       const onSwitch = html`<div class="row switch-row integ-switch">
         <div class="grow"><div class="label">Usar a integração</div><div class="hint" style="white-space:normal">${on
-          ? "Ligada: as tarefas das listas do ResolvIA (ou de qualquer lista de tarefas do Home Assistant) aparecem aqui."
-          : "Desligada: nenhuma tarefa do ResolvIA aparece no CronologIA, o Levar para o ResolvIA para e os pontos que vêm de lá não contam."}</div></div>
+          ? "Ligada."
+          : "Desligada."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ resolvia_on: e.target.checked ? true : null })} aria-label="Usar a integração com o ResolvIA" /><span class="track"></span></label>
       </div>`;
       if (!on) {
@@ -357,16 +357,16 @@ export const TasksMixin = (Base) =>
         <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
         ${lists.length
           ? html`<div class="row switch-row">
-                <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">As tarefas aparecem no dia do prazo (ou no horário, se tiver), além do card da Agora.</div></div>
+                <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">No dia do prazo.</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
               </div>
               <div class="row switch-row">
-                <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Mostra também as tarefas pendentes sem data (e as das listas que não aceitam prazo), depois das que têm prazo.</div></div>
+                <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Depois das que têm prazo.</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label="Tarefas sem prazo na Agora" /><span class="track"></span></label>
               </div>
               ${this._todoOwners().length
                 ? html`<div class="row switch-row">
-                    <div class="grow"><div class="label">Criar tarefas nas listas dos outros</div><div class="hint" style="white-space:normal">No Novo › Tarefa aparecem também as listas que são de outra pessoa da casa, para pedir algo a ela. As tarefas continuam aparecendo só para quem é a lista.</div></div>
+                    <div class="grow"><div class="label">Criar tarefas nas listas dos outros</div><div class="hint" style="white-space:normal">Para pedir algo a outra pessoa da casa.</div></div>
                     <label class="switch"><input type="checkbox" role="switch" .checked=${this._app("todo_create_any", false) === true} @change=${(e) => this._saveAppPrefs({ todo_create_any: e.target.checked ? true : null })} aria-label="Criar tarefas nas listas dos outros" /><span class="track"></span></label>
                   </div>`
                 : nothing}
@@ -396,7 +396,7 @@ export const TasksMixin = (Base) =>
         ${lists.length && this._writable().length
           ? html`<button class="row" @click=${() => this._openBring()}>
               <span class="tile" style=${colorVars(this._accent(), this._dark)}>${icon("download")}</span>
-              <span class="grow"><div class="label">Trazer uma lista para o CronologIA</div><div class="hint" style="white-space:normal">Cada tarefa vira uma Rotina da casa, com os pontos e a repetição, e sai do ResolvIA.</div></span>
+              <span class="grow"><div class="label">Trazer uma lista para o CronologIA</div><div class="hint" style="white-space:normal">Cada tarefa vira uma Rotina da casa.</div></span>
               ${icon("chevron-right")}
             </button>`
           : nothing}
@@ -457,7 +457,7 @@ export const TasksMixin = (Base) =>
         };
         return html`
           ${head(p.name, () => this._setForm({ step: "pick", preview: null, error: null }))}
-          <p class="sheet-note top">Cada tarefa marcada vira uma <b>Rotina da casa</b>: as que repetem no ResolvIA voltam N dias depois de feitas; as outras são de uma vez só. ${p.canDelete ? "Depois, elas saem da lista do ResolvIA." : "Essa lista não deixa apagar: as tarefas ficam lá também."}</p>
+          <p class="sheet-note top">Cada tarefa marcada vira uma <b>Rotina da casa</b>.${p.canDelete ? " Depois, ela sai do ResolvIA." : ""}</p>
           ${p.items.length
             ? html`<div class="bring-list">
                 ${p.items.map(
@@ -484,7 +484,7 @@ export const TasksMixin = (Base) =>
       const lists = this._todosAll().lists.filter((l) => !l.unavailable);
       return html`
         ${head("Trazer do ResolvIA")}
-        <p class="sheet-note top">Escolha a lista. Você revisa as tarefas antes de trazer.</p>
+        <p class="sheet-note top">Escolha a lista.</p>
         <div class="bring-lists">
           ${lists.map(
             (l) => html`<button class="row" @click=${() => this._bringLoad(l.id)}>

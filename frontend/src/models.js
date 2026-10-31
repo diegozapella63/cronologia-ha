@@ -428,8 +428,7 @@ export const ModelsMixin = (Base) =>
     _renderMaintSheet() {
       const list = this._ix().maint || [];
       return html`${this._sheetHead("Manutenção da casa")}
-        <p class="sheet-note top">O prazo conta a partir da última vez. Cada item aparece na tela Agora alguns dias antes de vencer.</p>
-        <div class="maint-list">${list.length ? repeat(list, (m) => m.key, (m) => this._renderMaintRow(m)) : html`<p class="empty-line">Nenhuma manutenção ainda.</p>`}</div>
+                <div class="maint-list">${list.length ? repeat(list, (m) => m.key, (m) => this._renderMaintRow(m)) : html`<p class="empty-line">Nenhuma manutenção ainda.</p>`}</div>
         <div class="sheet-actions"><button class="btn primary" @click=${() => this._openKindForm({ kind: "manutencao" })}>${icon("plus")}Nova manutenção</button></div>`;
     }
 
@@ -925,7 +924,7 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${f.freq === "depois"
           ? html`<div class="time-row"><span class="tl">Volta</span><input type="number" class="num-input" min="1" max="365" aria-label="Dias depois de feita" .value=${String(f.afterN)} @input=${(e) => this._setForm({ afterN: e.target.value })} /><span class="tl">${Number(f.afterN) === 1 ? "dia" : "dias"} depois de feita</span></div>
-              <span class="field-hint">${icon("rotate-ccw")}<span>Conta a partir de quando é feita: o Feito leva a próxima vez para ${Number(f.afterN) === 1 ? "amanhã" : `daqui a ${Math.max(1, Number(f.afterN) || 2)} dias`}. Na agenda fica só a próxima, e na Agora ela aparece no dia e continua lá até ser feita.</span></span>`
+              <span class="field-hint">${icon("rotate-ccw")}<span>Feita hoje, volta ${Number(f.afterN) === 1 ? "amanhã" : `daqui a ${Math.max(1, Number(f.afterN) || 2)} dias`}.</span></span>`
           : nothing}
       </div>`;
     }
@@ -940,7 +939,7 @@ export const ModelsMixin = (Base) =>
           ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${n === v ? "on" : ""}" @click=${() => this._setForm({ points: v })}>${v ? `+${v}` : "Sem pontos"}</button>`)}
           <input type="number" class="num-input" min="0" max="1000" .value=${String(n)} aria-label="Outro valor de pontos" @input=${(e) => this._setForm({ points: e.target.value })} />
         </div>
-        ${n > 0 && !this._scoreOn() ? html`<span class="field-hint">${icon("trophy")}<span>Os pontos contam quando o placar estiver ligado, na aba <b>Recompensas</b>.</span></span>` : nothing}
+        ${n > 0 && !this._scoreOn() ? html`<span class="field-hint">${icon("trophy")}<span>O placar está desligado (aba <b>Recompensas</b>).</span></span>` : nothing}
       </div>`;
     }
 
@@ -1019,7 +1018,7 @@ export const ModelsMixin = (Base) =>
                   <button class="pick ${f.dest === "gerencia" ? "on" : ""}" @click=${() => this._setForm({ dest: "gerencia" })}>${icon("wallet")}<span>GerencIA</span></button>
                   <button class="pick ${f.dest === "cal" ? "on" : ""}" @click=${() => this._setForm({ dest: "cal" })}>${icon("calendar")}<span>Só no calendário</span></button>
                 </div>
-                <span class="field-hint">${icon("info")}<span>${f.dest === "gerencia" ? "Entra no caixa do GerencIA e aparece aqui na agenda. O Paguei daqui dá baixa lá." : "Fica só no calendário, com o Paguei daqui."}</span></span>
+                <span class="field-hint">${icon("info")}<span>${f.dest === "gerencia" ? "Entra no GerencIA; o Paguei daqui dá baixa lá." : "Fica só no calendário."}</span></span>
               </div>`
             : nothing}
           ${toGerencia && (g.categorias || []).length
@@ -1052,7 +1051,7 @@ export const ModelsMixin = (Base) =>
               <input type="number" class="num-input" min="1" max="999" .value=${String(f.every.n)} @input=${(e) => this._setForm({ every: { ...f.every, n: Math.max(1, Number(e.target.value) || 1) } })} aria-label="Quantidade" />
               <div class="seg compact">${Object.keys(UNITS).map((u) => html`<button class=${f.every.unit === u ? "on" : ""} @click=${() => this._setForm({ every: { ...f.every, unit: u } })}>${u}</button>`)}</div>
             </div>
-            <span class="field-hint">${icon("repeat")}<span>Conta a partir da última vez que foi feito: o "Feito" leva a próxima data para hoje + ${everyLabel(f.every)}.</span></span>
+            <span class="field-hint">${icon("repeat")}<span>Feito hoje, volta em ${everyLabel(f.every)}.</span></span>
           </div>
           ${f.mode === "add"
             ? this._dateField("Feito pela última vez", f.last, (v) => this._setForm({ last: v }), "kf-last", { quick: false })
@@ -1071,7 +1070,7 @@ export const ModelsMixin = (Base) =>
           <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder=${titles[1]} @input=${(e) => this._setForm({ title: e.target.value })}></textarea>
         </label>
         ${body}
-        ${f.rid ? html`<div class="field-hint">${icon("info")}<span>Este item se repete. Ao salvar, você escolhe se muda só este ou este e os próximos.</span></div>` : nothing}
+        ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este item se repete.</span></div>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
           <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveKindForm()}>${f.saving ? "Salvando…" : f.mode === "add" ? (toGerencia ? "Criar no GerencIA" : `Criar ${ui.label.toLowerCase()}`) : "Salvar"}</button>
@@ -1113,9 +1112,9 @@ export const ModelsMixin = (Base) =>
         ${targets.map((t) => html`<option value=${t.id} ?selected=${value === t.id}>${this._targetLabel(t)}</option>`)}
       </select>`;
       return html`<div class="panel" id="avisos">
-        ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora de cada dose, o celular de quem toma recebe um aviso com <b>Tomei</b> e <b>Adiar 15 min</b>. Se não tomar, avisa de novo, também para quem cuida. Usa o app Home Assistant do celular.`)}
+        ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora da dose, com <b>Tomei</b> e <b>Adiar 15 min</b>.`)}
         <div class="row switch-row">
-          <div class="grow"><div class="label">Avisar no celular</div><div class="hint">Vale para todos os remédios (dá para desligar em cada um).</div></div>
+          <div class="grow"><div class="label">Avisar no celular</div><div class="hint">Dá para desligar em cada remédio.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => setAlerts({ meds: e.target.checked })} aria-label="Avisar no celular" /><span class="track"></span></label>
         </div>
         <div class="field people-field">
@@ -1171,7 +1170,7 @@ export const ModelsMixin = (Base) =>
                       const sel = care.includes(t.id);
                       return html`<button class="pick ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((x) => x !== t.id) : [...care, t.id] })}>${icon("smartphone")}<span>${t.name}</span></button>`;
                     })}</div>
-                    <span class="field-hint">${icon("info")}<span>Recebe o aviso de atraso de todos e o aviso na hora de quem não tem celular (criança, pet).</span></span>
+                    <span class="field-hint">${icon("info")}<span>Recebe os atrasos de todos.</span></span>
                   </div>`
                 : nothing}`
           : nothing}
@@ -1182,8 +1181,8 @@ export const ModelsMixin = (Base) =>
       const on = this._app("gerencia_on", false) === true;
       const toggle = html`<div class="row switch-row integ-switch">
         <div class="grow"><div class="label">Usar a integração</div><div class="hint" style="white-space:normal">${on
-          ? "Ligada: as contas a pagar do GerencIA aparecem aqui e o Paguei daqui dá baixa lá."
-          : "Desligada: o CronologIA não consulta o GerencIA e as contas de lá não aparecem."}</div></div>
+          ? "Ligada."
+          : "Desligada."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ gerencia_on: e.target.checked ? true : null })} aria-label="Usar a integração com o GerencIA" /><span class="track"></span></label>
       </div>`;
       if (!on) {
@@ -1206,7 +1205,7 @@ export const ModelsMixin = (Base) =>
         </div></div>
         ${g.ligado
           ? html`<div class="row switch-row">
-              <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">As contas aparecem no dia do vencimento, além do card da Agora.</div></div>
+              <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">No dia do vencimento.</div></div>
               <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("gerencia_hidden", false)} @change=${(e) => this._saveAppPrefs({ gerencia_hidden: e.target.checked ? null : true })} aria-label="Mostrar contas no calendário" /><span class="track"></span></label>
             </div>`
           : nothing}

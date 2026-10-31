@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.31.0
+
+- **Menos explicação, mais tela**: os textos de ajuda ficaram curtos ou saíram onde só repetiam o que a tela já mostra. Os mais visíveis: Exportar sem frase de abertura; Backup, Importar, Versões e Onde ficam os dados em uma linha; os interruptores dizem só Ligado/Desligado (com uma frase curta quando precisa); Leitura por IA e Falar sem a lista de integrações e sem a nota do "Automático"; Avisos de remédio, Placar, Deméritos, Tarefas do ResolvIA e Contas do GerencIA com dicas de uma linha; "Volta daqui a N dias" no lugar da explicação do Feito; na revisão, só a quantidade de eventos; Manutenção sem a frase de abertura; Uso da IA com uma linha só para o consumo exato.
+
 ## 1.30.5
 
 - **Colar mensagem**: o botão **Colar** só aparece quando consegue ler o que foi copiado. Com o Home Assistant aberto por http ele não funciona (o navegador não deixa), então some, e o campo continua aceitando colar do jeito normal (tocar e segurar). Se o aparelho recusar uma vez, o botão também some.

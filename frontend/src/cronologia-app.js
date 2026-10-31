@@ -895,7 +895,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const detail = checking
       ? ""
       : v.ready
-        ? `Transcreve com ${v.name}${v.chosen ? "" : " (o do assistente de voz do Home Assistant)"}.${v.missing ? " O escolhido não foi encontrado: usando o automático." : ""}`
+        ? `Transcreve com ${v.name}.${v.missing ? " O escolhido não foi encontrado: usando o automático." : ""}`
         : v.reason || "";
     const again = async () => {
       this._voiceChecking = true;
@@ -905,7 +905,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       this.requestUpdate();
     };
     return html`<div class="panel" id="falar">
-      ${this._secHead("mic", "Falar", "O microfone no alto da tela: o Home Assistant transforma a fala em texto e a IA da leitura encontra os eventos. Escolha aqui quem transcreve, sem mexer no assistente de voz do Home Assistant.")}
+      ${this._secHead("mic", "Falar", "Quem transforma a fala em texto. Não muda o assistente de voz do Home Assistant.")}
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>
       ${opts.length || sel
         ? html`<label class="field" style="margin:14px 0 0">
@@ -915,7 +915,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
               ${opts.map((o) => html`<option value=${o.id} ?selected=${o.id === sel}>${o.name}</option>`)}
               ${sel && !opts.some((o) => o.id === sel) ? html`<option value=${sel} selected>${sel} (não encontrado)</option>` : nothing}
             </select>
-            <span class="field-hint">${icon("mic")}<span>“Automático” usa o assistente de voz preferido do Home Assistant (Configurações › Assistentes de voz).</span></span>
           </label>`
         : nothing}
       <div class="ai-actions"><button class="btn outline" ?disabled=${checking} @click=${again}>${icon("rotate-ccw")}Verificar de novo</button></div>
@@ -996,7 +995,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   _renderVoiceStep(toPick) {
     const f = this._form;
-    const ai = this._ai || {};
     const v = this._voice || {};
     const on = f.rec === "on";
     const mm = Math.floor((f.secs || 0) / 60);
@@ -1015,7 +1013,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
         <button class="btn primary" ?disabled=${!on} @click=${() => this._finishVoice()}>${icon("sparkles")}Pronto</button>
       </div>
-      <p class="sheet-note">${v.ready ? `${v.name || "O Home Assistant"} transcreve e ${ai.using ? ai.using.name : "a IA"} encontra os eventos (troque em Mais › Integrações). Você revisa antes de adicionar.` : v.reason || ""}</p>
+      ${v.ready ? nothing : html`<p class="sheet-note">${v.reason || ""}</p>`}
     `;
   }
 
@@ -2131,9 +2129,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
               <select class="select" @change=${(e) => this._saveAppPrefs({ default_calendar: e.target.value })}>
                 ${writable.map((c) => html`<option value=${c.id} ?selected=${c.id === def}>${c.name}</option>`)}
               </select>
-              <span class="field-hint">${icon("info")}<span>Onde caem os eventos novos e os que a IA encontrar. Dá para trocar em cada evento.</span></span>
             </label>`
-          : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos. Adicione um calendário local logo abaixo.</div></div>`}
+          : html`<div class="row"><div class="hint" style="white-space:normal">Nenhum calendário aceita eventos novos.</div></div>`}
       </div>
       ${this._renderAddCalendars()}
     `;
@@ -2227,11 +2224,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const accent = this._app("accent", "turquesa");
     return html`
       <div class="panel">
-        ${this._secHead("contrast", "Tema", "Automático segue o modo claro ou escuro do Home Assistant. Cada aparelho guarda a sua escolha.")}
+        ${this._secHead("contrast", "Tema", "Cada aparelho guarda a sua escolha.")}
         ${themePicker({ theme: this._theme, onTheme: (k) => this._setTheme(k), icon })}
       </div>
       <div class="panel">
-        ${this._secHead("palette", "Cor do app", "Muda os botões principais, a aba escolhida e os destaques. Vale para todos os aparelhos.")}
+        ${this._secHead("palette", "Cor do app", "Vale para todos os aparelhos.")}
         ${colorPicker({ palette: PALETTE, value: accent, onPick: (id) => this._saveAppPrefs({ accent: id }) })}
       </div>
     `;
@@ -2246,13 +2243,13 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ${this._secHead("calendar-plus", "Novo")}
         <div class="row switch-row">
           <div class="grow"><div class="label">Local e notas</div><div class="hint" style="white-space:normal">${details
-            ? "Ligado: o evento tem os campos Local e Notas, e a tarefa tem Notas."
-            : "Desligado: o evento e a tarefa ficam mais curtos, sem Local e Notas. Um evento que já tem local ou notas continua mostrando os dois."}</div></div>
+            ? "Ligado."
+            : "Desligado: formulário mais curto."}</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${details} @change=${(e) => this._saveAppPrefs({ event_details: e.target.checked ? true : null })} aria-label="Local e notas" /><span class="track"></span></label>
         </div>
       </div>
       <div class="panel">
-        ${this._secHead("calendar-days", "Semana", "O dia em que a semana começa no calendário e no placar semanal.")}
+        ${this._secHead("calendar-days", "Semana", "Vale para o calendário e o placar.")}
         <div class="seg week-seg" role="radiogroup" aria-label="Início da semana">
           ${[
             [0, "Domingo"],
@@ -2282,9 +2279,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images, camOk ? "" : "Precisa de https")}
         </div>
         ${ai.images && !camOk
-          ? html`<p class="imp-help">Neste endereço (http) a câmera não abre aqui dentro: o celular só deixa com o endereço seguro (https). Tire a foto com a câmera do celular e use Escolher fotos.</p>`
+          ? html`<p class="imp-help">Em http a câmera não abre aqui: tire a foto pelo celular e use Escolher fotos.</p>`
           : android && ai.images
-            ? html`<p class="imp-help">No app do Home Assistant, Escolher fotos abre a galeria (uma foto por vez). Para fotografar um convite ou cartão na hora, use Digitalizar com IA, que abre a câmera aqui dentro.</p>`
+            ? html`<p class="imp-help">No app do Home Assistant, a galeria manda uma foto por vez.</p>`
             : nothing}
       </div>
       <div class="ai-box">${icon("scan-text")}<span>${ai.ready
@@ -2314,7 +2311,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       u: this._usage,
       day: this._usageDay,
       onDay: (d) => ((this._usageDay = d), this.requestUpdate()),
-      head: this._secHead("chart-column", "Uso da IA", "Cada mensagem ou foto lida é uma chamada para a IA do Home Assistant. O Home Assistant não informa tokens nem custo, então o CronologIA conta as chamadas e estima os tokens pelo tamanho do texto."),
+      head: this._secHead("chart-column", "Uso da IA", "As chamadas do app para a IA. Os tokens são estimados."),
       app: "CronologIA",
       using: (ai.using && ai.using.id) || "",
       names: Object.fromEntries((ai.entities || []).map((e) => [e.id, e.name])),
@@ -2337,9 +2334,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"],
     ];
     return html`<div class="panel" id="sensores">
-      ${this._secHead("activity", "Sensores no Home Assistant", "Para usar em painéis e automações do Home Assistant, como um aviso na TV quando um remédio atrasa.")}
+      ${this._secHead("activity", "Sensores no Home Assistant", "Para usar em painéis e automações do Home Assistant.")}
       <div class="row switch-row">
-        <div class="grow"><div class="label">Criar sensores</div><div class="hint" style="white-space:normal">${on ? "Ligado: o app mantém estes sensores atualizados." : "Desligado: o app não cria sensores no Home Assistant, e apaga os que tinha criado."}</div></div>
+        <div class="grow"><div class="label">Criar sensores</div><div class="hint" style="white-space:normal">${on ? "Ligado." : "Desligado: nenhum sensor no Home Assistant."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ sensors_on: e.target.checked ? true : null })} aria-label="Criar sensores" /><span class="track"></span></label>
       </div>
       ${on ? html`<div class="sensor-list">${list.map(([id, t]) => html`<div class="sensor-row"><code>${id}</code><span>${t}</span></div>`)}</div>` : nothing}
@@ -2358,13 +2355,13 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const on = this._aiOn();
     const sw = html`<div class="row switch-row">
         <div class="grow"><div class="label">Usar IA</div><div class="hint" style="white-space:normal">${on
-          ? "Ligado: em Novo aparecem Colar mensagem, Escolher fotos e Digitalizar com IA."
-          : "Desligado: Colar mensagem, Escolher fotos e Digitalizar com IA somem do Novo. O arquivo .ics continua em Mais › Dados."}</div></div>
+          ? "Ligado."
+          : "Desligado: sem leitura por IA, sem Falar."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ ai_off: e.target.checked ? null : true })} aria-label="Usar IA" /><span class="track"></span></label>
       </div>`;
     if (!on) {
       return html`<div class="panel" id="leitura-ia">
-        ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens coladas, prints, convites e cartões de consulta, com a IA configurada no Home Assistant.")}
+        ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens, prints e fotos.")}
         ${sw}
       </div>`;
     }
@@ -2380,7 +2377,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     if (ai.reason) detail = `${detail} ${ai.reason}`.trim();
     return html`<div class="panel" id="leitura-ia">
-      ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens coladas, prints, convites e cartões de consulta. Usa a integração de IA configurada no Home Assistant (Anthropic Claude, OpenAI, Google Gemini ou um modelo local pelo Ollama); o app não guarda nenhuma chave.")}
+      ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens, prints e fotos, com a IA do Home Assistant.")}
       ${sw}
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>
       ${ents.length || sel
@@ -2391,7 +2388,6 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
               ${ents.map((e) => html`<option value=${e.id} ?selected=${e.id === sel}>${e.name}${e.images ? "" : " (só texto)"}${e.available ? "" : " (indisponível)"}</option>`)}
               ${sel && !ents.some((e) => e.id === sel) ? html`<option value=${sel} selected>${sel} (não encontrada)</option>` : nothing}
             </select>
-            <span class="field-hint">${icon("sparkles")}<span>“Padrão do Home Assistant” usa a IA preferida definida em Configurações › Sistema › Geral.</span></span>
           </label>`
         : nothing}
       <div class="ai-actions"><button class="btn outline" ?disabled=${this._aiChecking} @click=${() => this._refreshAi()}>${icon("rotate-ccw")}Verificar de novo</button></div>
@@ -2616,7 +2612,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           (r) => html`<button class=${f.repeat === r.id ? "on" : ""} role="radio" aria-checked=${f.repeat === r.id ? "true" : "false"} title=${r.label} @click=${() => this._setForm({ repeat: r.id })}>${r.short}</button>`,
         )}</div>
         ${f.rrule && freqOf(f.rrule) === f.repeat && rruleLabel(f.rrule) !== (REPEATS.find((r) => r.id === f.repeat) || {}).label ? html`<div class="field-hint">${icon("repeat")}<span>${rruleLabel(f.rrule)}</span></div>` : nothing}
-        ${f.rid ? html`<div class="field-hint">${icon("info")}<span>Este evento se repete. Ao salvar, você escolhe se muda só este ou este e os próximos.</span></div>` : nothing}
+        ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este evento se repete.</span></div>` : nothing}
       </div>
       ${this._app("event_details", false) === true || f.details
         ? html`<label class="field">
@@ -2693,7 +2689,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           ${this._clipOk() ? html`<button class="btn outline" @click=${() => this._pasteClipboard()}>${icon("clipboard-paste")}Colar</button>` : nothing}
           <button class="btn primary" ?disabled=${!(f.text || "").trim() || !ai.ready} @click=${() => this._readText()}>${icon("sparkles")}Encontrar eventos</button>
         </div>
-        <p class="sheet-note">${ai.ready ? `${ai.using.name} encontra datas, horários e locais, mesmo em mensagens corridas. Você revisa antes de adicionar.` : ""}</p>
+        
       `;
     }
     if (f.step === "loading") {
@@ -2712,7 +2708,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         ${this._sheetHead("Revisar eventos", toPick)}
         ${thumbs}
         ${f.heard ? html`<p class="heard">${icon("mic")}<span>“${f.heard}”</span></p>` : nothing}
-        <p class="sheet-note top">${plural(f.items.length, "evento encontrado", "eventos encontrados")}${from ? ` · ${from}` : ""}. Confira datas e horários.</p>
+        <p class="sheet-note top">${plural(f.items.length, "evento encontrado", "eventos encontrados")}${f.provider === "ics" && from ? ` · ${from}` : ""}.</p>
         ${f.note ? html`<div class="imp-error soft">${icon("sparkles")}<span>${f.note}</span></div>` : nothing}
         <div class="rv-list">
           ${f.items.map(
@@ -2753,7 +2749,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     return html`
       ${this._sheetHead("Trazer eventos")}
-      <p class="sheet-note top">${aiOn ? "Crie eventos a partir de uma mensagem, de uma foto (convite, cartaz, cartão de consulta) ou de um arquivo .ics. Você revisa antes de adicionar." : "Crie eventos a partir de um arquivo .ics (convite de e-mail ou outra agenda). Você revisa antes de adicionar."}</p>
+      <p class="sheet-note top">${aiOn ? "De uma mensagem, de uma foto ou de um arquivo .ics." : "De um arquivo .ics."}</p>
       <div class="imp-options">
         ${aiOn ? html`<button class="imp-opt" ?disabled=${!ai.ready} @click=${() => (this._setForm({ step: "text", error: null }), this._focusSheetText())}>
           <span class="imp-ic">${icon("message-square-text")}</span><span class="imp-tx"><b>Colar mensagem</b><small>WhatsApp, e-mail, convite</small></span>${icon("chevron-right")}
@@ -2857,7 +2853,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _renderNoCalSheet() {
     return html`
       ${this._sheetHead("Nenhum calendário aceita eventos")}
-      <p class="sheet-note top">Os calendários do Home Assistant são só de leitura. Para criar eventos por aqui, adicione um calendário que aceite edição, como o Calendário local, o Google Agenda ou o Outlook pelo MS365.</p>
+      <p class="sheet-note top">Os calendários daqui são só de leitura. Adicione um que aceite edição:</p>
       ${this._renderAddCalendars()}
     `;
   }

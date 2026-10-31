@@ -149,7 +149,7 @@ export const DataMixin = (Base) =>
       const exp = (fmt, label) => html`<a class="btn outline sm" href=${(this.api.dataUrl && this.api.dataUrl(fmt)) || "#"} download @click=${(e) => this._exportData(fmt, e)}>${icon("download")}${label}</a>`;
       return html`<div id="dados">
         <div class="panel">
-          ${this._secHead("download", "Exportar", "Baixe para guardar ou levar para outro programa. Os arquivos são abertos e legíveis.")}
+          ${this._secHead("download", "Exportar")}
           <ul class="opts">
             ${line("Eventos (CSV)", "Abre no Excel e no Google Planilhas, com um evento por linha.", exp("csv", "Baixar CSV"))}
             ${line("Agenda (.ics)", "Os eventos dos calendários que você escolher, para abrir no Google Agenda, no Outlook ou no iPhone.", html`<button class="btn outline sm" @click=${() => this._openExport()}>${icon("calendar")}Escolher</button>`)}
@@ -158,7 +158,7 @@ export const DataMixin = (Base) =>
           </ul>
         </div>
         <div class="panel">
-          ${this._secHead("archive", "Backup na pasta share", html`Cria uma cópia completa em <code>share/cronologia</code>, que você acessa pela rede do Home Assistant. Os backups do próprio Home Assistant também incluem o CronologIA e os calendários locais.`)}
+          ${this._secHead("archive", "Backup na pasta share", html`Cópia completa em <code>share/cronologia</code>.`)}
           <div class="btn-row sec-actions">
             <button class="btn primary sm" ?disabled=${this._busy === "backup" || (b && b.available === false)} @click=${() => this._createBackup()}>${icon("archive")}${this._busy === "backup" ? "Criando…" : "Criar backup"}</button>
           </div>
@@ -173,19 +173,19 @@ export const DataMixin = (Base) =>
             : nothing}
         </div>
         <div class="panel">
-          ${this._secHead("upload", "Importar", "Traz os dados do app de um .zip ou .json exportado pelo CronologIA: agendas, pessoas e avisos, placar e marcações. Antes de importar, o app guarda uma cópia do que existe hoje.")}
+          ${this._secHead("upload", "Importar", "Um .zip ou .json exportado pelo CronologIA.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._pickDataImport()}>${icon("upload")}Escolher arquivo</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("calendar-plus", "Importar eventos (.ics)", "Traz os eventos de um convite, de outra agenda ou de um calendário do backup. Você revisa e escolhe o calendário antes de adicionar.")}
+          ${this._secHead("calendar-plus", "Importar eventos (.ics)", "Eventos de um convite ou de outra agenda.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" ?disabled=${!writable.length} @click=${() => this._openImport("ics")}>${icon("upload")}Escolher .ics</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("archive-restore", "Versões anteriores", "O app guarda sozinho uma cópia dos dados a cada 10 minutos de uso e antes de importar ou restaurar, e mantém as 3 mais recentes. Se algo sair errado, volte para uma delas.")}
+          ${this._secHead("archive-restore", "Versões anteriores", "As 3 últimas cópias dos dados, guardadas sozinhas.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._openVersions()}>${icon("archive-restore")}Ver versões</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("database", "Onde ficam os dados", html`Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda nomes, cores, preferências, pessoas, o placar e as marcações em <code>/data/cronologia.json</code>, que entra no backup do Home Assistant.`)}
+          ${this._secHead("database", "Onde ficam os dados", html`Os eventos ficam nos calendários; os ajustes do app, em <code>/data/cronologia.json</code>.`)}
         </div>
         <input id="cr-data-import" class="sr" type="file" accept=".zip,.json,application/zip,application/json" tabindex="-1" aria-hidden="true" @change=${(e) => this._onDataImport(e)} />
       </div>`;

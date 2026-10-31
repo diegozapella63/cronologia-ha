@@ -422,7 +422,7 @@ export const RewardsMixin = (Base) =>
           ${icon(open ? "chevron-down" : "chevron-right")}${open ? "Esconder próximas rotinas" : `Próximas rotinas (${list.length})`}
         </button>
         ${open
-          ? html`<p class="future-note">Fez antes do dia? Marque aqui: conta os pontos agora, e a que volta alguns dias depois passa a contar de hoje.</p>
+          ? html`<p class="future-note">Fez antes do dia? Marque aqui.</p>
               ${repeat(list, (c) => c.key, (c) => {
                 const it = { key: c.key, summary: c.summary, points: c.points };
                 const when = dayLabel(fromYmd(c.next), now, { long: false, cap: false });
@@ -584,7 +584,7 @@ export const RewardsMixin = (Base) =>
     _renderDemeritsSettings() {
       const list = this._demerits();
       return html`<div class="panel chores demerits-set" id="demeritos-ajustes">
-        ${this._secHead("thumbs-down", "Deméritos", `O que tira pontos de quem fizer. Em Recompensas, toque em quem foi para descontar.${list.length ? ` ${plural(list.length, "demérito", "deméritos")} na lista.` : ""}`)}
+        ${this._secHead("thumbs-down", "Deméritos", "O que tira pontos de quem fizer.")}
         ${list.length
           ? repeat(
               list,
@@ -642,7 +642,7 @@ export const RewardsMixin = (Base) =>
       const f = this._form;
       const s = this._score() || { participants: [] };
       return html`${this._sheetHead("Pontos avulsos")}
-        <p class="sheet-note top">Para o que não está na agenda: lavou o carro, fez a feira, montou o armário…</p>
+        <p class="sheet-note top">Para o que não está na agenda.</p>
         <label class="field"><span class="flabel">O que foi feito</span><input type="text" id="ex-title" .value=${f.title} placeholder="Ex.: Lavou o carro" maxlength="120" @input=${(e) => this._setForm({ title: e.target.value })} /></label>
         <div class="field"><span class="flabel">Quem fez</span>
           <div class="chip-row">${s.participants.map((p) => html`<button class="pick person ${f.who === p ? "on" : ""}" @click=${() => this._setForm({ who: p })}><span class="avatar sm">${initial(p)}</span><span>${p}</span></button>`)}</div>
@@ -821,7 +821,7 @@ export const RewardsMixin = (Base) =>
             ? html`<p class="empty-line">Carregando…</p>`
             : f.lines.length
               ? this._extRows(f.lines, s)
-              : html`<p class="empty-line">Nada registrado nesse período. O extrato começou na versão 1.19.0.</p>`}
+              : html`<p class="empty-line">Nada registrado nesse período.</p>`}
           ${f.lines && f.lines.length && !f.end ? html`<button class="add-line" ?disabled=${f.busy} @click=${() => this._morePeriodLog()}>${icon("chevron-down")}${f.busy ? "Carregando…" : "Ver mais"}</button>` : nothing}
         </div>`;
     }
@@ -915,18 +915,18 @@ export const RewardsMixin = (Base) =>
         </div>
         <div class="field"><span class="flabel">O placar fecha</span>
           <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
-          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"} (muda em Mais › Opções).`} Mudar aqui recomeça a contagem no período de agora, sem perder os pontos.</span></span>
+          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"}.`}</span></span>
         </div>
         <div class="row switch-row">
-          <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">Mostra o card <b>Para pontuar hoje</b>: marcar as tarefas do dia, criar tarefa com pontos e dar pontos avulsos ali mesmo. Desligado, as tarefas são marcadas na Agora e no ResolvIA.</div></div>
+          <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">O card <b>Para pontuar hoje</b>.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.manual} @change=${(e) => this._scorePrefs({ manual: e.target.checked })} aria-label="Marcar pontos em Recompensas" /><span class="track"></span></label>
         </div>
         <div class="row switch-row">
-          <div class="grow"><div class="label">Marcar por outras pessoas</div><div class="hint" style="white-space:normal">Na rotina e na manutenção da tela inicial aparecem as iniciais de cada pessoa: um toque marca como feito por ela, com os pontos. Na tela do evento, um botão por pessoa.</div></div>
+          <div class="grow"><div class="label">Marcar por outras pessoas</div><div class="hint" style="white-space:normal">As iniciais de cada pessoa ao lado das tarefas.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${this._app("who_pick", false) === true} @change=${(e) => this._saveAppPrefs({ who_pick: e.target.checked ? true : null })} aria-label="Marcar por outras pessoas" /><span class="track"></span></label>
         </div>
         <div class="row switch-row">
-          <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quando o período fecha, quem participa recebe quem venceu e o prêmio.</div></div>
+          <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quem venceu, quando o período fecha.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${s.notify !== false} @change=${(e) => this._scorePrefs({ notify: e.target.checked })} aria-label="Resultado no celular" /><span class="track"></span></label>
         </div>
         <button class="text-btn danger" @click=${() => this._scorePrefs({ enabled: false })}>Desligar o placar</button>
@@ -944,7 +944,7 @@ export const RewardsMixin = (Base) =>
         <div class="panel setup-card">
           <div class="setup-art">${icon("trophy")}</div>
           <h2 class="setup-title">Quem faz mais em casa?</h2>
-          <p class="panel-lead">Dê pontos às tarefas da rotina e da manutenção. Quem marca <b>Feito</b> ganha os pontos, e no fim de cada período quem somar mais leva o prêmio que vocês combinaram.</p>
+          <p class="panel-lead">Quem marca <b>Feito</b> ganha os pontos; no fim do período, quem somar mais leva o prêmio.</p>
           <div class="field"><span class="flabel">Quem participa</span>
             <div class="chip-row">${all.map((n) => {
               const on = pick.includes(n);
