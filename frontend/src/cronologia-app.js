@@ -1119,15 +1119,33 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     this._runExtract({ text });
   }
 
+  /**
+   * Whether the Colar button can read what was copied: not over http:// (the browser has no clipboard
+   * there), and not after this device refused it once. Without it, there is no Colar button (the field
+   * takes a paste as always).
+   */
+  _clipOk() {
+    return !!(navigator.clipboard && navigator.clipboard.readText) && !this._clipFailed;
+  }
+
   async _pasteClipboard() {
+    let t = "";
     try {
-      const t = await navigator.clipboard.readText();
-      if (!t) throw new Error("empty");
-      this._setForm({ text: t, error: null });
+      t = await navigator.clipboard.readText();
     } catch (e) {
+      // refused (permission, or the app of Home Assistant): no Colar button from now on
+      this._clipFailed = true;
       this._focusSheetText();
-      this._showToast("Toque e segure no campo para colar");
+      this._showToast("Este aparelho não deixa o app ler o que foi copiado. Toque e segure no campo e escolha Colar.");
+      this.requestUpdate();
+      return;
     }
+    if (!t) {
+      this._focusSheetText();
+      this._showToast("Não há nada copiado.");
+      return;
+    }
+    this._setForm({ text: t, error: null });
   }
 
   _setItem(i, changes) {
@@ -2672,7 +2690,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
         </label>
         ${error} ${!ai.ready ? aiHint : nothing}
         <div class="sheet-actions">
-          <button class="btn outline" @click=${() => this._pasteClipboard()}>${icon("clipboard-paste")}Colar</button>
+          ${this._clipOk() ? html`<button class="btn outline" @click=${() => this._pasteClipboard()}>${icon("clipboard-paste")}Colar</button>` : nothing}
           <button class="btn primary" ?disabled=${!(f.text || "").trim() || !ai.ready} @click=${() => this._readText()}>${icon("sparkles")}Encontrar eventos</button>
         </div>
         <p class="sheet-note">${ai.ready ? `${ai.using.name} encontra datas, horários e locais, mesmo em mensagens corridas. Você revisa antes de adicionar.` : ""}</p>
