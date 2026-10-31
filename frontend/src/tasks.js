@@ -115,7 +115,7 @@ export const TasksMixin = (Base) =>
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
-        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
+        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.room ? t.room.nome : "", t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
           <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
@@ -162,6 +162,7 @@ export const TasksMixin = (Base) =>
         <div class="ev-facts">
           <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
+          ${t.room ? html`<div class="fact">${icon("door-open")}<span>${t.room.nome}</span></div>` : nothing}
           ${t.every ? html`<div class="fact">${icon("repeat")}<span>Volta ${everyLabel(t.every)} depois de concluída</span></div>` : nothing}
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
@@ -220,6 +221,8 @@ export const TasksMixin = (Base) =>
       const canDate = dueOk && !!(feats & TF.DUE_DATE);
       const canTime = dueOk && !!(feats & TF.DUE_DATETIME);
       const canNotes = !!(feats & TF.DESCRIPTION);
+      // Cômodos do InventarIA, when the ResolvIA uses them
+      const rooms = ((this._todosAll().app || {}).comodos) || [];
       return html`
         ${this._sheetHead("Novo")}
         ${this._renderModelChips("tarefa")}
@@ -245,6 +248,15 @@ export const TasksMixin = (Base) =>
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
+        ${rooms.length
+          ? html`<div class="field">
+              <span class="flabel">Cômodo</span>
+              <div class="chip-row">
+                <button class="pick ${!f.room ? "on" : ""}" @click=${() => this._setForm({ room: null })}>Nenhum</button>
+                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => this._setForm({ room: f.room === c.id ? null : c.id })}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
+              </div>
+            </div>`
+          : nothing}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
@@ -259,7 +271,7 @@ export const TasksMixin = (Base) =>
       if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
       const withDue = this._todoDueOk() && !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
       const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
-      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "" };
+      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...(f.room ? { room: f.room } : {}) };
       if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
       this._setForm({ saving: true });
       try {

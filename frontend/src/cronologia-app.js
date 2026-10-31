@@ -1632,7 +1632,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const k = e.kind;
     const done = e.todo ? e.todo.done : k ? k.kind !== "manutencao" && this._checkOf(e) : this._checkOf(e);
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
-    const sub = [...extra, e.location, showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : ""].filter(Boolean).join(" · ");
+    const sub = [...extra, e.location].filter(Boolean).join(" · ");
+    // the calendar: smaller and in italics, apart from the rest of the line
+    const calName = showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : "";
     // Marcar por outras pessoas: the initials on the right, one tap marks it done by that person
     const mk = (k || e.todo) && this._pickWho() ? this._markerOf(e, day) : null;
     // what it gives on the scoreboard (routines, maintenance, tasks with points)
@@ -1643,7 +1645,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub || pts ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub ? " · " : ""}` : nothing}${sub}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon("check")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;

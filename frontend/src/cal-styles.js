@@ -80,6 +80,12 @@ export const calStyles = css`
     line-height: 1.3;
     overflow-wrap: anywhere;
   }
+  /* the calendar's name in the row: smaller, in italics */
+  .ev-sub .ev-cal {
+    font-size: 0.86em;
+    font-style: italic;
+    opacity: 0.85;
+  }
   .ev-sub {
     font-size: 14px;
     color: var(--rv-muted);

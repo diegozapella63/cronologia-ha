@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.33.0
+
+- **Cômodos nas tarefas**: com o ResolvIA (2.28.0 ou mais novo) usando os **Cômodos do InventarIA**, as tarefas mostram o cômodo (na Agora e na tela da tarefa) e o **Novo › Tarefa** pede o cômodo; o ResolvIA guarda a escolha.
+- No calendário, o **nome do calendário** na linha de cada evento fica menor e em itálico, separado do resto do texto.
+
 ## 1.32.0
 
 - **Pets**: em Mais › Avisos, **Adicionar pessoa ou pet** pergunta se é **Pessoa** ou **Pet**, e cada um que não é do Home Assistant tem o botão da patinha para marcar. Um pet aparece com a patinha no lugar da inicial, só em **Quem toma** dos remédios: some de **Quem faz** (rotinas e manutenções), das pessoas do **placar** e das iniciais de marcar. Marcar como pet alguém que estava no placar tira essa pessoa dele.

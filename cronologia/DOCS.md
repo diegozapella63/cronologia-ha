@@ -153,7 +153,7 @@ O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas na
 
 A integração vem **desligada**: ligue em **Mais › Integrações › Tarefas do ResolvIA › Usar a integração**. Desligada, nenhuma tarefa aparece no CronologIA (Agora, calendário, Para pontuar hoje e Novo › Tarefa), o **Levar para o ResolvIA** para e tira as tarefas que tinha posto na lista (a escolha fica guardada para quando ligar de novo), e os pontos que o ResolvIA manda não contam. O ResolvIA 2.15.0 ou mais novo mostra em Recompensas que a integração está desligada aqui.
 
-Se o ResolvIA estiver com **Controlar prazos** desligado (2.15.0 ou mais novo), o **Novo › Tarefa** daqui também não oferece prazo: a tarefa entra sem data. Quando várias listas começam com o mesmo nome (as da Alexa, "Notas e Rotinas do Alexa Shopping list" e "… To-do list"), o Novo › Tarefa mostra só o que muda (Shopping list, To-do list) e, embaixo, o nome completo da lista escolhida.
+Se o ResolvIA estiver com **Controlar prazos** desligado (2.15.0 ou mais novo), o **Novo › Tarefa** daqui também não oferece prazo: a tarefa entra sem data. Se o ResolvIA usar os **Cômodos do InventarIA** (2.28.0 ou mais novo), as tarefas mostram o cômodo (na Agora e na tela da tarefa) e o **Novo › Tarefa** pede o cômodo também; o ResolvIA guarda a escolha. Quando várias listas começam com o mesmo nome (as da Alexa, "Notas e Rotinas do Alexa Shopping list" e "… To-do list"), o Novo › Tarefa mostra só o que muda (Shopping list, To-do list) e, embaixo, o nome completo da lista escolhida.
 
 Com a integração ligada, as tarefas **com prazo** aparecem:
 
