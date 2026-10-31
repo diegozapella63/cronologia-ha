@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.30.3
+
+- **Digitalizar com IA** sem acesso à câmera (Home Assistant aberto por http): em vez de abrir a galeria como se fosse a câmera, explica que a câmera aqui dentro precisa do endereço seguro (https) e oferece **Escolher foto**.
+
 ## 1.30.2
 
 - **Dados: botões do mesmo tamanho** (Baixar, Criar backup, Escolher arquivo, Escolher .ics, Ver versões). No celular cada um fica embaixo do seu texto, todos alinhados; no computador, à direita.
