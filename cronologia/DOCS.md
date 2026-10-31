@@ -102,6 +102,10 @@ Por isso ele aparece no Google, no Outlook ou no cartão de calendário do Home 
 
 Os modelos não entram na lista de compromissos da tela Agora, porque têm os cards deles. No calendário eles aparecem com o ícone do modelo e com ✓ quando feitos. **Editar** abre o formulário do modelo; em itens que se repetem, você escolhe só este ou este e os próximos.
 
+### Pular uma rotina
+
+Quando uma rotina não vai ser feita dessa vez, toque nela e escolha **Pular** (ao lado do Feito). Ela sai da lista sem pontos e sem contar como feita: a que repete pelo calendário (como a que "ficou de ontem") fica marcada como **pulada**; a que volta N dias depois de feita vai para a próxima data, contando de quando vencia (nunca antes de hoje). Dá para desfazer pelo aviso ou pela tela dela.
+
 ### Remédios de hoje
 
 Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei**. A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
