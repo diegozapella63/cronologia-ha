@@ -14,7 +14,7 @@ export const KINDS = {
   remedio: { tag: "#remédio", label: "Remédio", fields: { dose: "Dose", who: "Quem toma", alert: "Aviso no celular" } },
   conta: { tag: "#conta", label: "Conta a pagar", fields: { value: "Valor" } },
   rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", after: "Volta", history: "Feito em" } },
-  manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos" } },
+  manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos", room: "Cômodo", equip: "Equipamento" } },
 };
 
 const TAGS = { remedio: "remedio", conta: "conta", rotina: "rotina", manutencao: "manutencao" };
@@ -134,6 +134,8 @@ export function parseKind(description) {
     out.warn = w ? Math.min(365, Number(w[1])) : 7;
     out.history = parseHistory(raw.history);
     out.points = parsePoints(raw.points);
+    out.room = raw.room || "";
+    out.equip = raw.equip || "";
   }
   return out;
 }
@@ -164,6 +166,9 @@ export function buildDescription(k) {
     add(L.warn, `${k.warn ?? 7} ${(k.warn ?? 7) === 1 ? "dia" : "dias"} antes`);
     add(L.history, historyText((k.history || []).slice(0, 8)));
     if (k.points > 0) add(L.points, k.points);
+    // the room and the item of the InventarIA (by name: readable in any calendar)
+    add(L.room, k.room);
+    add(L.equip, k.equip);
   }
   const notes = String(k.notes || "").trim();
   return notes ? `${lines.join("\n")}\n${notes}` : lines.join("\n");
@@ -294,7 +299,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       seenMaint.add(id);
       const st = maintStatus(k, allDay ? raw.start : ymdOf(new Date(start)), today);
       const f = features(cal);
-      out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
+      out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, room: k.room || "", equip: k.equip || "", ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
     }
   }
   for (const ser of series.values()) {
@@ -314,6 +319,8 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       every: k.every || null,
       after: k.after || null,
       value: k.value ?? null,
+      room: k.room || "",
+      equip: k.equip || "",
       time: o.allDay ? "" : hmOf(o.start),
       next: o.allDay ? o.base.start : ymdOf(new Date(o.start)),
       late: !ser.next,

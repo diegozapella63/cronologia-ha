@@ -213,6 +213,63 @@ export const TasksMixin = (Base) =>
       return ((this._todosAll().app || {}).prazos) !== false;
     }
 
+    /**
+     * The rooms and items of the InventarIA, when the ResolvIA uses them (it shares them):
+     * {rooms: [{id, nome}], items: [{id, nome, zona, roomId, roomName}]}.
+     */
+    _invLists() {
+      const app = this._todosAll().app || {};
+      const rooms = app.comodos || [];
+      const items = (app.equipamentos || []).map((e) => {
+        const r = rooms.find((c) => c.nome === e.comodo);
+        return { id: e.id, nome: e.nome, zona: "", roomId: r ? r.id : null, roomName: e.comodo || "" };
+      });
+      return { rooms, items };
+    }
+
+    /** Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room and f.equip are ids. */
+    _renderRoomEquipFields(f) {
+      const { rooms, items } = this._invLists();
+      if (!rooms.length && !items.length) return nothing;
+      // picking an equipment sets its room; another room drops an equipment that is not in it
+      const pickEquip = (id) => {
+        const e = items.find((x) => x.id === id);
+        this._setForm({ equip: id || null, equipQ: "", equipMore: false, ...(e && e.roomId ? { room: e.roomId } : {}) });
+      };
+      const pickRoom = (id) => {
+        const room = f.room === id ? null : id;
+        const e = items.find((x) => x.id === f.equip);
+        this._setForm({ room, ...(e && room && e.roomId !== room ? { equip: null } : {}) });
+      };
+      return html`${rooms.length
+          ? html`<div class="field">
+              <span class="flabel">Cômodo</span>
+              <div class="chip-row">
+                <button class="pick ${!f.room ? "on" : ""}" @click=${() => this._setForm({ room: null })}>Nenhum</button>
+                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => pickRoom(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
+              </div>
+            </div>`
+          : nothing}
+        ${items.length
+          ? html`<div class="field">
+              <span class="flabel">Equipamento</span>
+              ${renderEquipPicker({
+                lit: { html, nothing },
+                icon,
+                items,
+                room: f.room || null,
+                roomName: f.room ? (rooms.find((c) => c.id === f.room) || {}).nome || "" : "",
+                value: f.equip || null,
+                query: f.equipQ || "",
+                more: !!f.equipMore,
+                onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
+                onMore: () => this._setForm({ equipMore: true }),
+                onPick: pickEquip,
+              })}
+            </div>`
+          : nothing}`;
+    }
+
     _renderTodoForm() {
       const f = this._form;
       const lists = this._todoLists();
@@ -223,24 +280,6 @@ export const TasksMixin = (Base) =>
       const canDate = dueOk && !!(feats & TF.DUE_DATE);
       const canTime = dueOk && !!(feats & TF.DUE_DATETIME);
       const canNotes = !!(feats & TF.DESCRIPTION);
-      // Cômodos do InventarIA, when the ResolvIA uses them
-      const rooms = ((this._todosAll().app || {}).comodos) || [];
-      const equips = ((this._todosAll().app || {}).equipamentos) || [];
-      // the items for the picker, with the id of their room (the ResolvIA sends the room's name)
-      const items = equips.map((e) => {
-        const r = rooms.find((c) => c.nome === e.comodo);
-        return { id: e.id, nome: e.nome, zona: "", roomId: r ? r.id : null, roomName: e.comodo || "" };
-      });
-      // picking an equipment sets its room
-      const pickEquip = (id) => {
-        const e = items.find((x) => x.id === id);
-        this._setForm({ equip: id || null, equipQ: "", equipMore: false, ...(e && e.roomId ? { room: e.roomId } : {}) });
-      };
-      const pickRoom = (id) => {
-        const room = f.room === id ? null : id;
-        const e = items.find((x) => x.id === f.equip);
-        this._setForm({ room, ...(e && room && e.roomId !== room ? { equip: null } : {}) });
-      };
       return html`
         ${this._sheetHead("Novo")}
         ${this._renderModelChips("tarefa")}
@@ -266,33 +305,7 @@ export const TasksMixin = (Base) =>
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
-        ${rooms.length
-          ? html`<div class="field">
-              <span class="flabel">Cômodo</span>
-              <div class="chip-row">
-                <button class="pick ${!f.room ? "on" : ""}" @click=${() => this._setForm({ room: null })}>Nenhum</button>
-                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => pickRoom(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
-              </div>
-            </div>`
-          : nothing}
-        ${equips.length
-          ? html`<div class="field">
-              <span class="flabel">Equipamento</span>
-              ${renderEquipPicker({
-                lit: { html, nothing },
-                icon,
-                items,
-                room: f.room || null,
-                roomName: f.room ? (rooms.find((c) => c.id === f.room) || {}).nome || "" : "",
-                value: f.equip || null,
-                query: f.equipQ || "",
-                more: !!f.equipMore,
-                onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
-                onMore: () => this._setForm({ equipMore: true }),
-                onPick: pickEquip,
-              })}
-            </div>`
-          : nothing}
+        ${this._renderRoomEquipFields(f)}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>

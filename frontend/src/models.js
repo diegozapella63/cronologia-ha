@@ -415,7 +415,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="maint ${m.state}">
         <button class="maint-main" @click=${() => this._openIndexItem(m)}>
           ${this._ring(m.progress, tone, null, icon("wrench"))}
-          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
+          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.equip || m.room ? ` · ${m.equip || m.room}` : ""}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
         </button>
         ${m.canMove
           ? this._pickWho()
@@ -500,7 +500,7 @@ export const ModelsMixin = (Base) =>
           });
         const list = found.filter((c) => c.kind === sec.kind);
         if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time, pts(c)]));
-        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)]));
+        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.equip || c.room, c.who, pts(c)]));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
       return html`
@@ -549,6 +549,8 @@ export const ModelsMixin = (Base) =>
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
+        if (k.equip) facts.push(["package", k.room ? `${k.equip} (${k.room})` : k.equip]);
+        else if (k.room) facts.push(["door-open", k.room]);
         facts.push(["bell-ring", `Aparece na tela inicial ${plural(k.warn, "dia", "dias")} antes`]);
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }
@@ -671,7 +673,16 @@ export const ModelsMixin = (Base) =>
           points: k.points || 0,
           notes: k.notes || "",
           location: ev.location || "",
+          roomName: k.room || "",
+          equipName: k.equip || "",
         };
+        if (k.kind === "manutencao" && (k.room || k.equip)) {
+          const { rooms, items } = this._invLists();
+          const r = rooms.find((c) => foldText(c.nome) === foldText(k.room));
+          const e = items.find((x) => foldText(x.nome) === foldText(k.equip) && (!k.room || foldText(x.roomName) === foldText(k.room))) || items.find((x) => foldText(x.nome) === foldText(k.equip));
+          f.room = r ? r.id : null;
+          f.equip = e ? e.id : null;
+        }
         // a routine that comes back N days after done (one event, no repetition rule)
         if (k.kind === "rotina" && k.after && !ev.rrule) Object.assign(f, { freq: "depois", afterN: Math.max(1, Math.round(k.after.n * UNITS[k.after.unit][0])) });
         f.wasAfter = f.freq === "depois";
@@ -725,6 +736,12 @@ export const ModelsMixin = (Base) =>
       } else {
         if (!(f.every && f.every.n > 0)) throw new Error("Escolha de quanto em quanto tempo");
         Object.assign(k, { who: f.who, every: f.every, warn: f.warn, history: f.mode === "edit" ? f.history : f.last ? [f.last] : [], points: Math.max(0, Math.round(Number(f.points) || 0)) });
+        // the room and the equipment, by name; without the lists of the ResolvIA here, what it had stays
+        const { rooms, items } = this._invLists();
+        const r = rooms.find((c) => c.id === f.room);
+        const e = items.find((x) => x.id === f.equip);
+        k.room = r ? r.nome : rooms.length ? "" : f.roomName || "";
+        k.equip = e ? e.nome : items.length ? "" : f.equipName || "";
       }
       const base = { summary: title, description: buildDescription(k) };
       if ((f.location || "").trim()) base.location = f.location.trim();
@@ -1048,6 +1065,7 @@ export const ModelsMixin = (Base) =>
         const next = f.mode === "edit" ? fromYmd(f.date) : addEvery(fromYmd(f.last || ymd(now)), f.every);
         body = html`
           ${this._whoField("Quem faz")}
+          ${this._renderRoomEquipFields(f)}
           <div class="field"><span class="flabel">A cada</span>
             <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${everyLabel(p)}</button>`)}</div>
             <div class="time-row">

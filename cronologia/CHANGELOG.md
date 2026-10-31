@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.35.0
+
+- **Manutenção com cômodo e equipamento**: com o ResolvIA usando os cômodos e os equipamentos do InventarIA, a **Manutenção** também tem **Cômodo** e **Equipamento** (a mesma busca da tarefa). Eles ficam no próprio evento, pelo nome ("Cômodo: Cozinha", "Equipamento: Fogão"), aparecem na Manutenção da casa, em Mais › Rotinas e na tela da manutenção, e voltam ao editar. Com **Levar para o ResolvIA** ligado, a tarefa de lá vai com o mesmo cômodo e equipamento.
+
 ## 1.34.1
 
 - **Equipamento com busca** no Novo › Tarefa: com um cômodo escolhido, aparecem os equipamentos dele; ao buscar, o que está em outros cômodos aparece separado. O trecho buscado fica destacado, e o escolhido vira um cartão (× para tirar). Escolher um equipamento de outro cômodo troca o cômodo.

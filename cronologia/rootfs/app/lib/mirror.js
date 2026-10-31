@@ -12,6 +12,7 @@
 // Links live in store.data.mirror: {source key: {list, uid, tag, type, cal, evUid, written, lastDone, gone}}.
 // Each task carries a marker "[cr:<tag>]" in its notes, so it is found again after a restart.
 import crypto from "node:crypto";
+import { foldText } from "./kinds.js";
 
 const TF = { CREATE: 1, DELETE: 2, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const DAY = 86400000;
@@ -111,7 +112,7 @@ export class Mirror {
       for (const m of ix.maint || []) {
         if (!m.uid || !m.due) continue;
         const src = `maint|${m.cal}|${m.uid}`;
-        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: m.points || 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating });
+        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: m.points || 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "" });
       }
     }
     if (st.routine) {
@@ -136,6 +137,28 @@ export class Mirror {
       }
     }
     return out;
+  }
+
+  /**
+   * The room and the equipment of a maintenance go with its task to the ResolvIA (its ids, from the
+   * lists it shares), once per change.
+   */
+  async shareLinks(list, d, r) {
+    if (d.type !== "manutencao") return;
+    const app = this.todos.app();
+    const rooms = (app && app.comodos && app.comodos.lista) || [];
+    const items = (app && app.equipamentos && app.equipamentos.lista) || [];
+    if (!rooms.length && !items.length) return;
+    const f = (s) => foldText(s || "");
+    const room = d.room ? rooms.find((c) => f(c.nome) === f(d.room)) : null;
+    const equip = d.equip ? items.find((x) => f(x.nome) === f(d.equip) && (!d.room || f(x.comodo) === f(d.room))) || items.find((x) => f(x.nome) === f(d.equip)) : null;
+    const want = `${room ? room.id : ""}|${equip ? equip.id : ""}|${d.summary}`;
+    if (r.links === want) return;
+    const event_data = { entity_id: list, tarefa: d.summary, origem: "CronologIA" };
+    if (rooms.length) event_data.comodo = room ? room.id : null;
+    if (items.length) event_data.equipamento = equip ? equip.id : null;
+    await this.ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
+    r.links = want;
   }
 
   /** The fields for todo.add_item / update_item, as far as the list supports them. */
@@ -219,6 +242,7 @@ export class Mirror {
           if (r.gone && r.gone === (target.dueKey || target.occKey)) continue;
           if (r.adding && Date.now() - r.adding < 15000) continue;
           await this.call(st.list, "add_item", { item: d.summary, ...this.fields(d, features, r.tag) });
+          await this.shareLinks(st.list, d, r);
           r.adding = Date.now();
           r.written = target;
           delete r.gone;
@@ -241,6 +265,7 @@ export class Mirror {
           }
           if (this.pending.has(src)) continue;
         }
+        await this.shareLinks(st.list, d, r);
         const same = item.status !== "completed" && item.summary === target.summary && dueKeyOfItem(item.due) === target.dueKey && (target.description == null || (item.description || "") === target.description);
         if (same) {
           if (!r.written || r.written.occKey !== target.occKey || r.written.points !== target.points) {
