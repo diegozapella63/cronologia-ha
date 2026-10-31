@@ -2245,19 +2245,29 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     `;
   }
 
+  /** Whether this page may use the camera (not over http://: the browser and the HA app refuse it). */
+  _camOk() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
   /** Novo › Evento: Colar mensagem / Escolher fotos / Digitalizar com IA, dashed tiles like the InventarIA and the ResolvIA. */
   _renderImportTiles() {
     const ai = this._ai || {};
     const android = this._isHaAndroid();
-    const tile = (start, ic, text, off = false) => html`<button type="button" class="imp-tile" ?disabled=${off} @click=${() => this._openImport(start)}>${icon(ic)}<span>${text}</span></button>`;
+    const camOk = this._camOk();
+    const tile = (start, ic, text, off = false, note = "") => html`<button type="button" class="imp-tile ${note ? "no-cam" : ""}" ?disabled=${off} @click=${() => this._openImport(start)}>${icon(ic)}<span>${text}</span>${note ? html`<small>${note}</small>` : nothing}</button>`;
     return html`<div class="field imp-field">
         <span class="flabel">Trazer de mensagem ou foto</span>
         <div class="imp-tiles">
           ${tile("text", "clipboard-paste", "Colar mensagem")}
           ${tile("photos", "images", "Escolher fotos", !ai.images)}
-          ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images)}
+          ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images, camOk ? "" : "Precisa de https")}
         </div>
-        ${android && ai.images ? html`<p class="imp-help">No app do Home Assistant, Escolher fotos abre a galeria (uma foto por vez). Para fotografar um convite ou cartão na hora, use Digitalizar com IA, que abre a câmera aqui dentro.</p>` : nothing}
+        ${ai.images && !camOk
+          ? html`<p class="imp-help">Neste endereço (http) a câmera não abre aqui dentro: o celular só deixa com o endereço seguro (https). Tire a foto com a câmera do celular e use Escolher fotos.</p>`
+          : android && ai.images
+            ? html`<p class="imp-help">No app do Home Assistant, Escolher fotos abre a galeria (uma foto por vez). Para fotografar um convite ou cartão na hora, use Digitalizar com IA, que abre a câmera aqui dentro.</p>`
+            : nothing}
       </div>
       <div class="ai-box">${icon("scan-text")}<span>${ai.ready
         ? "Com uma mensagem ou foto, a IA encontra os eventos, com data, horário e local. Você confere antes de criar."
@@ -2734,7 +2744,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
           <span class="imp-ic">${icon("images")}</span><span class="imp-tx"><b>Escolher fotos</b><small>${this._isHaAndroid() ? "Prints e fotos da galeria, uma por vez" : "Prints e fotos da galeria (até 6)"}</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._openCamera()}>
-          <span class="imp-ic">${icon("scan-text")}</span><span class="imp-tx"><b>Digitalizar com IA</b><small>Fotografe um convite ou cartão de consulta</small></span>${icon("chevron-right")}
+          <span class="imp-ic">${icon("scan-text")}</span><span class="imp-tx"><b>Digitalizar com IA</b><small>${this._camOk() ? "Fotografe um convite ou cartão de consulta" : "Neste endereço (http) a câmera não abre: precisa de https"}</small></span>${icon("chevron-right")}
         </button>` : nothing}
         <button class="imp-opt" @click=${() => this._pickFiles("ics")}>
           <span class="imp-ic">${icon("file-text")}</span><span class="imp-tx"><b>Arquivo .ics</b><small>Convite de e-mail ou exportação de outra agenda</small></span>${icon("chevron-right")}

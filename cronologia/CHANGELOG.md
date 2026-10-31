@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.30.4
+
+- **Home Assistant aberto por http**: o **Digitalizar com IA** já avisa no próprio botão (**Precisa de https**), com uma linha explicando que neste endereço a câmera não abre aqui dentro (tire a foto com a câmera do celular e use Escolher fotos). O **Falar** explica que o microfone também precisa do endereço seguro, mesmo pelo app do Home Assistant.
+
 ## 1.30.3
 
 - **Digitalizar com IA** sem acesso à câmera (Home Assistant aberto por http): em vez de abrir a galeria como se fosse a câmera, explica que a câmera aqui dentro precisa do endereço seguro (https) e oferece **Escolher foto**.
