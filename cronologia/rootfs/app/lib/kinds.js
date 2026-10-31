@@ -211,6 +211,32 @@ export function maintDone(raw, k, today = new Date()) {
   return event;
 }
 
+/**
+ * Pular: a routine that comes back N days after done goes to its next date as if this time
+ * were over: N days after the day it was due, never before today. Its history stays as it was.
+ */
+export function skipNext(raw, k, today = new Date()) {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const due = /^\d{4}-\d{2}-\d{2}$/.test(raw.start) ? dateOf(raw.start) : new Date(raw.start);
+  let next = addEvery(new Date(due.getFullYear(), due.getMonth(), due.getDate()), k.after);
+  if (next < t0) next = t0;
+  const event = { summary: raw.summary, description: raw.description || "" };
+  if (raw.location) event.location = raw.location;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw.start)) {
+    const end = new Date(next);
+    end.setDate(end.getDate() + 1);
+    event.start = ymdOf(next);
+    event.end = ymdOf(end);
+  } else {
+    const s = new Date(raw.start);
+    const dur = Math.max(15 * 60000, new Date(raw.end) - s);
+    const ns = new Date(next.getFullYear(), next.getMonth(), next.getDate(), s.getHours(), s.getMinutes());
+    event.start = isoWithOffset(ns);
+    event.end = isoWithOffset(new Date(ns.getTime() + dur));
+  }
+  return event;
+}
+
 export function isoWithOffset(d) {
   const off = -d.getTimezoneOffset();
   const sign = off >= 0 ? "+" : "-";
@@ -278,7 +304,9 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const due = allDay ? raw.start : ymdOf(new Date(start));
       const doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
       const common = { kind: "rotina", who: k.who, points: k.points || 0, after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
-      if (doneToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
+      // skipped (Pular) and its next time is already today: it is today's, to do
+      const skippedToToday = doneToday && doneToday[1].skipped && start < t1;
+      if (doneToday && !skippedToToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
       else if (start < t1) out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - dateOf(due).getTime()) / DAY)) });
     } else if (k.kind === "rotina") {
       // today's, plus yesterday's that were not done (they can still be marked)

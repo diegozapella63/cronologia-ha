@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.35.0";
+const VERSION = "1.36.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -286,6 +286,8 @@ class Session {
 
       case "cronologia/check/set": {
         if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
+        // Pular: not done this time (a routine)
+        if (msg.skip) return this.result(id, await home.skip(msg.key, this.user.name || ""));
         await home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""));
         return this.result(id);
       }

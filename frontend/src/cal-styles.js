@@ -150,6 +150,23 @@ export const calStyles = css`
     height: 18px;
   }
   /* Rotina da casa: the done ones folded */
+  /* Pular: a routine skipped this time (not done): gray, the skip mark in place of the check */
+  .chore.done.skipped .chk.on {
+    background: color-mix(in srgb, var(--rv-muted) 22%, transparent);
+    border-color: transparent;
+    color: var(--rv-text-2);
+  }
+  .chore.done.skipped .chore-tx b {
+    color: var(--rv-muted);
+    text-decoration: none;
+  }
+  .btn.kind-skip {
+    width: 100%;
+    margin-top: 8px;
+  }
+  .kind-state.skipped .i {
+    color: var(--rv-muted);
+  }
   .add-line.done-fold {
     padding-left: 18px;
     color: var(--rv-muted);

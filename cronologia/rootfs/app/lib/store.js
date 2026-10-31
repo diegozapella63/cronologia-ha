@@ -296,6 +296,8 @@ export class Store {
     if (typeof key !== "string" || !key || key.length > 600) fail("item inválido");
     if (value) {
       const c = { at: value.at || new Date().toISOString(), by: String(value.by || "").slice(0, 60), kind: String(value.kind || "").slice(0, 20) };
+      // Pular: not done this time (no points)
+      if (value.skipped) c.skipped = true;
       // a routine that comes back N days after done: where the event was before "Feito" (for Desfazer)
       const m = value.moved;
       if (m && typeof m === "object") {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.36.0
+
+- **Pular uma rotina**: na tela da rotina (toque nela), ao lado do **Feito** há **Pular**: ela não foi feita, sai da lista e não dá pontos nem entra no histórico de feito. A que repete pelo calendário (como a que "ficou de ontem") sai marcada como **pulada**; a que volta N dias depois de feita vai para a próxima data, contando de quando ela vencia (nunca antes de hoje): pular o "Arrumar a cama" de ontem a traz para hoje. Na lista, a pulada aparece em cinza com o sinal de pular, e o aviso tem **Desfazer** (também na tela dela).
+
 ## 1.35.0
 
 - **Manutenção com cômodo e equipamento**: com o ResolvIA usando os cômodos e os equipamentos do InventarIA, a **Manutenção** também tem **Cômodo** e **Equipamento** (a mesma busca da tarefa). Eles ficam no próprio evento, pelo nome ("Cômodo: Cozinha", "Equipamento: Fogão"), aparecem na Manutenção da casa, em Mais › Rotinas e na tela da manutenção, e voltam ao editar. Com **Levar para o ResolvIA** ligado, a tarefa de lá vai com o mesmo cômodo e equipamento.

@@ -60,7 +60,7 @@ function maintLabel(m, now) {
 /** rrule -> how the form shows it. */
 /** Second line of a routine that comes back N days after done ("atrasada há 2 dias · volta 2 dias depois"). */
 export function afterSub(r, now) {
-  if (r.done) return `feito por ${r.done.by || "alguém"} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
+  if (r.done) return `${r.done.skipped ? "pulada" : `feito por ${r.done.by || "alguém"}`} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
   const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || "hoje";
   return [when, r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
 }
@@ -193,6 +193,18 @@ export const ModelsMixin = (Base) =>
         this._showToast(`${clip(it.summary, 26)}: ${ui.done}`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, kind).catch((err) => this._showToast(err.message)) });
       } catch (err) {
         this._showToast(`Não consegui marcar: ${err.message}`);
+      }
+    }
+
+    /** Pular: not done this time; it leaves the list (or goes to its next date), with no points. */
+    async _skip(it) {
+      try {
+        const r = await this.api.skipCheck(it.key);
+        this._haptic("light");
+        const next = r && r.next ? dayLabel(fromYmd(r.next), new Date(this._now), { long: false, cap: false }) : "";
+        this._showToast(`${clip(it.summary, 24)}: pulada${next ? `, volta ${next}` : ""}`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, "rotina").catch(() => {}) });
+      } catch (err) {
+        this._showToast(`Não consegui: ${err.message}`);
       }
     }
 
@@ -378,9 +390,9 @@ export const ModelsMixin = (Base) =>
       // the done ones stay folded (a long day has dozens): "Mostrar concluídas" opens them
       const open = routines.filter((r) => !r.done);
       const shut = routines.filter((r) => r.done);
-      const row = (r) => html`<div class="chore ${r.done ? "done" : ""}">
-                  <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon("check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? `feito${r.done.by ? ` por ${r.done.by}` : ""}` : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+      const row = (r) => html`<div class="chore ${r.done ? "done" : ""} ${r.done && r.done.skipped ? "skipped" : ""}">
+                  <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon(r.done.skipped ? "skip-forward" : "check") : nothing}</button>
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
                   ${!r.done && this._pickWho()
                     ? this._renderQuickWho(r.summary, r.points || 0, (p) => this._markDone(r, "rotina", p))
                     : r.points > 0 && this._scoreOn()
@@ -529,7 +541,17 @@ export const ModelsMixin = (Base) =>
     _renderKindFacts(e) {
       const k = e.kind;
       const now = new Date(this._now);
-      const chk = this._checkOf(e);
+      let chk = this._checkOf(e);
+      // a routine that comes back N days after done, done or skipped today: the event is already on its
+      // next date (another key); today's check is found by the event, and Desfazer uses its key
+      let doneKey = null;
+      if (!chk && k.kind === "rotina" && k.after && !e.rrule) {
+        const r = (this._ix().routines || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.done);
+        if (r) {
+          chk = r.done;
+          doneKey = r.key;
+        }
+      }
       const facts = [];
       if (k.kind === "remedio") {
         if (k.dose) facts.push(["pill", `Dose: ${k.dose}`]);
@@ -561,13 +583,16 @@ export const ModelsMixin = (Base) =>
         if (m && m.canMove) action = this._pickWho() ? this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p)) : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>`;
       } else if (e.start < addDays(startOfDay(now), 2) || (k.kind === "rotina" && k.after && !e.rrule)) {
         // (a routine that comes back N days after done: also earlier, any day; it then counts from today)
-        const it = { key: e.key, summary: e.summary };
-        action = chk
+        const it = { key: doneKey || e.key, summary: e.summary };
+        const skip = k.kind === "rotina" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it))}>${icon("skip-forward")}Pular</button>` : nothing;
+        action = chk && chk.skipped
+          ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>Pulada${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
+          : chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
           : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
-            ? this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))
+            ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
-            ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>`
+            ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>${skip}`
             : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${ui.verb}</button>`;
       }
       return html`${facts.map(([ic, t]) => html`<div class="fact">${icon(ic)}<span>${t}</span></div>`)}

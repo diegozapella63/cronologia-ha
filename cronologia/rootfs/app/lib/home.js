@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, foldText, buildIndex, buildDescription, isoWithOffset } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -532,6 +532,39 @@ export class Home {
     this.changed();
   }
 
+  /**
+   * Pular: this time of a routine is not done, and leaves the list (no points, nothing in its
+   * history). One that comes back N days after done goes to its next date (skipNext).
+   */
+  async skip(key, by) {
+    const o = this.findOccurrence(key);
+    if (!o || o.k.kind !== "rotina") throw coded("not_found", "Não achei essa rotina");
+    if (o.k.after && !o.raw.rrule) return this.afterSkip(o, key, by);
+    this.store.setCheck(key, { by, kind: "rotina", skipped: true });
+    this.store.removePoints(key);
+    this.changed();
+    return { skipped: true };
+  }
+
+  async afterSkip(o, key, by) {
+    const { cal, raw, k } = o;
+    const today = new Date();
+    const event = skipNext(raw, k, today);
+    const feat = this.features(cal);
+    let recreated = false;
+    if (feat & F.UPDATE) await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+    else if (feat & F.CREATE && feat & F.DELETE) {
+      await this.recreate(cal, raw, event);
+      recreated = true;
+    } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
+    this.store.setCheck(key, { by, kind: "rotina", skipped: true, moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) } });
+    this.store.removePoints(key);
+    this.log.info(`Rotina pulada: ${raw.summary}; volta em ${event.start.slice(0, 10)}`);
+    this.refreshCalendar(cal);
+    this.changed();
+    return { skipped: true, moved: true, next: event.start.slice(0, 10) };
+  }
+
   findOccurrence(key) {
     for (const o of this.occurrences()) if (o.key === key) return o;
     return null;
@@ -790,7 +823,8 @@ export class Home {
     const raw = this.movedRaw(m);
     if (raw) {
       const k = parseKind(raw.description);
-      const description = k && k.kind === "rotina" ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
+      // (a skipped one did not touch its history)
+      const description = k && k.kind === "rotina" && !c.skipped ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
       const event = { summary: raw.summary, start: m.start, end: m.end, description, ...(raw.location ? { location: raw.location } : {}) };
       if (m.recreated) await this.recreate(m.cal, raw, event);
       else await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: raw.uid, event: toHAEvent(event) });
