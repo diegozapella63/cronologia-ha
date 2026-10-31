@@ -298,7 +298,7 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${groups.map(
           (g) => html`${groups.length > 1 || g.who
-              ? html`<div class="meds-who"><span class="avatar">${initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.notify ? html`<span class="who-bell" title="Aviso no celular: ${this._targetName(g.notify)}">${icon("bell-ring")}</span>` : nothing}</div>`
+              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.notify ? html`<span class="who-bell" title="Aviso no celular: ${this._targetName(g.notify)}">${icon("bell-ring")}</span>` : nothing}</div>`
               : nothing}
             ${repeat(g.list, (m) => m.key, (m) => this._renderDose(m))}`,
         )}
@@ -876,15 +876,18 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
-    _whoField(label) {
+    /** pets: whether pets are among the choices (they take medicines, but do no chores). */
+    _whoField(label, { pets = false } = {}) {
       const f = this._form;
-      const names = [...new Set([...(this._ix().people || []).map((p) => p.name), ...(f.who ? [f.who] : [])])];
+      const all = this._ix().people || [];
+      const isPet = (n) => all.some((p) => p.pet && foldText(p.name) === foldText(n));
+      const names = [...new Set([...all.filter((p) => pets || !p.pet).map((p) => p.name), ...(f.who ? [f.who] : [])])];
       return html`<div class="field">
         <span class="flabel">${label}</span>
         <div class="chip-row">
-          ${names.map((n) => html`<button class="pick person ${f.who === n ? "on" : ""}" @click=${() => this._setForm({ who: f.who === n ? "" : n })}><span class="avatar sm">${initial(n)}</span><span>${n}</span></button>`)}
+          ${names.map((n) => html`<button class="pick person ${f.who === n ? "on" : ""}" @click=${() => this._setForm({ who: f.who === n ? "" : n })}><span class="avatar sm">${isPet(n) ? icon("paw-print") : initial(n)}</span><span>${n}</span></button>`)}
         </div>
-        <span class="field-hint">${icon("info")}<span>Outra pessoa ou um pet: adicione em Mais › Avisos.</span></span>
+        <span class="field-hint">${icon("info")}<span>${pets ? "Outra pessoa ou um pet" : "Outra pessoa"}: adicione em Mais › Avisos.</span></span>
       </div>`;
     }
 
@@ -987,7 +990,7 @@ export const ModelsMixin = (Base) =>
         const timeEdit = f.mode === "add";
         body = html`
           <label class="field"><span class="flabel">Dose</span><input type="text" .value=${f.dose} placeholder="Ex.: 1 comprimido, 10 gotas, 1 caneta" @input=${(e) => this._setForm({ dose: e.target.value })} /></label>
-          ${this._whoField("Quem toma")}
+          ${this._whoField("Quem toma", { pets: true })}
           <div class="field">
             <span class="flabel">${timeEdit ? "Horários" : "Horário"}</span>
             ${timeEdit ? html`<div class="chip-row" style="margin-bottom:10px">${DOSE_PRESETS.map(([l, t]) => html`<button class="pick ${f.times.join() === t.join() ? "on" : ""}" @click=${() => this._setForm({ times: [...t] })}>${l}</button>`)}</div>` : nothing}
@@ -1090,7 +1093,17 @@ export const ModelsMixin = (Base) =>
       const manual = this._app("people", null) || {};
       const setAlerts = (ch) => this._saveAppPrefs({ alerts: { meds: on, late, caregivers: care, ...ch } });
       // kept even without a phone: a pet added here stays in Quem toma
-      const setPerson = (name, notify) => this._saveAppPrefs({ people: { ...manual, [name]: { notify: notify || null } } });
+      const setPerson = (name, notify) => this._saveAppPrefs({ people: { ...manual, [name]: { ...(manual[name] || {}), notify: notify || null } } });
+      // a pet leaves Quem faz and the placar
+      const setPet = (name, pet) => {
+        const cur = manual[name] || { notify: null };
+        const next = { ...cur };
+        if (pet) next.pet = true;
+        else delete next.pet;
+        const s = this._score && this._score();
+        if (pet && s && (s.participants || []).some((x) => foldText(x) === foldText(name))) this._scorePrefs({ participants: s.participants.filter((x) => foldText(x) !== foldText(name)) });
+        return this._saveAppPrefs({ people: { ...manual, [name]: next } });
+      };
       const dropPerson = (name) => {
         const next = { ...manual };
         delete next[name];
@@ -1105,7 +1118,7 @@ export const ModelsMixin = (Base) =>
           return;
         }
         this._newPerson = null;
-        this._saveAppPrefs({ people: { ...manual, [name]: { notify: add.notify || null } } });
+        this._saveAppPrefs({ people: { ...manual, [name]: { notify: add.notify || null, ...(add.pet ? { pet: true } : {}) } } });
       };
       const phoneSelect = (label, value, auto, onPick) => html`<select class="select sm" aria-label=${label} @change=${(e) => onPick(e.target.value)}>
         <option value="" ?selected=${!value}>${auto ? `Automático: ${this._targetName(auto)}` : "Sem celular"}</option>
@@ -1123,11 +1136,14 @@ export const ModelsMixin = (Base) =>
             ? people.map((p) => {
                 const chosen = manual[p.name] && manual[p.name].notify;
                 const own = !p.person && !!manual[p.name];
-                return html`<div class="person-row">
-                  <span class="avatar">${initial(p.name)}</span>
-                  <span class="grow"><b>${p.name}</b><small>${p.person ? "Pessoa do Home Assistant" : "Só no CronologIA"}</small></span>
+                return html`<div class="person-row ${p.pet ? "is-pet" : ""}">
+                  <span class="avatar">${p.pet ? icon("paw-print") : initial(p.name)}</span>
+                  <span class="grow"><b>${p.name}</b><small>${p.person ? "Pessoa do Home Assistant" : p.pet ? "Pet" : "Só no CronologIA"}</small></span>
                   ${on ? phoneSelect(`Celular de ${p.name}`, chosen, p.auto, (v) => setPerson(p.name, v)) : nothing}
                   <span class="p-acts">
+                    ${!p.person
+                      ? html`<button class="icon-btn pet-btn ${p.pet ? "on" : ""}" aria-pressed=${p.pet ? "true" : "false"} aria-label="${p.name} é um pet" title=${p.pet ? "Pet" : "Marcar como pet"} @click=${() => setPet(p.name, !p.pet)}>${icon("paw-print")}</button>`
+                      : nothing}
                     ${on && p.notify ? html`<button class="icon-btn" aria-label="Testar aviso para ${p.name}" @click=${() => this._testAlert(p.notify)}>${icon("bell-ring")}</button>` : nothing}
                     ${own ? html`<button class="icon-btn mini" aria-label="Tirar ${p.name}" @click=${() => dropPerson(p.name)}>${icon("x")}</button>` : nothing}
                   </span>
@@ -1139,6 +1155,10 @@ export const ModelsMixin = (Base) =>
                 <input type="text" class="input" .value=${add.name || ""} placeholder="Nome (pessoa ou pet)" aria-label="Nome da pessoa ou pet" maxlength="40"
                   @input=${(e) => ((this._newPerson = { ...this._newPerson, name: e.target.value }), this.requestUpdate())}
                   @keydown=${(e) => e.key === "Enter" && addPerson()} />
+                <div class="seg" role="group" aria-label="Pessoa ou pet">
+                  <button class=${add.pet ? "" : "on"} @click=${() => ((this._newPerson = { ...this._newPerson, pet: false }), this.requestUpdate())}>${icon("user-round")}Pessoa</button>
+                  <button class=${add.pet ? "on" : ""} @click=${() => ((this._newPerson = { ...this._newPerson, pet: true }), this.requestUpdate())}>${icon("paw-print")}Pet</button>
+                </div>
                 ${on && targets.length
                   ? html`<label class="field-sub"><span>Avisar no celular de</span>${phoneSelect("Celular que avisa", add.notify, null, (v) => ((this._newPerson = { ...this._newPerson, notify: v }), this.requestUpdate()))}</label>`
                   : nothing}
@@ -1148,7 +1168,7 @@ export const ModelsMixin = (Base) =>
                 </div>
               </div>`
             : html`<button class="add-line" @click=${() => {
-                this._newPerson = { name: "", notify: "" };
+                this._newPerson = { name: "", notify: "", pet: false };
                 this.requestUpdate();
                 this.updateComplete.then(() => {
                   const el = this.renderRoot.querySelector(".person-add input");

@@ -123,7 +123,7 @@ export class MockApi {
       ...ix,
       people: [...names].sort().map((name) => {
         const auto = ({ Andressa: "mobile_app_galaxy_s23", Diego: "mobile_app_pixel_8" })[name] || null;
-        return { name, person: auto ? `person.${name.toLowerCase()}` : null, auto, notify: (this.prefs.app.people || {})[name]?.notify || auto };
+        return { name, person: auto ? `person.${name.toLowerCase()}` : null, pet: !!(this.prefs.app.people || {})[name]?.pet, auto, notify: (this.prefs.app.people || {})[name]?.notify || auto };
       }),
       targets: [
         { id: "mobile_app_galaxy_s23", name: "Galaxy S23" },
@@ -436,7 +436,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.31.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.32.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

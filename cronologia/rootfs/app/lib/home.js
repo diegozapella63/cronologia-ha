@@ -172,6 +172,13 @@ export class Home {
     return byName ? byName.name : (displayName || "").trim().split(/\s+/)[0] || "";
   }
 
+  /** Marked as a pet in Mais › Avisos. */
+  isPet(name) {
+    const people = this.store.data.app.people || {};
+    const key = Object.keys(people).find((n) => foldText(n) === foldText(name));
+    return !!(key && people[key].pet);
+  }
+
   /** Phone of a person: chosen in Mais, or the one from their person entity's tracker. */
   targetFor(name) {
     if (!name) return null;
@@ -198,7 +205,7 @@ export class Home {
     for (const n of Object.keys(this.store.data.app.people || {})) if (!all.has(foldText(n))) all.set(foldText(n), { name: n, person: null });
     for (const n of names) if (n && !all.has(foldText(n))) all.set(foldText(n), { name: n, person: null });
     return {
-      list: [...all.values()].map((p) => ({ ...p, notify: this.targetFor(p.name), auto: this.autoTarget(p.name) })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
+      list: [...all.values()].map((p) => ({ ...p, pet: !p.person && this.isPet(p.name), notify: this.targetFor(p.name), auto: this.autoTarget(p.name) })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
       // owner: the person whose phone it is (so a pet can get the phone of whoever takes care of it)
       targets: [...this.targets].sort().map((id) => {
         const owner = [...this.persons.values()].find((p) => this.autoTarget(p.name) === id);

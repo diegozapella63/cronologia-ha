@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.32.0
+
+- **Pets**: em Mais › Avisos, **Adicionar pessoa ou pet** pergunta se é **Pessoa** ou **Pet**, e cada um que não é do Home Assistant tem o botão da patinha para marcar. Um pet aparece com a patinha no lugar da inicial, só em **Quem toma** dos remédios: some de **Quem faz** (rotinas e manutenções), das pessoas do **placar** e das iniciais de marcar. Marcar como pet alguém que estava no placar tira essa pessoa dele.
+
 ## 1.31.0
 
 - **Menos explicação, mais tela**: os textos de ajuda ficaram curtos ou saíram onde só repetiam o que a tela já mostra. Os mais visíveis: Exportar sem frase de abertura; Backup, Importar, Versões e Onde ficam os dados em uma linha; os interruptores dizem só Ligado/Desligado (com uma frase curta quando precisa); Leitura por IA e Falar sem a lista de integrações e sem a nota do "Automático"; Avisos de remédio, Placar, Deméritos, Tarefas do ResolvIA e Contas do GerencIA com dicas de uma linha; "Volta daqui a N dias" no lugar da explicação do Feito; na revisão, só a quantidade de eventos; Manutenção sem a frase de abertura; Uso da IA com uma linha só para o consumo exato.

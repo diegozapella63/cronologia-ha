@@ -1306,6 +1306,25 @@ export const calStyles = css`
     color: var(--rv-late);
   }
 
+  /* a pet: the paw in place of the initial */
+  .avatar .i {
+    width: 58%;
+    height: 58%;
+  }
+  .pet-btn {
+    color: var(--rv-faint, var(--rv-muted));
+  }
+  .pet-btn.on {
+    color: var(--rv-accent-ink);
+    background: var(--rv-accent-soft);
+  }
+  .person-add .seg button {
+    gap: 6px;
+  }
+  .person-add .seg .i {
+    width: 16px;
+    height: 16px;
+  }
   .avatar {
     width: 28px;
     height: 28px;

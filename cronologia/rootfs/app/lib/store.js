@@ -96,6 +96,8 @@ function cleanApp(raw) {
       const n = String(name).trim().slice(0, 40);
       if (!n) continue;
       people[n] = { notify: v && NOTIFY_RE.test(v.notify || "") ? v.notify : null };
+      // a pet: takes medicines, but does not do chores nor play in the placar
+      if (v && v.pet === true) people[n].pet = true;
     }
     out.people = Object.keys(people).length ? people : null;
   }

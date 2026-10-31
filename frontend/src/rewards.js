@@ -903,7 +903,8 @@ export const RewardsMixin = (Base) =>
     }
 
     _renderScoreSettingsPanel(s) {
-      const people = (this._ix().people || []).map((p) => p.name);
+      // pets do not play
+      const people = (this._ix().people || []).filter((p) => !p.pet).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
         ${this._secHead("trophy", "Ajustes do placar")}
@@ -938,7 +939,7 @@ export const RewardsMixin = (Base) =>
       const people = (this._ix().people || []).filter((p) => p.person);
       const pick = this._setupPick || (s.participants && s.participants.length ? s.participants : people.map((p) => p.name));
       const period = this._setupPeriod || s.period || "semana";
-      const all = [...new Set([...(this._ix().people || []).map((p) => p.name), ...pick])];
+      const all = [...new Set([...(this._ix().people || []).filter((p) => !p.pet).map((p) => p.name), ...pick])];
       return html`<section class="page rewards">
         ${this._renderHead("Recompensas", { text: "Placar da casa" })}
         <div class="panel setup-card">
