@@ -2745,12 +2745,12 @@ window.litDisableBundleWarning=true;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 2px;
+    padding: 14px 0;
     border-bottom: 1px solid var(--rv-line);
   }
   .opts .ot {
     flex: 1;
-    min-width: 0;
+    min-width: min(100%, 13em);
   }
   .opts .ot b {
     display: block;
@@ -2764,8 +2764,17 @@ window.litDisableBundleWarning=true;
     line-height: 1.4;
     color: var(--rv-muted);
   }
-  .opts .btn {
+  /* Dados: every button the same width; on the phone it goes under its text, all lined up */
+  .opts > li {
+    flex-wrap: wrap;
+  }
+  .opts .btn,
+  #dados .sec-actions .btn {
     flex: none;
+    width: 11.5em;
+    max-width: 100%;
+    justify-content: center;
+    white-space: nowrap;
   }
   .data-note {
     margin: 8px 0 0;

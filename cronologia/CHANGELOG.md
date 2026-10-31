@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.30.2
+
+- **Dados: botões do mesmo tamanho** (Baixar, Criar backup, Escolher arquivo, Escolher .ics, Ver versões). No celular cada um fica embaixo do seu texto, todos alinhados; no computador, à direita.
+
 ## 1.30.1
 
 - **Uso da IA** não fala mais do sensor `sensor.cronologia_ia_hoje` (nem para mandar ligar, com os sensores desligados). Ele aparece explicado só em **Sensores no Home Assistant**, quando os sensores estão ligados, como no GerencIA.
