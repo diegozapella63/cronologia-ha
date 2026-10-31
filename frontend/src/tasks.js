@@ -5,6 +5,7 @@ import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
 import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { renderEquipPicker } from "./equip-picker.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
@@ -225,17 +226,20 @@ export const TasksMixin = (Base) =>
       // Cômodos do InventarIA, when the ResolvIA uses them
       const rooms = ((this._todosAll().app || {}).comodos) || [];
       const equips = ((this._todosAll().app || {}).equipamentos) || [];
-      const groups = new Map();
-      for (const e of equips) {
-        const k = e.comodo || "Outros";
-        if (!groups.has(k)) groups.set(k, []);
-        groups.get(k).push(e);
-      }
-      // picking an equipment also fills the room, when there is none yet
+      // the items for the picker, with the id of their room (the ResolvIA sends the room's name)
+      const items = equips.map((e) => {
+        const r = rooms.find((c) => c.nome === e.comodo);
+        return { id: e.id, nome: e.nome, zona: "", roomId: r ? r.id : null, roomName: e.comodo || "" };
+      });
+      // picking an equipment sets its room
       const pickEquip = (id) => {
-        const e = equips.find((x) => x.id === id);
-        const r = e && !f.room && rooms.find((c) => c.nome === e.comodo);
-        this._setForm({ equip: id || null, ...(r ? { room: r.id } : {}) });
+        const e = items.find((x) => x.id === id);
+        this._setForm({ equip: id || null, equipQ: "", equipMore: false, ...(e && e.roomId ? { room: e.roomId } : {}) });
+      };
+      const pickRoom = (id) => {
+        const room = f.room === id ? null : id;
+        const e = items.find((x) => x.id === f.equip);
+        this._setForm({ room, ...(e && room && e.roomId !== room ? { equip: null } : {}) });
       };
       return html`
         ${this._sheetHead("Novo")}
@@ -267,18 +271,27 @@ export const TasksMixin = (Base) =>
               <span class="flabel">Cômodo</span>
               <div class="chip-row">
                 <button class="pick ${!f.room ? "on" : ""}" @click=${() => this._setForm({ room: null })}>Nenhum</button>
-                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => this._setForm({ room: f.room === c.id ? null : c.id })}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
+                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => pickRoom(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
               </div>
             </div>`
           : nothing}
         ${equips.length
-          ? html`<label class="field">
+          ? html`<div class="field">
               <span class="flabel">Equipamento</span>
-              <select class="select" aria-label="Equipamento" @change=${(e) => pickEquip(e.target.value)}>
-                <option value="" ?selected=${!f.equip}>Nenhum</option>
-                ${[...groups].map(([g, list]) => html`<optgroup label=${g}>${list.map((e) => html`<option value=${e.id} ?selected=${f.equip === e.id}>${e.nome}</option>`)}</optgroup>`)}
-              </select>
-            </label>`
+              ${renderEquipPicker({
+                lit: { html, nothing },
+                icon,
+                items,
+                room: f.room || null,
+                roomName: f.room ? (rooms.find((c) => c.id === f.room) || {}).nome || "" : "",
+                value: f.equip || null,
+                query: f.equipQ || "",
+                more: !!f.equipMore,
+                onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
+                onMore: () => this._setForm({ equipMore: true }),
+                onPick: pickEquip,
+              })}
+            </div>`
           : nothing}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">

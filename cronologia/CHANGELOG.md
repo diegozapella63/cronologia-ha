@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.34.1
+
+- **Equipamento com busca** no Novo › Tarefa: com um cômodo escolhido, aparecem os equipamentos dele; ao buscar, o que está em outros cômodos aparece separado. O trecho buscado fica destacado, e o escolhido vira um cartão (× para tirar). Escolher um equipamento de outro cômodo troca o cômodo.
+
 ## 1.34.0
 
 - **Equipamentos nas tarefas**: com o ResolvIA (2.29.0 ou mais novo) usando os **equipamentos do InventarIA**, as tarefas mostram o equipamento (na Agora e na tela da tarefa) e o **Novo › Tarefa** pede o equipamento, numa lista separada por cômodo; escolher o equipamento já preenche o cômodo.

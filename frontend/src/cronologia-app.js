@@ -1,5 +1,6 @@
 import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS } from "../vendor/lit-all.min.js";
 import { usagePanel, usageStyles } from "./usage-panel.js";
+import { equipPickerStyles } from "./equip-picker.js";
 import { themePicker, colorPicker, lookStyles } from "./look.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
@@ -122,7 +123,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles)];
+  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles)];
 
   constructor() {
     super();
