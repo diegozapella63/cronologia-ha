@@ -2291,7 +2291,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       ["binary_sensor.cronologia_remedio_atrasado", "liga quando um remédio atrasa"],
       ["sensor.cronologia_manutencoes_vencidas", "manutenções vencidas e as próximas"],
       ["sensor.cronologia_placar", "quem lidera o placar e os pontos (com o placar ligado)"],
-      ["sensor.cronologia_ia_hoje", "chamadas de IA hoje"],
+      ["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"],
     ];
     return html`<div class="panel" id="sensores">
       ${this._secHead("activity", "Sensores no Home Assistant", "Para usar em painéis e automações do Home Assistant, como um aviso na TV quando um remédio atrasa.")}
