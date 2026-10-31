@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.33.0";
+const VERSION = "1.34.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -357,9 +357,13 @@ class Session {
         if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
         const t = msg.task || {};
         await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
-        // the room (Cômodos do InventarIA in the ResolvIA): the ResolvIA keeps it, by the task name
-        if (t.room && /^[A-Za-z0-9_-]{1,64}$/.test(String(t.room))) {
-          await ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data: { entity_id: String(msg.entity_id || ""), tarefa: String(t.summary || "").trim(), comodo: String(t.room), origem: "CronologIA" } }).catch(() => {});
+        // the room and the equipment (InventarIA in the ResolvIA): the ResolvIA keeps them, by the task name
+        const okId = (v) => v && /^[A-Za-z0-9_-]{1,64}$/.test(String(v));
+        if (okId(t.room) || okId(t.equip)) {
+          const event_data = { entity_id: String(msg.entity_id || ""), tarefa: String(t.summary || "").trim(), origem: "CronologIA" };
+          if (okId(t.room)) event_data.comodo = String(t.room);
+          if (okId(t.equip)) event_data.equipamento = String(t.equip);
+          await ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
         }
         return this.result(id);
       }

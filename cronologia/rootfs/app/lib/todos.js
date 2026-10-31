@@ -11,7 +11,10 @@ export const taskKey = (s) => foldText(s).replace(/\s+/g, " ");
 /** The rooms the ResolvIA shares (null when it does not use them). */
 function cleanRooms(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.lista)) return null;
-  const lista = raw.lista.filter((c) => c && typeof c.id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(c.id)).slice(0, 80).map((c) => ({ id: c.id, nome: String(c.nome || c.id).slice(0, 60) }));
+  const lista = raw.lista
+    .filter((c) => c && typeof c.id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(c.id))
+    .slice(0, 2000)
+    .map((c) => ({ id: c.id, nome: String(c.nome || c.id).slice(0, 120), ...(typeof c.comodo === "string" ? { comodo: c.comodo.slice(0, 60) } : {}) }));
   if (!lista.length) return null;
   const tarefas = {};
   for (const [list, map] of Object.entries(raw.tarefas && typeof raw.tarefas === "object" ? raw.tarefas : {})) {
@@ -137,6 +140,8 @@ export class Todos {
           repete: j.repete && typeof j.repete === "object" ? j.repete : {},
           // comodos: the rooms of the InventarIA, when the ResolvIA uses them (2.28.0+): {lista: [{id, nome}], tarefas: {list: {task key: id}}}
           comodos: cleanRooms(j.comodos),
+          // equipamentos: the items of the InventarIA (2.29.0+): {lista: [{id, nome, comodo}], tarefas: {list: {task key: id}}}
+          equipamentos: cleanRooms(j.equipamentos),
         };
       }
     } catch (e) {
@@ -175,7 +180,7 @@ export class Todos {
         // Agora › tasks without a due date (or whose dates aren't deadlines), pending only
         for (const i of all) {
           if (!i.uid || i.status === "completed" || (i.due && !info)) continue;
-          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app), room: this.roomOf(id, i.summary, app), every: everyOf(app, id, i.uid) });
+          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app), room: this.roomOf(id, i.summary, app), equip: this.equipOf(id, i.summary, app), every: everyOf(app, id, i.uid) });
         }
       }
       if (info) continue;
@@ -199,6 +204,7 @@ export class Todos {
           overdue: !done && (allDay ? at < t0 : at < now),
           points: this.pointsOf(id, i.summary, app),
           room: this.roomOf(id, i.summary, app),
+          equip: this.equipOf(id, i.summary, app),
           every: everyOf(app, id, i.uid),
           days: Math.round((new Date(new Date(at).getFullYear(), new Date(at).getMonth(), new Date(at).getDate()).getTime() - t0) / DAY),
         });
@@ -222,7 +228,7 @@ export class Todos {
       else k++;
     }
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos, comodos: app.comodos ? app.comodos.lista : [] } : null };
+    return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos, comodos: app.comodos ? app.comodos.lista : [], equipamentos: app.equipamentos ? app.equipamentos.lista : [] } : null };
   }
 
   /** The room of a task in the ResolvIA ({id, nome}), or null. */
@@ -231,6 +237,14 @@ export class Todos {
     const id = c && c.tarefas[list] && c.tarefas[list][taskKey(summary)];
     const r = id && c.lista.find((x) => x.id === id);
     return r ? { id: r.id, nome: r.nome } : null;
+  }
+
+  /** The equipment of a task in the ResolvIA ({id, nome, comodo}), or null. */
+  equipOf(list, summary, app = this.app()) {
+    const c = app && app.equipamentos;
+    const id = c && c.tarefas[list] && c.tarefas[list][taskKey(summary)];
+    const r = id && c.lista.find((x) => x.id === id);
+    return r ? { id: r.id, nome: r.nome, comodo: r.comodo || "" } : null;
   }
 
   /** Points the ResolvIA gives for a task (0 when none or no ResolvIA). */

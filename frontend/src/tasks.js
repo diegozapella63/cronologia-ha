@@ -115,7 +115,7 @@ export const TasksMixin = (Base) =>
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
-        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.room ? t.room.nome : "", t.listName].filter(Boolean).join(" · ");
+        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.equip ? t.equip.nome : "", t.room ? t.room.nome : "", t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
           <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
@@ -163,6 +163,7 @@ export const TasksMixin = (Base) =>
           <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
           ${t.room ? html`<div class="fact">${icon("door-open")}<span>${t.room.nome}</span></div>` : nothing}
+          ${t.equip ? html`<div class="fact">${icon("package")}<span>${t.equip.nome}${t.equip.comodo && !t.room ? ` (${t.equip.comodo})` : ""}</span></div>` : nothing}
           ${t.every ? html`<div class="fact">${icon("repeat")}<span>Volta ${everyLabel(t.every)} depois de concluída</span></div>` : nothing}
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
@@ -223,6 +224,19 @@ export const TasksMixin = (Base) =>
       const canNotes = !!(feats & TF.DESCRIPTION);
       // Cômodos do InventarIA, when the ResolvIA uses them
       const rooms = ((this._todosAll().app || {}).comodos) || [];
+      const equips = ((this._todosAll().app || {}).equipamentos) || [];
+      const groups = new Map();
+      for (const e of equips) {
+        const k = e.comodo || "Outros";
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(e);
+      }
+      // picking an equipment also fills the room, when there is none yet
+      const pickEquip = (id) => {
+        const e = equips.find((x) => x.id === id);
+        const r = e && !f.room && rooms.find((c) => c.nome === e.comodo);
+        this._setForm({ equip: id || null, ...(r ? { room: r.id } : {}) });
+      };
       return html`
         ${this._sheetHead("Novo")}
         ${this._renderModelChips("tarefa")}
@@ -257,6 +271,15 @@ export const TasksMixin = (Base) =>
               </div>
             </div>`
           : nothing}
+        ${equips.length
+          ? html`<label class="field">
+              <span class="flabel">Equipamento</span>
+              <select class="select" aria-label="Equipamento" @change=${(e) => pickEquip(e.target.value)}>
+                <option value="" ?selected=${!f.equip}>Nenhum</option>
+                ${[...groups].map(([g, list]) => html`<optgroup label=${g}>${list.map((e) => html`<option value=${e.id} ?selected=${f.equip === e.id}>${e.nome}</option>`)}</optgroup>`)}
+              </select>
+            </label>`
+          : nothing}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
@@ -271,7 +294,7 @@ export const TasksMixin = (Base) =>
       if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
       const withDue = this._todoDueOk() && !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
       const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
-      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...(f.room ? { room: f.room } : {}) };
+      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...(f.room ? { room: f.room } : {}), ...(f.equip ? { equip: f.equip } : {}) };
       if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
       this._setForm({ saving: true });
       try {

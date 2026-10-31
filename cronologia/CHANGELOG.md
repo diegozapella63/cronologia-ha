@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.34.0
+
+- **Equipamentos nas tarefas**: com o ResolvIA (2.29.0 ou mais novo) usando os **equipamentos do InventarIA**, as tarefas mostram o equipamento (na Agora e na tela da tarefa) e o **Novo › Tarefa** pede o equipamento, numa lista separada por cômodo; escolher o equipamento já preenche o cômodo.
+
 ## 1.33.0
 
 - **Cômodos nas tarefas**: com o ResolvIA (2.28.0 ou mais novo) usando os **Cômodos do InventarIA**, as tarefas mostram o cômodo (na Agora e na tela da tarefa) e o **Novo › Tarefa** pede o cômodo; o ResolvIA guarda a escolha.
