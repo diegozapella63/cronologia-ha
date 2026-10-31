@@ -199,7 +199,11 @@ export class Home {
     for (const n of names) if (n && !all.has(foldText(n))) all.set(foldText(n), { name: n, person: null });
     return {
       list: [...all.values()].map((p) => ({ ...p, notify: this.targetFor(p.name), auto: this.autoTarget(p.name) })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-      targets: [...this.targets].sort().map((id) => ({ id, name: id.replace(/^mobile_app_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) })),
+      // owner: the person whose phone it is (so a pet can get the phone of whoever takes care of it)
+      targets: [...this.targets].sort().map((id) => {
+        const owner = [...this.persons.values()].find((p) => this.autoTarget(p.name) === id);
+        return { id, name: id.replace(/^mobile_app_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), owner: owner ? owner.name : null };
+      }),
     };
   }
 

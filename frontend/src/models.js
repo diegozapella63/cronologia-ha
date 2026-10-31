@@ -95,6 +95,11 @@ export const ModelsMixin = (Base) =>
       return this._ix().checks[e.key] || null;
     }
 
+    /** A phone in a picker: whose it is first ("Celular de Diego · Galaxy S23"). */
+    _targetLabel(t) {
+      return t.owner ? `Celular de ${t.owner} · ${t.name}` : t.name;
+    }
+
     _targetName(id) {
       const t = this._ix().targets.find((x) => x.id === id);
       return t ? t.name : (id || "").replace(/^mobile_app_/, "").replace(/_/g, " ");
@@ -624,7 +629,6 @@ export const ModelsMixin = (Base) =>
         ...rruleToForm(kind === "conta" ? "" : "FREQ=DAILY", d),
         dose: "",
         who: "",
-        whoOther: false,
         alert: true,
         value: "",
         repeat: "mensal",
@@ -876,14 +880,12 @@ export const ModelsMixin = (Base) =>
     _whoField(label) {
       const f = this._form;
       const names = [...new Set([...(this._ix().people || []).map((p) => p.name), ...(f.who ? [f.who] : [])])];
-      const known = names.some((n) => n === f.who);
       return html`<div class="field">
         <span class="flabel">${label}</span>
         <div class="chip-row">
-          ${names.map((n) => html`<button class="pick person ${f.who === n && !f.whoOther ? "on" : ""}" @click=${() => this._setForm({ who: f.who === n ? "" : n, whoOther: false })}><span class="avatar sm">${initial(n)}</span><span>${n}</span></button>`)}
-          <button class="pick ghost ${f.whoOther ? "on" : ""}" @click=${() => this._setForm({ whoOther: true, who: known ? "" : f.who })}>${icon("plus")}<span>Outra pessoa</span></button>
+          ${names.map((n) => html`<button class="pick person ${f.who === n ? "on" : ""}" @click=${() => this._setForm({ who: f.who === n ? "" : n })}><span class="avatar sm">${initial(n)}</span><span>${n}</span></button>`)}
         </div>
-        ${f.whoOther ? html`<input type="text" class="who-input" .value=${f.who} placeholder="Nome (pode ser o pet também)" @input=${(e) => this._setForm({ who: e.target.value })} />` : nothing}
+        <span class="field-hint">${icon("info")}<span>Outra pessoa ou um pet: adicione em Mais › Avisos.</span></span>
       </div>`;
     }
 
@@ -1088,38 +1090,77 @@ export const ModelsMixin = (Base) =>
       const targets = ix.targets || [];
       const manual = this._app("people", null) || {};
       const setAlerts = (ch) => this._saveAppPrefs({ alerts: { meds: on, late, caregivers: care, ...ch } });
-      const setPerson = (name, notify) => {
+      // kept even without a phone: a pet added here stays in Quem toma
+      const setPerson = (name, notify) => this._saveAppPrefs({ people: { ...manual, [name]: { notify: notify || null } } });
+      const dropPerson = (name) => {
         const next = { ...manual };
-        if (notify) next[name] = { notify };
-        else delete next[name];
-        this._saveAppPrefs({ people: next });
+        delete next[name];
+        this._saveAppPrefs({ people: Object.keys(next).length ? next : null });
       };
+      const add = this._newPerson;
+      const addPerson = () => {
+        const name = (add.name || "").trim().replace(/\s+/g, " ").slice(0, 40);
+        if (!name) return;
+        if (people.some((p) => foldText(p.name) === foldText(name))) {
+          this._showToast(`${name} já está na lista`);
+          return;
+        }
+        this._newPerson = null;
+        this._saveAppPrefs({ people: { ...manual, [name]: { notify: add.notify || null } } });
+      };
+      const phoneSelect = (label, value, auto, onPick) => html`<select class="select sm" aria-label=${label} @change=${(e) => onPick(e.target.value)}>
+        <option value="" ?selected=${!value}>${auto ? `Automático: ${this._targetName(auto)}` : "Sem celular"}</option>
+        ${targets.map((t) => html`<option value=${t.id} ?selected=${value === t.id}>${this._targetLabel(t)}</option>`)}
+      </select>`;
       return html`<div class="panel" id="avisos">
         ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora de cada dose, o celular de quem toma recebe um aviso com <b>Tomei</b> e <b>Adiar 15 min</b>. Se não tomar, avisa de novo, também para quem cuida. Usa o app Home Assistant do celular.`)}
         <div class="row switch-row">
           <div class="grow"><div class="label">Avisar no celular</div><div class="hint">Vale para todos os remédios (dá para desligar em cada um).</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => setAlerts({ meds: e.target.checked })} aria-label="Avisar no celular" /><span class="track"></span></label>
         </div>
+        <div class="field people-field">
+          <span class="flabel">${on ? "Pessoas, pets e o celular que avisa" : "Pessoas e pets"}</span>
+          ${people.length
+            ? people.map((p) => {
+                const chosen = manual[p.name] && manual[p.name].notify;
+                const own = !p.person && !!manual[p.name];
+                return html`<div class="person-row">
+                  <span class="avatar">${initial(p.name)}</span>
+                  <span class="grow"><b>${p.name}</b><small>${p.person ? "Pessoa do Home Assistant" : "Só no CronologIA"}</small></span>
+                  ${on ? phoneSelect(`Celular de ${p.name}`, chosen, p.auto, (v) => setPerson(p.name, v)) : nothing}
+                  <span class="p-acts">
+                    ${on && p.notify ? html`<button class="icon-btn" aria-label="Testar aviso para ${p.name}" @click=${() => this._testAlert(p.notify)}>${icon("bell-ring")}</button>` : nothing}
+                    ${own ? html`<button class="icon-btn mini" aria-label="Tirar ${p.name}" @click=${() => dropPerson(p.name)}>${icon("x")}</button>` : nothing}
+                  </span>
+                </div>`;
+              })
+            : html`<p class="hint">As pessoas do Home Assistant aparecem aqui.</p>`}
+          ${add
+            ? html`<div class="person-add">
+                <input type="text" class="input" .value=${add.name || ""} placeholder="Nome (pessoa ou pet)" aria-label="Nome da pessoa ou pet" maxlength="40"
+                  @input=${(e) => ((this._newPerson = { ...this._newPerson, name: e.target.value }), this.requestUpdate())}
+                  @keydown=${(e) => e.key === "Enter" && addPerson()} />
+                ${on && targets.length
+                  ? html`<label class="field-sub"><span>Avisar no celular de</span>${phoneSelect("Celular que avisa", add.notify, null, (v) => ((this._newPerson = { ...this._newPerson, notify: v }), this.requestUpdate()))}</label>`
+                  : nothing}
+                <div class="person-add-acts">
+                  <button class="btn outline sm" @click=${() => ((this._newPerson = null), this.requestUpdate())}>Cancelar</button>
+                  <button class="btn primary sm" ?disabled=${!(add.name || "").trim()} @click=${addPerson}>Adicionar</button>
+                </div>
+              </div>`
+            : html`<button class="add-line" @click=${() => {
+                this._newPerson = { name: "", notify: "" };
+                this.requestUpdate();
+                this.updateComplete.then(() => {
+                  const el = this.renderRoot.querySelector(".person-add input");
+                  if (el) el.focus();
+                });
+              }}>${icon("plus")}Adicionar pessoa ou pet</button>`}
+          ${on ? html`<span class="field-hint">${icon("info")}<span>Pet ou criança sem celular: escolha o celular de quem cuida.</span></span>` : nothing}
+          ${on && !targets.length ? html`<span class="field-hint">${icon("info")}<span>Nenhum celular com o app Home Assistant encontrado (serviços notify.mobile_app_…).</span></span>` : nothing}
+        </div>
         ${on
           ? html`<div class="field">
-                <span class="flabel">Celular de cada pessoa</span>
-                ${people.length
-                  ? people.map((p) => {
-                      const chosen = manual[p.name] && manual[p.name].notify;
-                      return html`<div class="person-row">
-                        <span class="avatar">${initial(p.name)}</span>
-                        <span class="grow"><b>${p.name}</b><small>${p.person ? "Pessoa do Home Assistant" : "Só no CronologIA"}</small></span>
-                        <select class="select sm" aria-label="Celular de ${p.name}" @change=${(e) => setPerson(p.name, e.target.value)}>
-                          <option value="" ?selected=${!chosen}>${p.auto ? `Automático: ${this._targetName(p.auto)}` : "Sem celular"}</option>
-                          ${targets.map((t) => html`<option value=${t.id} ?selected=${chosen === t.id}>${t.name}</option>`)}
-                        </select>
-                        ${p.notify ? html`<button class="icon-btn" aria-label="Testar aviso para ${p.name}" @click=${() => this._testAlert(p.notify)}>${icon("bell-ring")}</button>` : nothing}
-                      </div>`;
-                    })
-                  : html`<p class="hint">As pessoas do Home Assistant e quem estiver nos remédios aparecem aqui.</p>`}
-                ${!targets.length ? html`<span class="field-hint">${icon("info")}<span>Nenhum celular com o app Home Assistant encontrado (serviços notify.mobile_app_…).</span></span>` : nothing}
-              </div>
-              <div class="field">
                 <span class="flabel">Avisar de novo se não tomar</span>
                 <div class="chip-row">${[[0, "Não"], [15, "15 min depois"], [30, "30 min"], [60, "1 hora"]].map(([n, l]) => html`<button class="pick ${late === n ? "on" : ""}" @click=${() => setAlerts({ late: n })}>${l}</button>`)}</div>
               </div>

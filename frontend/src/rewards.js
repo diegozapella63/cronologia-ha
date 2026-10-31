@@ -25,6 +25,8 @@ const DEMERIT_IDEAS = [
 ];
 const DEMERIT_PICKS = [2, 3, 5, 10, 20];
 const IN = { semana: "nesta semana", quinzena: "nesta quinzena", mes: "neste mês" };
+// the Extrato closed shows only the newest lines
+const EXT_SHORT = 5;
 const newId = () => Math.random().toString(36).slice(2, 10).padEnd(8, "0");
 
 export const RewardsMixin = (Base) =>
@@ -704,16 +706,42 @@ export const RewardsMixin = (Base) =>
         this._extFor = s.current.key;
         this._extMore = [];
         this._extEnd = false;
+        this._extOpen = false;
       }
       const first = s.log || [];
       const low = first.length ? Math.min(...first.map((l) => l.id)) : Infinity;
       const list = [...first, ...(this._extMore || []).filter((l) => l.id < low)];
-      const more = first.length && !this._extEnd && list.length < (s.log_count || 0);
+      const total = Math.max(s.log_count || 0, list.length);
+      // closed: only the newest lines; Ver mais opens the rest (and then asks the server for older ones)
+      const open = !!this._extOpen;
+      const shown = open ? list : list.slice(0, EXT_SHORT);
+      const more = open ? first.length && !this._extEnd && list.length < total : total > shown.length;
       return html`<div class="panel extrato">
-        ${this._panelHead("file-text", "accent", `Extrato ${THIS[s.period]}`, list.length ? plural(s.log_count || list.length, "mudança", "mudanças") : "")}
-        ${list.length ? this._extRows(list, s, new Map((s.entries || []).map((e) => [e.key, e]))) : html`<p class="empty-line">Nada mexeu nos pontos ${IN[s.period]} ainda.</p>`}
-        ${more ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => this._loadExtrato(Math.min(...list.map((l) => l.id)), s.current)}>${icon("chevron-down")}${this._extBusy ? "Carregando…" : "Ver mais"}</button>` : nothing}
+        ${this._panelHead("file-text", "accent", `Extrato ${THIS[s.period]}`, list.length ? plural(total, "mudança", "mudanças") : "")}
+        ${list.length ? this._extRows(shown, s, new Map((s.entries || []).map((e) => [e.key, e]))) : html`<p class="empty-line">Nada mexeu nos pontos ${IN[s.period]} ainda.</p>`}
+        ${more || open
+          ? html`<div class="ext-more">
+              ${more
+                ? html`<button class="add-line" ?disabled=${this._extBusy} @click=${() => (open ? this._loadExtrato(Math.min(...list.map((l) => l.id)), s.current) : ((this._extOpen = true), this.requestUpdate()))}>
+                    ${icon("chevron-down")}${this._extBusy ? "Carregando…" : `Ver mais (${total - shown.length})`}
+                  </button>`
+                : nothing}
+              ${open && list.length > EXT_SHORT ? html`<button class="add-line less" @click=${(e) => this._closeExtrato(e)}>${icon("chevron-up")}Ver menos</button>` : nothing}
+            </div>`
+          : nothing}
       </div>`;
+    }
+
+    /** Ver menos: back to the newest lines, with the Extrato head in sight. */
+    _closeExtrato(e) {
+      const panel = e.currentTarget.closest(".extrato");
+      this._extOpen = false;
+      this._extMore = [];
+      this._extEnd = false;
+      this.requestUpdate();
+      this.updateComplete.then(() => {
+        if (panel && panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+      });
     }
 
     /**

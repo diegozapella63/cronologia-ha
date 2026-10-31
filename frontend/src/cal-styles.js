@@ -2032,9 +2032,40 @@ export const calStyles = css`
     width: 100%;
     max-width: 100%;
   }
-  .person-row > .icon-btn {
+  .person-row > .p-acts {
     grid-column: 3;
     grid-row: 1 / span 2;
+    display: flex;
+    align-items: center;
+  }
+  .person-row > .p-acts:empty {
+    display: none;
+  }
+  /* Mais › Avisos: a person or a pet, added only here */
+  .people-field .add-line {
+    padding-left: 0;
+    border-top: 1px solid var(--rv-line);
+  }
+  .person-add {
+    display: grid;
+    gap: 10px;
+    padding: 12px 0 4px;
+    border-top: 1px solid var(--rv-line);
+  }
+  .person-add .field-sub {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--rv-muted);
+  }
+  .person-add .select.sm {
+    width: 100%;
+    max-width: 100%;
+  }
+  .person-add-acts {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
   .person-row small {
     font-size: 12.5px;
@@ -2599,6 +2630,19 @@ export const calStyles = css`
   }
   .panel.extrato {
     padding: 0 0 6px;
+  }
+  .ext-more {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ext-more .add-line {
+    width: auto;
+    padding: 10px 16px 8px;
+  }
+  .ext-more .add-line.less {
+    margin-left: auto;
+    color: var(--rv-muted);
   }
   .ext-row {
     display: flex;

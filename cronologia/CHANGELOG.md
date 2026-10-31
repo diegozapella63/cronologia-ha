@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.29.0
+
+- **Extrato mais curto**: mostra só as 5 mudanças mais novas. **Ver mais (N)** abre o resto e, aberto, **Ver menos** recolhe de volta para o começo do extrato.
+- **Pessoas e pets só em Mais › Avisos**: saiu o **Outra pessoa** do formulário (Quem toma / Quem faz). Em Mais › Avisos há **Adicionar pessoa ou pet**, com o celular que recebe os avisos; um pet ou criança pode usar o celular de quem cuida. Os celulares aparecem com o dono (**Celular de Andressa · Galaxy S23**). Quem foi adicionado ali tem o **×** para tirar, e continua na lista mesmo sem celular.
+
 ## 1.28.2
 
 - O **ícone de repetir** aparece também nas rotinas que voltam alguns dias depois de feitas e nas manutenções (antes só nas que repetem por calendário, como todo dia ou toda semana). Tocar e segurar mostra como repete.
