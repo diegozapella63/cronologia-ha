@@ -436,7 +436,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.29.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.30.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {
@@ -530,7 +530,13 @@ export class MockApi {
   }
 
   async voiceStatus() {
-    return { ready: true, engine: "stt.home_assistant_cloud", language: "pt-BR", name: "Home Assistant" };
+    const sel = (this.prefs.app && this.prefs.app.voice_engine) || "";
+    const options = [
+      { id: "stt.home_assistant_cloud", name: "Home Assistant Cloud" },
+      { id: "stt.faster_whisper", name: "faster-whisper" },
+    ];
+    const e = options.find((o) => o.id === sel) || options[0];
+    return { ready: true, engine: e.id, language: "pt-BR", name: e.name, chosen: !!sel, selected: sel, missing: false, options, auto: { engine: options[0].id, name: options[0].name } };
   }
 
   async voiceText() {

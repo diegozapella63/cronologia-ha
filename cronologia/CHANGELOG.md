@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.30.0
+
+- **Falar: escolha quem transcreve**, como na leitura por IA. Em Mais › Integrações › **Falar** aparece a lista dos motores de fala para texto do Home Assistant (Home Assistant Cloud, Whisper, Google…). **Automático** continua usando o assistente de voz preferido do Home Assistant; escolher outro aqui não mexe nele. O app descobre o idioma que cada motor usa para o português (pt-BR, pt…). Com **Usar IA** desligado, o painel some junto com o Falar.
+
 ## 1.29.0
 
 - **Extrato mais curto**: mostra só as 5 mudanças mais novas. **Ver mais (N)** abre o resto e, aberto, **Ver menos** recolhe de volta para o começo do extrato.

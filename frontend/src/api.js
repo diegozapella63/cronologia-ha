@@ -389,8 +389,8 @@ export class Api {
   }
 
   // ---- Falar: the speech-to-text of Home Assistant
-  voiceStatus() {
-    return this.call("cronologia/voice/status");
+  voiceStatus(fresh = false) {
+    return this.call("cronologia/voice/status", fresh ? { fresh: true } : {});
   }
 
   /** Raw PCM (Int16, 16 kHz, mono) -> {text} */

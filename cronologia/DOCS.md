@@ -36,7 +36,7 @@ Com a tela larga (1000 pixels ou mais, como no InventarIA), as abas de baixo vir
 
 ### Falar
 
-O **microfone** no alto de cada tela, à direita: toque, fale o compromisso ("Dentista quinta às 15h na Clínica Sorriso", "Aniversário da Ana sábado, o dia todo") e toque de novo. O Home Assistant transcreve o que você disse com a **fala para texto do Assist** (Configurações › Assistentes de voz; com o Home Assistant Cloud já vem pronta, em português), e a IA da Leitura por IA encontra os eventos, como numa mensagem colada. Você confere a lista (com o que foi ouvido no alto) e adiciona. Até 2 minutos por vez. O microfone só aparece quando há fala para texto e Leitura por IA; o navegador ou o app do celular pede permissão na primeira vez.
+O **microfone** no alto de cada tela, à direita: toque, fale o compromisso ("Dentista quinta às 15h na Clínica Sorriso", "Aniversário da Ana sábado, o dia todo") e toque de novo. O Home Assistant transcreve o que você disse com a **fala para texto do Assist** (Configurações › Assistentes de voz; com o Home Assistant Cloud já vem pronta, em português), e a IA da Leitura por IA encontra os eventos, como numa mensagem colada. Para usar outro motor de fala (Whisper, Google…) sem mexer no assistente de voz do Home Assistant, escolha em Mais › Integrações › **Falar**. Você confere a lista (com o que foi ouvido no alto) e adiciona. Até 2 minutos por vez. O microfone só aparece quando há fala para texto e Leitura por IA; o navegador ou o app do celular pede permissão na primeira vez.
 
 ### Buscar
 

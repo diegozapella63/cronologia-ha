@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.29.0";
+const VERSION = "1.30.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -58,7 +58,7 @@ const gerenciaOn = () => store.data.app.gerencia_on === true;
 if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.resolvia_on == null && store.data.app.gerencia_on == null) store.setApp({ resolvia_on: true, gerencia_on: true });
 const ha = new HAClient(HA_URL, TOKEN, log);
 // Falar: the speech-to-text of Home Assistant (Assist)
-const voice = new Voice({ ha, rest: HA_REST, token: TOKEN, log });
+const voice = new Voice({ ha, rest: HA_REST, token: TOKEN, log, pick: () => store.data.app.voice_engine || "" });
 const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log, enabled: () => store.data.app.sensors_on === true });
 const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", usage });
 const calStates = new Map();
@@ -415,7 +415,7 @@ class Session {
         return this.result(id, await ai.status());
 
       case "cronologia/voice/status":
-        return this.result(id, await voice.status());
+        return this.result(id, await voice.status({ fresh: !!msg.fresh }));
 
       // Mais › Integrações › Uso da IA
       case "cronologia/ai/usage":
