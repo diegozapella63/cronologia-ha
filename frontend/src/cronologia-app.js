@@ -1603,13 +1603,13 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   /**
    * The lines of one day: the real events and the medicine doses first (those with a time,
    * then the all-day ones), then, under their own label, what can be done at any time:
-   * routines, tasks, maintenance and bills.
+   * routines, tasks, maintenance and bills, the pending ones first (done or skipped at the end).
    */
   _renderDayRows(list, day) {
     const isEvent = (e) => (!e.kind || e.kind.kind === "remedio") && !e.todo && !e.gerencia;
     const order = (a, b) => Number(a.allDay) - Number(b.allDay) || a.start - b.start;
     const events = list.filter(isEvent).sort(order);
-    const rest = list.filter((e) => !isEvent(e)).sort(order);
+    const rest = list.filter((e) => !isEvent(e)).sort((a, b) => Number(this._rowDone(a)) - Number(this._rowDone(b)) || order(a, b));
     return html`${events.map((e) => this._renderRow(e, day))}${rest.length
       ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
       : nothing}`;
