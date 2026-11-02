@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.37.1";
+const VERSION = "1.37.2";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -586,16 +586,21 @@ function handleExtract(req, res) {
   let aborted = false;
   req.on("data", (c) => {
     size += c.length;
+    // too big: stop keeping it, but read to the end so the answer (413) reaches the browser
+    // (closing mid-upload made it see a broken connection); far too big: close
+    if (aborted) {
+      if (size > MAX_UPLOAD * 4) req.destroy();
+      return;
+    }
     if (size > MAX_UPLOAD) {
       aborted = true;
-      sendJson(res, 413, { error: "Arquivo grande demais" });
-      req.destroy();
+      chunks.length = 0;
       return;
     }
     chunks.push(c);
   });
   req.on("end", async () => {
-    if (aborted) return;
+    if (aborted) return sendJson(res, 413, { error: "Arquivo grande demais" });
     let body;
     try {
       body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
@@ -656,16 +661,21 @@ function handleImport(req, res) {
   let aborted = false;
   req.on("data", (c) => {
     size += c.length;
+    // too big: stop keeping it, but read to the end so the answer (413) reaches the browser
+    // (closing mid-upload made it see a broken connection); far too big: close
+    if (aborted) {
+      if (size > MAX_UPLOAD * 4) req.destroy();
+      return;
+    }
     if (size > MAX_UPLOAD) {
       aborted = true;
-      sendJson(res, 413, { error: "Arquivo grande demais" });
-      req.destroy();
+      chunks.length = 0;
       return;
     }
     chunks.push(c);
   });
   req.on("end", () => {
-    if (aborted) return;
+    if (aborted) return sendJson(res, 413, { error: "Arquivo grande demais" });
     let name = "";
     try {
       name = decodeURIComponent(req.headers["x-file-name"] || "");

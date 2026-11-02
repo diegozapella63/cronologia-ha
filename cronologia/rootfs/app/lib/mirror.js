@@ -14,6 +14,9 @@
 import crypto from "node:crypto";
 import { foldText } from "./kinds.js";
 
+/** Today as YYYY-MM-DD in the local time (the key of a maintenance done today, as in home.js). */
+const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 const TF = { CREATE: 1, DELETE: 2, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const DAY = 86400000;
 const WAIT_WHO_MS = 3000; // after a completion is seen, wait this long for the ResolvIA to say who
@@ -334,7 +337,7 @@ export class Mirror {
         pointsKey = occKey;
       } else {
         const out = await this.home.maintDone(r.cal, r.evUid, "ResolvIA", who || "");
-        pointsKey = out.moved ? `maint|${r.cal}|${r.evUid}|${new Date().toISOString().slice(0, 10)}` : out.key;
+        pointsKey = out.moved ? `maint|${r.cal}|${r.evUid}|${localDay()}` : out.key;
       }
       r.lastDone = { occKey, at: Date.now(), pointsKey, who: who || null };
       this.log.info(`Feito pelo ResolvIA: ${r.written.summary}${who ? ` (${who})` : ""}`);

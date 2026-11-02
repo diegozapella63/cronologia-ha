@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.37.2
+
+- **Testes**: a CronologIA agora tem 591 testes unitários e de integração (`npm test`) e os testes visuais no Chromium (`tests/e2e/run.sh`), rodando no GitHub a cada mudança. Eles acharam e esta versão corrige:
+- Manutenção com pontos feita depois das 21h e de novo na manhã seguinte contava uma vez só (o dia era o de Greenwich, não o daqui). Vale também para a feita pelo ResolvIA.
+- Importar um .ics: um texto com barra invertida antes de "n" (como `C:\novos`) virava quebra de linha, e um local com link entre aspas ficava cortado.
+- Busca de equipamento com emoji no nome: o destaque caía nas letras erradas.
+- Um arquivo grande demais (importar, ler com IA) ou uma fala longa demais às vezes davam "conexão perdida" em vez do aviso.
+
 ## 1.37.1
 
 - **Pulada em amarelo**: o sinal de pular fica amarelo (e não verde, como o de feito) no Calendário, na Rotina da casa, no Qualquer hora e na tela da rotina.

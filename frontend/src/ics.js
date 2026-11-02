@@ -2,14 +2,24 @@
 // calendar export…) so they can be reviewed and added to a calendar.
 import { ymd, hm, fromYmd } from "./util.js";
 
-const unescape = (s) => s.replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1");
+// one pass: "\\n" is a backslash and an n (C:\\novos), "\n" a line break
+const unescape = (s) => s.replace(/\\([nN,;\\])/g, (m, c) => (c === "n" || c === "N" ? "\n" : c));
 
 function unfold(text) {
   return text.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "").split("\n");
 }
 
 function parseLine(line) {
-  const colon = line.indexOf(":");
+  // the first ":" outside quotes (a parameter like ALTREP="https://…" has its own)
+  let colon = -1;
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') quoted = !quoted;
+    else if (line[i] === ":" && !quoted) {
+      colon = i;
+      break;
+    }
+  }
   if (colon < 0) return null;
   const head = line.slice(0, colon);
   const value = line.slice(colon + 1);

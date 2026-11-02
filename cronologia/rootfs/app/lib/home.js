@@ -751,7 +751,8 @@ export class Home {
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     // points: one entry per maintenance done (the event moves, so the key carries the day)
     const person = this.participant(who);
-    const key = `maint|${cal}|${uid}|${new Date().toISOString().slice(0, 10)}`;
+    // the local day (after 21:00 here the UTC date is already tomorrow)
+    const key = `maint|${cal}|${uid}|${ymd(new Date())}`;
     if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "manutencao" });
     if (feat & F.UPDATE) this.undo.set(`${cal}|${uid}`, { ...this.undo.get(`${cal}|${uid}`), key });
     this.log.info(`Manutenção feita: ${raw.summary} (${person || who || by}); próxima em ${event.start.slice(0, 10)}`);
