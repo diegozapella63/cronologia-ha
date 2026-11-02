@@ -53,6 +53,10 @@ describe("ai: extractJson", () => {
     assert.deepEqual(extractJson('Lista: [{"title":"A"},{"title":"B"}] fim'), [{ title: "A" }, { title: "B" }]);
     assert.deepEqual(extractJson('Objeto {"a":[1,2]} depois'), { a: [1, 2] });
   });
+  it("when the first kind of brackets is broken, the other one is tried", () => {
+    assert.deepEqual(extractJson('Veja [nota] e o resultado: {"events":[]}'), { events: [] }, "[nota] is not JSON");
+    assert.deepEqual(extractJson('Resposta {quase json} e depois [1, 2]'), [1, 2], "{quase json} is not JSON");
+  });
   it("null when there is nothing to read", () => {
     assert.equal(extractJson("sem json"), null);
     assert.equal(extractJson("{quebrado"), null);
@@ -182,6 +186,18 @@ describe("ai: AI (with a fake Home Assistant)", () => {
     assert.equal(text.images, false);
     assert.match(text.reason, /lê fotos/);
   });
+  it("status: Home Assistant can't be asked for the AIs (says why)", async () => {
+    const ha = fakeHA();
+    const send = ha.send;
+    ha.send = async (msg) => {
+      if (msg.type === "get_states") throw new Error("timeout");
+      return send(msg);
+    };
+    const st = await new AI({ ha, log: makeLog(), mediaDir: newDir() }).status();
+    assert.equal(st.ready, false);
+    assert.deepEqual(st.entities, []);
+    assert.equal(st.reason, "Não deu para consultar o Home Assistant: timeout");
+  });
   it("status: a media folder that can't be written turns the photos off", async () => {
     const base = newDir();
     fs.writeFileSync(path.join(base, "media"), "a file, not a folder");
@@ -209,6 +225,17 @@ describe("ai: AI (with a fake Home Assistant)", () => {
     assert.equal(records[0].kind, "mensagem");
     assert.equal(records[0].result, "ok");
     assert.ok(records[0].output > 0);
+  });
+  it("extract: an answer that can't be measured counts 0 characters out (the call is still counted)", async () => {
+    const records = [];
+    const answer = { events: [] };
+    answer.self = answer; // circular: JSON.stringify throws
+    const ai = new AI({ ha: fakeHA({ answer }), log: makeLog(), mediaDir: newDir(), usage: { record: (r) => records.push(r) } });
+    const out = await ai.extract({ text: "nada" });
+    assert.deepEqual(out.events, []);
+    assert.equal(records.length, 1);
+    assert.equal(records[0].output, 0);
+    assert.equal(records[0].result, "ok");
   });
   it("extract photos: written to media while read, then removed", async () => {
     const media = newDir();
@@ -332,6 +359,24 @@ describe("usage: AiUsage", () => {
     assert.equal(body.attributes.friendly_name, "CronologIA: chamadas de IA hoje");
     await u.remove();
     assert.equal(f.mock.calls[1].arguments[1].method, "DELETE");
+  });
+  it("a call that can't be written down only warns (the app goes on)", () => {
+    const base = newDir();
+    fs.writeFileSync(path.join(base, "arquivo"), "x");
+    const log = makeLog();
+    const u = new AiUsage({ dir: path.join(base, "arquivo", "dentro"), sensor: "sensor.x", label: "X", rest: "", token: "", log, enabled: () => false });
+    assert.doesNotThrow(() => u.record({ kind: "mensagem", input: 4, output: 4 }));
+    assert.equal(log.lines[0][0], "warn");
+    assert.match(log.lines[0][1], /^Uso da IA: /);
+  });
+  it("remove with Home Assistant offline does not fail", async () => {
+    const f = mock.method(globalThis, "fetch", async () => {
+      throw new Error("ECONNREFUSED");
+    });
+    const u = new AiUsage({ dir: newDir(), sensor: "sensor.x", label: "X", rest: "http://ha/api", token: "t", log: makeLog(), enabled: () => true });
+    await u.remove();
+    assert.equal(f.mock.callCount(), 1);
+    assert.equal(f.mock.calls[0].arguments[1].method, "DELETE");
   });
   it("a sensor failure is logged once per day", async () => {
     mock.timers.enable({ apis: ["Date"], now: at(2026, 11, 2, 10).getTime() });

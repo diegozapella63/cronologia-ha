@@ -6,6 +6,11 @@
 // event bus and the REST states API (sensors).
 //   Test helpers: GET /dev/notifications, POST /dev/fire {event_type, data},
 //   GET /api/states/<entity>.
+//   Variants for the tests (env): FAKE_NO_UPDATE=calendar.x (creates and deletes, no
+//   update, like Google), FAKE_FEATURES=calendar.x=0,calendar.y=1 (supported_features),
+//   FAKE_EXTRA_CALENDARS=1 (a CalDAV, a Google and a read-only Outlook calendar too),
+//   FAKE_HA_TIME_ZONE (what get_config says), FAKE_FAIL=get_config,... (those websocket
+//   commands fail), FAKE_FAIL_REST=calendar.x (its REST events answer 500).
 //   TZ=America/Sao_Paulo node dev/fake-ha.mjs
 //   (ws://127.0.0.1:8123/api/websocket and http://127.0.0.1:8123/api, token "dev")
 import http from "node:http";
@@ -18,10 +23,32 @@ const PORT = Number(process.env.FAKE_HA_PORT || 8123);
 const TOKEN = process.env.FAKE_HA_TOKEN || "dev";
 const MEDIA_DIR = process.env.FAKE_MEDIA_DIR || process.env.MEDIA_DIR || "./.data/media";
 const WITH_AI = process.env.FAKE_HA_NO_AI !== "1";
+const FAILS = new Set((process.env.FAKE_FAIL || "").split(",").filter(Boolean));
+const FAILS_REST = new Set((process.env.FAKE_FAIL_REST || "").split(",").filter(Boolean));
 
 const model = createCalendars();
+// FAKE_EXTRA_CALENDARS=1: the integrations that allow less (CalDAV creates only; Google creates and
+// deletes; MS365 without its edit option only reads), each with a plain and a repeating event
+if (process.env.FAKE_EXTRA_CALENDARS === "1") {
+  let seq = 1;
+  const at = (off, h, m = 0) => {
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    d.setDate(d.getDate() + off);
+    return d.getTime();
+  };
+  const mk = (summary, start, end, extra = {}) => ({ uid: `extra-${seq++}`, summary, start, end, allDay: false, rrule: null, exdates: new Set(), description: "", location: "", ...extra });
+  model.calendars["calendar.nextcloud"] = { name: "Nextcloud", platform: "caldav", features: 1, events: [mk("Reunião do condomínio", at(0, 20), at(0, 21), { location: "Salão de festas" }), mk("Coral", at(-7, 18), at(-7, 19), { rrule: "FREQ=WEEKLY" })] };
+  model.calendars["calendar.familia"] = { name: "Família", platform: "google", features: 3, events: [mk("Consulta do Theo", at(0, 16), at(0, 17), { description: "Levar a carteirinha" }), mk("Natação", at(-14, 7), at(-14, 8), { rrule: "FREQ=WEEKLY" })] };
+  model.calendars["calendar.outlook_leitura"] = { name: "Outlook da empresa", platform: "ms365_calendar", features: 0, events: [mk("Treinamento de vendas", at(0, 14), at(0, 15, 30)), mk("Comitê", at(-7, 11), at(-7, 12), { rrule: "FREQ=WEEKLY" })] };
+}
 // FAKE_NO_UPDATE=calendar.casa: that calendar creates and deletes but can't change events (like Google)
 for (const id of (process.env.FAKE_NO_UPDATE || "").split(",").filter(Boolean)) if (model.calendars[id]) model.calendars[id].features = 3;
+// FAKE_FEATURES=calendar.trabalho=0: what each calendar allows (1 create, 2 delete, 4 update)
+for (const pair of (process.env.FAKE_FEATURES || "").split(",").filter(Boolean)) {
+  const [id, n] = pair.split("=");
+  if (model.calendars[id]) model.calendars[id].features = Number(n) || 0;
+}
 const todos = createTodos();
 const notifications = [];
 const restStates = new Map();
@@ -121,6 +148,7 @@ class Conn {
     }
     const ok = (result = null) => this.send({ id: msg.id, type: "result", success: true, result });
     try {
+      if (FAILS.has(msg.type)) fail("home_assistant_error", `${msg.type} failed (FAKE_FAIL)`);
       switch (msg.type) {
         case "ping":
           return this.send({ id: msg.id, type: "pong" });
@@ -150,7 +178,7 @@ class Conn {
         case "ai_task/preferences/get":
           return ok({ gen_data_entity_id: WITH_AI ? "ai_task.google_ai_task" : null });
         case "get_config":
-          return ok({ time_zone: process.env.TZ || "America/Sao_Paulo", version: "2026.10.2" });
+          return ok({ time_zone: process.env.FAKE_HA_TIME_ZONE || process.env.TZ || "America/Sao_Paulo", version: "2026.10.2" });
         case "config/entity_registry/list_for_display":
           return ok({
             entity_categories: {},
@@ -307,6 +335,7 @@ const server = http.createServer(async (req, res) => {
   const m = url.pathname.match(/^\/api\/calendars\/(calendar\.[a-z0-9_]+)$/);
   if (m && req.method === "GET") {
     if (!model.calendars[m[1]]) return res.writeHead(400).end();
+    if (FAILS_REST.has(m[1])) return res.writeHead(500).end("500: Internal Server Error");
     const from = Date.parse(url.searchParams.get("start"));
     const to = Date.parse(url.searchParams.get("end"));
     if (!(to > from)) return res.writeHead(400).end();

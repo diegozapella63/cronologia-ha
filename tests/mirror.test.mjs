@@ -428,6 +428,36 @@ describe("Mirror: concluded in the list", () => {
     await s.m.onPoints("desfazer", LIST, "t1", "");
     assert.deepEqual(s.home.calls.at(-1), ["maintUndo", "calendar.casa", "filtro"]);
   });
+  it("Desfazer in the ResolvIA that fails here (the calendar refuses): warned, and not tried again", async () => {
+    mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
+    const src = "maint|calendar.casa|filtro";
+    const s = setup({ mirror: { list: LIST, maint: true, routine: false }, maint: [maintItem()] });
+    s.store.data.mirror[src] = { list: LIST, uid: "t1", tag: tagOf(src), type: "manutencao", cal: "calendar.casa", evUid: "filtro", written: { occKey: maintItem().key, summary: "Trocar o filtro", points: 30 } };
+    s.todos.items.set(LIST, [{ uid: "t1", summary: "Trocar o filtro", status: "completed", due: "2026-11-07" }]);
+    await s.m.sync();
+    await s.m.onPoints("somar", LIST, "t1", "Diego");
+    s.home.maintUndo = async () => {
+      throw new Error("Esse calendário não deixa mudar eventos");
+    };
+    await s.m.onPoints("desfazer", LIST, "t1", "");
+    assert.match(s.m.log.lines.at(-1)[1], /Desfazer pelo ResolvIA: Esse calendário não deixa mudar eventos/);
+    assert.equal(s.store.data.mirror[src].lastDone, null, "forgotten: a second Desfazer does nothing");
+    s.home.maintUndo = async () => assert.fail("not again");
+    await s.m.onPoints("desfazer", LIST, "t1", "");
+  });
+  it("Desfazer more than 30 minutes later does nothing", async () => {
+    mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
+    const o = routine();
+    const s = setup({ mirror: { list: LIST, maint: false, routine: true }, occurrences: [o] });
+    linked(s, o);
+    await s.m.sync();
+    mock.timers.tick(3000);
+    await flushPromises();
+    const n = s.home.calls.length;
+    mock.timers.tick(31 * 60000);
+    await s.m.onPoints("desfazer", LIST, "t1", "");
+    assert.equal(s.home.calls.length, n);
+  });
   it("a failure to mark it done is kept (no points later for it)", async () => {
     mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
     const src = "maint|calendar.casa|filtro";
