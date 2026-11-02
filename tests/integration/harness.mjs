@@ -131,8 +131,9 @@ export class Client {
 /**
  * The fake HA and the server, ready (connected, calendars found).
  * `share` can pre-write files of the share folder ({"resolvia/integracao.json": {...}}).
+ * `ready`: the line of the server's log that says it is up (the calendars were read).
  */
-export async function startStack({ env = {}, fakeEnv = {}, share = {}, data = null } = {}) {
+export async function startStack({ env = {}, fakeEnv = {}, share = {}, data = null, ready = /calendários encontrados/ } = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), "cronologia-it-"));
   const dirs = { base, data: path.join(base, "data"), media: path.join(base, "media"), share: path.join(base, "share") };
   for (const d of [dirs.data, dirs.media, dirs.share]) fs.mkdirSync(d, { recursive: true });
@@ -173,7 +174,7 @@ export async function startStack({ env = {}, fakeEnv = {}, share = {}, data = nu
       SHARE_DIR: dirs.share,
       ...env,
     });
-    await waitFor(() => stack.app.lines.some((l) => /calendários encontrados/.test(l)) || (stack.app.exitCode != null && Promise.reject(new Error("server exited"))), { what: "the server to load the calendars", timeout: 15000 });
+    await waitFor(() => stack.app.lines.some((l) => ready.test(l)) || (stack.app.exitCode != null && Promise.reject(new Error("server exited"))), { what: "the server to load the calendars", timeout: 15000 });
   } catch (err) {
     const logs = stack.logs();
     await stack.stop();

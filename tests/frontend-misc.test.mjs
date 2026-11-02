@@ -1,5 +1,5 @@
 // frontend/src: events.js (EventStore, eventsOfDay, layoutDay), equip-picker.js
-// (searchEquips and the picker's output) and voice.js (Recorder, micError).
+// (searchEquips and the picker's output) and voice.js (Recorder with a fake microphone, micError).
 import { at, isoLocal, flushPromises } from "./helpers.mjs";
 import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
@@ -362,6 +362,116 @@ describe("voice (frontend): Recorder.stop gives Int16 PCM at 16 kHz", () => {
   it("constants", () => {
     assert.equal(VOICE_RATE, 16000);
     assert.equal(VOICE_MAX_S, 120);
+  });
+});
+
+describe("voice (frontend): Recorder.start with a fake microphone", () => {
+  let nav;
+  const useNavigator = (v) => {
+    nav = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+    Object.defineProperty(globalThis, "navigator", { value: v, configurable: true });
+  };
+  afterEach(() => {
+    if (nav) Object.defineProperty(globalThis, "navigator", nav);
+    nav = null;
+  });
+  /** A fake AudioContext; `refuseRate`: like browsers that only record at their own rate. */
+  const fakeAudio = ({ refuseRate = false, state = "running" } = {}) => {
+    const made = [];
+    class AC {
+      constructor(opts) {
+        if (opts && refuseRate) throw new Error("NotSupportedError");
+        this.sampleRate = opts ? opts.sampleRate : 48000;
+        this.state = state;
+        this.destination = { dest: true };
+        this.closed = 0;
+        made.push(this);
+      }
+      resume() {
+        this.state = "running";
+        return Promise.resolve();
+      }
+      close() {
+        this.closed++;
+        this.state = "closed";
+        return Promise.resolve();
+      }
+      createMediaStreamSource(stream) {
+        this.src = { stream, to: null, connect: (n) => (this.src.to = n), disconnect: () => (this.src.to = null) };
+        return this.src;
+      }
+      createScriptProcessor(size, ins, outs) {
+        this.node = { size, ins, outs, to: null, connect: (d) => (this.node.to = d), disconnect: () => (this.node.to = null) };
+        return this.node;
+      }
+    }
+    return { AC, made };
+  };
+  const mic = () => {
+    const asked = [];
+    const tracks = [
+      {
+        stopped: 0,
+        stop() {
+          this.stopped++;
+        },
+      },
+    ];
+    return { asked, tracks, mediaDevices: { getUserMedia: async (c) => (asked.push(c), { getTracks: () => tracks }) } };
+  };
+  it("asks for one channel with echo and noise cancelling, records at 16 kHz and reports the level", async () => {
+    const m = mic();
+    useNavigator({ mediaDevices: m.mediaDevices });
+    const { AC, made } = fakeAudio({ state: "suspended" });
+    globalThis.window = { AudioContext: AC };
+    const levels = [];
+    const r = new Recorder((l) => levels.push(l));
+    await r.start();
+    assert.deepEqual(m.asked, [{ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } }]);
+    const ctx = made[0];
+    assert.equal(ctx.state, "running", "a suspended context is resumed");
+    assert.equal(r.rate, VOICE_RATE);
+    assert.deepEqual([ctx.node.size, ctx.node.ins, ctx.node.outs], [4096, 1, 1]);
+    assert.equal(ctx.src.to, ctx.node, "the microphone goes to the processor");
+    assert.equal(ctx.node.to, ctx.destination, "which keeps running into the (silent) output");
+    ctx.node.onaudioprocess({ inputBuffer: { getChannelData: () => Float32Array.from([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]) } });
+    ctx.node.onaudioprocess({ inputBuffer: { getChannelData: () => Float32Array.from([0.5, 0, 0, 0]) } });
+    assert.equal(r.length, 12);
+    assert.equal(r.chunks.length, 2);
+    assert.ok(Math.abs(levels[0] - 0.5) < 1e-6, `level ${levels[0]}`);
+    assert.equal(levels[1], 1, "the level stays within 0..1");
+    const pcm = r.stop();
+    assert.equal(pcm.length, 12);
+    assert.equal(m.tracks[0].stopped, 1, "the microphone is released");
+    assert.equal(ctx.closed, 1);
+    assert.equal(r.node, null);
+  });
+  it("a browser that only records at its own rate (webkit prefix too): its rate, resampled at the end", async () => {
+    useNavigator({ mediaDevices: mic().mediaDevices });
+    const { AC, made } = fakeAudio({ refuseRate: true });
+    globalThis.window = { webkitAudioContext: AC };
+    const r = new Recorder(null);
+    await r.start();
+    assert.equal(made.length, 1);
+    assert.equal(r.rate, 48000);
+    made[0].node.onaudioprocess({ inputBuffer: { getChannelData: () => new Float32Array(4800).fill(0.25) } });
+    assert.equal(r.seconds(), 0.1);
+    assert.equal(r.stop().length, 1600);
+  });
+  it("closing never throws, even when the audio graph is already gone", () => {
+    const r = new Recorder();
+    let stopped = 0;
+    r.stream = { getTracks: () => [{ stop: () => stopped++ }] };
+    r.src = {
+      disconnect: () => {
+        throw new Error("InvalidAccessError");
+      },
+    };
+    r.node = { onaudioprocess: () => {}, disconnect: () => {} };
+    r.ctx = { state: "closed", close: () => assert.fail("not closed twice") };
+    r.cancel();
+    assert.equal(stopped, 1);
+    assert.equal(r.src, null);
   });
 });
 

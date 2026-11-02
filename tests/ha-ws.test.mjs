@@ -1,5 +1,6 @@
 // ws.js (the app's own WebSocket server, frame by frame over a fake socket) and
-// ha.js (the client of Home Assistant's websocket API, with a fake connection).
+// ha.js (the client of Home Assistant's websocket API, with a fake connection and a fake
+// global WebSocket for connecting and reconnecting).
 import { makeLog, flushPromises } from "./helpers.mjs";
 import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
@@ -360,10 +361,141 @@ describe("ha: HAClient", () => {
     c._onMessage({ type: "auth_ok" });
     assert.equal(c.out[0].type, "subscribe_events");
   });
-  it("start() needs a global WebSocket (Node 22)", () => {
+  it("start() needs a global WebSocket (Node 22); without one it says so", () => {
     assert.equal(typeof WebSocket, "function");
+    const real = globalThis.WebSocket;
+    try {
+      delete globalThis.WebSocket;
+      assert.throws(() => new HAClient("ws://ha", "t", makeLog()).start(), /no global WebSocket/);
+    } finally {
+      globalThis.WebSocket = real;
+    }
   });
   it("the accept key helper of the tests matches node's crypto", () => {
     assert.equal(crypto.createHash("sha1").update("dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64"), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
+  });
+});
+
+describe("ha: HAClient connecting (a fake global WebSocket)", () => {
+  const real = globalThis.WebSocket;
+  afterEach(() => {
+    globalThis.WebSocket = real;
+  });
+  /** Every socket opened; `refuse`: the constructor throws (a bad address). */
+  const fakeWs = ({ refuse = false } = {}) => {
+    const opened = [];
+    globalThis.WebSocket = class {
+      constructor(url) {
+        if (refuse) throw new SyntaxError("Invalid URL");
+        this.url = url;
+        this.sent = [];
+        this.closed = 0;
+        opened.push(this);
+      }
+      send(t) {
+        this.sent.push(JSON.parse(t));
+      }
+      close() {
+        this.closed++;
+        this.onclose();
+      }
+    };
+    return opened;
+  };
+  const start = (log = makeLog()) => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+    const c = new HAClient("ws://ha/api/websocket", "tok", log);
+    c.start();
+    return c;
+  };
+  it("text, binary and batched messages are read; anything that is not JSON is ignored", async () => {
+    const opened = fakeWs();
+    const c = start();
+    const ws = opened[0];
+    assert.equal(ws.url, "ws://ha/api/websocket");
+    ws.onmessage({ data: '{"type":"auth_required"}' });
+    assert.deepEqual(ws.sent, [{ type: "auth", access_token: "tok" }]);
+    ws.onmessage({ data: "não é json" });
+    ws.onmessage({ data: new TextEncoder().encode('[{"type":"auth_ok","ha_version":"2026.10.2"},{"type":"pong"}]') });
+    assert.equal(c.ready, true);
+    const p = c.sendNow({ type: "get_config" });
+    ws.onmessage({ data: Buffer.from(JSON.stringify({ id: ws.sent[1].id, type: "result", success: true, result: { time_zone: "America/Sao_Paulo" } })) });
+    assert.deepEqual(await p, { time_zone: "America/Sao_Paulo" });
+    ws.onerror();
+    c.stop();
+  });
+  it("reconnects after a drop, waiting longer each time (up to 30 s); a good connection starts over at 1 s", () => {
+    const opened = fakeWs();
+    const log = makeLog();
+    const c = start(log);
+    opened[0].onclose();
+    assert.equal(opened.length, 1);
+    mock.timers.tick(999);
+    assert.equal(opened.length, 1, "not before 1 s");
+    mock.timers.tick(1);
+    assert.equal(opened.length, 2);
+    opened[1].onclose();
+    mock.timers.tick(1999);
+    assert.equal(opened.length, 2);
+    mock.timers.tick(1);
+    assert.equal(opened.length, 3, "then 2 s");
+    for (let i = 0; i < 6; i++) {
+      opened.at(-1).onclose();
+      mock.timers.tick(30000);
+    }
+    assert.equal(c.backoff, 30000, "never more than 30 s");
+    opened.at(-1).onmessage({ data: '{"type":"auth_ok"}' });
+    assert.equal(c.backoff, 1000);
+    opened.at(-1).onclose();
+    assert.ok(log.lines.some(([lv, m]) => lv === "warn" && /Disconnected from Home Assistant/.test(m)));
+    const n = opened.length;
+    mock.timers.tick(1000);
+    assert.equal(opened.length, n + 1, "back to 1 s after it had connected");
+    c.stop();
+  });
+  it("a connection refused with only 'error' (Node's WebSocket sends no 'close') is retried too, once per failure", () => {
+    const opened = fakeWs();
+    const c = start();
+    opened[0].onerror({ type: "error" });
+    mock.timers.tick(1000);
+    assert.equal(opened.length, 2, "Home Assistant restarting: refused with 'error' only, tried again after 1 s");
+    opened[1].onerror({ type: "error" });
+    mock.timers.tick(2000);
+    assert.equal(opened.length, 3, "and again after 2 s");
+    // the browser way: error, then close: still one new try, not two
+    opened[2].onerror({ type: "error" });
+    opened[2].onclose();
+    mock.timers.tick(4000);
+    assert.equal(opened.length, 4, "one try for one failure");
+    // an error after the connection is up is not a close: the close that follows is
+    opened[3].onmessage({ data: '{"type":"auth_ok"}' });
+    opened[3].onerror({ type: "error" });
+    mock.timers.tick(60000);
+    assert.equal(opened.length, 4, "connected: an error alone doesn't reconnect");
+    opened[3].onclose();
+    mock.timers.tick(1000);
+    assert.equal(opened.length, 5);
+    c.stop();
+  });
+  it("an address that can't be opened: warned and tried again later", () => {
+    fakeWs({ refuse: true });
+    const log = makeLog();
+    const c = start(log);
+    assert.equal(c.ws, null);
+    assert.match(log.lines[0][1], /Could not open ws:\/\/ha\/api\/websocket: Invalid URL/);
+    const opened = fakeWs();
+    mock.timers.tick(1000);
+    assert.equal(opened.length, 1, "the next try opens it");
+    c.stop();
+  });
+  it("stop() closes and never reconnects", () => {
+    const opened = fakeWs();
+    const c = start();
+    c.stop();
+    assert.equal(opened[0].closed, 1);
+    mock.timers.tick(60000);
+    assert.equal(opened.length, 1);
+    c._connect();
+    assert.equal(opened.length, 1, "a late _connect does nothing");
   });
 });

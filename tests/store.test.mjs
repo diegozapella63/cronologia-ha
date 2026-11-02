@@ -397,6 +397,16 @@ describe("Store: prizes, periods", () => {
     assert.equal(code(() => s.setReward("26/10", "x")), "invalid_format");
     assert.equal(code(() => s.setPrizes("x", "y")), "invalid_format");
   });
+  it("setReward with no text removes the prize (this period and the closed one)", () => {
+    const s = fresh();
+    s.setReward("2026-11-02", "Cinema");
+    assert.equal(s.data.score.rewards["2026-11-02"], "Cinema");
+    s.setReward("2026-11-02", "   ");
+    assert.equal("2026-11-02" in s.data.score.rewards, false);
+    s.closePeriod({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: {}, winner: "Ana", reward: "Pizza" }, null);
+    s.setReward("2026-10-26", "");
+    assert.equal(s.data.score.history[0].reward, "");
+  });
   it("closePeriod: newest first, the same key replaced, at most 104; logs fechou", () => {
     const s = fresh();
     for (let i = 0; i < 110; i++) s.closePeriod({ key: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`, start: "x", end: "y", totals: {}, winner: "" }, null);
@@ -560,6 +570,29 @@ describe("Store: versions and replaceAll (import, restore)", () => {
       versions().map((n) => n.replace(/^cronologia-\d{8}-\d{6}-/, "")),
       ["r2.json", "r3.json", "r4.json"],
     );
+  });
+  it("a version that can't be copied (versoes is not a folder): warned, null, and the save still happens", () => {
+    const s = fresh();
+    s.setApp({ accent: "azul" });
+    s.flush();
+    fs.writeFileSync(path.join(dir, "versoes"), "um arquivo no lugar da pasta");
+    assert.equal(s.version("manual", true), null);
+    assert.match(log.lines.at(-1)[1], /Não consegui guardar uma versão/);
+    s.setApp({ accent: "rosa" });
+    s.flush();
+    assert.equal(onDisk().app.accent, "rosa");
+  });
+  it("a save that fails (the folder is gone) is logged as an error, and the data stays in memory", () => {
+    const s = fresh();
+    s.setApp({ accent: "azul" });
+    fs.rmSync(dir, { recursive: true, force: true });
+    s.flush({ version: false });
+    assert.equal(log.lines.at(-1)[0], "error");
+    assert.match(log.lines.at(-1)[1], /Não consegui salvar .*cronologia\.json/);
+    assert.equal(s.data.app.accent, "azul");
+    fs.mkdirSync(dir, { recursive: true });
+    s.flush({ version: false });
+    assert.equal(onDisk().app.accent, "azul", "the next save works again");
   });
   it("version() without a file gives null", () => {
     assert.equal(fresh().version("x", true), null);

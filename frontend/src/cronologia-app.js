@@ -415,7 +415,11 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _defaultCal() {
     const w = this._writable();
     const pref = this._app("default_calendar", null);
-    return (w.find((c) => c.id === pref) || w.find((c) => !c.hidden) || w[0] || {}).id || null;
+    // sem Calendário padrão escolhido: primeiro um que deixa editar e apagar depois (local, Outlook com edição), depois
+    // um que deixa apagar (Google), e só então um que só cria (CalDAV), mesmo que venha antes em ordem alfabética
+    const vis = w.filter((c) => !c.hidden);
+    const best = vis.find((c) => c.canUpdate && c.canDelete) || vis.find((c) => c.canDelete) || vis[0];
+    return (w.find((c) => c.id === pref) || best || w[0] || {}).id || null;
   }
 
   /** Events of the visible calendars overlapping [start, end) (loads them if needed). */
@@ -1448,7 +1452,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const now = new Date(this._now);
     const base = this._sideMonth || this._cursor;
     const first = new Date(base.getFullYear(), base.getMonth(), 1);
-    const ws = this._app("week_start", 0);
+    const ws = this._app("week_start", 1);
     const start = startOfWeek(first, ws);
     const weeks = addDays(start, 35).getMonth() === first.getMonth() ? 6 : 5;
     const days = Array.from({ length: weeks * 7 }, (_, i) => addDays(start, i));
@@ -1875,7 +1879,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const now = new Date(this._now);
     const cur = this._cursor;
     const mode = this._mode;
-    const ws = this._app("week_start", 0);
+    const ws = this._app("week_start", 1);
     let title;
     let prev;
     let nextFn;
@@ -1943,7 +1947,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _renderMonth() {
     const now = new Date(this._now);
     const cur = this._cursor;
-    const ws = this._app("week_start", 0);
+    const ws = this._app("week_start", 1);
     const first = new Date(cur.getFullYear(), cur.getMonth(), 1);
     const gridStart = startOfWeek(first, ws);
     const gridEnd = addDays(gridStart, 42);
@@ -1992,7 +1996,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const days = Array.from({ length: n }, (_, i) => addDays(start, i));
     const events = this._events(days[0], addDays(days[n - 1], 1));
     const hours = Array.from({ length: 24 }, (_, h) => h);
-    const ws = this._app("week_start", 0);
+    const ws = this._app("week_start", 1);
     // Very long timed events (a 15-hour giveaway…) would cover the whole column: they go up with the all-day ones.
     // "Dia todo" is only for real events: routines, tasks, maintenance and bills without a time
     // become a counter per day ("Qualquer hora", 3/46), and the list opens from it.
@@ -2257,7 +2261,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   /** Mais › Opções: how the agenda works, for the whole house. */
   _renderOptions() {
-    const ws = this._app("week_start", 0);
+    const ws = this._app("week_start", 1);
     const details = this._app("event_details", false) === true;
     return html`
       <div class="panel">

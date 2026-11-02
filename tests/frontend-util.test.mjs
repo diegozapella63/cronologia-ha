@@ -1,6 +1,7 @@
-// frontend/src/util.js: the pure helpers of the screens (text, dates, labels, colors).
+// frontend/src/util.js: the pure helpers of the screens (text, dates, labels, colors) and
+// prepareImage (with a fake canvas, bitmap and FileReader).
 import { at } from "./helpers.mjs";
-import { describe, it } from "node:test";
+import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import * as U from "../frontend/src/util.js";
 
@@ -162,5 +163,79 @@ describe("util: shortNames", () => {
     ]);
     assert.deepEqual(m.get("a"), { short: "casa", group: "Lista da" });
     assert.deepEqual(m.get("b"), { short: "Casa", group: "lista da" });
+  });
+});
+
+describe("util: prepareImage (a photo shrunk before it goes to the AI)", () => {
+  const saved = {};
+  const stub = (k, v) => {
+    if (!(k in saved)) saved[k] = Object.getOwnPropertyDescriptor(globalThis, k);
+    Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
+  };
+  afterEach(() => {
+    for (const [k, d] of Object.entries(saved)) {
+      if (d) Object.defineProperty(globalThis, k, d);
+      else delete globalThis[k];
+      delete saved[k];
+    }
+  });
+  // a FileReader like the browser's: data URL of the blob
+  class FakeReader {
+    readAsDataURL(blob) {
+      blob
+        .arrayBuffer()
+        .then((b) => {
+          if (blob.size === 0) throw new Error("vazio");
+          this.result = `data:${blob.type};base64,${Buffer.from(b).toString("base64")}`;
+          this.onload();
+        })
+        .catch((err) => {
+          this.error = err;
+          this.onerror();
+        });
+    }
+  }
+  const setup = (bitmap) => {
+    const drawn = [];
+    const canvas = { getContext: () => ({ drawImage: (...a) => drawn.push(a.slice(1)) }), toBlob: (cb, type, q) => cb(new Blob([`jpeg ${q}`], { type })) };
+    stub("FileReader", FakeReader);
+    stub("document", { createElement: (t) => (t === "canvas" ? canvas : null) });
+    stub("createImageBitmap", async (file, opts) => {
+      if (opts.imageOrientation !== "from-image") throw new Error("orientation");
+      if (bitmap instanceof Error) throw bitmap;
+      return bitmap;
+    });
+    return { canvas, drawn };
+  };
+  const b64 = (s) => Buffer.from(s).toString("base64");
+  it("a big photo: the longest side down to 1800 px, as JPEG (0.86), the phone's rotation applied", async () => {
+    let closed = 0;
+    const { canvas, drawn } = setup({ width: 4000, height: 3000, close: () => closed++ });
+    const out = await U.prepareImage(new Blob(["original"], { type: "image/png" }));
+    assert.deepEqual([canvas.width, canvas.height], [1800, 1350]);
+    assert.deepEqual(drawn, [[0, 0, 1800, 1350]]);
+    assert.equal(out.mime, "image/jpeg");
+    assert.equal(out.data, b64("jpeg 0.86"));
+    assert.match(out.url, /^blob:/);
+    assert.equal(closed, 1, "the bitmap is released");
+  });
+  it("a small one keeps its size; another limit can be given", async () => {
+    const { canvas } = setup({ width: 800, height: 1200 });
+    await U.prepareImage(new Blob(["x"], { type: "image/jpeg" }));
+    assert.deepEqual([canvas.width, canvas.height], [800, 1200]);
+    await U.prepareImage(new Blob(["x"], { type: "image/jpeg" }), 600);
+    assert.deepEqual([canvas.width, canvas.height], [400, 600]);
+  });
+  it("a photo the browser can't decode goes as it is (its own type, else JPEG)", async () => {
+    setup(new Error("formato não suportado"));
+    const heic = await U.prepareImage(new Blob(["heic bytes"], { type: "image/heic" }));
+    assert.deepEqual([heic.mime, heic.data], ["image/heic", b64("heic bytes")]);
+    assert.match(heic.url, /^blob:/);
+    const none = await U.prepareImage(new Blob(["raw"]));
+    assert.equal(none.mime, "image/jpeg");
+  });
+  it("a file that can't be read rejects", async () => {
+    setup(new Error("x"));
+    await assert.rejects(U.prepareImage(new Blob([])), /vazio/);
   });
 });

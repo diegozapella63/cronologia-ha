@@ -28,7 +28,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA** e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
   - **Aparência**: tema (automático, claro ou escuro) e cor do app.
-  - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (domingo ou segunda).
+  - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
 
 ### No computador
 

@@ -342,6 +342,23 @@ describe("Home: Pular", () => {
     assert.equal(back.event.description, AFTER);
     assert.equal(key in store.data.checks, false);
   });
+  it("Pular on a calendar that can't change events (Google): recreated on the next date; a read-only one refuses", async () => {
+    const raw = cama({ start: "2026-10-31", end: "2026-11-01" });
+    const g = setup({ events: { [CAL]: [raw] }, features: 3 });
+    const out = await g.home.skip(keyOf(raw), "Diego");
+    assert.deepEqual(out, { skipped: true, moved: true, next: "2026-11-02" });
+    assert.deepEqual(
+      g.ha.sent.map((m) => [m.type, m.uid || m.event.dtstart]),
+      [
+        ["calendar/event/delete", "cama"],
+        ["calendar/event/create", "2026-11-02"],
+      ],
+    );
+    assert.equal(g.store.data.checks[keyOf(raw)].moved.recreated, true);
+    const ro = setup({ events: { [CAL]: [raw] }, features: 1 });
+    await assert.rejects(ro.home.skip(keyOf(raw), "Diego"), { code: "not_supported" });
+    assert.equal(keyOf(raw) in ro.store.data.checks, false, "not marked skipped");
+  });
   it("only routines can be skipped", async () => {
     const raw = dose(9, 0);
     const { home } = setup({ events: { [CAL]: [raw] } });
@@ -555,6 +572,85 @@ describe("Home: index and phone alerts of doses", () => {
     home.onAction({ action: `CRONOLOGIA_TOMEI_${hashOf(key)}` });
     assert.equal(store.data.checks[key].by, "Andressa (celular)");
     assert.equal(store.data.checks[key].kind, "remedio");
+  });
+  for (const late of [15, 60]) {
+    it(`Avisar de novo ${late} min: the late alert after exactly ${late} minutes, to her and the caregivers`, async () => {
+      const raw = dose(14, 0);
+      const { home, ha } = setup({ events: { [CAL]: [raw] }, app: { people, alerts: { late, caregivers: ["mobile_app_pixel_8"] } } });
+      home.rebuild();
+      await home.sendAlerts();
+      mock.timers.tick((late - 1) * 60000);
+      home.rebuild();
+      await home.sendAlerts();
+      assert.equal(notifications(ha).length, 1, "only the one at the time");
+      mock.timers.tick(60000);
+      home.rebuild();
+      await home.sendAlerts();
+      const n = notifications(ha).slice(1);
+      assert.deepEqual(
+        n.map((x) => x.service),
+        ["mobile_app_galaxy_s23", "mobile_app_pixel_8"],
+      );
+      assert.match(n[0].service_data.message, new RegExp(`\\(${late} min\\)`));
+    });
+  }
+  it("a dose more than 3 hours past its late alert time gets no alert (an old one, e.g. after a restart)", async () => {
+    const raw = dose(9, 0);
+    const { home, ha, store } = setup({ events: { [CAL]: [raw] }, app: { people, alerts: { late: 30, caregivers: ["mobile_app_pixel_8"] } } });
+    home.rebuild();
+    await home.sendAlerts();
+    assert.equal(notifications(ha).length, 0, "14:00: five hours after 09:00");
+    assert.equal(store.data.sent[keyOf(raw)], undefined);
+  });
+  it("Adiar for someone without a phone: the alert comes back to the caregivers", async () => {
+    const raw = dose(14, 0, { description: "#remédio\nDose: 1/4\nQuem toma: Mimi" });
+    const key = keyOf(raw);
+    const { home, ha } = setup({ events: { [CAL]: [raw] }, app: { people: { Mimi: { notify: null, pet: true } }, alerts: { late: 0, caregivers: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"] } } });
+    home.rebuild();
+    await home.sendAlerts();
+    assert.deepEqual(
+      notifications(ha).map((n) => n.service),
+      ["mobile_app_pixel_8", "mobile_app_galaxy_s23"],
+    );
+    home.onAction({ action: `CRONOLOGIA_ADIAR_${hashOf(key)}` });
+    mock.timers.tick(15 * 60000);
+    home.rebuild();
+    await home.sendAlerts();
+    assert.deepEqual(
+      notifications(ha)
+        .slice(2)
+        .map((n) => [n.service, n.service_data.title]),
+      [
+        ["mobile_app_pixel_8", "💊 Sertralina"],
+        ["mobile_app_galaxy_s23", "💊 Sertralina"],
+      ],
+    );
+  });
+  it("a phone that fails does not stop the others; the alert counts as sent", async () => {
+    const raw = dose(14, 0);
+    const { home, ha, store, log } = setup({ events: { [CAL]: [raw] }, app: { people, alerts: { late: 30, caregivers: ["mobile_app_pixel_8"] } } });
+    ha.fail = (m) => m.service === "mobile_app_galaxy_s23";
+    home.rebuild();
+    await home.sendAlerts();
+    mock.timers.tick(30 * 60000);
+    home.rebuild();
+    await home.sendAlerts();
+    assert.deepEqual(
+      ha.sent.filter((m) => m.domain === "notify").map((m) => m.service),
+      ["mobile_app_galaxy_s23", "mobile_app_galaxy_s23", "mobile_app_pixel_8"],
+    );
+    assert.equal(log.lines.filter(([lv, m]) => lv === "warn" && /Aviso para mobile_app_galaxy_s23 falhou/.test(m)).length, 2);
+    assert.ok(store.data.sent[keyOf(raw)].on && store.data.sent[keyOf(raw)].late);
+  });
+  it("the test alert's Adiar: the phone is told it works; a failed confirmation only warns", async () => {
+    const { home, ha, log } = setup();
+    await home.onAction({ action: "CRONOLOGIA_TESTE_ADIAR_mobile_app_galaxy_s23" });
+    assert.deepEqual(home.lastTest, { target: "mobile_app_galaxy_s23", action: "adiar", at: NOW });
+    assert.equal(ha.sent[0].service_data.message, "O botão Adiar chegou ao CronologIA. Num aviso de verdade, ele avisa de novo em 15 minutos.");
+    ha.fail = () => true;
+    await home.onAction({ action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
+    assert.equal(home.lastTest.action, "tomei");
+    assert.match(log.lines.at(-1)[1], /Confirmação do teste para mobile_app_pixel_8 falhou/);
   });
   it("a button for a dose not found (or a stranger action) is ignored", () => {
     const { home, store, log } = setup();
@@ -896,6 +992,59 @@ describe("Home: Trazer do ResolvIA", () => {
     const out = await home.bring({ entity_id: "todo.casa", calendar: CAL, uids: ["b"], remove: false });
     assert.deepEqual(out, { created: 1, removed: 0, calendar: CAL });
     assert.equal(ha.sent.some((m) => m.service === "remove_item"), false);
+  });
+});
+
+describe("Home: sensors and finding calendars with models (fetch stubbed)", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+  it("a sensor Home Assistant refuses: warned, and sent again next time", async () => {
+    const { home, log } = setup({ events: { [CAL]: [dose(15, 0)] }, app: { sensors_on: true } });
+    home.token = "t";
+    const posts = [];
+    globalThis.fetch = async (url, opts) => (posts.push([url, opts.method]), { ok: false, status: 500 });
+    home.rebuild();
+    await flushPromises(10);
+    assert.deepEqual(posts[0], ["http://ha/api/states/sensor.cronologia_remedios_hoje", "POST"]);
+    assert.equal(posts.length, 1, "stops at the first failure");
+    assert.match(log.lines.find(([lv]) => lv === "warn")[1], /Sensor sensor\.cronologia_remedios_hoje: HTTP 500/);
+    assert.equal(home.sensorsJson, "");
+    globalThis.fetch = async (url, opts) => (posts.push([url, opts.method]), { ok: true });
+    await home.publishSensors();
+    assert.equal(posts.length, 1 + 3, "all three sent the next time");
+  });
+  it("removing the sensors with Home Assistant offline does not fail", async () => {
+    const { home } = setup();
+    home.token = "t";
+    home.sensorsJson = "{}";
+    const deletes = [];
+    globalThis.fetch = async (url, opts) => {
+      deletes.push([url.split("/").pop(), opts.method]);
+      throw new Error("ECONNREFUSED");
+    };
+    await home.removeSensors();
+    assert.deepEqual(
+      deletes.map((d) => d[0]),
+      ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"],
+    );
+    assert.ok(deletes.every((d) => d[1] === "DELETE"));
+    assert.equal(home.sensorsJson, "");
+  });
+  it("discover: a calendar offline or refusing is skipped; one with a model starts being followed", async () => {
+    const { home, store } = setup({ events: { "calendar.offline": [], "calendar.erro": [], "calendar.modelos": [], "calendar.vazio": [] } });
+    for (const id of ["calendar.offline", "calendar.erro", "calendar.modelos", "calendar.vazio"]) home.tracked.delete(id);
+    globalThis.fetch = async (url) => {
+      if (url.includes("calendar.offline")) throw new Error("timeout");
+      if (url.includes("calendar.erro")) return { ok: false, status: 500 };
+      const list = url.includes("calendar.modelos") ? [{ summary: "Regar", description: "#rotina\nPontos: 5" }] : [{ summary: "Festa" }];
+      return { ok: true, json: async () => list };
+    };
+    await home.discover();
+    assert.deepEqual(store.data.kind_cals, ["calendar.modelos"]);
+    assert.ok(home.tracked.has("calendar.modelos"));
+    assert.equal(home.tracked.has("calendar.offline") || home.tracked.has("calendar.erro") || home.tracked.has("calendar.vazio"), false);
   });
 });
 

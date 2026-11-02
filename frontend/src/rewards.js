@@ -916,7 +916,7 @@ export const RewardsMixin = (Base) =>
         </div>
         <div class="field"><span class="flabel">O placar fecha</span>
           <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
-          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 0) === 1 ? "na segunda" : "no domingo"}.`}</span></span>
+          <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 1) === 1 ? "na segunda" : "no domingo"}.`}</span></span>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Marcar pontos em Recompensas</div><div class="hint">O card <b>Para pontuar hoje</b>.</div></div>
