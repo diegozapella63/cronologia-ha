@@ -30,6 +30,10 @@ async def main():
         a = pg.locator("cronologia-app"); sheet = a.locator(".sheet")
         await a.evaluate("(el) => el._openForm()"); await pg.wait_for_timeout(600)
         tile = sheet.locator(".imp-tile", has_text="Digitalizar")
+        # the AI status can take a moment on a slow machine (GitHub): the tiles turn on with it
+        for _ in range(60):
+            if await tile.count() and await tile.is_enabled(): break
+            await pg.wait_for_timeout(250)
         check(await tile.count() == 1 and "Precisa de https" in await tile.inner_text(), "Novo: the Digitalizar tile says it needs https")
         check("Em http a câmera não abre aqui" in await sheet.inner_text(), "the help line explains")
         chooser = []
