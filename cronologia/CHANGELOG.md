@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.36.2
+
+- **Dose não tomada**: no Calendário, a dose de um dia que já passou e não foi tomada mostra um **X** vermelho onde ficaria o ✓. Tocando nela, **Tomei** ainda marca (e o X vira ✓).
+
 ## 1.36.1
 
 - **Pendentes primeiro**: no Calendário (Dia, Semana, Mês e Lista), em "Rotinas, tarefas e lembretes" as que faltam vêm no começo; as feitas e as puladas descem para o fim.

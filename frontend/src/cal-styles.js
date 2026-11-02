@@ -1862,6 +1862,9 @@ export const calStyles = css`
     height: 16px;
     stroke-width: 3;
   }
+  .ev-done.missed {
+    color: var(--rv-late);
+  }
   .ev-row.done .ev-title {
     color: var(--rv-muted);
   }

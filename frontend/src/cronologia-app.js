@@ -1632,6 +1632,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     }
     const k = e.kind;
     const done = e.todo ? e.todo.done : k ? k.kind !== "manutencao" && this._checkOf(e) : this._checkOf(e);
+    // a dose of a day that is over, not taken: an X where the check would be
+    const missed = !done && k && k.kind === "remedio" && startOfDay(e.start) < startOfDay(new Date(now));
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
     const sub = [...extra, e.location].filter(Boolean).join(" · ");
     // the calendar: smaller and in italics, apart from the rest of the line
@@ -1646,7 +1648,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon(done.skipped ? "skip-forward" : "check")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
