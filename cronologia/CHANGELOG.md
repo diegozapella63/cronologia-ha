@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.37.1
+
+- **Pulada em amarelo**: o sinal de pular fica amarelo (e não verde, como o de feito) no Calendário, na Rotina da casa, no Qualquer hora e na tela da rotina.
+- A rotina pulada de ontem que voltou para hoje aparecia duas vezes hoje no Calendário (pulada e a fazer). Agora a pulada fica no dia em que vencia, e hoje só a que falta fazer.
+
 ## 1.37.0
 
 - **Período da rotina**: em **Horário**, além de Qualquer hora e Num horário, há **Manhã**, **Tarde** e **Noite**. A Rotina da casa (e o Para pontuar hoje e o Calendário de hoje) seguem o dia: primeiro o período de agora, depois o que ficou de um período que já passou (em destaque), as de qualquer hora e os períodos que ainda vão chegar. Às 8h: manhã, qualquer hora, tarde, noite. A linha mostra "de manhã", "à tarde" ou "à noite"; no Calendário, o período fica no lugar de "Qualquer hora". Fica no evento como "Período: Manhã".

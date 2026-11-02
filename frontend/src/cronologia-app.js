@@ -1572,13 +1572,16 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
   _renderAnyRow(e, day) {
     const k = e.kind;
     const { kind, done, pts, mark, unmark, quick } = this._markerOf(e, day);
+    // Pular: the yellow skip mark in place of the check
+    const ck = done && !e.todo && !e.gerencia && k ? this._checkOf(e) : null;
+    const skipped = !!(ck && ck.skipped);
     const cal = this._cal(e.cal);
     const sub = [k && k.who, e.todo ? e.todo.listName : cal ? cal.name : e.gerencia ? "GerencIA" : ""].filter(Boolean).join(" · ");
-    return html`<div class="chore ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
+    return html`<div class="chore ${done ? "done" : ""} ${skipped ? "skipped" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
       ${mark || (done && unmark)
-        ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon("check") : nothing}</button>`
+        ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon(skipped ? "skip-forward" : "check") : nothing}</button>`
         : done
-          ? html`<span class="chk on" aria-label="Feito">${icon("check")}</span>`
+          ? html`<span class="chk on" aria-label=${skipped ? "Pulada" : "Feito"}>${icon(skipped ? "skip-forward" : "check")}</span>`
           : html`<span class="chk ro" aria-hidden="true">${icon({ manutencao: "wrench", conta: "receipt", remedio: "pill", rotina: "spray-can", tarefa: "list-checks" }[kind] || "calendar")}</span>`}
       <button class="chore-tx" @click=${() => this._openEvent(e)}><b>${e.summary}</b><small>${quick && pts ? html`<span class="pts-inline">+${pts}</span> · ` : nothing}${sub || { rotina: "Rotina", manutencao: "Manutenção", remedio: "Remédio", conta: "Conta", tarefa: "Tarefa" }[kind]}</small></button>
       ${quick ? this._renderQuickWho(e.summary, pts, (p) => mark(p)) : pts ? html`<span class="pts ${done ? "got" : ""}">+${pts}</span>` : nothing}
@@ -1661,7 +1664,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done">${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done ${done.skipped ? "skipped" : ""}" title=${done.skipped ? "Pulada" : ""}>${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;

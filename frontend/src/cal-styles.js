@@ -159,11 +159,11 @@ export const calStyles = css`
     height: 18px;
   }
   /* Rotina da casa: the done ones folded */
-  /* Pular: a routine skipped this time (not done): gray, the skip mark in place of the check */
+  /* Pular: a routine skipped this time (not done): gray, the yellow skip mark in place of the check */
   .chore.done.skipped .chk.on {
-    background: color-mix(in srgb, var(--rv-muted) 22%, transparent);
+    background: var(--rv-warn-soft);
     border-color: transparent;
-    color: var(--rv-text-2);
+    color: var(--rv-warn);
   }
   .chore.done.skipped .chore-tx b {
     color: var(--rv-muted);
@@ -174,7 +174,7 @@ export const calStyles = css`
     margin-top: 8px;
   }
   .kind-state.skipped .i {
-    color: var(--rv-muted);
+    color: var(--rv-warn);
   }
   .add-line.done-fold {
     padding-left: 18px;
@@ -1873,6 +1873,9 @@ export const calStyles = css`
   }
   .ev-done.missed {
     color: var(--rv-late);
+  }
+  .ev-done.skipped {
+    color: var(--rv-warn);
   }
   .ev-row.done .ev-title {
     color: var(--rv-muted);

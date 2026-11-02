@@ -148,7 +148,7 @@ export const ModelsMixin = (Base) =>
     /**
      * Routines that come back N days after being done: Feito moves the event to its next date,
      * so the day it was done would lose it. The calendar keeps each one there, done (from the
-     * check, which has the day, the name and the time it had).
+     * check, which has the day, the name and the time it had); a skipped one, on the day it was due.
      */
     _movedDoneEvents(start, end) {
       const ix = this._ix();
@@ -157,7 +157,9 @@ export const ModelsMixin = (Base) =>
       for (const [key, c] of Object.entries(ix.checks || {})) {
         const m = c && c.moved;
         if (!m || !m.day) continue;
-        const d = fromYmd(m.day);
+        // Pular: on the day it was due (skipped from yesterday to today, today has it to do, once)
+        const day = c.skipped && m.start ? (/T/.test(m.start) ? ymd(new Date(m.start)) : String(m.start).slice(0, 10)) : m.day;
+        const d = fromYmd(day);
         if (!(d < end && addDays(d, 1) > start)) continue;
         const r = m.day === today ? (ix.routines || []).find((x) => x.key === key) : null;
         const summary = (r && r.summary) || m.summary;
@@ -172,7 +174,7 @@ export const ModelsMixin = (Base) =>
           e = new Date(s.getTime() + Math.max(15 * 60000, oe - os || 0));
           allDay = false;
         }
-        out.push({ key, cal: m.cal, uid: null, rid: null, rrule: null, summary, description: "", location: "", allDay, start: s, end: e, raw: {}, kind: { kind: "rotina", points: (r && r.points) || 0, who: (r && r.who) || "" }, movedDone: { item: r, by: c.by || "", day: m.day } });
+        out.push({ key, cal: m.cal, uid: null, rid: null, rrule: null, summary, description: "", location: "", allDay, start: s, end: e, raw: {}, kind: { kind: "rotina", points: (r && r.points) || 0, who: (r && r.who) || "" }, movedDone: { item: r, by: c.by || "", day } });
       }
       return out;
     }
