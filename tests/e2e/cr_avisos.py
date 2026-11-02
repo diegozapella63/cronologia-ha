@@ -59,7 +59,12 @@ async def main():
         # the sininho: a test like the real one; its Adiar comes back to the app
         await row("Andressa").locator(".icon-btn[aria-label='Testar aviso para Andressa']").click()
         await wait_for(lambda: notes(lambda n: n.get("title") == "💊 Teste do CronologIA" and n["service"] == "mobile_app_galaxy_s23"), "Testar: the test alert on Andressa's phone")
-        check("Aviso de teste enviado para Galaxy S23" in await toast(), f"the app says it was sent ({await toast()!r})")
+        # the toast comes right after the phone gets it: wait for it instead of reading at once
+        for _ in range(40):
+            if "Aviso de teste enviado para Galaxy S23" in await toast(): break
+            await A.wait_for_timeout(100)
+        t = await toast()
+        check("Aviso de teste enviado para Galaxy S23" in t, f"the app says it was sent ({t!r})")
         test = notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]
         st.fire("mobile_app_notification_action", {"action": test["data"]["actions"][1]["action"]})
         async def adiar_back(): return "Galaxy S23: o botão Adiar chegou ao app" in await toast()
