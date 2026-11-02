@@ -12,8 +12,8 @@ import { parentHass, detectDark } from "./api.js";
 import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
-import { ModelsMixin } from "./models.js";
-import { everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { ModelsMixin, byPeriod } from "./models.js";
+import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { DataMixin } from "./datapanel.js";
@@ -1526,7 +1526,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const now = new Date(this._now);
     const d = fromYmd(this._form.day);
     const list = eventsOfDay(this._events(d, addDays(d, 1)), d).filter((e) => e.allDay && !this._realEvent(e));
-    const rows = [...list.filter((e) => !this._rowDone(e)), ...list.filter((e) => this._rowDone(e))];
+    const rows = [...this._byPeriod(list.filter((e) => !this._rowDone(e)), d), ...list.filter((e) => this._rowDone(e))];
     const done = list.length - list.filter((e) => !this._rowDone(e)).length;
     return html`${this._sheetHead("Qualquer hora")}
       <p class="sheet-note top">${cap(dayLabel(d, now))} · ${done} de ${plural(list.length, "feita", "feitas")}</p>
@@ -1585,6 +1585,16 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     </div>`;
   }
 
+  /**
+   * The lines of a day in the order of the day: today, the part of the day we are in first (as in
+   * Agora); another day, from its morning.
+   */
+  _byPeriod(list, day) {
+    const now = new Date(this._now);
+    const at = sameDay(day, now) ? now : new Date(day.getFullYear(), day.getMonth(), day.getDate(), 6);
+    return byPeriod(list, at, (e) => (e.kind && e.kind.period) || (e.allDay ? "" : periodOfHour(e.start.getHours())));
+  }
+
   /** A routine, maintenance, dose or task without a time: done at any time of the day, not an all-day event. */
   _anyTime(e) {
     return !!e.allDay && (!!e.todo || (!!e.kind && e.kind.kind !== "conta"));
@@ -1609,7 +1619,9 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const isEvent = (e) => (!e.kind || e.kind.kind === "remedio") && !e.todo && !e.gerencia;
     const order = (a, b) => Number(a.allDay) - Number(b.allDay) || a.start - b.start;
     const events = list.filter(isEvent).sort(order);
-    const rest = list.filter((e) => !isEvent(e)).sort((a, b) => Number(this._rowDone(a)) - Number(this._rowDone(b)) || order(a, b));
+    const rest = list.filter((e) => !isEvent(e)).sort(order);
+    const todo = rest.filter((e) => !this._rowDone(e));
+    rest.splice(0, rest.length, ...this._byPeriod(todo, day), ...rest.filter((e) => this._rowDone(e)));
     return html`${events.map((e) => this._renderRow(e, day))}${rest.length
       ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
       : nothing}`;
@@ -1624,7 +1636,8 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     let time;
     if (e.allDay) {
       const days = dayDiff(e.end, e.start);
-      time = days <= 1 && this._anyTime(e) ? html`<b class="any">Qualquer</b><small>hora</small>` : html`<b>Dia</b><small>${days > 1 ? `${dayDiff(day, e.start) + 1}/${days}` : "todo"}</small>`;
+      const per = days <= 1 && this._anyTime(e) && e.kind && periodInfo(e.kind.period);
+      time = per ? html`<b class="any">${per.label}</b><small class="per">${icon(per.icon)}</small>` : days <= 1 && this._anyTime(e) ? html`<b class="any">Qualquer</b><small>hora</small>` : html`<b>Dia</b><small>${days > 1 ? `${dayDiff(day, e.start) + 1}/${days}` : "todo"}</small>`;
     } else {
       const startsToday = sameDay(e.start, day);
       const endsToday = sameDay(e.end, day) || (e.end.getHours() === 0 && e.end.getMinutes() === 0 && dayDiff(e.end, day) === 1);

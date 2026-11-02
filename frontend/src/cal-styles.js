@@ -55,6 +55,15 @@ export const calStyles = css`
     letter-spacing: -0.01em;
     padding-top: 2px;
   }
+  /* a routine for a part of the day: "Manhã" and its little sun */
+  .ev-time small.per {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .ev-time small.per .i {
+    width: 15px;
+    height: 15px;
+  }
   .ev-time small {
     font-size: 13px;
     font-weight: 500;
@@ -2016,6 +2025,10 @@ export const calStyles = css`
   }
   .who-input {
     margin-top: 10px;
+  }
+  /* Horário of a routine: or a part of the day */
+  .chip-row.per-row {
+    margin-top: 8px;
   }
   .inline-time {
     width: auto !important;

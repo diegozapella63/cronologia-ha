@@ -13,7 +13,7 @@
 export const KINDS = {
   remedio: { tag: "#remédio", label: "Remédio", fields: { dose: "Dose", who: "Quem toma", alert: "Aviso no celular" } },
   conta: { tag: "#conta", label: "Conta a pagar", fields: { value: "Valor" } },
-  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", after: "Volta", history: "Feito em" } },
+  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", period: "Período", after: "Volta", history: "Feito em" } },
   manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos", room: "Cômodo", equip: "Equipamento" } },
 };
 
@@ -61,6 +61,38 @@ export function parseEvery(text) {
   const unit = u.startsWith("dia") ? "dias" : u.startsWith("sem") ? "semanas" : u.startsWith("mes") ? "meses" : u.startsWith("ano") ? "anos" : null;
   return unit ? { n, unit } : null;
 }
+
+// ------------------------------------------------------------------ parts of the day
+
+/** A routine without a time can still have a part of the day: from the hour each one starts. */
+export const PERIODS = [
+  { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5 },
+  { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12 },
+  { id: "noite", label: "Noite", when: "à noite", icon: "moon", from: 18 },
+];
+export const periodInfo = (id) => PERIODS.find((p) => p.id === id) || null;
+const parsePeriod = (text) => {
+  const s = foldText(text);
+  return s.startsWith("manh") ? "manha" : s.startsWith("tard") ? "tarde" : s.startsWith("noit") ? "noite" : "";
+};
+/** The part of the day of an hour (the small hours are still the night). */
+export const periodOfHour = (h) => (h >= 18 || h < 5 ? "noite" : h >= 12 ? "tarde" : "manha");
+
+/**
+ * Where something of today goes in a list: the part of the day we are in first, then the ones whose
+ * part has passed (still to do), then those for any time, then the parts still to come.
+ */
+export function periodRank(period, now = new Date()) {
+  if (!period) return 2;
+  const h = now.getHours();
+  const cur = periodOfHour(h);
+  if (period === cur) return 0;
+  const idx = (p) => PERIODS.findIndex((x) => x.id === p);
+  return h >= 5 && idx(period) < idx(cur) ? 1 + idx(period) / 10 : 3 + idx(period);
+}
+
+/** Whether the part of the day has already passed today (a routine of the morning, now in the afternoon). */
+export const periodPassed = (period, now = new Date()) => periodRank(period, now) > 0 && periodRank(period, now) < 2;
 
 export const everyLabel = (e) => (e ? `${e.n} ${e.n === 1 ? UNITS[e.unit][1] : UNITS[e.unit][2]}` : "");
 
@@ -124,6 +156,8 @@ export function parseKind(description) {
   } else if (kind === "rotina") {
     out.who = raw.who || "";
     out.points = parsePoints(raw.points);
+    // "Período: manhã": a routine without a time, for that part of the day
+    out.period = parsePeriod(raw.period);
     // "Volta: 2 dias depois de feita": one event, moved to today + 2 days when done (only the next one in the calendar)
     out.after = raw.after ? parseEvery(raw.after) : null;
     if (out.after) out.history = parseHistory(raw.history);
@@ -156,6 +190,7 @@ export function buildDescription(k) {
   } else if (k.kind === "rotina") {
     add(L.who, k.who);
     if (k.points > 0) add(L.points, k.points);
+    if (periodInfo(k.period)) add(L.period, periodInfo(k.period).label);
     if (k.after && k.after.n > 0) {
       add(L.after, `${everyLabel(k.after)} depois de feita`);
       add(L.history, historyText((k.history || []).slice(0, 8)));
@@ -303,7 +338,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       seenMaint.add(`r|${id}`);
       const due = allDay ? raw.start : ymdOf(new Date(start));
       const doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
-      const common = { kind: "rotina", who: k.who, points: k.points || 0, after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
+      const common = { kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
       // skipped (Pular) and its next time is already today: it is today's, to do
       const skippedToToday = doneToday && doneToday[1].skipped && start < t1;
       if (doneToday && !skippedToToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
@@ -313,7 +348,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const todays = start < t1 && end > t0;
       const yesterday = !todays && start >= t0 - DAY && start < t0 && !checks[key];
       if (!todays && !yesterday) continue;
-      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday });
+      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday });
     } else if (k.kind === "conta") {
       const paid = checks[key] || null;
       // open ones from the last 2 months and the next 8 days; paid ones around today or paid today
@@ -346,6 +381,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       points: k.points || 0,
       every: k.every || null,
       after: k.after || null,
+      period: k.period || "",
       value: k.value ?? null,
       room: k.room || "",
       equip: k.equip || "",

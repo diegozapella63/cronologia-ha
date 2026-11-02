@@ -70,10 +70,14 @@ Em **Novo**, escolha o modelo no alto e o formulário muda:
 |---|---|---|
 | **Remédio** | remédio, dose, quem toma, horários (1x, 2x, 3x, de 8 em 8 h ou à mão), frequência, por quanto tempo | **Remédios de hoje**, com **Tomei** |
 | **Conta a pagar** | conta, valor, vencimento, se repete todo mês ou todo ano | **Contas a pagar**, com **Paguei** |
-| **Rotina da casa** | tarefa, quem faz, horário (ou qualquer hora), frequência (ou **depois de feita**) | **Rotina da casa**, com o círculo de feito |
+| **Rotina da casa** | tarefa, quem faz, horário (qualquer hora, manhã, tarde, noite ou num horário), frequência (ou **depois de feita**) | **Rotina da casa**, com o círculo de feito |
 | **Manutenção** | o que fazer, a cada quanto tempo, quando foi feito pela última vez, quantos dias antes mostrar | **Manutenção da casa**, com o anel do prazo e **Feito** |
 
 Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias da semana** (escolha os dias), **a cada N dias**, todo mês (rotina) ou **só uma vez**. Por quanto tempo: uso contínuo, **por N dias** (antibiótico) ou até uma data. Cada horário vira um evento que se repete no calendário escolhido (de preferência um calendário local, que aceita editar).
+
+### Período da rotina
+
+Uma rotina sem horário pode ter um **período**: **Manhã**, **Tarde** ou **Noite** (em **Horário**). As listas de hoje (Rotina da casa, Para pontuar hoje e o Calendário) seguem o dia: primeiro o período em que você está, depois o que era de um período que já passou (em destaque, ainda por fazer), as de qualquer hora e, por fim, os períodos que ainda vão chegar. Uma rotina num horário entra no período desse horário. Manhã vai das 5h ao meio-dia, tarde até as 18h e noite até as 5h.
 
 ### Rotina que volta depois de feita
 

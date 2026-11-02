@@ -3,7 +3,7 @@
 // app and the "Avisos" settings. Mixed into <cronologia-app>.
 import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
@@ -61,9 +61,33 @@ function maintLabel(m, now) {
 /** Second line of a routine that comes back N days after done ("atrasada há 2 dias · volta 2 dias depois"). */
 export function afterSub(r, now) {
   if (r.done) return `${r.done.skipped ? "pulada" : `feito por ${r.done.by || "alguém"}`} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
-  const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || "hoje";
+  const per = periodInfo(r.period);
+  const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || (per ? per.when : "hoje");
   return [when, r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
 }
+
+/** Second line of a routine in today's lists ("de manhã · Diego", "ficou de ontem", "feito por Ana"). */
+export function routineSub(r, now) {
+  if (r.after) return afterSub(r, now);
+  const per = periodInfo(r.period);
+  return [r.yesterday ? "ficou de ontem" : r.time || (per && !r.done ? per.when : ""), r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje";
+}
+
+/** The part of the day of a routine: the one chosen, or the one of its time. */
+export const periodOf = (r) => r.period || (r.time ? periodOfHour(Number(String(r.time).slice(0, 2))) : "");
+
+/** Late: from an earlier day, or its part of the day has passed (the morning one, in the afternoon). */
+export const routineLate = (r, now) => !r.done && (r.late > 0 || (!!r.period && periodPassed(r.period, now)));
+
+/**
+ * Today's list in the order of the day: what is for the part of the day we are in first, then what
+ * was for earlier (still to do), what is for any time, and what is for later (keeps the order otherwise).
+ */
+export const byPeriod = (list, now, of = periodOf) =>
+  list
+    .map((r, i) => [periodRank(of(r), now), i, r])
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+    .map((x) => x[2]);
 
 function rruleToForm(rrule, start) {
   const p = Object.fromEntries(String(rrule || "").replace(/^RRULE:/, "").split(";").filter(Boolean).map((x) => x.split("=")));
@@ -388,11 +412,12 @@ export const ModelsMixin = (Base) =>
       }
       const done = routines.filter((r) => r.done).length;
       // the done ones stay folded (a long day has dozens): "Mostrar concluídas" opens them
-      const open = routines.filter((r) => !r.done);
+      const now = new Date(this._now);
+      const open = byPeriod(routines.filter((r) => !r.done), now);
       const shut = routines.filter((r) => r.done);
       const row = (r) => html`<div class="chore ${r.done ? "done" : ""} ${r.done && r.done.skipped ? "skipped" : ""}">
                   <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon(r.done.skipped ? "skip-forward" : "check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${r.late > 0 && !r.done ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${routineSub(r, now)}</small></button>
                   ${!r.done && this._pickWho()
                     ? this._renderQuickWho(r.summary, r.points || 0, (p) => this._markDone(r, "rotina", p))
                     : r.points > 0 && this._scoreOn()
@@ -511,7 +536,7 @@ export const ModelsMixin = (Base) =>
             return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
           });
         const list = found.filter((c) => c.kind === sec.kind);
-        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time, pts(c)]));
+        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)]));
         if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.equip || c.room, c.who, pts(c)]));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
@@ -563,6 +588,7 @@ export const ModelsMixin = (Base) =>
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
+        if (periodInfo(k.period)) facts.push([periodInfo(k.period).icon, cap(periodInfo(k.period).when)]);
         if (k.after && !e.rrule) {
           facts.push(["repeat", `Volta ${everyLabel(k.after)} depois de feita (na agenda, só a próxima vez)`]);
           if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
@@ -662,6 +688,7 @@ export const ModelsMixin = (Base) =>
         categoria: "",
         every: { n: 6, unit: "meses" },
         afterN: 2,
+        period: "",
         last: ymd(today),
         warn: 7,
         history: [],
@@ -696,6 +723,7 @@ export const ModelsMixin = (Base) =>
           history: k.history || [],
           last: (k.history && k.history[0]) || f.last,
           points: k.points || 0,
+          period: (ev.allDay && k.period) || "",
           notes: k.notes || "",
           location: ev.location || "",
           roomName: k.room || "",
@@ -752,7 +780,7 @@ export const ModelsMixin = (Base) =>
       const k = { kind: f.kind, notes: f.notes };
       if (f.kind === "remedio") Object.assign(k, { dose: f.dose, who: f.who, alert: f.alert });
       else if (f.kind === "rotina") {
-        Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)) });
+        Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)), period: f.allDay ? f.period || "" : "" });
         if (f.freq === "depois") Object.assign(k, { after: { n: Math.max(1, Math.min(365, Math.round(Number(f.afterN) || 2))), unit: "dias" }, history: f.mode === "edit" ? f.history || [] : [] });
       }
       else if (f.kind === "conta") {
@@ -1075,9 +1103,12 @@ export const ModelsMixin = (Base) =>
           ${this._whoField("Quem faz")}
           <div class="field"><span class="flabel">Horário</span>
             <div class="chip-row">
-              <button class="pick ${f.allDay ? "on" : ""}" @click=${() => this._setForm({ allDay: true })}>Qualquer hora</button>
-              <button class="pick ${!f.allDay ? "on" : ""}" @click=${() => this._setForm({ allDay: false })}>${icon("clock")}<span>Num horário</span></button>
+              <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>Qualquer hora</button>
+              <button class="pick ${!f.allDay ? "on" : ""}" @click=${() => this._setForm({ allDay: false, period: "" })}>${icon("clock")}<span>Num horário</span></button>
               ${!f.allDay ? html`<input type="time" class="inline-time" .value=${f.times[0] || "19:00"} @change=${(e) => e.target.value && this._setForm({ times: [e.target.value] })} aria-label="Horário" />` : nothing}
+            </div>
+            <div class="chip-row c3 per-row" role="group" aria-label="Período do dia">
+              ${PERIODS.map((p) => html`<button class="pick ${f.allDay && f.period === p.id ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: p.id })}>${icon(p.icon)}<span>${p.label}</span></button>`)}
             </div>
           </div>
           ${this._pointsField()}

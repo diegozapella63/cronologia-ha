@@ -5,7 +5,7 @@ import { ICONS } from "./icons.js";
 import { foldText, everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
 import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, dayLabel, WEEKDAYS } from "./util.js";
-import { afterSub } from "./models.js";
+import { routineSub, routineLate, byPeriod } from "./models.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
@@ -447,13 +447,13 @@ export const RewardsMixin = (Base) =>
       // Marcar por outras pessoas: the initials on each row, as on the start screen
       const pick = this._pickWho();
       // only what still gives points: the done ones are on the start screen and in the Extrato
-      const openChores = chores.filter((r) => !r.done);
+      const openChores = byPeriod(chores.filter((r) => !r.done), now);
       const openTasks = tasks.filter((t) => !t.done);
       return html`<div class="panel chores score-today">
         ${this._panelHead("star", "ok", "Para pontuar hoje", total ? `${done} de ${total}` : "")}
         ${repeat(openChores, (r) => r.key, (r) => html`<div class="chore">
             <button class="chk" @click=${() => this._markDone(r, "rotina")} aria-label="Marcar ${r.summary}"></button>
-            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small>${pick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${r.after ? afterSub(r, new Date(this._now)) : [r.yesterday ? "ficou de ontem" : r.time, r.who].filter(Boolean).join(" · ") || "hoje"}</small></button>
+            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${pick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${routineSub(r, now)}</small></button>
             ${pick ? this._renderQuickWho(r.summary, r.points, (p) => this._markDone(r, "rotina", p)) : html`<span class="pts">+${r.points}</span>`}
           </div>`)}
         ${repeat(openTasks, (t) => t.key, (t) => html`<div class="chore">

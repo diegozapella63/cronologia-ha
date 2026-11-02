@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.37.0
+
+- **Período da rotina**: em **Horário**, além de Qualquer hora e Num horário, há **Manhã**, **Tarde** e **Noite**. A Rotina da casa (e o Para pontuar hoje e o Calendário de hoje) seguem o dia: primeiro o período de agora, depois o que ficou de um período que já passou (em destaque), as de qualquer hora e os períodos que ainda vão chegar. Às 8h: manhã, qualquer hora, tarde, noite. A linha mostra "de manhã", "à tarde" ou "à noite"; no Calendário, o período fica no lugar de "Qualquer hora". Fica no evento como "Período: Manhã".
+
 ## 1.36.2
 
 - **Dose não tomada**: no Calendário, a dose de um dia que já passou e não foi tomada mostra um **X** vermelho onde ficaria o ✓. Tocando nela, **Tomei** ainda marca (e o X vira ✓).
