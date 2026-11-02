@@ -3,7 +3,8 @@
 // integrations that allow less (CalDAV, Google, an Outlook without editing), the
 // calendar states pushed to the screens, and the server's guards (bad messages,
 // uploads too big, only the Supervisor's ingress outside dev, a Home Assistant in
-// another time zone or whose registry, config, calendars or share folder fail).
+// another time zone, without calendars, or whose registry, config, calendars or
+// share folder fail).
 import { startStack, day, isoAt, waitFor } from "./harness.mjs";
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -236,6 +237,27 @@ describe("a Home Assistant whose registry, config and one calendar fail", () => 
     assert.ok(stack.app.lines.some((l) => /Backup: calendar\.giveaways ficou de fora/.test(l)));
     const ics = await fetch(`${stack.url}/api/export/ics?calendars=calendar.giveaways&start=${encodeURIComponent(isoAt(0, 0))}&end=${encodeURIComponent(isoAt(5, 0))}`);
     assert.equal(ics.status, 502, "the .ics of only that calendar fails");
+  });
+});
+
+describe("a Home Assistant without any calendar", () => {
+  let stack;
+  let c;
+  before(async () => {
+    stack = await startStack({ fakeEnv: { FAKE_NO_CALENDARS: "1" } });
+    c = await stack.client();
+  });
+  after(async () => {
+    if (stack) await stack.stop();
+  });
+  it("no calendars, an empty Agora, and a calendar that does not exist is an error", async () => {
+    assert.ok(stack.app.lines.some((l) => /0 calendários encontrados/.test(l)));
+    const b = await c.call("cronologia/bootstrap");
+    assert.deepEqual(b.states, {});
+    const h = await stack.home(c);
+    const ix = await h.wait((x) => x, "the index");
+    assert.deepEqual([ix.meds, ix.routines, ix.maint, ix.tracked], [[], [], [], []]);
+    await assert.rejects(c.call("calendar/event/create", { entity_id: P, event: { summary: "x", start: day(1), end: day(2) } }), { code: "not_found" });
   });
 });
 

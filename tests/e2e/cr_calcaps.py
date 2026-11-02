@@ -37,6 +37,8 @@ async def main():
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(500)
         chips = [c.strip() for c in await sheet.locator(".pick.list").all_inner_texts()]
         check(sorted(chips) == sorted(["Nextcloud", "Casa", "Pessoal", "Remédios", "Família", "Trabalho"]), f"Novo offers the calendars that create ({chips})")
+        pre = (await sheet.locator(".pick.list.on").inner_text()).strip()
+        check(pre in ["Casa", "Pessoal", "Remédios", "Trabalho"], f"no Calendário padrão chosen: Novo starts in one that can be edited later, not CalDAV ({pre})")
         await sheet.locator(".ev-title-input").fill("Feira de trocas")
         await sheet.locator(".chip-row .pick", has_text="Amanhã").click()
         await sheet.locator(".pick.list", has_text="Nextcloud").click()
@@ -69,7 +71,7 @@ async def main():
         await sheet.locator(".btn", has_text="Duplicar").click(); await A.wait_for_timeout(500)
         check(await sheet.locator("h3").first.inner_text() == "Novo" and await sheet.locator(".ev-title-input").input_value() == "Treinamento de vendas", "Duplicar opens Novo with it filled in")
         on = (await sheet.locator(".pick.list.on").inner_text()).strip()
-        check(on in ["Nextcloud", "Casa", "Pessoal", "Remédios", "Família", "Trabalho"], f"in a calendar that creates ({on})")
+        check(on in ["Casa", "Pessoal", "Remédios", "Trabalho"], f"in a calendar that creates and can be edited later, not CalDAV or Google ({on})")
         await sheet.locator(".pick.list", has_text="Pessoal").click()
         await sheet.locator(".btn.primary", has_text="Criar evento").click()
         await wait_for(lambda: len(evs("calendar.pessoal", "Treinamento de vendas")) == 1 and len(evs("calendar.outlook_leitura", "Treinamento de vendas")) == 1, "the copy in Pessoal, the original untouched")

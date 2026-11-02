@@ -453,6 +453,30 @@ describe("ha: HAClient connecting (a fake global WebSocket)", () => {
     assert.equal(opened.length, n + 1, "back to 1 s after it had connected");
     c.stop();
   });
+  it("a connection refused with only 'error' (Node's WebSocket sends no 'close') is retried too, once per failure", () => {
+    const opened = fakeWs();
+    const c = start();
+    opened[0].onerror({ type: "error" });
+    mock.timers.tick(1000);
+    assert.equal(opened.length, 2, "Home Assistant restarting: refused with 'error' only, tried again after 1 s");
+    opened[1].onerror({ type: "error" });
+    mock.timers.tick(2000);
+    assert.equal(opened.length, 3, "and again after 2 s");
+    // the browser way: error, then close: still one new try, not two
+    opened[2].onerror({ type: "error" });
+    opened[2].onclose();
+    mock.timers.tick(4000);
+    assert.equal(opened.length, 4, "one try for one failure");
+    // an error after the connection is up is not a close: the close that follows is
+    opened[3].onmessage({ data: '{"type":"auth_ok"}' });
+    opened[3].onerror({ type: "error" });
+    mock.timers.tick(60000);
+    assert.equal(opened.length, 4, "connected: an error alone doesn't reconnect");
+    opened[3].onclose();
+    mock.timers.tick(1000);
+    assert.equal(opened.length, 5);
+    c.stop();
+  });
   it("an address that can't be opened: warned and tried again later", () => {
     fakeWs({ refuse: true });
     const log = makeLog();

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.38.0
+
+- **A semana começa na segunda** para quem nunca escolheu, no calendário (Mês, Semana) e no placar. Antes, a tela mostrava a semana a partir do domingo e dizia "A semana começa no domingo", mas o placar já fechava toda segunda. Quem prefere domingo escolhe em **Mais › Opções**, e aí vale para os dois.
+- **Calendário dos eventos novos**: sem um Calendário padrão escolhido, o Novo e o Duplicar começam num calendário que deixa editar e apagar depois (local, Outlook com edição; depois o Google). Antes podia ser um CalDAV, que só cria, só por vir antes em ordem alfabética.
+- **Volta a se conectar depois de um reinício do Home Assistant**: se o Home Assistant demorava mais de um segundo para voltar, o app às vezes parava de tentar (o Node avisa a conexão recusada sem fechá-la). Achado pelos testes do ResolvIA, que usa o mesmo código.
+- **Mais testes**: 676 unitários e de integração e 7 roteiros visuais novos (232 conferências):
+  - eventos que se repetem: editar e apagar só este, este e os próximos, toda a série, e o Desfazer;
+  - o Google, que apaga e cria de novo;
+  - os botões de cada tipo de calendário (local, Google, Outlook com e sem edição, CalDAV, .ics, feriados);
+  - os modos do Calendário e o toque num horário vazio;
+  - prêmios, fechamento, Entregue e o Extrato de um período fechado;
+  - os avisos de remédio (quem cuida, Adiar e Tomei pelo celular, o teste do sininho);
+  - o Novo evento.
+
 ## 1.37.2
 
 - **Testes**: a CronologIA agora tem 591 testes unitários e de integração (`npm test`) e os testes visuais no Chromium (`tests/e2e/run.sh`), rodando no GitHub a cada mudança. Eles acharam e esta versão corrige:

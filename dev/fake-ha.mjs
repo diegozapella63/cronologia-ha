@@ -10,7 +10,8 @@
 //   update, like Google), FAKE_FEATURES=calendar.x=0,calendar.y=1 (supported_features),
 //   FAKE_EXTRA_CALENDARS=1 (a CalDAV, a Google and a read-only Outlook calendar too),
 //   FAKE_HA_TIME_ZONE (what get_config says), FAKE_FAIL=get_config,... (those websocket
-//   commands fail), FAKE_FAIL_REST=calendar.x (its REST events answer 500).
+//   commands fail), FAKE_FAIL_REST=calendar.x (its REST events answer 500),
+//   FAKE_NO_CALENDARS=1 (a Home Assistant without any calendar).
 //   TZ=America/Sao_Paulo node dev/fake-ha.mjs
 //   (ws://127.0.0.1:8123/api/websocket and http://127.0.0.1:8123/api, token "dev")
 import http from "node:http";
@@ -42,6 +43,7 @@ if (process.env.FAKE_EXTRA_CALENDARS === "1") {
   model.calendars["calendar.familia"] = { name: "Família", platform: "google", features: 3, events: [mk("Consulta do Theo", at(0, 16), at(0, 17), { description: "Levar a carteirinha" }), mk("Natação", at(-14, 7), at(-14, 8), { rrule: "FREQ=WEEKLY" })] };
   model.calendars["calendar.outlook_leitura"] = { name: "Outlook da empresa", platform: "ms365_calendar", features: 0, events: [mk("Treinamento de vendas", at(0, 14), at(0, 15, 30)), mk("Comitê", at(-7, 11), at(-7, 12), { rrule: "FREQ=WEEKLY" })] };
 }
+if (process.env.FAKE_NO_CALENDARS === "1") for (const id of Object.keys(model.calendars)) delete model.calendars[id];
 // FAKE_NO_UPDATE=calendar.casa: that calendar creates and deletes but can't change events (like Google)
 for (const id of (process.env.FAKE_NO_UPDATE || "").split(",").filter(Boolean)) if (model.calendars[id]) model.calendars[id].features = 3;
 // FAKE_FEATURES=calendar.trabalho=0: what each calendar allows (1 create, 2 delete, 4 update)
