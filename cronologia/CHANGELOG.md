@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.40.0
+
+- **Conversa com a IA**: ao lado do microfone, um botão abre uma conversa. Pergunte sobre a tela, a agenda, as rotinas, os remédios, o placar ou qualquer outro assunto, escrevendo ou falando. Pedindo para marcar um compromisso, uma rotina como feita ou um remédio como tomado, a IA mostra cada ação num cartão e só faz quando você toca em **Fazer**. A conversa continua ao fechar e abrir; **Nova** começa outra. Conta em Uso da IA como Conversa.
+
 ## 1.39.0
 
 - **Vários equipamentos na tarefa**: no **Novo › Tarefa**, depois do primeiro equipamento, **Outro equipamento** acrescenta mais; com equipamento, o cômodo vem dele e fica bloqueado (vários, se os equipamentos estiverem em cômodos diferentes). As tarefas do ResolvIA mostram todos os equipamentos e cômodos (precisa do ResolvIA 2.31.0). A manutenção continua com um equipamento.

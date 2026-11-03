@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.39.0";
+const VERSION = "1.40.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -425,6 +425,12 @@ class Session {
 
       case "cronologia/ai/status":
         return this.result(id, await ai.status());
+
+      // Conversa (the chat beside the microphone): one turn -> {reply, actions, provider}
+      case "cronologia/ai/chat": {
+        if (store.data.app.ai_off) return this.error(id, "ai_off", "A IA está desligada em Mais › Integrações");
+        return this.result(id, await ai.chat({ messages: msg.messages, context: msg.context }));
+      }
 
       case "cronologia/voice/status":
         return this.result(id, await voice.status({ fresh: !!msg.fresh }));

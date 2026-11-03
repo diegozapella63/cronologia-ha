@@ -42,7 +42,7 @@ async def main():
         A.on("pageerror", lambda e: errs.append(str(e)))
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1800)
         a = A.locator("cronologia-app"); sheet = a.locator(".sheet")
-        mic = a.locator(".mic-top:visible")
+        mic = a.locator(".mic-top:not(.chat-top):visible")
         check(await mic.count() == 1 and await mic.is_visible(), "Agora: the microphone at the top right")
         box = await mic.bounding_box()
         check(box and box["x"] > 300 and box["y"] < 120, f"top right ({box})")
@@ -71,9 +71,9 @@ async def main():
         await wait_for(lambda: "event created" in fake_log() and "Dentista quinta" in fake_log().split("event created", 1)[1], "added to the calendar")
         # Recompensas and the Calendário have it too
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(500)
-        check(await a.locator(".mic-top:visible").count() == 1, "Recompensas: the microphone too")
+        check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "Recompensas: the microphone too")
         await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(500)
-        check(await a.locator(".mic-top:visible").count() == 1, "Calendário: the microphone too")
+        check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "Calendário: the microphone too")
         # Buscar on Agora
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)
         hs = a.locator("form.home-search input")
@@ -108,7 +108,7 @@ async def main():
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 390, "height": 844})
         await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1800)
-        check(await pg.locator("cronologia-app").locator(".mic-top:visible").count() == 0, "without speech-to-text in Home Assistant: no microphone")
+        check(await pg.locator("cronologia-app").locator(".mic-top:not(.chat-top):visible").count() == 0, "without speech-to-text in Home Assistant: no microphone")
         await b.close()
 try: asyncio.run(main())
 finally:

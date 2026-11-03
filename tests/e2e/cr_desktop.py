@@ -101,7 +101,7 @@ async def main():
         bg = await a.locator(".panel.meds").evaluate("e => getComputedStyle(e).backgroundColor")
         check(bg in ("rgba(0, 0, 0, 0)", "transparent"), f"sections, not cards ({bg})")
         acts = [t.strip() for t in await a.locator(".top-acts .btn").all_inner_texts()]
-        check(acts[-1] == "Novo" and await a.locator(".top-acts .mic-top").count() == 1, f"top right: Falar and the actions ({acts})")
+        check(acts[-1] == "Novo" and await a.locator(".top-acts .mic-top:not(.chat-top)").count() == 1, f"top right: Falar and the actions ({acts})")
         await pg.screenshot(path=f"{SP}/shots/crdk-agora.png")
         # the phone stays the same
         await pg.set_viewport_size({"width": 390, "height": 844}); await pg.wait_for_timeout(700)

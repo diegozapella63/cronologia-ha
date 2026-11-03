@@ -38,6 +38,12 @@ Com a tela larga (1000 pixels ou mais, como no InventarIA), as abas de baixo vir
 
 O **microfone** no alto de cada tela, à direita: toque, fale o compromisso ("Dentista quinta às 15h na Clínica Sorriso", "Aniversário da Ana sábado, o dia todo") e toque de novo. O Home Assistant transcreve o que você disse com a **fala para texto do Assist** (Configurações › Assistentes de voz; com o Home Assistant Cloud já vem pronta, em português), e a IA da Leitura por IA encontra os eventos, como numa mensagem colada. Para usar outro motor de fala (Whisper, Google…) sem mexer no assistente de voz do Home Assistant, escolha em Mais › Integrações › **Falar**. Você confere a lista (com o que foi ouvido no alto) e adiciona. Até 2 minutos por vez. O microfone só aparece quando há fala para texto e Leitura por IA; o navegador ou o app do celular pede permissão na primeira vez.
 
+### Conversa com a IA
+
+O botão de balão, ao lado do microfone, abre uma conversa com a IA. Pergunte sobre a tela em que está ("o que tenho hoje?", "estou livre amanhã à tarde?", "quem está ganhando?") ou sobre qualquer outro assunto; dá para escrever ou tocar no microfone e falar. Ela conhece a agenda dos próximos dias, as rotinas e os remédios de hoje, as contas, a manutenção, o placar e as tarefas com prazo do ResolvIA.
+
+Pedindo para mexer na agenda ("marca dentista sexta às 15h", "fiz arrumar a cama", "tomei a sertralina"), ela mostra cada ação num cartão e só faz quando você toca em **Fazer** (ou **Fazer todas**). O evento vai para o calendário do **Novo**. **Nova** começa outra conversa. Com **Usar IA** desligado, o botão não aparece. Cada mensagem conta em **Uso da IA** como Conversa.
+
 ### Buscar
 
 Na **Agora**, o campo **Buscar nos eventos** logo abaixo do título: a primeira letra já abre a busca do **Calendário › Lista** (do último ano ao próximo) com o que foi digitado. No computador, também pelo **Buscar** da barra lateral e pela tecla **/** de qualquer tela.

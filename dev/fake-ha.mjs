@@ -97,6 +97,40 @@ function fakeAI(msg) {
   if (!WITH_AI) fail("not_found", "Service not found");
   if (!msg.return_response) fail("service_validation_error", "return_response required");
   const d = msg.service_data || {};
+  // Conversa: answers the last thing the person said; "marca X dia AAAA-MM-DD às HH:MM", "fiz X" and
+  // "tomei X" become actions; "o que tem hoje" lists the agenda it got
+  if (/: conversa$/.test(d.task_name || "") && d.structure && d.structure.resposta) {
+    const ins = d.instructions || "";
+    const last = (ins.match(/Pessoa: (.*)$/) || [])[1] || "";
+    console.log("fake AI chat", JSON.stringify({ entity_id: d.entity_id, last }));
+    if (process.env.FAKE_AI_CHAT_FAIL) fail("home_assistant_error", "IA fora do ar");
+    let m;
+    const acoes = [];
+    let resposta;
+    if ((m = /marca (.+?) dia (\d{4}-\d{2}-\d{2})(?: às (\d{2}:\d{2}))?$/i.exec(last))) {
+      acoes.push(`evento | ${m[1]} | ${m[2]} | ${m[3] || ""} |`);
+      resposta = `Posso marcar ${m[1]} em ${m[2]}.`;
+    } else if ((m = /^fiz (.+)$/i.exec(last))) {
+      acoes.push(`feito | ${m[1]}`);
+      resposta = `Posso marcar ${m[1]} como feita.`;
+    } else if ((m = /^tomei (.+)$/i.exec(last))) {
+      acoes.push(`tomei | ${m[1]} |`);
+      resposta = `Posso marcar ${m[1]} como tomado.`;
+    } else if (/hoje/i.test(last)) {
+      // the routines: the lines right under their title, until the next section
+      const after = (ins.split("Rotinas da casa de hoje:")[1] || "").split("\n").slice(1);
+      const block = [];
+      for (const r of after) {
+        if (!/^\s+- /.test(r)) break;
+        block.push(r.replace(/^\s+- /, "").replace(/( às | \(|, |: ).*$/, ""));
+      }
+      resposta = block.length ? `Hoje: ${block.slice(0, 3).join(", ")}.` : "Nada hoje.";
+    } else {
+      const tela = (ins.match(/A pessoa está na tela: (.*)\./) || [])[1] || "?";
+      resposta = `Resposta de teste para "${last}" (tela: ${tela}).`;
+    }
+    return { context: { id: "ctx" }, response: { conversation_id: "c1", data: { resposta, acoes } } };
+  }
   const files = (d.attachments || []).map((a) => {
     const prefix = "media-source://media_source/local/";
     if (!a.media_content_id.startsWith(prefix)) fail("service_validation_error", "bad media id");

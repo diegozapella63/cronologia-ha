@@ -13,6 +13,8 @@ import { EventStore, eventsOfDay, layoutDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod } from "./models.js";
+import { ChatMixin } from "./chat-panel.js";
+import { chatStyles } from "./chat.js";
 import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
@@ -100,7 +102,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))) {
+class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement))))) {
   static properties = {
     _desk: { state: true },
     api: { attribute: false },
@@ -123,7 +125,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles)];
+  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles)];
 
   constructor() {
     super();
@@ -219,6 +221,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
 
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
+    this._chatAfterRender();
     if (this._focusSearch) {
       const inp = this.renderRoot.querySelector("input[data-q='buscar']");
       if (inp) {
@@ -573,6 +576,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     if (!this._sheet) return Promise.resolve();
     this._releaseImages();
     this._stopVoice();
+    this._chatStop();
     this._sheet = null;
     this._form = null;
     return this._popEntry("rvSheet");
@@ -1483,7 +1487,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
-      <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
+      <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
@@ -1495,7 +1499,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     const ai = this._aiOn() && this._ai && this._ai.ready;
     const onCal = this._view().name === "calendar";
     return html`<div class="top-acts">
-      ${this._renderMicBtn()}
+      ${this._renderChatBtn()}${this._renderMicBtn()}
       ${ai ? html`<button class="btn outline sm" @click=${() => this._openImport("pick")}>${icon("scan-text")}Ler com IA</button>` : nothing}
       <button class="btn primary sm" @click=${() => this._openForm({ date: onCal ? this._cursor : null })}>${icon("plus")}Novo</button>
     </div>`;
@@ -1917,7 +1921,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
     return html`<section class="page cal-page">
       <div class="cal-top">
         <div class="cal-title">
-          <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderMicBtn()}${this._renderTopActs()}</div>
+          <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">
@@ -2465,6 +2469,7 @@ class CronologiaApp extends DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitEle
       tint = colorById(TODO_COLOR);
     }
     else if (this._sheet === "bring") body = this._renderBringSheet();
+    else if (this._sheet === "chat") body = this._renderChatSheet();
     else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "demerit") body = this._renderDemeritSheet();
     else if (this._sheet === "prize") body = this._renderPrizeSheet();
