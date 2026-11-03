@@ -402,6 +402,8 @@ export const ModelsMixin = (Base) =>
     }
 
     _renderHomePanel() {
+      // Modo férias: the house rests (the banner at the top says so)
+      if (this._awayNow && this._awayNow()) return nothing;
       const ix = this._ix();
       // all of today's routines done: they leave Agora (the calendar has them, done); right after the
       // last Feito here they stay, until you leave Agora

@@ -291,12 +291,37 @@ const hmOf = (ms) => {
  * Today's doses and chores, the bills around today and every maintenance item,
  * from model occurrences [{cal, raw}] and the marks (checks).
  */
-export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = true, features = () => 7, targetFor = () => null, now = Date.now() }) {
+/** Modo férias: {from, to} as real days YYYY-MM-DD (from <= to, at most a year), or null. */
+export function cleanAway(v) {
+  if (!v || typeof v !== "object") return null;
+  const real = (s) => {
+    if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    const [y, m, d] = s.split("-").map(Number);
+    const t = new Date(y, m - 1, d);
+    return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d;
+  };
+  if (!real(v.from) || !real(v.to) || v.to < v.from) return null;
+  if ((dateOf(v.to) - dateOf(v.from)) / 86400000 > 366) return null;
+  return { from: v.from, to: v.to };
+}
+
+/** A day (YYYY-MM-DD) inside the vacation. */
+export const awayOn = (away, day) => !!(away && day >= away.from && day <= away.to);
+
+export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = true, features = () => 7, targetFor = () => null, now = Date.now(), away = null }) {
   const today = new Date(now);
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const t1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
   const lateMs = (late || 30) * 60000;
   const out = { at: new Date(now).toISOString(), late: late || 30, meds: [], routines: [], bills: [], maint: [], catalog: [], names: [], checks: {} };
+  // Modo férias: today inside it, no routines (the medicines go on); after it, the days away
+  // don't make a routine late nor leave yesterday's to do
+  away = cleanAway(away);
+  const todayYmd = ymdOf(today);
+  const pausedToday = awayOn(away, todayYmd);
+  const yesterdayAway = awayOn(away, ymdOf(new Date(t0 - DAY)));
+  const backFrom = away && away.to < todayYmd ? dateOf(away.to).getTime() + DAY : null;
+  out.away = pausedToday ? away : null;
   // Mais › Rotinas: what is registered, one line per event or repeating series, at its next time
   const series = new Map();
   const names = new Set();
@@ -336,17 +361,23 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const id = `${cal}|${raw.uid || raw.summary}`;
       if (seenMaint.has(`r|${id}`)) continue;
       seenMaint.add(`r|${id}`);
+      if (pausedToday) continue;
       const due = allDay ? raw.start : ymdOf(new Date(start));
       const doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
       const common = { kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
       // skipped (Pular) and its next time is already today: it is today's, to do
       const skippedToToday = doneToday && doneToday[1].skipped && start < t1;
       if (doneToday && !skippedToToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
-      else if (start < t1) out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - dateOf(due).getTime()) / DAY)) });
+      else if (start < t1) {
+        // due before or during the vacation: late counts from the day back
+        const from = backFrom && due <= away.to ? Math.max(dateOf(due).getTime(), backFrom) : dateOf(due).getTime();
+        out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - from) / DAY)) });
+      }
     } else if (k.kind === "rotina") {
       // today's, plus yesterday's that were not done (they can still be marked)
+      if (pausedToday) continue;
       const todays = start < t1 && end > t0;
-      const yesterday = !todays && start >= t0 - DAY && start < t0 && !checks[key];
+      const yesterday = !todays && !yesterdayAway && start >= t0 - DAY && start < t0 && !checks[key];
       if (!todays && !yesterday) continue;
       out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday });
     } else if (k.kind === "conta") {

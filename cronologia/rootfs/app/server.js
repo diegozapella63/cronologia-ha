@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.40.0";
+const VERSION = "1.41.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -457,6 +457,8 @@ class Session {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
         if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
+        // Modo férias: Agora (and the sensors) change at once
+        if (msg.prefs && "away" in msg.prefs) home.rebuild();
         // Sensores no Home Assistant: on creates them now, off removes them
         if (msg.prefs && "sensors_on" in msg.prefs) {
           if (store.data.app.sensors_on === true) {

@@ -1871,6 +1871,63 @@ export const calStyles = css`
     height: 16px;
     stroke-width: 3;
   }
+  /* Modo férias: the banner of Agora, the mark of the days away */
+  .away-card .grow {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .away-card b {
+    color: var(--rv-text);
+    font-weight: 600;
+  }
+  .away-card small {
+    font-size: 13px;
+    color: var(--rv-muted);
+  }
+  .away-card .text-btn {
+    flex: none;
+  }
+  .away-day {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--rv-accent-soft);
+    color: var(--rv-text-2);
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .away-day .i {
+    width: 16px;
+    height: 16px;
+    color: var(--rv-accent-ink);
+  }
+  .cell.away:not(.sel) b {
+    color: var(--rv-accent-ink);
+  }
+  .cell.away::after {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: 2px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--rv-accent);
+    opacity: 0.45;
+  }
+  .away-dates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .away-dates .field {
+    margin: 0;
+  }
   /* Cômodo locked by the equipment (Novo › Tarefa): the rooms of the items stay marked, the others fade */
   .chip-row.locked .pick:disabled {
     cursor: default;

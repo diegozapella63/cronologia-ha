@@ -428,9 +428,40 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   /** Events of the visible calendars overlapping [start, end) (loads them if needed). */
   _events(start, end) {
     this._store.ensure(start, end);
-    const list = this._store.query(start, end);
+    let list = this._store.query(start, end);
+    // Modo férias: the routines and the maintenance of the days away are not there (the medicines are)
+    if (this._away()) list = list.filter((e) => !(e.kind && (e.kind.kind === "rotina" || e.kind.kind === "manutencao") && this._awayDay(e.start)));
     const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...this._movedDoneEvents(start, end)];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
+  }
+
+  /** Modo férias (Mais › Opções): {from, to} as YYYY-MM-DD, or null. */
+  _away() {
+    const a = this._app("away", null);
+    return a && a.from && a.to ? a : null;
+  }
+
+  /** A day inside the vacation. */
+  _awayDay(d) {
+    const a = this._away();
+    const s = ymd(d);
+    return !!(a && s >= a.from && s <= a.to);
+  }
+
+  /** On vacation today. */
+  _awayNow() {
+    return this._awayDay(new Date(this._now));
+  }
+
+  /** Agora: on vacation (or about to be), with Encerrar. */
+  _renderAwayBanner() {
+    const a = this._away();
+    const now = new Date(this._now);
+    if (!a || a.to < ymd(now)) return nothing;
+    const on = this._awayNow();
+    const to = dayLabel(fromYmd(a.to), now, { long: false, cap: false });
+    return html`<div class="hint-card away-card">${icon("plane")}<span class="grow"><b>${on ? `De férias até ${to}` : `Férias a partir de ${dayLabel(fromYmd(a.from), now, { long: false, cap: false })}`}</b><small>Rotinas e manutenção pausadas. Remédios continuam.</small></span>
+      <button class="text-btn" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar" : "Cancelar"}</button></div>`;
   }
 
   async _saveCalPrefs(id, changes) {
@@ -1633,7 +1664,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const rest = list.filter((e) => !isEvent(e)).sort(order);
     const todo = rest.filter((e) => !this._rowDone(e));
     rest.splice(0, rest.length, ...this._byPeriod(todo, day), ...rest.filter((e) => this._rowDone(e)));
-    return html`${events.map((e) => this._renderRow(e, day))}${rest.length
+    const away = this._awayDay(day) ? html`<div class="away-day">${icon("plane")}<span>Férias: rotinas e manutenção pausadas</span></div>` : nothing;
+    return html`${away}${events.map((e) => this._renderRow(e, day))}${rest.length
       ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
       : nothing}`;
   }
@@ -1771,6 +1803,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     if (this._desk) {
       return html`<section class="page now-page">
         ${this._renderHead("Hoje", status)}
+        ${this._renderAwayBanner()}
         ${this._renderNowSearch()} ${hidden}
         <div class="now-cols">
           <div class="now-main">${dayPart} ${this._renderTodosPanel()}</div>
@@ -1780,6 +1813,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     }
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
+      ${this._renderAwayBanner()}
       ${this._renderNowSearch()} ${hidden}
       ${medsPart}
       ${dayPart}
@@ -1976,7 +2010,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
           ${cells.slice(0, weeks * 7).map(({ d, list }) => {
             const out = d.getMonth() !== cur.getMonth();
             const colors = [...new Set(list.map((e) => this._colorOfEvent(e).fill))].slice(0, 4);
-            return html`<button class="cell ${out ? "out" : ""} ${sameDay(d, now) ? "today" : ""} ${sameDay(d, cur) ? "sel" : ""}" @click=${() => (this._cursor = d)} aria-label="${dayLabel(d, now)}: ${plural(list.length, "evento", "eventos")}">
+            return html`<button class="cell ${out ? "out" : ""} ${sameDay(d, now) ? "today" : ""} ${sameDay(d, cur) ? "sel" : ""} ${this._awayDay(d) ? "away" : ""}" @click=${() => (this._cursor = d)} aria-label="${dayLabel(d, now)}${this._awayDay(d) ? " (férias)" : ""}: ${plural(list.length, "evento", "eventos")}">
               <span class="num">${d.getDate()}</span>
               <span class="dots">${colors.map((c) => html`<i style="background:${c}"></i>`)}${list.length > 4 ? html`<b>+</b>` : nothing}</span>
             </button>`;
@@ -2277,6 +2311,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
           <label class="switch"><input type="checkbox" role="switch" .checked=${details} @change=${(e) => this._saveAppPrefs({ event_details: e.target.checked ? true : null })} aria-label="Local e notas" /><span class="track"></span></label>
         </div>
       </div>
+      ${this._renderAwayOptions()}
       <div class="panel">
         ${this._secHead("calendar-days", "Semana", "Vale para o calendário e o placar.")}
         <div class="seg week-seg" role="radiogroup" aria-label="Início da semana">
@@ -2287,6 +2322,26 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         </div>
       </div>
     `;
+  }
+
+  /** Mais › Opções › Férias: from when to when the routines and the maintenance rest (the medicines go on). */
+  _renderAwayOptions() {
+    const a = this._away();
+    const today = ymd(new Date(this._now));
+    const set = (from, to) => this._saveAppPrefs({ away: { from, to: to < from ? from : to } });
+    return html`<div class="panel" id="ferias">
+      ${this._secHead("plane", "Férias", "Rotinas e manutenção pausadas; remédios continuam.")}
+      <div class="row switch-row">
+        <div class="grow"><div class="label">De férias</div><div class="hint">${a ? `${dateShort(fromYmd(a.from), new Date(this._now))} a ${dateShort(fromYmd(a.to), new Date(this._now))}` : "Desligado."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${!!a} @change=${(e) => this._saveAppPrefs({ away: e.target.checked ? { from: today, to: ymd(addDays(fromYmd(today), 4)) } : null })} aria-label="De férias" /><span class="track"></span></label>
+      </div>
+      ${a
+        ? html`<div class="away-dates">
+            <label class="field"><span class="flabel">De</span><input type="date" .value=${a.from} @change=${(e) => e.target.value && set(e.target.value, a.to)} aria-label="Férias de" /></label>
+            <label class="field"><span class="flabel">Até</span><input type="date" .value=${a.to} min=${a.from} @change=${(e) => e.target.value && set(a.from, e.target.value)} aria-label="Férias até" /></label>
+          </div>`
+        : nothing}
+    </div>`;
   }
 
   /** Whether this page may use the camera (not over http://: the browser and the HA app refuse it). */

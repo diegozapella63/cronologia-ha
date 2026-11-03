@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.41.0
+
+- **Modo férias**: em Mais › Opções › Férias, escolha de quando até quando vão ficar fora. Nesses dias as rotinas e a manutenção da casa ficam pausadas (saem da tela Agora, do Para pontuar hoje e do calendário); os remédios continuam, com os avisos. A tela Agora mostra até quando, com **Encerrar**, e os dias ficam marcados no calendário. Na volta, nada aparece atrasado por causa dos dias fora.
+
 ## 1.40.0
 
 - **Conversa com a IA**: ao lado do microfone, um botão abre uma conversa. Pergunte sobre a tela, a agenda, as rotinas, os remédios, o placar ou qualquer outro assunto, escrevendo ou falando. Pedindo para marcar um compromisso, uma rotina como feita ou um remédio como tomado, a IA mostra cada ação num cartão e só faz quando você toca em **Fazer**. A conversa continua ao fechar e abrir; **Nova** começa outra. Conta em Uso da IA como Conversa.

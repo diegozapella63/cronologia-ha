@@ -118,8 +118,10 @@ export const ChatMixin = (Base) =>
         .map((e) => ({ titulo: e.summary || "", data: ymd(e.start), inicio: e.allDay ? null : hm(e.start), fim: e.allDay ? null : hm(e.end), calendario: cal(e.cal) }));
       const score = this._score ? this._score() : null;
       const todos = this._todos ? this._todos() : { items: [] };
+      const away = this._away && this._away();
       return {
-        tela: this._chatScreen(),
+        // Modo férias: the AI knows the routines rest
+        tela: `${this._chatScreen()}${away && this._awayNow() ? `; a família está de férias até ${away.to} (rotinas e manutenção pausadas)` : ""}`,
         criar: !!this._defaultCal(),
         agenda,
         rotinas: (ix.routines || []).map((r) => ({ id: r.key, nome: r.summary, feito: !!r.done, pulada: !!(r.done && r.done.skipped), periodo: (periodInfo(r.period) || {}).label || "", hora: r.time || null, quem: r.who || "", pontos: r.points || 0, atrasada: !r.done && (r.late > 0 || !!r.yesterday) })),

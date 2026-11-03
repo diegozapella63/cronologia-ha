@@ -478,3 +478,40 @@ describe("buildIndex: checks and metadata", () => {
     assert.deepEqual(r.after, { n: 3, unit: "dias" });
   });
 });
+
+describe("buildIndex: Modo férias", () => {
+  const DAILY = (summary, day) => allDay(summary, day, "#rotina\nPontos: 5", { raw: { rrule: "FREQ=DAILY" } });
+  const AFTER = (summary, day) => allDay(summary, day, "#rotina\nVolta: 2 dias depois de feita");
+  const dose = timed("Sertralina", at(2026, 11, 2, 20, 0), 15, MED());
+  const maint = allDay("Trocar o filtro", "2026-10-20", "#manutenção\nA cada: 6 meses");
+  it("today inside it: no routines; the doses, the bills and the maintenance stay in the index; it says so", () => {
+    const ix = index([DAILY("Regar as plantas", TODAY), AFTER("Trocar a areia", "2026-10-30"), dose, maint], { away: { from: "2026-11-01", to: "2026-11-06" } });
+    assert.deepEqual(ix.routines, []);
+    assert.equal(ix.meds.length, 1);
+    assert.equal(ix.maint.length, 1);
+    assert.deepEqual(ix.away, { from: "2026-11-01", to: "2026-11-06" });
+  });
+  it("back from it: yesterday's routine of the vacation is not left to do", () => {
+    const ix = index([allDay("Lavar a louça", "2026-11-01", "#rotina")], { away: { from: "2026-10-28", to: "2026-11-01" } });
+    assert.deepEqual(ix.routines, []);
+    assert.equal(ix.away, null, "over: not on vacation any more");
+  });
+  it("back from it: a routine that comes back after done, due during it, counts late from the day back", () => {
+    const ix = index([AFTER("Trocar a areia", "2026-10-29")], { away: { from: "2026-10-28", to: "2026-10-31" } });
+    assert.equal(ix.routines[0].late, 1, "back on 01/11, today 02/11");
+    const before = index([AFTER("Trocar a areia", "2026-10-20")], { away: { from: "2026-10-28", to: "2026-11-01" } });
+    assert.equal(before.routines[0].late, 0, "due before the vacation, back today: not late");
+    const no = index([AFTER("Trocar a areia", "2026-10-29")]);
+    assert.equal(no.routines[0].late, 4, "without vacation: 4 days late");
+  });
+  it("a vacation still ahead changes nothing today", () => {
+    const ix = index([DAILY("Regar as plantas", TODAY)], { away: { from: "2026-11-05", to: "2026-11-09" } });
+    assert.equal(ix.routines.length, 1);
+    assert.equal(ix.away, null);
+  });
+  it("invalid dates are ignored", () => {
+    for (const away of [{ from: "2026-11-06", to: "2026-11-01" }, { from: "2026-02-30", to: "2026-03-02" }, { from: "x" }, "sim"]) {
+      assert.equal(index([DAILY("Regar as plantas", TODAY)], { away }).routines.length, 1, JSON.stringify(away));
+    }
+  });
+});

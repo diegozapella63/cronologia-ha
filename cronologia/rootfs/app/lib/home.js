@@ -241,7 +241,7 @@ export class Home {
     const now = Date.now();
     const { late, meds: alertsOn, caregivers } = this.settings();
     const occs = [...this.occurrences()];
-    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, late, alertsOn, features: (cal) => this.features(cal), targetFor: (n) => this.targetFor(n), now });
+    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, late, alertsOn, features: (cal) => this.features(cal), targetFor: (n) => this.targetFor(n), now, away: this.store.data.app.away || null });
     // Alert buttons find their dose by a short hash (doses of yesterday, today and tomorrow).
     this.byHash.clear();
     const t0 = startOfDay(new Date(now)).getTime();
@@ -996,8 +996,9 @@ export class Home {
     const late = ix.meds.filter((m) => m.state === "atrasado");
     const next = pending.find((m) => m.state === "depois");
     const desc = (m) => `${m.time ? `${m.time} ` : ""}${m.summary}${m.who ? ` (${m.who})` : ""}`;
-    const overdue = ix.maint.filter((m) => m.state === "vencida");
-    const soon = ix.maint.filter((m) => m.state === "perto");
+    // Modo férias: the house rests, so no maintenance is due (the medicines go on)
+    const overdue = ix.away ? [] : ix.maint.filter((m) => m.state === "vencida");
+    const soon = ix.away ? [] : ix.maint.filter((m) => m.state === "perto");
     const sensors = {
       "sensor.cronologia_remedios_hoje": {
         state: pending.length,

@@ -85,6 +85,10 @@ Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias d
 
 Uma rotina sem horário pode ter um **período**: **Manhã**, **Tarde** ou **Noite** (em **Horário**). As listas de hoje (Rotina da casa, Para pontuar hoje e o Calendário) seguem o dia: primeiro o período em que você está, depois o que era de um período que já passou (em destaque, ainda por fazer), as de qualquer hora e, por fim, os períodos que ainda vão chegar. Uma rotina num horário entra no período desse horário. Manhã vai das 5h ao meio-dia, tarde até as 18h e noite até as 5h.
 
+### Modo férias
+
+Em **Mais › Opções › Férias**, ligue **De férias** e escolha de quando até quando (começa hoje, por 5 dias). Nesses dias as **rotinas** e a **manutenção da casa** ficam pausadas: saem da tela Agora, do Para pontuar hoje e dos dias do calendário, e o sensor de manutenções vencidas fica em zero. Os **remédios** continuam, com os avisos no celular. A tela Agora mostra até quando vão as férias, com **Encerrar**; no calendário, os dias de férias ficam marcados. Na volta, nada aparece como atrasado por causa dos dias fora: a rotina de ontem não fica para fazer e a que volta N dias depois conta o atraso a partir da volta.
+
 ### Rotina que volta depois de feita
 
 Na **Rotina da casa**, a frequência **Depois de feita** serve para o que conta a partir da última vez, e não de um dia fixo: "trocar a areia 3 dias depois de trocada", "passar pano 2 dias depois". Escolha em quantos dias volta e a **Primeira vez** (hoje, amanhã ou outra data).

@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { actor } from "./actor.js";
+import { cleanAway } from "./kinds.js";
 
 export const COLORS = ["vermelho", "coral", "laranja", "ouro", "verde", "menta", "turquesa", "azul", "indigo", "lilas", "rosa", "grafite"];
 const CAL_RE = /^calendar\.[a-z0-9_]+$/;
@@ -81,6 +82,15 @@ function cleanApp(raw) {
   }
   // Mais › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
   if ("ai_off" in raw) out.ai_off = raw.ai_off ? true : null;
+  // Modo férias: {from, to}; in it the routines and the maintenance pause, the medicines go on
+  if ("away" in raw) {
+    if (raw.away == null) out.away = null;
+    else {
+      const a = cleanAway(raw.away);
+      if (!a) fail("Datas das férias inválidas");
+      out.away = a;
+    }
+  }
   // Mais › Integrações › Sensores no Home Assistant: off unless turned on
   if ("sensors_on" in raw) out.sensors_on = raw.sensors_on ? true : null;
   // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list

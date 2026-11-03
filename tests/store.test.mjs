@@ -119,6 +119,16 @@ describe("Store: app settings", () => {
     s.setApp(changes);
     return s.data.app;
   };
+  it("Modo férias: two real days, the first not after the last; null clears; anything else is refused", () => {
+    assert.deepEqual(set({ away: { from: "2026-11-03", to: "2026-11-07", extra: 1 } }).away, { from: "2026-11-03", to: "2026-11-07" });
+    const s = fresh();
+    s.setApp({ away: { from: "2026-11-03", to: "2026-11-07" } });
+    s.setApp({ away: null });
+    assert.equal(s.data.app.away, undefined);
+    for (const away of [{ from: "2026-11-07", to: "2026-11-03" }, { from: "2026-02-30", to: "2026-03-01" }, { from: "2026-01-01", to: "2027-06-01" }, "sim"]) {
+      assert.throws(() => fresh().setApp({ away }), /Datas das férias inválidas/, JSON.stringify(away));
+    }
+  });
   it("simple choices are validated", () => {
     assert.deepEqual(set({ accent: "rosa", week_start: 0, view: "lista" }), { accent: "rosa", week_start: 0, view: "lista" });
     assert.deepEqual(set({ accent: "pink", week_start: 3, view: "ano" }), {});
