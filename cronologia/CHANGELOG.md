@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.42.0
+
+- **Cor do dia**: a cor do app muda todo dia, sozinha (a mesma em todos os aparelhos, e troca à meia-noite mesmo com o app aberto). Vem ligada; em Mais › Aparência, desligue em **Cor do dia** ou escolha uma cor para ficar sempre nela.
+
 ## 1.41.0
 
 - **Modo férias**: em Mais › Opções › Férias, escolha de quando até quando vão ficar fora. Nesses dias as rotinas e a manutenção da casa ficam pausadas (saem da tela Agora, do Para pontuar hoje e do calendário); os remédios continuam, com os avisos. A tela Agora mostra até quando, com **Encerrar**, e os dias ficam marcados no calendário. Na volta, nada aparece atrasado por causa dos dias fora.

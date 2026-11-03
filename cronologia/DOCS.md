@@ -27,7 +27,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, marcar por outras pessoas, resultado no celular, desligar) e a lista de **deméritos**.
   - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA** e leitura por IA.
   - **Dados**: exportar, backup, importar e versões anteriores.
-  - **Aparência**: tema (automático, claro ou escuro) e cor do app.
+  - **Aparência**: tema (automático, claro ou escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
   - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
 
 ### No computador

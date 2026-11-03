@@ -129,6 +129,18 @@ describe("Store: app settings", () => {
       assert.throws(() => fresh().setApp({ away }), /Datas das férias inválidas/, JSON.stringify(away));
     }
   });
+  it("Cor do dia: on unless turned off (only false is kept)", () => {
+    const s = fresh();
+    s.setApp({ accent_daily: false });
+    assert.equal(s.data.app.accent_daily, false);
+    s.setApp({ accent: "azul", accent_daily: true });
+    assert.deepEqual(s.data.app, { accent: "azul" }, "on is the default: nothing kept");
+    s.setApp({ accent_daily: false });
+    s.setApp({ accent_daily: null });
+    assert.equal("accent_daily" in s.data.app, false);
+    s.setApp({ accent_daily: "não" });
+    assert.equal("accent_daily" in s.data.app, false);
+  });
   it("simple choices are validated", () => {
     assert.deepEqual(set({ accent: "rosa", week_start: 0, view: "lista" }), { accent: "rosa", week_start: 0, view: "lista" });
     assert.deepEqual(set({ accent: "pink", week_start: 3, view: "ano" }), {});

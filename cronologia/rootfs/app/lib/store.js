@@ -46,6 +46,8 @@ function cleanApp(raw) {
   if (!raw || typeof raw !== "object") fail("ajustes inválidos");
   const out = {};
   if ("accent" in raw) out.accent = COLORS.includes(raw.accent) ? raw.accent : null;
+  // Mais › Aparência › Cor do dia: on unless turned off (false); null = back to on
+  if ("accent_daily" in raw) out.accent_daily = raw.accent_daily === false ? false : null;
   if ("week_start" in raw) out.week_start = raw.week_start === 1 ? 1 : raw.week_start === 0 ? 0 : null;
   if ("view" in raw) out.view = VIEWS.includes(raw.view) ? raw.view : null;
   if ("ai_entity" in raw) out.ai_entity = AI_RE.test(raw.ai_entity || "") ? raw.ai_entity : null;

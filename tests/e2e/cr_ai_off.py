@@ -56,7 +56,7 @@ async def main():
         check(heads["Placar"][:1] == ["Ajustes do placar"] and "Deméritos" in heads["Placar"], "Placar: settings and deméritos")
         check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "Leitura por IA", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
         check(await a.locator(".mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
-        check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Novo", "Semana"], "Aparência: Tema and Cor do app; Opções: Novo and Semana")
+        check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Novo", "Férias", "Semana"], "Aparência: Tema and Cor do app; Opções: Novo, Férias and Semana")
         # AI on by default: Novo shows the import strip
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(400)
         check(await a.locator(".sheet .imp-tile").count() == 3, "AI on: Novo has Colar mensagem, Escolher fotos, Digitalizar")

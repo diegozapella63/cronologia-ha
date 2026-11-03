@@ -1,7 +1,7 @@
 import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS } from "../vendor/lit-all.min.js";
 import { usagePanel, usageStyles } from "./usage-panel.js";
 import { equipPickerStyles } from "./equip-picker.js";
-import { themePicker, colorPicker, lookStyles } from "./look.js";
+import { themePicker, colorPicker, lookStyles, colorOfDay } from "./look.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
 import { appIcon } from "./appicon.js";
@@ -363,7 +363,13 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     return v === undefined ? fallback : v;
   }
 
+  /** Mais › Aparência › Cor do dia: on unless turned off. */
+  _accentDaily() {
+    return this._app("accent_daily", true) !== false;
+  }
+
   _accent() {
+    if (this._accentDaily()) return colorOfDay(PALETTE, new Date(this._now || Date.now()));
     return colorById(this._app("accent", "turquesa")) || colorById("turquesa");
   }
 
@@ -2284,7 +2290,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   }
 
   _renderAppearance() {
-    const accent = this._app("accent", "turquesa");
+    const daily = this._accentDaily();
+    const accent = daily ? this._accent().id : this._app("accent", "turquesa");
     return html`
       <div class="panel">
         ${this._secHead("contrast", "Tema", "Cada aparelho guarda a sua escolha.")}
@@ -2292,7 +2299,11 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       </div>
       <div class="panel">
         ${this._secHead("palette", "Cor do app", "Vale para todos os aparelhos.")}
-        ${colorPicker({ palette: PALETTE, value: accent, onPick: (id) => this._saveAppPrefs({ accent: id }) })}
+        <div class="row switch-row daily-row">
+          <div class="grow"><div class="label">Cor do dia</div><div class="hint">Muda a cor do app todo dia.</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${daily} @change=${(e) => this._saveAppPrefs({ accent_daily: e.target.checked ? null : false })} aria-label="Cor do dia" /><span class="track"></span></label>
+        </div>
+        ${colorPicker({ palette: PALETTE, value: accent, onPick: (id) => this._saveAppPrefs({ accent: id, accent_daily: false }) })}
       </div>
     `;
   }
