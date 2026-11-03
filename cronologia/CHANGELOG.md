@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.39.0
+
+- **Vários equipamentos na tarefa**: no **Novo › Tarefa**, depois do primeiro equipamento, **Outro equipamento** acrescenta mais; com equipamento, o cômodo vem dele e fica bloqueado (vários, se os equipamentos estiverem em cômodos diferentes). As tarefas do ResolvIA mostram todos os equipamentos e cômodos (precisa do ResolvIA 2.31.0). A manutenção continua com um equipamento.
+
 ## 1.38.0
 
 - **A semana começa na segunda** para quem nunca escolheu, no calendário (Mês, Semana) e no placar. Antes, a tela mostrava a semana a partir do domingo e dizia "A semana começa no domingo", mas o placar já fechava toda segunda. Quem prefere domingo escolhe em **Mais › Opções**, e aí vale para os dois.

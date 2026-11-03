@@ -304,7 +304,7 @@ describe("equip-picker: renderEquipPicker (with a tiny fake of lit)", () => {
   it("a chosen item becomes a card with its zone and room", () => {
     const out = render({ value: "fogao" });
     assert.match(out, /<b>Fogão Brastemp<\/b><small>Bancada · Cozinha<\/small>/);
-    assert.match(out, /Tirar o equipamento/);
+    assert.match(out, /Tirar Fogão Brastemp/);
     assert.match(render({ value: "geladeira", items: [{ ...ITEMS[1], roomName: "" }] }), /Sem cômodo/);
   });
 });

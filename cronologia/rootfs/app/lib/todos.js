@@ -20,7 +20,11 @@ function cleanRooms(raw) {
   for (const [list, map] of Object.entries(raw.tarefas && typeof raw.tarefas === "object" ? raw.tarefas : {})) {
     if (!isTodo(list) || !map || typeof map !== "object") continue;
     tarefas[list] = {};
-    for (const [k, v] of Object.entries(map)) if (typeof v === "string") tarefas[list][k] = v;
+    // one id, or a list (ResolvIA 2.31: several items of a task, so several rooms)
+    for (const [k, v] of Object.entries(map)) {
+      const ids = (Array.isArray(v) ? v : [v]).filter((x) => typeof x === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(x));
+      if (ids.length) tarefas[list][k] = [...new Set(ids)].slice(0, 10);
+    }
   }
   return { lista, tarefas };
 }
@@ -180,7 +184,7 @@ export class Todos {
         // Agora › tasks without a due date (or whose dates aren't deadlines), pending only
         for (const i of all) {
           if (!i.uid || i.status === "completed" || (i.due && !info)) continue;
-          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app), room: this.roomOf(id, i.summary, app), equip: this.equipOf(id, i.summary, app), every: everyOf(app, id, i.uid) });
+          items.push({ key: `todo|${id}|${i.uid}`, list: id, listName: name, uid: i.uid, summary: i.summary || "", description: i.description || "", due: null, allDay: true, done: false, overdue: false, days: null, undated: true, points: this.pointsOf(id, i.summary, app), room: this.roomOf(id, i.summary, app), equip: this.equipOf(id, i.summary, app), rooms: this.roomsOf(id, i.summary, app), equips: this.equipsOf(id, i.summary, app), every: everyOf(app, id, i.uid) });
         }
       }
       if (info) continue;
@@ -205,6 +209,8 @@ export class Todos {
           points: this.pointsOf(id, i.summary, app),
           room: this.roomOf(id, i.summary, app),
           equip: this.equipOf(id, i.summary, app),
+          rooms: this.roomsOf(id, i.summary, app),
+          equips: this.equipsOf(id, i.summary, app),
           every: everyOf(app, id, i.uid),
           days: Math.round((new Date(new Date(at).getFullYear(), new Date(at).getMonth(), new Date(at).getDate()).getTime() - t0) / DAY),
         });
@@ -231,20 +237,28 @@ export class Todos {
     return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos, comodos: app.comodos ? app.comodos.lista : [], equipamentos: app.equipamentos ? app.equipamentos.lista : [] } : null };
   }
 
-  /** The room of a task in the ResolvIA ({id, nome}), or null. */
-  roomOf(list, summary, app = this.app()) {
+  /** The rooms of a task in the ResolvIA ([{id, nome}]; several when its items are in several rooms). */
+  roomsOf(list, summary, app = this.app()) {
     const c = app && app.comodos;
-    const id = c && c.tarefas[list] && c.tarefas[list][taskKey(summary)];
-    const r = id && c.lista.find((x) => x.id === id);
-    return r ? { id: r.id, nome: r.nome } : null;
+    const ids = (c && c.tarefas[list] && c.tarefas[list][taskKey(summary)]) || [];
+    return ids.map((id) => c.lista.find((x) => x.id === id)).filter(Boolean).map((r) => ({ id: r.id, nome: r.nome }));
   }
 
-  /** The equipment of a task in the ResolvIA ({id, nome, comodo}), or null. */
-  equipOf(list, summary, app = this.app()) {
+  /** The (first) room of a task in the ResolvIA ({id, nome}), or null. */
+  roomOf(list, summary, app = this.app()) {
+    return this.roomsOf(list, summary, app)[0] || null;
+  }
+
+  /** The items of a task in the ResolvIA ([{id, nome, comodo}]). */
+  equipsOf(list, summary, app = this.app()) {
     const c = app && app.equipamentos;
-    const id = c && c.tarefas[list] && c.tarefas[list][taskKey(summary)];
-    const r = id && c.lista.find((x) => x.id === id);
-    return r ? { id: r.id, nome: r.nome, comodo: r.comodo || "" } : null;
+    const ids = (c && c.tarefas[list] && c.tarefas[list][taskKey(summary)]) || [];
+    return ids.map((id) => c.lista.find((x) => x.id === id)).filter(Boolean).map((r) => ({ id: r.id, nome: r.nome, comodo: r.comodo || "" }));
+  }
+
+  /** The (first) item of a task in the ResolvIA ({id, nome, comodo}), or null. */
+  equipOf(list, summary, app = this.app()) {
+    return this.equipsOf(list, summary, app)[0] || null;
   }
 
   /** Points the ResolvIA gives for a task (0 when none or no ResolvIA). */

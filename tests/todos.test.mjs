@@ -35,8 +35,8 @@ const appFile = (extra = {}) => ({
   gravado_em: new Date(NOW - 10 * 60000).toISOString(),
   pontos: { "todo.casa": { "passar pano na casa": 15, "trocar a lampada da varanda": 5, "pagar o ipva": "x" } },
   repete: { "todo.casa": { t1: 7, t2: "2", t3: 0, t4: 9999 } },
-  comodos: { lista: [{ id: "sala", nome: "Sala" }, { id: "coz", nome: "Cozinha" }, { id: "bad id!", nome: "X" }], tarefas: { "todo.casa": { "passar pano na casa": "sala", "trocar a lampada da varanda": "nao-existe" } } },
-  equipamentos: { lista: [{ id: "geladeira", nome: "Geladeira", comodo: "Cozinha" }, { id: "ar", nome: "Ar-condicionado" }], tarefas: { "todo.casa": { "limpar a geladeira": "geladeira", "limpar o ar": "ar" } } },
+  comodos: { lista: [{ id: "sala", nome: "Sala" }, { id: "coz", nome: "Cozinha" }, { id: "bad id!", nome: "X" }], tarefas: { "todo.casa": { "passar pano na casa": "sala", "trocar a lampada da varanda": "nao-existe", "limpeza geral": ["coz", "sala", "coz", "bad id!"] } } },
+  equipamentos: { lista: [{ id: "geladeira", nome: "Geladeira", comodo: "Cozinha" }, { id: "ar", nome: "Ar-condicionado" }], tarefas: { "todo.casa": { "limpar a geladeira": "geladeira", "limpar o ar": "ar", "limpeza geral": ["geladeira", "ar", "sumiu"] } } },
   sem_prazo: ["todo.compras", "nao-e-lista"],
   ...extra,
 });
@@ -190,6 +190,15 @@ describe("Todos: the ResolvIA integration file", () => {
     assert.deepEqual(t.equipOf("todo.casa", "Limpar a Geladeira", app), { id: "geladeira", nome: "Geladeira", comodo: "Cozinha" });
     assert.deepEqual(t.equipOf("todo.casa", "limpar o ar", app), { id: "ar", nome: "Ar-condicionado", comodo: "" });
     assert.equal(t.equipOf("todo.casa", "x", null), null);
+  });
+  it("roomsOf / equipsOf (ResolvIA 2.31): several items, so several rooms; a list or one id; unknown and invalid ids left out", () => {
+    const { t } = make();
+    const app = t.app(NOW);
+    assert.deepEqual(t.roomsOf("todo.casa", "Limpeza geral", app), [{ id: "coz", nome: "Cozinha" }, { id: "sala", nome: "Sala" }]);
+    assert.deepEqual(t.equipsOf("todo.casa", "Limpeza geral", app).map((e) => e.id), ["geladeira", "ar"]);
+    assert.deepEqual(t.roomOf("todo.casa", "Limpeza geral", app), { id: "coz", nome: "Cozinha" }, "roomOf: the first");
+    assert.deepEqual(t.equipsOf("todo.casa", "Limpar o ar", app).map((e) => e.id), ["ar"], "one id: a list of one");
+    assert.deepEqual(t.roomsOf("todo.casa", "nada", app), []);
   });
 });
 

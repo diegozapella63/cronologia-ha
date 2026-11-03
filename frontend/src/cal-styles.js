@@ -1871,6 +1871,14 @@ export const calStyles = css`
     height: 16px;
     stroke-width: 3;
   }
+  /* Cômodo locked by the equipment (Novo › Tarefa): the rooms of the items stay marked, the others fade */
+  .chip-row.locked .pick:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  .chip-row.locked .pick.on:disabled {
+    opacity: 1;
+  }
   .ev-done.missed {
     color: var(--rv-late);
   }

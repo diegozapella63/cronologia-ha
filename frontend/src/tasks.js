@@ -116,7 +116,9 @@ export const TasksMixin = (Base) =>
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
-        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.equip ? t.equip.nome : "", t.room ? t.room.nome : "", t.listName].filter(Boolean).join(" · ");
+        const eqs = t.equips && t.equips.length ? t.equips : t.equip ? [t.equip] : [];
+        const rms = t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : [];
+        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), eqs.length ? `${eqs[0].nome}${eqs.length > 1 ? ` +${eqs.length - 1}` : ""}` : "", rms.map((r) => r.nome).join(", "), t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
           <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
@@ -163,8 +165,8 @@ export const TasksMixin = (Base) =>
         <div class="ev-facts">
           <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
-          ${t.room ? html`<div class="fact">${icon("door-open")}<span>${t.room.nome}</span></div>` : nothing}
-          ${t.equip ? html`<div class="fact">${icon("package")}<span>${t.equip.nome}${t.equip.comodo && !t.room ? ` (${t.equip.comodo})` : ""}</span></div>` : nothing}
+          ${(t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : []).length ? html`<div class="fact">${icon("door-open")}<span>${(t.rooms && t.rooms.length ? t.rooms : [t.room]).map((r) => r.nome).join(", ")}</span></div>` : nothing}
+          ${(t.equips && t.equips.length ? t.equips : t.equip ? [t.equip] : []).map((e) => html`<div class="fact">${icon("package")}<span>${e.nome}${e.comodo && !t.room ? ` (${e.comodo})` : ""}</span></div>`)}
           ${t.every ? html`<div class="fact">${icon("repeat")}<span>Volta ${everyLabel(t.every)} depois de concluída</span></div>` : nothing}
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
           ${t.description ? html`<div class="fact notes">${icon("file-text")}<span>${splitLinks(t.description).map((p) => (p.url ? html`<a href=${p.url} target="_blank" rel="noopener noreferrer">${p.url}</a>` : p.text))}</span></div>` : nothing}
@@ -227,10 +229,14 @@ export const TasksMixin = (Base) =>
       return { rooms, items };
     }
 
-    /** Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room and f.equip are ids. */
-    _renderRoomEquipFields(f) {
+    /**
+     * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room and f.equip are ids.
+     * multi (Novo › Tarefa): several items in f.equips; with items, the rooms are theirs and locked.
+     */
+    _renderRoomEquipFields(f, { multi = false } = {}) {
       const { rooms, items } = this._invLists();
       if (!rooms.length && !items.length) return nothing;
+      if (multi) return this._renderRoomEquipMulti(f, rooms, items);
       // picking an equipment sets its room; another room drops an equipment that is not in it
       const pickEquip = (id) => {
         const e = items.find((x) => x.id === id);
@@ -265,6 +271,50 @@ export const TasksMixin = (Base) =>
                 onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
                 onMore: () => this._setForm({ equipMore: true }),
                 onPick: pickEquip,
+              })}
+            </div>`
+          : nothing}`;
+    }
+
+    _renderRoomEquipMulti(f, rooms, items) {
+      const ids = f.equips || [];
+      const locked = ids.length > 0;
+      const roomsOf = (list) => [...new Set(list.map((id) => (items.find((x) => x.id === id) || {}).roomId).filter((r) => r && rooms.some((c) => c.id === r)))];
+      const marked = locked ? roomsOf(ids) : f.room ? [f.room] : [];
+      const searchRoom = locked ? marked[0] || null : f.room || null;
+      return html`${rooms.length
+          ? html`<div class="field">
+              <span class="flabel">${marked.length > 1 ? "Cômodos" : "Cômodo"}</span>
+              <div class="chip-row ${locked ? "locked" : ""}">
+                <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null })}>Nenhum</button>
+                ${rooms.map((c) => html`<button class="pick ${marked.includes(c.id) ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: f.room === c.id ? null : c.id })}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
+              </div>
+              ${locked ? html`<span class="field-hint">${icon("lock")}<span>Vem ${ids.length > 1 ? "dos equipamentos" : "do equipamento"}.</span></span>` : nothing}
+            </div>`
+          : nothing}
+        ${items.length
+          ? html`<div class="field">
+              <span class="flabel">${ids.length > 1 ? "Equipamentos" : "Equipamento"}</span>
+              ${renderEquipPicker({
+                lit: { html, nothing },
+                icon,
+                items,
+                room: searchRoom,
+                roomName: searchRoom ? (rooms.find((c) => c.id === searchRoom) || {}).nome || "" : "",
+                value: ids,
+                query: f.equipQ || "",
+                more: !!f.equipMore,
+                adding: !!f.equipAdding,
+                autofocus: !!f.equipAdding,
+                onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
+                onMore: () => this._setForm({ equipMore: true }),
+                onAdd: () => this._setForm({ equipAdding: true, equipQ: "", equipMore: false }),
+                onPick: (id) => this._setForm({ equips: [...ids, id], equipQ: "", equipMore: false, equipAdding: false }),
+                onRemove: (id) => {
+                  const next = ids.filter((x) => x !== id);
+                  // the last one out: the room is free again, starting from the one it had
+                  this._setForm({ equips: next, ...(!next.length ? { room: roomsOf(ids)[0] || f.room || null } : {}) });
+                },
               })}
             </div>`
           : nothing}`;
@@ -305,7 +355,7 @@ export const TasksMixin = (Base) =>
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
-        ${this._renderRoomEquipFields(f)}
+        ${this._renderRoomEquipFields(f, { multi: true })}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
@@ -320,7 +370,7 @@ export const TasksMixin = (Base) =>
       if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
       const withDue = this._todoDueOk() && !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
       const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
-      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...(f.room ? { room: f.room } : {}), ...(f.equip ? { equip: f.equip } : {}) };
+      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...((f.equips || []).length ? { equips: f.equips } : f.room ? { room: f.room } : {}) };
       if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
       this._setForm({ saving: true });
       try {
