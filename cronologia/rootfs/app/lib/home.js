@@ -592,6 +592,8 @@ export class Home {
 
   /** Points for something that is not in the calendar ("lavou o carro"). */
   extraPoints(who, points, title) {
+    // Modo férias: no points by hand either (the buttons are off there)
+    if (awayOn(this.store.data.app.away, ymdOf(new Date()))) throw coded("away", "De férias: os pontos estão pausados");
     const person = this.participant(who);
     if (!person) throw coded("invalid_format", "Escolha quem fez");
     const n = Math.round(Number(points) || 0);

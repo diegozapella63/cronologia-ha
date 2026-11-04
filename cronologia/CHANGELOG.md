@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.46.1
+
+- **Modo férias**: em **Para pontuar hoje**, os botões **Tarefa com pontos** e **Pontos avulsos** ficam inativos (e o app recusa pontos avulsos nas férias).
+
 ## 1.46.0
 
 - **Modo férias** pausa mais coisas:

@@ -480,8 +480,8 @@ export const RewardsMixin = (Base) =>
               ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
               : nothing}`}
         <div class="score-actions">
-          <button class="btn outline sm" @click=${() => this._openKindForm({ kind: "rotina" })}>${icon("plus")}Tarefa com pontos</button>
-          <button class="btn outline sm" @click=${() => this._openSheet("extra", { who: this._participant(this._me()) || "", points: 10, title: "" })}>${icon("award")}Pontos avulsos</button>
+          <button class="btn outline sm" ?disabled=${!!away} title=${away ? "De férias" : ""} @click=${() => this._openKindForm({ kind: "rotina" })}>${icon("plus")}Tarefa com pontos</button>
+          <button class="btn outline sm" ?disabled=${!!away} title=${away ? "De férias" : ""} @click=${() => this._openSheet("extra", { who: this._participant(this._me()) || "", points: 10, title: "" })}>${icon("award")}Pontos avulsos</button>
         </div>
       </div>`;
     }

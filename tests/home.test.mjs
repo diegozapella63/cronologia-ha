@@ -792,9 +792,11 @@ describe("Home: extra points, demerits, removing and restoring", () => {
     home.onDemerit({ nome: "Toalha molhada na cama", quem: "Diego" });
     assert.equal(store.data.score.entries.length, 0);
     assert.match(log.lines.at(-1)[1], /De férias/);
+    assert.throws(() => home.extraPoints("Diego", 10, "Lavou o carro"), { code: "away" }, "no points by hand either");
     // after the vacation, again
     store.setApp({ away: { from: "2026-10-20", to: "2026-11-01" } });
     assert.equal(home.demerit("toalha", "Andressa").points, -5);
+    home.extraPoints("Diego", 10, "Lavou o carro");
   });
   it("removePoints keeps the entry 10 minutes for Desfazer (with its date)", () => {
     const { home, store } = setup();

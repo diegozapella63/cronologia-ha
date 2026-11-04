@@ -85,6 +85,8 @@ async def main():
         check("De férias até" in tt and "rotinas, tarefas e manutenção pausadas" in tt and "Nenhuma tarefa com pontos" not in tt and "Próximas rotinas" not in tt, f"Recompensas › Para pontuar hoje: paused by the vacation ({tt[:120]!r})")
         dm = a.locator("#demeritos")
         check(await dm.count() == 1 and "Pausados nas férias." in await dm.inner_text() and await dm.locator(".dm-btn").count() == 0, "Recompensas › Deméritos: paused, nothing to tap")
+        acts = today_p.locator(".score-actions .btn")
+        check(await acts.count() == 2 and all([await acts.nth(i).is_disabled() for i in range(2)]), "Tarefa com pontos and Pontos avulsos inactive on vacation")
         r = await pg.evaluate(ws, {"type": "cronologia/score/demerit", "demerit": "toalha01", "who": "Diego"})
         check(r.get("success") is False and (r.get("error") or {}).get("code") == "away", f"and the server refuses a demérito on vacation ({r.get('error')})")
         await pg.screenshot(path=f"{SP}/shots/cra-rewards.png", full_page=True)
@@ -97,6 +99,7 @@ async def main():
         check(await a.locator(".panel.todos#tarefas").count() == todos_before, "the Tarefas are back")
         await a.locator(".tab", has_text="Recompensas").click(); await pg.wait_for_timeout(700)
         check(await a.locator("#demeritos .dm-btn").count() == 2 and "De férias" not in await a.locator(".score-today").inner_text(), "after it: the deméritos are back")
+        check(not await a.locator(".score-today .score-actions .btn").first.is_disabled(), "and the buttons work again")
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(500)
         # ahead: Agora says when it starts, today as usual
         await pg.evaluate("""(away) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, type: 'cronologia/prefs/set_app', prefs: {away}})); ws.onmessage = (e) => { if (JSON.parse(e.data).type === 'result') { ws.close(); res(); } }; })""", {"from": D(3), "to": D(6)})
