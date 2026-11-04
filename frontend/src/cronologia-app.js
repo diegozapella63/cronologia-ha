@@ -468,9 +468,29 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const now = new Date(this._now);
     if (!a || a.to < ymd(now)) return nothing;
     const on = this._awayNow();
-    const to = dayLabel(fromYmd(a.to), now, { long: false, cap: false });
-    return html`<div class="hint-card away-card">${icon("plane")}<span class="grow"><b>${on ? `De férias até ${to}` : `Férias a partir de ${dayLabel(fromYmd(a.from), now, { long: false, cap: false })}`}</b><small>Rotinas, tarefas e manutenção pausadas. Remédios continuam.</small></span>
-      <button class="text-btn" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar" : "Cancelar"}</button></div>`;
+    const from = fromYmd(a.from);
+    const to = fromYmd(a.to);
+    const total = dayDiff(to, from) + 1;
+    const day = dayDiff(startOfDay(now), from) + 1;
+    const label = (d) => dayLabel(d, now, { long: false, cap: false });
+    // on: which day of how many, with a bar; ahead: from when, for how long
+    const sub = on ? (day >= total ? "Último dia" : `Dia ${day} de ${total}`) : `${plural(total, "dia", "dias")}, até ${label(to)}`;
+    return html`<div class="away-card ${on ? "on" : "ahead"}" role="status">
+      <div class="aw-top">
+        <span class="aw-ic" aria-hidden="true">${icon("plane")}</span>
+        <span class="aw-tx">
+          <span class="aw-over">${on ? "De férias" : "Férias marcadas"}</span>
+          <b class="aw-title">${on ? `até ${label(to)}` : `a partir de ${label(from)}`}</b>
+          <small>${sub}</small>
+        </span>
+      </div>
+      ${on ? html`<div class="aw-bar" role="progressbar" aria-valuemin="1" aria-valuemax=${total} aria-valuenow=${Math.min(day, total)} aria-label="Dia ${Math.min(day, total)} de ${total}"><span style="width:${Math.round((Math.min(day, total) / total) * 100)}%"></span></div>` : nothing}
+      <div class="aw-chips">
+        <span class="aw-chip">${icon("circle-pause")}Rotinas, tarefas e manutenção pausadas</span>
+        <span class="aw-chip meds">${icon("pill")}Remédios continuam</span>
+      </div>
+      <button class="text-btn aw-end" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar férias" : "Cancelar férias"}</button>
+    </div>`;
   }
 
   async _saveCalPrefs(id, changes) {
@@ -1778,7 +1798,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const openToday = todays.filter((e) => !this._checkOf(e));
     const openTimed = timed.filter((e) => !this._checkOf(e));
     const left = openTimed.filter((e) => e.end > now).length;
-    const dayText = !todays.length ? "nada hoje" : !openToday.length ? "tudo feito hoje" : `${plural(openToday.length, "evento", "eventos")} hoje${left && left < openTimed.length ? ` · ${left} pela frente` : ""}`;
+    const dayText = this._awayNow() ? "de férias" : !todays.length ? "nada hoje" : !openToday.length ? "tudo feito hoje" : `${plural(openToday.length, "evento", "eventos")} hoje${left && left < openTimed.length ? ` · ${left} pela frente` : ""}`;
     const status = lateMeds.length
       ? { text: `${cap(dateLong(now))} · ${lateMeds.length === 1 ? `${lateMeds[0].summary} atrasado` : `${lateMeds.length} remédios atrasados`}`, tone: "late" }
       : { text: `${cap(dateLong(now))} · ${dayText}` };

@@ -57,11 +57,18 @@ async def main():
         # Agora: the banner, no routines nor maintenance, the medicines stay
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(900)
         card = a.locator(".away-card")
-        txt = (await card.inner_text()) if await card.count() else ""
-        check("De férias até" in txt and "Remédios continuam." in txt and "Encerrar" in txt, f"Agora: the banner ({txt[:80]!r})")
+        txt = (await card.text_content()) if await card.count() else ""
+        title = (await card.locator(".aw-title").text_content()).strip() if await card.count() else ""
+        check("De férias" in txt and title.startswith("até ") and "Remédios continuam" in txt and "Encerrar" in txt, f"Agora: the vacation card ({txt[:90]!r})")
+        check((await card.locator(".aw-tx small").text_content()).strip() == "Dia 1 de 5" and await card.locator(".aw-bar[aria-valuenow='1'][aria-valuemax='5']").count() == 1, "which day of how many, with the bar")
+        bg = await card.evaluate("(e) => getComputedStyle(e).backgroundImage")
+        check("gradient" in bg, f"a card of its own, not the color of the day ({bg[:40]})")
+        stl = await a.locator(".brand-head .status").inner_text()
+        check("de férias" in stl or "atrasado" in stl, f"the status line says de férias (or a late medicine), not tudo feito hoje ({stl})")
+        await card.screenshot(path=f"{SP}/shots/cra-card.png")
         check(await a.locator(".panel.chores#casa").count() == 0, "Agora: no Rotina da casa nor maintenance")
         check(await a.locator(".panel.todos#tarefas").count() == 0, f"Agora: no Tarefas either (before: {todos_before})")
-        check("Rotinas, tarefas e manutenção pausadas." in txt, "the banner says the tasks rest too")
+        check("Rotinas, tarefas e manutenção pausadas" in txt, "the card says the tasks rest too")
         check(await a.locator(".panel.meds .dose").count() == meds_before, "Agora: the medicines stay")
         await pg.screenshot(path=f"{SP}/shots/cra-agora.png")
         # Calendário: the days away marked, without their routines
@@ -104,8 +111,8 @@ async def main():
         # ahead: Agora says when it starts, today as usual
         await pg.evaluate("""(away) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, type: 'cronologia/prefs/set_app', prefs: {away}})); ws.onmessage = (e) => { if (JSON.parse(e.data).type === 'result') { ws.close(); res(); } }; })""", {"from": D(3), "to": D(6)})
         await pg.wait_for_timeout(1500)
-        txt = (await a.locator(".away-card").inner_text()) if await a.locator(".away-card").count() else ""
-        check("Férias a partir de" in txt and "Cancelar" in txt, f"ahead: when it starts, with Cancelar ({txt[:60]!r})")
+        txt = (await a.locator(".away-card").text_content()) if await a.locator(".away-card").count() else ""
+        check("Férias marcadas" in txt and "a partir de" in txt and "4 dias, até" in txt and "Cancelar" in txt and await a.locator(".away-card .aw-bar").count() == 0, f"ahead: when it starts, for how long, with Cancelar ({txt[:80]!r})")
         check(await a.locator(".panel.chores#casa").count() == 1, "ahead: today as usual")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()

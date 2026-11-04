@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.47.0
+
+- **Modo férias** num card próprio na tela Agora, em tons de céu e areia (a mesma cor todo dia), com o avião em destaque, **até quando**, **Dia 1 de 8** com uma barra, o que fica pausado e que os remédios continuam, e o botão **Encerrar férias**. Antes de começar, mostra **Férias marcadas**, a partir de quando e por quantos dias, com **Cancelar férias**.
+- Nas férias, a linha de baixo do título diz **de férias** (e não "tudo feito hoje").
+
 ## 1.46.3
 
 - **Remédios de hoje**: a dose aparece como "Dose: 1" (antes ficava só o "1").

@@ -1889,21 +1889,150 @@ export const calStyles = css`
     stroke-width: 3;
   }
   /* Modo férias: the banner of Agora, the mark of the days away */
-  .away-card .grow {
+  /* sky to sand, the same every day (not the color of the day): it has to stand out */
+  .away-card {
+    --aw-ink: #0c4a6e;
+    --aw-sky: #0284c7;
+    position: relative;
+    overflow: hidden;
+    margin: -2px 0 16px;
+    padding: 16px 16px 14px;
+    border-radius: 22px;
+    border: 1px solid #bae6fd;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 52%, #fef3c7 100%);
+    color: var(--aw-ink);
+  }
+  :host([dark]) .away-card {
+    --aw-ink: #e0f2fe;
+    --aw-sky: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.32);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.26) 0%, rgba(14, 165, 233, 0.1) 55%, rgba(245, 158, 11, 0.16) 100%);
+  }
+  /* a big faint plane in the corner */
+  .away-card::after {
+    content: "";
+    position: absolute;
+    right: -26px;
+    bottom: -34px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 70%);
+    pointer-events: none;
+  }
+  :host([dark]) .away-card::after {
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.16), transparent 70%);
+  }
+  .aw-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .aw-ic {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--aw-sky);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.28);
+  }
+  :host([dark]) .aw-ic {
+    color: #082f49;
+  }
+  .aw-ic .i {
+    width: 28px;
+    height: 28px;
+  }
+  .aw-tx {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    min-width: 0;
   }
-  .away-card b {
-    color: var(--rv-text);
+  .aw-over {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--aw-sky);
+  }
+  .aw-title {
+    font-family: var(--rv-display);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--aw-ink);
+  }
+  .aw-tx small {
+    margin-top: 2px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--aw-ink);
+    opacity: 0.75;
+  }
+  .away-card .aw-end {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(2, 132, 199, 0.28);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--aw-ink);
+    font-weight: 700;
+  }
+  :host([dark]) .away-card .aw-end {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .aw-bar {
+    position: relative;
+    height: 8px;
+    margin: 14px 0 2px;
+    border-radius: 99px;
+    background: rgba(2, 132, 199, 0.16);
+    overflow: hidden;
+  }
+  .aw-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--aw-sky), #f59e0b);
+  }
+  .aw-chips {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .aw-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--aw-ink);
+    font-size: 13px;
     font-weight: 600;
   }
-  .away-card small {
-    font-size: 13px;
-    color: var(--rv-muted);
+  :host([dark]) .aw-chip {
+    background: rgba(255, 255, 255, 0.07);
   }
-  .away-card .text-btn {
-    flex: none;
+  .aw-chip .i {
+    width: 15px;
+    height: 15px;
+    color: var(--aw-sky);
+  }
+  .aw-chip.meds .i {
+    color: var(--rv-ok);
   }
   .away-day {
     display: flex;
