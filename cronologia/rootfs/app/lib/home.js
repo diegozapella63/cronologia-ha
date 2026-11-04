@@ -38,6 +38,12 @@ function ingressUrl() {
   return /^[a-z0-9]+-cronologia$/.test(h) ? `/hassio/ingress/${h.replace("-", "_")}` : null;
 }
 
+/** The app opened on Recompensas (the app reads ?aba= on the page around it). */
+function rewardsUrl() {
+  const u = ingressUrl();
+  return u ? `${u}?aba=recompensas` : null;
+}
+
 export class Home {
   constructor({ ha, store, log, rest, token, calState, gerencia, todos, onChange }) {
     this.ha = ha;
@@ -271,6 +277,64 @@ export class Home {
     this.rollover().catch((err) => this.log.warn(`Placar: ${err.message}`));
     this.rebuild();
     this.sendAlerts().catch((err) => this.log.warn(`Avisos: ${err.message}`));
+    this.scoreReminder().catch((err) => this.log.warn(`Lembrete do placar: ${err.message}`));
+  }
+
+  /**
+   * Lembrete do placar: once a day at the chosen time (up to 2 h late, e.g. after a restart), the points
+   * and who is ahead, to the phones of everyone who plays. Not on vacation (the points rest).
+   */
+  async scoreReminder(now = new Date()) {
+    const st = scoreSettings(this.store.data.app);
+    if (!st.enabled || !st.remind || !st.participants.length || !this.ha.ready) return;
+    const day = ymd(now);
+    if (awayOn(this.store.data.app.away, day)) return;
+    const [h, m] = st.remind.split(":").map(Number);
+    const at = new Date(now);
+    at.setHours(h, m, 0, 0);
+    if (now < at || now - at > 2 * 3600 * 1000) return;
+    const key = `placar|${day}`;
+    if (this.store.data.sent[key]) return;
+    const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
+    this.store.markSent(key, "on", targets);
+    const { title, message } = this.scoreReminderText(now);
+    for (const target of targets) {
+      await this.ha
+        .send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-lembrete") } })
+        .then(() => this.log.info(`Lembrete do placar para ${target}`))
+        .catch((err) => this.log.warn(`Lembrete do placar para ${target}: ${err.message}`));
+    }
+  }
+
+  /** "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias." */
+  scoreReminderText(now = new Date()) {
+    const s = this.scoreIndex(now.getTime());
+    // the most points first; a tie keeps the order of the participants
+    const order = (n) => s.participants.indexOf(n);
+    const rows = [...s.rows].sort((a, b) => b.points - a.points || order(a.name) - order(b.name));
+    const score = rows.map((r) => `${r.name} ${r.points}`).join(" × ");
+    const pts = (n) => (n === 1 ? "1 ponto" : `${n} pontos`);
+    const left = Math.round((new Date(`${s.current.end}T00:00:00`).getTime() - new Date(ymd(now) + "T00:00:00").getTime()) / 86400000);
+    const closes = left <= 1 ? "Fecha hoje à meia-noite." : `Fecha em ${left} dias.`;
+    let lead;
+    if (!rows.some((r) => r.points)) lead = "Ninguém pontuou ainda.";
+    else if (rows.length === 1) lead = `${rows[0].name}: ${pts(rows[0].points)}.`;
+    else if (s.leader) lead = `${s.leader} na frente por ${pts(rows[0].points - rows[1].points)}: ${score}.`;
+    else lead = `Empate: ${score}.`;
+    return { title: "🏆 Placar", message: `${lead} ${closes}` };
+  }
+
+  /** The data of a notification of the placar: tapping it opens the app on Recompensas. */
+  scoreNoteData(tag) {
+    const url = rewardsUrl();
+    return { tag, group: "cronologia-placar", channel: "Placar", ...(url ? { url, clickAction: url } : {}) };
+  }
+
+  /** Mais › Configurações › Placar › Lembrete diário › Testar: the reminder now, to one phone. */
+  async testScoreReminder(target) {
+    if (!/^mobile_app_[a-z0-9_]+$/.test(target || "")) throw coded("invalid_format", "Celular inválido");
+    const { title, message } = this.scoreReminderText(new Date());
+    await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } });
   }
 
   async sendAlerts() {
@@ -722,7 +786,7 @@ export class Home {
     const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
     for (const target of targets) {
       await this.ha
-        .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "🏆 Placar fechado", message, data: { tag: "cronologia-placar", group: "cronologia-placar" } } })
+        .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "🏆 Placar fechado", message, data: this.scoreNoteData("cronologia-placar") } })
         .catch((err) => this.log.warn(`Resultado para ${target}: ${err.message}`));
     }
   }

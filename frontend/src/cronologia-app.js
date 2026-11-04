@@ -19,7 +19,7 @@ import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/ap
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { DataMixin } from "./datapanel.js";
-import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle } from "./routes.js";
+import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
 import {
   PALETTE,
   colorById,
@@ -138,6 +138,12 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     // an old address (kept in the history by an earlier version) becomes the new one
     this._path = canonPath((history.state && history.state.rvPath) || "");
     if (history.state && history.state.rvPath != null && history.state.rvPath !== this._path) history.replaceState({ ...history.state, rvPath: this._path }, "");
+    // a notification of the placar: the app opens on Recompensas
+    const open = openTab();
+    if (open) {
+      this._path = open;
+      history.replaceState({ ...(history.state || {}), rvDepth: 0, rvPath: open }, "");
+    }
     this._sheet = null;
     this._form = null;
     this._toast = null;

@@ -201,7 +201,7 @@ describe("Store: app settings", () => {
     assert.equal(sc.notify, true);
     assert.equal(sc.manual, true);
     const d = set({ score: { period: "ano", anchor: "26/10/2026", notify: false } }).score;
-    assert.deepEqual(d, { enabled: false, participants: [], period: "semana", anchor: null, notify: false, manual: false });
+    assert.deepEqual(d, { enabled: false, participants: [], period: "semana", anchor: null, notify: false, manual: false, remind: null });
   });
   it("demerits: title, points 1..1000 (sign dropped), stable ids, no repeated ids", () => {
     const list = set({

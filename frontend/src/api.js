@@ -385,6 +385,10 @@ export class Api {
     return this.call("cronologia/notify/test", { target });
   }
 
+  testScoreReminder(target) {
+    return this.call("cronologia/score/remind_test", { target });
+  }
+
   exportUrl({ calendars, start, end }) {
     const u = new URL("api/export/ics", location.href);
     u.searchParams.set("calendars", calendars.join(","));

@@ -3,7 +3,7 @@
 import { hostOf } from "./_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, moreName } from "../frontend/src/routes.js";
+import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, moreName, openTab } from "../frontend/src/routes.js";
 import { ChatMixin } from "../frontend/src/chat-panel.js";
 
 describe("routes: the menu of Mais", () => {
@@ -117,5 +117,30 @@ describe("routes: the screen in words (Conversa)", () => {
     assert.equal(c._chatScreen(), "Mais › Rotinas");
     c.path = "/recompensas";
     assert.match(c._chatScreen(), /^Recompensas/);
+  });
+});
+
+describe("openTab: a notification opens the app on Recompensas (?aba=recompensas)", () => {
+  const win = (href, parent = null) => {
+    const w = { location: { href }, history: { state: { x: 1 }, replaceState(st, _t, url) { w.location.href = url; w.replaced = [st, url]; } } };
+    w.parent = parent || w;
+    return w;
+  };
+  it("on the page of the Home Assistant around the app, and the address is cleaned", () => {
+    const ha = win("https://casa.local:8123/hassio/ingress/abc_cronologia?aba=recompensas");
+    const app = win("https://casa.local:8123/api/hassio_ingress/tok/", ha);
+    assert.equal(openTab(app), "/recompensas");
+    assert.equal(ha.location.href, "https://casa.local:8123/hassio/ingress/abc_cronologia");
+    assert.deepEqual(ha.replaced[0], { x: 1 }, "the state of the HA page is kept");
+    assert.equal(openTab(app), null, "once");
+  });
+  it("on the app's own address too; unknown tabs and other origins: nothing", () => {
+    const own = win("http://127.0.0.1:8099/?aba=calendario&y=2");
+    assert.equal(openTab(own), "/calendario");
+    assert.equal(own.location.href, "http://127.0.0.1:8099/?y=2");
+    assert.equal(openTab(win("http://127.0.0.1:8099/?aba=nada")), null);
+    const blocked = { get location() { throw new Error("cross-origin"); } };
+    assert.equal(openTab(win("http://127.0.0.1:8099/", blocked)), null);
+    assert.equal(openTab(null), null);
   });
 });

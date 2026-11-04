@@ -2,7 +2,7 @@
 // them, the period's prize and the history. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { foldText, everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { foldText, everyLabel, PERIODS as PERIODS_DAY, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
 import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, dayLabel, WEEKDAYS } from "./util.js";
 import { routineSub, routineLate, byPeriod } from "./models.js";
@@ -895,7 +895,7 @@ export const RewardsMixin = (Base) =>
 
     _scorePrefs(changes) {
       const s = this._score() || {};
-      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false, manual: !!s.manual };
+      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false, manual: !!s.manual, remind: s.remind || null };
       return this._saveAppPrefs({ score: { ...cur, ...changes } });
     }
 
@@ -940,8 +940,43 @@ export const RewardsMixin = (Base) =>
           <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quem venceu, quando o período fecha.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${s.notify !== false} @change=${(e) => this._scorePrefs({ notify: e.target.checked })} aria-label="Resultado no celular" /><span class="track"></span></label>
         </div>
+        <div class="row switch-row">
+          <div class="grow"><div class="label">Lembrete diário</div><div class="hint">Os pontos e quem está ganhando, no celular.</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.remind} @change=${(e) => this._scorePrefs({ remind: e.target.checked ? "20:00" : null })} aria-label="Lembrete diário" /><span class="track"></span></label>
+        </div>
+        ${s.remind ? this._renderScoreRemind(s) : nothing}
         <button class="text-btn danger" @click=${() => this._scorePrefs({ enabled: false })}>Desligar o placar</button>
       </div>`;
+    }
+
+    /** Lembrete diário: when (Manhã, Tarde, Noite or the exact time), whose phones, and Testar on mine. */
+    _renderScoreRemind(s) {
+      const SLOTS = { manha: "09:00", tarde: "14:00", noite: "20:00" };
+      const cur = periodOfHour(Number(s.remind.slice(0, 2)));
+      const people = this._ix().people || [];
+      const phoneOf = (n) => (people.find((p) => foldText(p.name) === foldText(n)) || {}).notify || null;
+      const withPhone = s.participants.filter((n) => phoneOf(n));
+      const without = s.participants.filter((n) => !phoneOf(n));
+      const list = (ns) => (ns.length > 1 ? `${ns.slice(0, -1).join(", ")} e ${ns.at(-1)}` : ns[0]);
+      const mine = phoneOf(this._me ? this._me() : "");
+      return html`<div class="field remind-field">
+        <span class="flabel">Quando</span>
+        <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
+        <div class="remind-row">
+          <input type="time" class="remind-time" .value=${s.remind} aria-label="Horário do lembrete" @change=${(e) => /^\d{2}:\d{2}$/.test(e.target.value) && this._scorePrefs({ remind: e.target.value })} />
+          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : "Sem celular escolhido para você em Avisos"} @click=${() => this._testScoreReminder(mine)}>${icon("send")}Testar</button>
+        </div>
+        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? html` Sem celular para ${list(without)}: escolha em <a href="#" @click=${(e) => (e.preventDefault(), this._goAlerts())}>Avisos</a>.` : nothing}</span></span>
+      </div>`;
+    }
+
+    async _testScoreReminder(target) {
+      try {
+        await this.api.testScoreReminder(target);
+        this._showToast(`Lembrete enviado para ${this._targetName(target)}. Toque nele para abrir Recompensas.`);
+      } catch (err) {
+        this._showToast(`Não foi: ${err.message}`);
+      }
     }
 
     _renderRewardsSetup() {

@@ -33,6 +33,7 @@ export function scoreSettings(app = {}) {
     anchor: s.anchor || null,
     notify: s.notify !== false,
     manual: !!s.manual,
+    remind: /^([01]\d|2[0-3]):[0-5]\d$/.test(s.remind || "") ? s.remind : null,
     weekStart: app.week_start === 0 ? 0 : 1,
   };
 }

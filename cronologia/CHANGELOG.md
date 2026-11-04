@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.48.0
+
+- **Lembrete diário do placar** em **Mais › Configurações › Placar**: uma vez por dia, na hora escolhida (Manhã, Tarde, Noite ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando, por exemplo "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias.".
+  - **Testar** manda agora para o seu celular.
+  - O lembrete não vai nas férias.
+- Tocar no lembrete ou no aviso de **Placar fechado** abre o app direto na aba **Recompensas**.
+
 ## 1.47.0
 
 - **Modo férias** num card próprio na tela Agora, em tons de céu e areia (a mesma cor todo dia), com o avião em destaque, **até quando**, **Dia 1 de 8** com uma barra, o que fica pausado e que os remédios continuam, e o botão **Encerrar férias**. Antes de começar, mostra **Férias marcadas**, a partir de quando e por quantos dias, com **Cancelar férias**.

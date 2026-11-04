@@ -71,3 +71,29 @@ export function moreName(v) {
   if (v.config) return `Mais › Configurações › ${CONFIG_TABS.find(([k]) => k === v.tab)[1]}`;
   return `Mais › ${moreTitle(v)}`;
 }
+
+/**
+ * A notification of the placar opens the app with ?aba=recompensas, on the page of the Home Assistant
+ * around the app (the same origin) or on the app's own address (outside the HA). The path to open, and
+ * the "aba" taken out of the address (so a reload opens where it was).
+ */
+export function openTab(win = typeof window === "undefined" ? null : window) {
+  const TABS_OPEN = { recompensas: "/recompensas", calendario: "/calendario", agora: "/" };
+  const take = (w) => {
+    const u = new URL(w.location.href);
+    const p = TABS_OPEN[u.searchParams.get("aba")];
+    if (!p) return null;
+    u.searchParams.delete("aba");
+    w.history.replaceState(w.history.state, "", u.href);
+    return p;
+  };
+  if (!win) return null;
+  try {
+    const own = take(win);
+    if (own) return own;
+    if (win.parent && win.parent !== win) return take(win.parent);
+  } catch (e) {
+    // another origin around the app: nothing to read
+  }
+  return null;
+}

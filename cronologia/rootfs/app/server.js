@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.47.0";
+const VERSION = "1.48.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -415,6 +415,9 @@ class Session {
         return this.result(id, counts());
       }
 
+      case "cronologia/score/remind_test":
+        await home.testScoreReminder(msg.target);
+        return this.result(id);
       case "cronologia/notify/test":
         await home.testAlert(msg.target);
         return this.result(id);

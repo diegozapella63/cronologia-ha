@@ -8,11 +8,12 @@ afterEach(() => mock.timers.reset());
 
 describe("scoreSettings", () => {
   it("defaults", () => {
-    assert.deepEqual(scoreSettings(), { enabled: false, participants: [], period: "semana", anchor: null, notify: true, manual: false, weekStart: 1 });
+    assert.deepEqual(scoreSettings(), { enabled: false, participants: [], period: "semana", anchor: null, notify: true, manual: false, remind: null, weekStart: 1 });
   });
   it("reads the app prefs; the week starts on Sunday only with week_start 0", () => {
-    const s = scoreSettings({ week_start: 0, score: { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true } });
-    assert.deepEqual(s, { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, weekStart: 0 });
+    const s = scoreSettings({ week_start: 0, score: { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30" } });
+    assert.deepEqual(s, { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30", weekStart: 0 });
+    assert.equal(scoreSettings({ score: { remind: "9h" } }).remind, null, "the reminder only with a real time");
     assert.equal(scoreSettings({ score: { period: "ano" } }).period, "semana");
     assert.equal(scoreSettings({ score: { participants: "Diego" } }).participants.length, 0);
   });

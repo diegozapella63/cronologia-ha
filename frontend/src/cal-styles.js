@@ -3309,6 +3309,40 @@ export const calStyles = css`
     padding: 10px 16px 12px;
     border-top: 1px solid var(--rv-line);
   }
+  /* Mais › Configurações › Placar › Lembrete diário */
+  .remind-seg button {
+    gap: 6px;
+  }
+  .remind-seg .i {
+    width: 16px;
+    height: 16px;
+  }
+  /* the exact time and Testar side by side, the same height */
+  .remind-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .remind-row input.remind-time {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 44px;
+    padding: 0 8px;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 12px;
+    border: 1px solid var(--rv-line-strong);
+    background: var(--rv-surface);
+    color: var(--rv-text);
+  }
+  .remind-row .remind-test {
+    margin: 0;
+    min-height: 44px;
+  }
   /* Modo férias: the deméritos rest */
   .dm-lead.dm-away {
     display: flex;

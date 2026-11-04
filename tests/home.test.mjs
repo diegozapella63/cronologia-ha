@@ -1101,3 +1101,71 @@ describe("Home: occurrences and lookups", () => {
     assert.equal(buildDescription({ kind: "rotina", who: "", points: 15, notes: "x", after: { n: 7, unit: "dias" }, history: [] }), "#rotina\nPontos: 15\nVolta: 7 dias depois de feita\nx");
   });
 });
+
+// ------------------------------------------------------------------ Lembrete do placar (1.48)
+
+describe("Home: the daily reminder of the placar", () => {
+  const people = { Diego: { notify: "mobile_app_pixel_8" }, Andressa: { notify: "mobile_app_galaxy_s23" } };
+  const app = (extra = {}) => ({ score: { ...SCORE, remind: "20:00", ...extra }, people });
+  const put = (store, who, points, when = at(2026, 11, 2, 9)) => store.addPoints({ key: `k${Math.random()}`, who, points, title: "t", kind: "extra", at: when.toISOString() });
+
+  it("once a day at the time, to everyone who plays; tapping it opens Recompensas (same tag/group/channel)", async () => {
+    const { home, store, ha } = setup({ app: app() });
+    put(store, "Diego", 135);
+    put(store, "Andressa", 125);
+    await home.scoreReminder(at(2026, 11, 2, 19, 59));
+    assert.equal(notifications(ha).length, 0, "not before the time");
+    await home.scoreReminder(at(2026, 11, 2, 20, 0));
+    const n = notifications(ha);
+    assert.deepEqual(n.map((x) => x.service), ["mobile_app_pixel_8", "mobile_app_galaxy_s23"]);
+    assert.equal(n[0].service_data.title, "🏆 Placar");
+    assert.equal(n[0].service_data.message, "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 7 dias.");
+    assert.deepEqual([n[0].service_data.data.tag, n[0].service_data.data.group, n[0].service_data.data.channel], ["cronologia-placar-lembrete", "cronologia-placar", "Placar"]);
+    await home.scoreReminder(at(2026, 11, 2, 20, 30));
+    assert.equal(notifications(ha).length, 2, "once a day");
+    await home.scoreReminder(at(2026, 11, 3, 20, 1));
+    assert.equal(notifications(ha).length, 4, "and again the next day");
+  });
+  it("up to 2 h late (a restart), not later; off, no placar or on vacation: nothing", async () => {
+    const a = setup({ app: app() });
+    await a.home.scoreReminder(at(2026, 11, 2, 22, 30));
+    assert.equal(notifications(a.ha).length, 0, "too late today");
+    await a.home.scoreReminder(at(2026, 11, 2, 21, 50));
+    assert.equal(notifications(a.ha).length, 2, "late, but within 2 h");
+    for (const extra of [{ remind: null }, { enabled: false }]) {
+      const b = setup({ app: app(extra) });
+      await b.home.scoreReminder(at(2026, 11, 2, 20, 5));
+      assert.equal(notifications(b.ha).length, 0);
+    }
+    const c = setup({ app: { ...app(), away: { from: "2026-11-01", to: "2026-11-05" } } });
+    await c.home.scoreReminder(at(2026, 11, 2, 20, 5));
+    assert.equal(notifications(c.ha).length, 0, "the points rest on vacation");
+  });
+  it("the words: a tie, nobody yet, one player, closing today", () => {
+    const a = setup({ app: app() });
+    assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Ninguém pontuou ainda. Fecha em 7 dias.");
+    put(a.store, "Diego", 10);
+    put(a.store, "Andressa", 10);
+    assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Empate: Diego 10 × Andressa 10. Fecha em 7 dias.");
+    put(a.store, "Andressa", 1);
+    assert.equal(a.home.scoreReminderText(at(2026, 11, 8, 20)).message, "Andressa na frente por 1 ponto: Andressa 11 × Diego 10. Fecha hoje à meia-noite.");
+    const b = setup({ app: app({ participants: ["Diego"] }) });
+    put(b.store, "Diego", 5);
+    assert.equal(b.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Diego: 5 pontos. Fecha em 7 dias.");
+  });
+  it("Testar: now, to one phone (a valid one)", async () => {
+    const { home, ha } = setup({ app: app() });
+    await home.testScoreReminder("mobile_app_pixel_8");
+    const n = notifications(ha);
+    assert.deepEqual([n.length, n[0].service, n[0].service_data.data.tag], [1, "mobile_app_pixel_8", "cronologia-placar-teste"]);
+    await assert.rejects(home.testScoreReminder("notify.algo; rm"), { code: "invalid_format" });
+  });
+  it("the placar keeps the time (HH:MM), anything else turns it off", () => {
+    const { store } = setup({ app: app() });
+    assert.equal(store.data.app.score.remind, "20:00");
+    store.setApp({ score: { ...SCORE, remind: "25:00" } });
+    assert.equal(store.data.app.score.remind, null);
+    store.setApp({ score: { ...SCORE, remind: "07:30" } });
+    assert.equal(store.data.app.score.remind, "07:30");
+  });
+});

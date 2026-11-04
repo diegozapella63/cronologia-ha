@@ -125,6 +125,8 @@ function cleanApp(raw) {
       notify: a.notify !== false,
       // Para pontuar hoje in Recompensas: mark tasks and give points by hand there
       manual: !!a.manual,
+      // Lembrete do placar: once a day at this time ("20:00"), the points and who is ahead on the phones
+      remind: /^([01]\d|2[0-3]):[0-5]\d$/.test(a.remind || "") ? a.remind : null,
     };
   }
   if ("demerits" in raw) {
