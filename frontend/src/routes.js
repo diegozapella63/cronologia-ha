@@ -1,6 +1,6 @@
 // Where each screen lives (the path is kept in history.state, not in the address bar).
 // Mais is a menu, like the InventarIA: Calendários, Rotinas, Avisos and Férias, each its own
-// screen, and Configurações last, with its tabs (Integrações, Placar, Dados, Aparência, Opções).
+// screen, then Configurações, with its tabs (Integrações, Placar, Dados, Aparência, Opções), and Sobre last.
 
 /** The rows of Mais, in order: [key, path, title, icon, the line under the title]. */
 export const MENU = [
@@ -9,6 +9,7 @@ export const MENU = [
   ["avisos", "/mais/avisos", "Avisos", "bell-ring", "Avisos de remédio no celular, pessoas e pets."],
   ["ferias", "/mais/ferias", "Férias", "plane", "Rotinas, tarefas e manutenção pausadas; remédios continuam."],
   ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, placar, dados e backup, aparência e opções."],
+  ["sobre", "/mais/sobre", "Sobre", "info", "CorrerIA Code, os apps e o GitHub."],
 ];
 
 /** The tabs of Mais › Configurações: [key, label, icon]. The first one is /config. */
@@ -25,7 +26,7 @@ const TABS = CONFIG_TABS.map(([k]) => k);
 
 /**
  * The screen of a path: {name: "now" | "calendar" | "rewards" | "more", tab?, config?}.
- * In Mais, tab is "menu", a screen of the menu (calendarios, rotinas, avisos, ferias) or, with
+ * In Mais, tab is "menu", a screen of the menu (calendarios, rotinas, avisos, ferias, sobre) or, with
  * config: true, a tab of Configurações. Old addresses still work: /mais/integracoes, /mais/placar (and
  * the other tabs that moved to Configurações) and /agendas (the Agendas page, later Mais › Calendários).
  */

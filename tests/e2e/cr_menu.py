@@ -1,6 +1,6 @@
 # CronologIA 1.43.0: Mais is a menu, like the InventarIA. Calendários, Rotinas, Avisos and Férias are rows,
-# each its own screen, and Configurações is the last one, with the tabs Integrações, Placar, Dados, Aparência
-# and Opções (1.45: Placar went to Configurações, Férias came to the menu). "‹ Mais", Back and a swipe to the right go back to the menu; the old addresses (/mais/dados…)
+# each its own screen, then Configurações, with the tabs Integrações, Placar, Dados, Aparência
+# and Opções (1.45: Placar went to Configurações, Férias came to the menu; 1.51: Sobre last). "‹ Mais", Back and a swipe to the right go back to the menu; the old addresses (/mais/dados…)
 # land on the new place; Mais stays lit in the bottom bar and the sidebar; every screen of Mais fits from
 # 320 px to the computer, light and dark.
 import os, sys, asyncio
@@ -8,10 +8,10 @@ from stack_lib import Stack, URL, SP, check, wait_for, summary
 from mais_lib import open_more
 from playwright.async_api import async_playwright
 
-ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações")]
+ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações"), ("sobre", "Sobre")]
 TABS = [("integracoes", "Integrações", "/config"), ("placar", "Placar", "/config/placar"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
 # what each screen has (an element only that screen shows)
-MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "ferias": "#ferias", "config": "#leitura-ia",
+MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "ferias": "#ferias", "config": "#leitura-ia", "sobre": ".about-hero",
         "integracoes": "#leitura-ia", "placar": "#placar", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": ".week-seg"}
 
 async def main():
@@ -37,10 +37,10 @@ async def main():
             await mais.click(); await pg.wait_for_timeout(500)
             check(await view() == {"name": "more", "tab": "menu"} and (await state()).get("rvPath") == "/mais", "Mais opens the menu (/mais)")
             rows = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-            check(rows == [t for _, t in ROWS], f"the rows, Configurações last ({rows})")
+            check(rows == [t for _, t in ROWS], f"the rows, Configurações then Sobre last ({rows})")
             leads = [t.strip() for t in await a.locator(".menu-row .mb > span").all_inner_texts()]
-            check(len(leads) == 5 and all(0 < len(l) <= 60 for l in leads), f"each row with one short line ({leads})")
-            check(await a.locator(".menu-row .mais-ic svg").count() == 5 and await a.locator(".menu-row > svg").count() == 5, "each row: the icon in the soft square and the chevron")
+            check(len(leads) == len(ROWS) and all(0 < len(l) <= 60 for l in leads), f"each row with one short line ({leads})")
+            check(await a.locator(".menu-row .mais-ic svg").count() == len(ROWS) and await a.locator(".menu-row > svg").count() == len(ROWS), "each row: the icon in the soft square and the chevron")
             check(await title() == "Mais" and await a.locator(".uplink").count() == 0 and await a.locator(".more-tabs").count() == 0, "the menu: title Mais, no ‹ Mais, no tabs")
             check("on" in (await lit()).split(), "Mais lit on the menu")
             await pg.screenshot(path=f"{SP}/shots/crmenu-menu-dark.png")
@@ -136,7 +136,7 @@ async def main():
             side = a.locator(".side-link", has_text="Mais")
             check(await side.locator("svg circle").count() == 3, "sidebar: Mais with the three dots")
             await side.click(); await pg.wait_for_timeout(500)
-            check(await side.get_attribute("aria-current") == "page" and await a.locator(".menu-row").count() == 5, "sidebar: Mais lit, the menu")
+            check(await side.get_attribute("aria-current") == "page" and await a.locator(".menu-row").count() == len(ROWS), "sidebar: Mais lit, the menu")
             await pg.screenshot(path=f"{SP}/shots/crmenu-desk-menu.png")
             await a.locator('.menu-row[data-k="config"]').click(); await pg.wait_for_timeout(500)
             check(await side.get_attribute("aria-current") == "page" and await a.locator(".uplink").is_visible() and await a.locator(".more-tabs .i").first.is_visible(), "sidebar: Mais lit on Configurações, ‹ Mais and the tab icons shown")

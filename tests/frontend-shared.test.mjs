@@ -340,3 +340,33 @@ describe("data panel: Mais › Dados", () => {
     assert.match(text(bad._renderVersions()), /sem dados/);
   });
 });
+
+// ------------------------------------------------------------------ about.js (Mais › Sobre)
+
+describe("about: Mais › Sobre", async () => {
+  const { aboutPage, aboutStyles, PRODUCTS, GITHUB } = await import("../frontend/src/about.js");
+  const page = () => render(aboutPage({ app: "CronologIA", version: "1.51.0" })).html;
+
+  it("the six apps of the family, each with its repository, an icon and one short line", () => {
+    assert.deepEqual(PRODUCTS.map(([n]) => n), ["CronologIA", "ResolvIA", "GerencIA", "InventarIA", "EconomIA", "MemorIA"]);
+    assert.equal(new Set(PRODUCTS.map(([, r]) => r)).size, PRODUCTS.length);
+    for (const [name, repo, ic, line] of PRODUCTS) {
+      assert.match(repo, /^[a-z]+-ha$/, name);
+      assert.ok(ic && line.length <= 55 && line.endsWith("."), `${name}: ${line}`);
+    }
+    assert.equal(GITHUB, "https://github.com/diegozapella63");
+    assert.ok(aboutStyles.cssText.includes(".about-hero"));
+  });
+
+  it("CorrerIA Code, the joke of the name, each app linking to its GitHub and this app marked", () => {
+    const h = page();
+    const t = h.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    assert.match(t, /Correr IA Code/);
+    assert.match(t, /desenvolvimento de softwares/);
+    assert.match(t, /programador sem tempo: vivo na correria\. Então eu uso a IA para rodar tudo isso aqui\./);
+    for (const [, repo] of PRODUCTS) assert.ok(h.includes(`href="${GITHUB}/${repo}" target="_blank" rel="noopener"`), repo);
+    assert.equal((h.match(/Este app · v1\.51\.0/g) || []).length, 1);
+    assert.match(h, /class="ab-row here"[^>]*>[\s\S]*?<span class="ab-wm">Cronolog<span>IA<\/span><\/span>/);
+    assert.match(h, new RegExp(`href="${GITHUB}" target="_blank" rel="noopener"[^>]*>[\\s\\S]*Meu GitHub`));
+  });
+});

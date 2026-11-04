@@ -26,12 +26,13 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Rotinas**: tudo o que está cadastrado (rotinas, remédios, manutenções e contas), com busca.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
   - **Férias**: de quando até quando as rotinas, as tarefas, os deméritos e a manutenção da casa ficam pausados (os remédios continuam).
-  - **Configurações**, por último, em abas no alto (ficam presas no topo ao rolar):
+  - **Configurações**, em abas no alto (ficam presas no topo ao rolar):
     - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, leitura por IA, Falar, uso da IA e sensores.
     - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, marcar por outras pessoas, resultado no celular, lembrete diário, desligar) e a lista de **deméritos**.
     - **Dados**: exportar, backup, importar e versões anteriores.
     - **Aparência**: tema (automático, claro ou escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
     - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
+  - **Sobre**, por último: quem faz o app (**CorrerIA Code**), os outros apps da família, cada um com uma linha e o link para o GitHub, e **Meu GitHub**.
 
 ### No computador
 

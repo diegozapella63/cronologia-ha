@@ -7,14 +7,14 @@ import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, mor
 import { ChatMixin } from "../frontend/src/chat-panel.js";
 
 describe("routes: the menu of Mais", () => {
-  it("Calendários, Rotinas, Avisos, Férias and, last, Configurações; each with an icon and a short line", () => {
+  it("Calendários, Rotinas, Avisos, Férias, Configurações and, last, Sobre; each with an icon and a short line", () => {
     assert.deepEqual(
       MENU.map(([, , title]) => title),
-      ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações"],
+      ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações", "Sobre"],
     );
     assert.deepEqual(
       MENU.map(([, path]) => path),
-      ["/mais/calendarios", "/mais/rotinas", "/mais/avisos", "/mais/ferias", "/config"],
+      ["/mais/calendarios", "/mais/rotinas", "/mais/avisos", "/mais/ferias", "/config", "/mais/sobre"],
     );
     for (const [, , title, ic, lead] of MENU) {
       assert.ok(ic, `${title}: icon`);
@@ -85,7 +85,7 @@ describe("routes: old addresses land on the new place", () => {
   });
 
   it("/mais/<tab> of the functions stays, /agendas goes to Calendários, an unknown one to the menu", () => {
-    for (const k of ["calendarios", "rotinas", "avisos", "ferias"]) assert.equal(canonPath(`/mais/${k}`), `/mais/${k}`);
+    for (const k of ["calendarios", "rotinas", "avisos", "ferias", "sobre"]) assert.equal(canonPath(`/mais/${k}`), `/mais/${k}`);
     assert.equal(canonPath("/agendas"), "/mais/calendarios");
     assert.equal(canonPath("/mais/xyz"), "/mais");
     assert.equal(canonPath("/mais/"), "/mais");
@@ -99,6 +99,7 @@ describe("routes: the screen in words (Conversa)", () => {
     assert.equal(moreName(viewOf("/mais")), "Mais (o menu)");
     assert.equal(moreName(viewOf("/mais/calendarios")), "Mais › Calendários");
     assert.equal(moreName(viewOf("/mais/ferias")), "Mais › Férias");
+    assert.equal(moreName(viewOf("/mais/sobre")), "Mais › Sobre");
     assert.equal(moreName(viewOf("/config/placar")), "Mais › Configurações › Placar");
     assert.equal(moreName(viewOf("/config")), "Mais › Configurações › Integrações");
     assert.equal(moreName(viewOf("/mais/dados")), "Mais › Configurações › Dados");

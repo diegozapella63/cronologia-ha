@@ -19,6 +19,7 @@ import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/ap
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { DataMixin } from "./datapanel.js";
+import { aboutPage, aboutStyles } from "./about.js";
 import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
 import {
   PALETTE,
@@ -126,7 +127,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles)];
+  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles)];
 
   constructor() {
     super();
@@ -2341,7 +2342,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   }
 
   /**
-   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/ferias) or Configurações
+   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/ferias, /mais/sobre) or Configurações
    * (/config, /config/placar, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
    * Configurações replace the history entry, so Back goes to the menu.
    */
@@ -2363,6 +2364,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
     } else if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "ferias") body = this._renderAwayOptions(false);
+    else if (tab === "sobre") body = aboutPage({ app: "CronologIA", version: this._version });
     else {
       body = this._renderCalendarsTab();
       const cals = this._cals();

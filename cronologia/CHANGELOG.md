@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.51.0
+
+- **Mais › Sobre**, a última linha do menu: quem faz o app (**CorrerIA Code**, desenvolvimento de softwares, e por que esse nome), os apps da família (CronologIA, ResolvIA, GerencIA, InventarIA, EconomIA e MemorIA), cada um com uma linha e o link para o GitHub, e o botão **Meu GitHub**.
+
 ## 1.50.1
 
 - **Vários cômodos na Rotina da casa**: o campo **Cômodo** da rotina também deixa marcar mais de um (cada cômodo liga e desliga). A tarefa da rotina no ResolvIA recebe todos.
