@@ -5,7 +5,7 @@ import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js"
 import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
-import { placeTags } from "./place-tags.js";
+import { placeTags, roomsShown } from "./place-tags.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
 const icon = (name, cls = "") =>
@@ -516,6 +516,7 @@ export const ModelsMixin = (Base) =>
     _renderCatalog() {
       const now = new Date(this._now);
       const all = this._ix().catalog || [];
+      const allRooms = this._roomNamesAll();
       const q = (this._catQ || "").trim();
       const needle = foldText(q);
       const found = needle ? all.filter((c) => foldText(`${c.summary} ${c.who} ${c.dose} ${c.location} ${namesOf(c.rooms, c.room).join(" ")} ${namesOf(c.equips, c.equip).join(" ")}`).includes(needle)) : all;
@@ -567,9 +568,9 @@ export const ModelsMixin = (Base) =>
             return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
           });
         const list = found.filter((c) => c.kind === sec.kind);
-        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip))));
+        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
         // the rooms and the equipments as tags under the line, like the ResolvIA
-        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip))));
+        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
       return html`
@@ -619,7 +620,7 @@ export const ModelsMixin = (Base) =>
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
-        if (namesOf(k.rooms, k.room).length) facts.push(["door-open", namesOf(k.rooms, k.room).join(", ")]);
+        if (namesOf(k.rooms, k.room).length) facts.push(["door-open", roomsShown(namesOf(k.rooms, k.room), this._roomNamesAll()).join(", ")]);
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         if (periodInfo(k.period)) facts.push([periodInfo(k.period).icon, cap(periodInfo(k.period).when)]);
         if (k.after && !e.rrule) {
@@ -632,7 +633,7 @@ export const ModelsMixin = (Base) =>
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         // the rooms on one line, then one line per equipment
         const rooms = namesOf(k.rooms, k.room);
-        if (rooms.length) facts.push(["door-open", rooms.join(", ")]);
+        if (rooms.length) facts.push(["door-open", roomsShown(rooms, this._roomNamesAll()).join(", ")]);
         for (const e of namesOf(k.equips, k.equip)) facts.push(["package", e]);
         facts.push(["bell-ring", `Aparece na tela inicial ${plural(k.warn, "dia", "dias")} antes`]);
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);

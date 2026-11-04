@@ -132,7 +132,7 @@ Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o bo
 
 Para o que se faz de tempos em tempos e conta **a partir da última vez** (trocar o filtro de água a cada 6 meses, limpar o ar-condicionado a cada 3). No calendário fica só a próxima data. **Feito** leva a próxima data para hoje + o intervalo e guarda o dia no histórico do próprio evento (**Desfazer** volta). O item aparece na tela Agora alguns dias antes de vencer (você escolhe quantos) e fica vermelho quando vence; **Todas as manutenções** mostra a lista inteira com o anel de cada prazo.
 
-A **Rotina da casa** também pode ter um **Cômodo** ("Arrumar a cama" no Quarto), que aparece como etiqueta em Mais › Rotinas e vai para a tarefa no ResolvIA.
+A **Rotina da casa** também pode ter um **Cômodo** ("Arrumar a cama" no Quarto), que aparece como etiqueta em Mais › Rotinas e vai para a tarefa no ResolvIA. Sem equipamento, a rotina, a manutenção e o **Novo › Tarefa** deixam marcar vários cômodos; **Todos**, logo depois de **Nenhum**, marca a casa inteira ("Passar pano" em todos os cômodos) e, tocado de novo, desmarca. Com todos marcados, a etiqueta é uma só: **Todos os cômodos**.
 
 Com os cômodos e equipamentos do InventarIA ligados no ResolvIA, a manutenção pode ter **vários equipamentos** (**Outro equipamento**): o cômodo vem deles e fica bloqueado. No evento ficam `Equipamentos: Ar-condicionado; Geladeira` e `Cômodos: Quarto; Cozinha`, e a tarefa no ResolvIA leva todos.
 

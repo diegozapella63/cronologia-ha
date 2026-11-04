@@ -1,5 +1,6 @@
 # CronologIA 1.33.0/1.34.0: the rooms and equipment of the ResolvIA (Cômodos do InventarIA) in Novo › Tarefa and on the tasks.
 # CronologIA 1.44.0: a maintenance with several equipments (their rooms, locked), like the ResolvIA.
+# CronologIA 1.52.0: Todos marks every room of the house (one tag, "Todos os cômodos"); again, none.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -101,7 +102,7 @@ async def main():
         check(tags == ["Fogão", "+1"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, only the first one and +1 under the line, no rooms ({tags})")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
         facts = [t.strip() for t in await sheet.locator(".fact").all_inner_texts()]
-        check("Cozinha, Garagem" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms, then one line per equipment ({facts})")
+        check("Todos os cômodos" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms (both: the whole house of the test), then one line per equipment ({facts})")
         await sheet.screenshot(path=f"{data}/maint-sheet.png")
         await a.evaluate("(el) => { const m = el._ix().maint.find((x) => x.summary === 'Limpar o filtro do exaustor'); const e = el._findEvent ? null : null; }")
         edit_btn = sheet.locator(".btn, .icon-btn", has_text="Editar")
@@ -125,7 +126,9 @@ async def main():
         await mf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
         await mf.locator(".pick", has_text="Garagem").click(); await pg.wait_for_timeout(150)
         on = sorted(t.strip() for t in await sheet.locator(".field:has(.flabel:text-is('Cômodos')) .pick.on").all_inner_texts())
-        check(on == ["Cozinha", "Garagem"], f"Manutenção: two rooms without equipment ({on})")
+        check(on == ["Cozinha", "Garagem", "Todos"], f"Manutenção: two rooms without equipment, all the house: Todos lit too ({on})")
+        ph = await sheet.locator(".eq-search input").get_attribute("placeholder")
+        check(ph == "Buscar equipamento…", f"Manutenção: with every room, the equipment search is the whole house ({ph})")
         await sheet.locator(".btn.primary", has_text="Criar manutenção").click(); await pg.wait_for_timeout(1500)
         m2 = await a.evaluate("(el) => (el._ix().maint || []).find((x) => x.summary === 'Encerar o chão')")
         check(m2 and m2.get("rooms") == ["Cozinha", "Garagem"], f"saved with both rooms ({m2 and m2.get('rooms')})")
@@ -137,7 +140,7 @@ async def main():
         # several rooms (1.50.1): Cozinha and Garagem, then Cozinha off again
         await rf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
         await rf.locator(".pick", has_text="Garagem").click(); await pg.wait_for_timeout(150)
-        check(await rf.locator(".pick.on").count() == 2, "Rotina: two rooms")
+        check(await rf.locator(".pick.on").count() == 3 and await rf.locator(".pick.all-rooms.on").count() == 1, "Rotina: two rooms (the whole house: Todos lit)")
         await rf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
         await sheet.locator(".btn.primary", has_text="Criar rotina").click(); await pg.wait_for_timeout(1500)
         r = await a.evaluate("(el) => (el._ix().catalog || []).find((x) => x.summary === 'Arrumar a cama')")
@@ -145,11 +148,22 @@ async def main():
         await a.evaluate("(el) => el._openKindForm({ kind: 'rotina' })"); await pg.wait_for_timeout(500)
         await sheet.locator(".ev-title-input").fill("Varrer o chão"); await pg.wait_for_timeout(100)
         rf = sheet.locator(".field:has(.flabel:text-matches('^Cômodos?$'))")
+        # Todos: every room on; again: none; again: all, saved with every room
+        todos = rf.locator(".pick.all-rooms")
+        check(await rf.locator(".pick").nth(1).inner_text() == "Todos", "Rotina: Todos right after Nenhum")
+        await todos.click(); await pg.wait_for_timeout(150)
+        on = sorted(t.strip() for t in await rf.locator(".pick.on").all_inner_texts())
+        check(on == ["Cozinha", "Garagem", "Todos"] and await todos.get_attribute("aria-pressed") == "true", f"Todos: every room ({on})")
+        await todos.click(); await pg.wait_for_timeout(150)
+        on = [t.strip() for t in await rf.locator(".pick.on").all_inner_texts()]
+        check(on == ["Nenhum"], f"Todos again: none ({on})")
+        await todos.click(); await pg.wait_for_timeout(150)
         await rf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
-        await rf.locator(".pick", has_text="Garagem").click(); await pg.wait_for_timeout(150)
+        check(await rf.locator(".pick.all-rooms.on").count() == 0 and await rf.locator(".pick.on").count() == 1, "one room off: Todos off")
+        await rf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
         await sheet.locator(".btn.primary", has_text="Criar rotina").click(); await pg.wait_for_timeout(1500)
         r2 = await a.evaluate("(el) => (el._ix().catalog || []).find((x) => x.summary === 'Varrer o chão')")
-        check(r2 and r2.get("rooms") == ["Cozinha", "Garagem"], f"a routine with two rooms ({r2 and r2.get('rooms')})")
+        check(r2 and sorted(r2.get("rooms") or []) == ["Cozinha", "Garagem"], f"a routine in every room, saved with each one ({r2 and r2.get('rooms')})")
         # Mais › Rotinas: the same tags under the line (not the names in it); the search finds it by the equipment
         await a.evaluate("(el) => el._go('/mais/rotinas')"); await pg.wait_for_timeout(600)
         crow = a.locator(".cat-row", has_text="Limpar o filtro do exaustor")
@@ -157,6 +171,8 @@ async def main():
         check(tags == ["Cozinha", "Fogão"] and "Fogão" not in await crow.locator(".hint").inner_text(), f"Mais › Rotinas: the room and the equipment as tags ({tags})")
         rtags = [t.strip() for t in await a.locator(".cat-row", has_text="Arrumar a cama").locator(".place-tags .tag").all_inner_texts()]
         check(rtags == ["Garagem"], f"Mais › Rotinas: a routine with its room ({rtags})")
+        vtags = [t.strip() for t in await a.locator(".cat-row", has_text="Varrer o chão").locator(".place-tags .tag").all_inner_texts()]
+        check(vtags == ["Todos os cômodos"], f"Mais › Rotinas: every room, one tag ({vtags})")
         await a.locator(".cat-search input").fill("fogao"); await pg.wait_for_timeout(300)
         check(await a.locator(".cat-row", has_text="Limpar o filtro do exaustor").count() == 1, "Mais › Rotinas: the search finds it by the equipment")
         await pg.screenshot(path=f"{data}/rotinas-tags.png")

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.52.0
+
+- **Todos** nos cômodos: na rotina, na manutenção e no **Novo › Tarefa**, o botão **Todos** (ao lado de **Nenhum**) marca a casa inteira; tocar de novo desmarca. A etiqueta vira uma só, **Todos os cômodos**, em vez de um cômodo atrás do outro, e a busca de equipamento procura na casa toda.
+
 ## 1.51.0
 
 - **Mais › Sobre**, a última linha do menu: quem faz o app (**CorrerIA Code**, desenvolvimento de softwares, e por que esse nome), os apps da família (CronologIA, ResolvIA, GerencIA, InventarIA, EconomIA e MemorIA), cada um com uma linha e o link para o GitHub, e o botão **Meu GitHub**.

@@ -370,3 +370,32 @@ describe("about: Mais › Sobre", async () => {
     assert.match(h, new RegExp(`href="${GITHUB}" target="_blank" rel="noopener"[^>]*>[\\s\\S]*Meu GitHub`));
   });
 });
+
+// ------------------------------------------------------------------ place-tags.js (Todos os cômodos)
+
+describe("place-tags: every room of the house is one tag", async () => {
+  const { placeTags, roomsShown, isAllRooms, ALL_ROOMS } = await import("../frontend/src/place-tags.js");
+  const house = ["Cozinha", "Garagem", "Sala"];
+  const txt = (v) => render(v).html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  it("isAllRooms: all of them (2 or more in the house), in any order", () => {
+    assert.equal(isAllRooms(["Sala", "Cozinha", "Garagem"], house), true);
+    assert.equal(isAllRooms(["Sala", "Cozinha"], house), false);
+    assert.equal(isAllRooms(["Sala"], ["Sala"]), false, "a house of one room: just its name");
+    assert.equal(isAllRooms(["Sala"], []), false, "without the list of the house: never");
+  });
+
+  it("roomsShown: Todos os cômodos, or the names", () => {
+    assert.deepEqual(roomsShown(["Garagem", "Sala", "Cozinha"], house), [ALL_ROOMS]);
+    assert.deepEqual(roomsShown(["Garagem", "", null], house), ["Garagem"]);
+    assert.equal(ALL_ROOMS, "Todos os cômodos");
+  });
+
+  it("placeTags: one tag for the whole house (with the equipment), the rooms otherwise", () => {
+    assert.equal(txt(placeTags(house, [], house)), "Todos os cômodos");
+    assert.equal(txt(placeTags(house, ["Fogão"], house)), "Todos os cômodos Fogão");
+    assert.equal(txt(placeTags(["Cozinha", "Sala"], [], house)), "Cozinha Sala");
+    assert.equal(txt(placeTags(house, ["Fogão", "Carro"], house)), "Fogão +1", "several equipments: no rooms");
+    assert.equal(txt(placeTags(house, [])), "Cozinha Garagem Sala", "without the list of the house: the names");
+  });
+});

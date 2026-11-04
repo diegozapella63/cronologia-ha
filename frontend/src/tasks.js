@@ -6,7 +6,7 @@ import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
 import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { renderEquipPicker } from "./equip-picker.js";
-import { placeTags } from "./place-tags.js";
+import { placeTags, roomsShown } from "./place-tags.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
@@ -125,7 +125,7 @@ export const TasksMixin = (Base) =>
         const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-          <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small>${placeTags(rms.map((r) => r.nome), eqs.map((e) => e.nome))}</button>
+          <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small>${placeTags(rms.map((r) => r.nome), eqs.map((e) => e.nome), this._roomNamesAll())}</button>
           ${quick
             ? html`<div class="qwho" role="group" aria-label="Quem fez ${t.summary}">
                 ${people.map((p) => html`<button class="qw-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${p} fez ${t.summary} (+${t.points})" title="${p} fez (+${t.points})" @click=${() => this._todoDone(t, true, p)}>${initial(p)}</button>`)}
@@ -169,7 +169,7 @@ export const TasksMixin = (Base) =>
         <div class="ev-facts">
           <div class="fact">${icon("calendar-clock")}<span>${d ? html`Prazo: ${cap(dayLabel(d, now))}${t.allDay ? "" : ` às ${hm(d)}`}` : "Sem prazo"}</span></div>
           <div class="fact">${icon("list-checks")}<span>Lista ${t.listName} (ResolvIA)</span></div>
-          ${(t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : []).length ? html`<div class="fact">${icon("door-open")}<span>${(t.rooms && t.rooms.length ? t.rooms : [t.room]).map((r) => r.nome).join(", ")}</span></div>` : nothing}
+          ${(t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : []).length ? html`<div class="fact">${icon("door-open")}<span>${roomsShown((t.rooms && t.rooms.length ? t.rooms : [t.room]).map((r) => r.nome), this._roomNamesAll()).join(", ")}</span></div>` : nothing}
           ${(t.equips && t.equips.length ? t.equips : t.equip ? [t.equip] : []).map((e) => html`<div class="fact">${icon("package")}<span>${e.nome}${e.comodo && !t.room ? ` (${e.comodo})` : ""}</span></div>`)}
           ${t.every ? html`<div class="fact">${icon("repeat")}<span>Volta ${everyLabel(t.every)} depois de concluída</span></div>` : nothing}
           ${t.points > 0 && this._scoreOn() ? html`<div class="fact">${icon("award")}<span>${t.points} pontos para quem concluir</span></div>` : nothing}
@@ -233,6 +233,11 @@ export const TasksMixin = (Base) =>
       return { rooms, items };
     }
 
+    /** The names of the rooms of the house (from the InventarIA, by the ResolvIA). */
+    _roomNamesAll() {
+      return this._invLists().rooms.map((c) => c.nome);
+    }
+
     /**
      * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room is an id and f.equips the ids of the
      * items (several); with items, the rooms are theirs and locked.
@@ -257,12 +262,18 @@ export const TasksMixin = (Base) =>
         const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
         this._setForm({ rooms: next, room: next[0] || null });
       };
-      const searchRoom = locked ? marked[0] || null : f.room || null;
+      // Todos: every room of the house (a task of the whole house); tapped again, none
+      const allIds = rooms.map((c) => c.id);
+      const all = multiRoom && !locked && rooms.length > 1 && allIds.every((id) => marked.includes(id));
+      const searchRoom = locked ? marked[0] || null : all ? null : f.room || null;
       return html`${rooms.length
           ? html`<div class="field">
               <span class="flabel">${marked.length > 1 ? "Cômodos" : "Cômodo"}</span>
               <div class="chip-row ${locked ? "locked" : ""}">
                 <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null, rooms: [] })}>Nenhum</button>
+                ${multiRoom && rooms.length > 1
+                  ? html`<button class="pick all-rooms ${all ? "on" : ""}" aria-pressed=${all ? "true" : "false"} ?disabled=${locked} @click=${() => this._setForm(all ? { room: null, rooms: [] } : { rooms: allIds, room: allIds[0] })}>${icon("house")}<span>Todos</span></button>`
+                  : nothing}
                 ${rooms.map((c) => html`<button class="pick ${marked.includes(c.id) ? "on" : ""}" aria-pressed=${marked.includes(c.id) ? "true" : "false"} ?disabled=${locked} @click=${() => toggle(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
               </div>
               ${locked ? html`<span class="field-hint">${icon("lock")}<span>Vem ${ids.length > 1 ? "dos equipamentos" : "do equipamento"}.</span></span>` : nothing}
