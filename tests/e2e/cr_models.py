@@ -86,7 +86,9 @@ async def main():
         await wait_for(taken_mj, "Tomei on the phone marks the dose on every screen")
         await wait_for(lambda: any(x.get("message") == "clear_notification" for x in get("http://127.0.0.1:8123/dev/notifications")), "alert removed from the phone after taking")
         check(await a.locator(".meds-alert", has_text="Mounjaro").count() == 0, "no more warning for Mounjaro")
-        # Tomei in the app + Desfazer
+        # Tomei in the app + Desfazer (the cat's: "Tomado", not "Tomei")
+        gb = a.locator(".dose", has_text="Gardenal").locator(".dose-btn")
+        check((await gb.inner_text()).strip() == "Tomado" and await gb.get_attribute("aria-label") == "Mimi tomou: Gardenal", f"someone else's dose: Tomado ({(await gb.inner_text()).strip()})")
         await a.locator(".dose", has_text="Gardenal").locator(".dose-btn").click()
         async def g_taken(): return await a.locator(".dose.tomado", has_text="Gardenal").count() == 1
         await wait_for(g_taken, "Tomei in the app")

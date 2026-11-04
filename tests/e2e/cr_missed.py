@@ -50,8 +50,9 @@ async def main():
         # take one of yesterday's doses: the X becomes the check
         name = (await a.locator(".day-panel .ev-row:has(.ev-done.missed) .ev-title").first.inner_text()).strip()
         await a.locator(".day-panel .ev-row:has(.ev-done.missed)").first.click(); await pg.wait_for_timeout(600)
-        btn = a.locator(".sheet button", has_text="Tomei")
-        check(await btn.count() >= 1, "its sheet has Tomei")
+        btn = a.locator(".sheet .kind-act")
+        lbl = (await btn.first.inner_text()).strip() if await btn.count() else ""
+        check(lbl == "Tomei" or lbl == "Tomado" or lbl.endswith(" tomou"), f"its sheet has the button to mark it ({lbl})")
         await btn.first.click(); await pg.wait_for_timeout(1500)
         if await a.locator(".sheet").count(): await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
         row = a.locator(".day-panel .ev-row", has_text=name).first

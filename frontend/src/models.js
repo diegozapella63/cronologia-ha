@@ -49,6 +49,15 @@ function dueLabel(due, now, paid) {
   return `vence em ${d} dias`;
 }
 
+/**
+ * The button of a dose: "Tomei" only for whoever takes it (me, on their own app); for someone else or a pet,
+ * "Tomado", and in the sheet (long) "Andressa tomou".
+ */
+export function doseVerb(who, me, long = false) {
+  if (who && me && foldText(who) === foldText(me)) return "Tomei";
+  return long && who ? `${who} tomou` : "Tomado";
+}
+
 /** Where a maintenance is done, as words: its equipments ("Ar-condicionado, Geladeira") or its rooms. */
 export function placeText(m) {
   const equips = namesOf(m.equips, m.equip);
@@ -351,6 +360,10 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
+    _doseVerb(who, long = false) {
+      return doseVerb(who, this._me ? this._me() : "", long);
+    }
+
     _renderDose(m) {
       const st = m.state;
       const info = [m.dose, st === "tomado" ? `tomou às ${hm(new Date(m.taken.at))}${m.taken.by && foldText(m.taken.by) !== foldText(m.who) ? ` · ${m.taken.by}` : ""}` : st === "atrasado" ? `atrasado ${lateLabel(m.late_min)}` : st === "agora" ? "hora de tomar" : ""].filter(Boolean).join(" · ");
@@ -361,7 +374,7 @@ export const ModelsMixin = (Base) =>
         </button>
         ${st === "tomado"
           ? html`<button class="dose-done" @click=${() => this._undoCheck(m, "remedio")} aria-label="Desmarcar ${m.summary}">${icon("check")}</button>`
-          : html`<button class="dose-btn ${st}" @click=${() => this._check(m, "remedio")}>Tomei</button>`}
+          : html`<button class="dose-btn ${st}" aria-label="${this._doseVerb(m.who, true)}: ${m.summary}" @click=${() => this._check(m, "remedio")}>${this._doseVerb(m.who)}</button>`}
       </div>`;
     }
 
@@ -633,7 +646,7 @@ export const ModelsMixin = (Base) =>
             ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
             ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>${skip}`
-            : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${ui.verb}</button>`;
+            : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${k.kind === "remedio" ? this._doseVerb(k.who, true) : ui.verb}</button>`;
       }
       return html`${facts.map(([ic, t]) => html`<div class="fact">${icon(ic)}<span>${t}</span></div>`)}
         ${k.notes ? html`<div class="fact notes">${icon("file-text")}<span>${k.notes}</span></div>` : nothing}

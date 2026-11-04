@@ -4,9 +4,21 @@ import "./_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { at } from "./helpers.mjs";
-import { KIND_UI, afterSub, routineSub, periodOf, routineLate, byPeriod, placeText } from "../frontend/src/models.js";
+import { KIND_UI, afterSub, routineSub, periodOf, routineLate, byPeriod, placeText, doseVerb } from "../frontend/src/models.js";
 
 const MANHA = at(2026, 11, 2, 9), TARDE = at(2026, 11, 2, 15), NOITE = at(2026, 11, 2, 21), MADRUGADA = at(2026, 11, 3, 2);
+
+describe("models: the button of a dose (Tomei only for whoever takes it)", () => {
+  it("Tomei for me; Tomado for someone else, a pet or no one; in the sheet, with the name", () => {
+    assert.equal(doseVerb("diego", "Diego"), "Tomei", "accents and case do not matter");
+    assert.equal(doseVerb("Diego", "Diego", true), "Tomei");
+    assert.equal(doseVerb("Andressa", "Diego"), "Tomado");
+    assert.equal(doseVerb("Andressa", "Diego", true), "Andressa tomou");
+    assert.equal(doseVerb("Mimi", "Diego", true), "Mimi tomou");
+    assert.equal(doseVerb("", "Diego", true), "Tomado");
+    assert.equal(doseVerb("Diego", ""), "Tomado", "a device without a known person: the generic one");
+  });
+});
 
 describe("models: placeText (where a maintenance is done)", () => {
   it("its equipments, else its rooms; the one name of before too", () => {

@@ -125,7 +125,7 @@ Quando uma rotina não vai ser feita dessa vez, toque nela e escolha **Pular** (
 
 ### Remédios de hoje
 
-Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei**. A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
+Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei** (para quem toma; para outra pessoa ou um pet, **Tomado**, e na tela do remédio **Andressa tomou**). A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
 
 ### Manutenção da casa
 

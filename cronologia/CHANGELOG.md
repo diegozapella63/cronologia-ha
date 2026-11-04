@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.46.2
+
+- **Remédios**: o botão **Tomei** só aparece para quem toma o remédio. Para outra pessoa ou para um pet, a tela Agora mostra **Tomado** e a tela do remédio mostra **Andressa tomou**.
+
 ## 1.46.1
 
 - **Modo férias**: em **Para pontuar hoje**, os botões **Tarefa com pontos** e **Pontos avulsos** ficam inativos (e o app recusa pontos avulsos nas férias).
