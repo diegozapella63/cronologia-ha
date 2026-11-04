@@ -824,10 +824,10 @@ export const ModelsMixin = (Base) =>
       else if (f.kind === "rotina") {
         Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)), period: f.allDay ? f.period || "" : "" });
         if (f.freq === "depois") Object.assign(k, { after: { n: Math.max(1, Math.min(365, Math.round(Number(f.afterN) || 2))), unit: "dias" }, history: f.mode === "edit" ? f.history || [] : [] });
-        // the room (only the room for a routine; an equipment written in the calendar stays)
+        // the rooms (only rooms for a routine, one or several; an equipment written in the calendar stays)
         const { rooms } = this._invLists();
-        const r = rooms.find((c) => c.id === f.room);
-        k.rooms = r ? [r.nome] : rooms.length ? [] : f.roomNames || [];
+        const picked = (f.rooms || (f.room ? [f.room] : [])).map((id) => rooms.find((c) => c.id === id)).filter(Boolean);
+        k.rooms = picked.length ? picked.map((c) => c.nome) : rooms.length ? [] : f.roomNames || [];
         k.equips = f.equipNames || [];
       }
       else if (f.kind === "conta") {
@@ -1150,7 +1150,7 @@ export const ModelsMixin = (Base) =>
       } else if (K === "rotina") {
         body = html`
           ${this._whoField("Quem faz")}
-          ${this._renderRoomEquipFields(f, { equips: false })}
+          ${this._renderRoomEquipFields(f, { equips: false, multiRoom: true })}
           <div class="field"><span class="flabel">Horário</span>
             <div class="chip-row">
               <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>Qualquer hora</button>

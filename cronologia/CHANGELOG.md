@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.50.1
+
+- **Vários cômodos na Rotina da casa**: o campo **Cômodo** da rotina também deixa marcar mais de um (cada cômodo liga e desliga). A tarefa da rotina no ResolvIA recebe todos.
+
 ## 1.50.0
 
 - **Vários cômodos na manutenção** e no **Novo › Tarefa** (do ResolvIA): sem equipamento, o campo **Cômodo** deixa marcar mais de um (cada cômodo liga e desliga). No evento fica `Cômodos: Quarto; Sala`, e o ResolvIA (2.39.2 ou mais novo) recebe todos.
