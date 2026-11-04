@@ -237,26 +237,33 @@ export const TasksMixin = (Base) =>
      * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room is an id and f.equips the ids of the
      * items (several); with items, the rooms are theirs and locked.
      */
-    _renderRoomEquipFields(f, { equips = true } = {}) {
+    _renderRoomEquipFields(f, { equips = true, multiRoom = false } = {}) {
       const { rooms, items } = this._invLists();
       // a routine: only the room
       const its = equips ? items : [];
       if (!rooms.length && !its.length) return nothing;
-      return this._renderRoomEquipMulti(f, rooms, its);
+      return this._renderRoomEquipMulti(f, rooms, its, { multiRoom });
     }
 
-    _renderRoomEquipMulti(f, rooms, items) {
+    /** multiRoom (a maintenance, a task of the ResolvIA): without equipments, several rooms (f.rooms; f.room is the first). */
+    _renderRoomEquipMulti(f, rooms, items, { multiRoom = false } = {}) {
       const ids = f.equips || [];
       const locked = ids.length > 0;
       const roomsOf = (list) => [...new Set(list.map((id) => (items.find((x) => x.id === id) || {}).roomId).filter((r) => r && rooms.some((c) => c.id === r)))];
-      const marked = locked ? roomsOf(ids) : f.room ? [f.room] : [];
+      const picked = multiRoom ? (f.rooms || (f.room ? [f.room] : [])).filter((r) => rooms.some((c) => c.id === r)) : f.room ? [f.room] : [];
+      const marked = locked ? roomsOf(ids) : picked;
+      const toggle = (id) => {
+        if (!multiRoom) return this._setForm({ room: f.room === id ? null : id });
+        const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
+        this._setForm({ rooms: next, room: next[0] || null });
+      };
       const searchRoom = locked ? marked[0] || null : f.room || null;
       return html`${rooms.length
           ? html`<div class="field">
               <span class="flabel">${marked.length > 1 ? "Cômodos" : "Cômodo"}</span>
               <div class="chip-row ${locked ? "locked" : ""}">
-                <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null })}>Nenhum</button>
-                ${rooms.map((c) => html`<button class="pick ${marked.includes(c.id) ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: f.room === c.id ? null : c.id })}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
+                <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null, rooms: [] })}>Nenhum</button>
+                ${rooms.map((c) => html`<button class="pick ${marked.includes(c.id) ? "on" : ""}" aria-pressed=${marked.includes(c.id) ? "true" : "false"} ?disabled=${locked} @click=${() => toggle(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
               </div>
               ${locked ? html`<span class="field-hint">${icon("lock")}<span>Vem ${ids.length > 1 ? "dos equipamentos" : "do equipamento"}.</span></span>` : nothing}
             </div>`
@@ -282,7 +289,7 @@ export const TasksMixin = (Base) =>
                 onRemove: (id) => {
                   const next = ids.filter((x) => x !== id);
                   // the last one out: the room is free again, starting from the one it had
-                  this._setForm({ equips: next, ...(!next.length ? { room: roomsOf(ids)[0] || f.room || null } : {}) });
+                  this._setForm({ equips: next, ...(!next.length ? { room: roomsOf(ids)[0] || f.room || null, ...(multiRoom ? { rooms: roomsOf(ids) } : {}) } : {}) });
                 },
               })}
             </div>`
@@ -324,7 +331,7 @@ export const TasksMixin = (Base) =>
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
-        ${this._renderRoomEquipFields(f)}
+        ${this._renderRoomEquipFields(f, { multiRoom: true })}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
@@ -339,7 +346,7 @@ export const TasksMixin = (Base) =>
       if (!(f.title || "").trim()) return this._showToast("Dê um nome à tarefa");
       const withDue = this._todoDueOk() && !f.noDue && l.features & (TF.DUE_DATE | TF.DUE_DATETIME);
       const timed = withDue && f.timed && l.features & TF.DUE_DATETIME;
-      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...((f.equips || []).length ? { equips: f.equips } : f.room ? { room: f.room } : {}) };
+      const task = { summary: f.title.trim(), date: withDue ? f.date : "", time: timed ? f.time : "", description: f.notes || "", ...((f.equips || []).length ? { equips: f.equips } : (f.rooms || []).length > 1 ? { rooms: f.rooms } : f.room ? { room: f.room } : {}) };
       if (withDue && !timed && !(l.features & TF.DUE_DATE)) task.time = "09:00";
       this._setForm({ saving: true });
       try {

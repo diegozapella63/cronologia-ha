@@ -98,6 +98,11 @@ describe("Novo › Tarefa", () => {
     assert.deepEqual(ev, { entity_id: "todo.casa", tarefa: "Limpar o filtro", origem: "CronologIA", comodo: "cozinha", equipamento: "filtro" });
     await h.wait((x) => x.todos.items.some((i) => i.summary === "Limpar o filtro"), "the new task in Agora");
   });
+  it("several rooms (without equipment) go as a list", async () => {
+    await c.call("cronologia/todo/add", { entity_id: "todo.casa", task: { summary: "Encerar o chão", rooms: ["cozinha", "sala", "cozinha"] } });
+    const ev = await waitFor(() => fired("resolvia_comodo").find((e) => e.tarefa === "Encerar o chão"), { what: "resolvia_comodo" });
+    assert.deepEqual(ev, { entity_id: "todo.casa", tarefa: "Encerar o chão", origem: "CronologIA", comodo: ["cozinha", "sala"] });
+  });
   it("a time makes it a due datetime; no room means no event; bad input is refused", async () => {
     const before = fired("resolvia_comodo").length;
     await c.call("cronologia/todo/add", { entity_id: "todo.trabalho", task: { summary: "Ligar para o cliente", date: day(2), time: "09:30", room: "sala com espaço" } });

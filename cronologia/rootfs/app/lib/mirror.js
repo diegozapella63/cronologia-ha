@@ -157,7 +157,8 @@ export class Mirror {
     const f = (s) => foldText(s || "");
     const roomNames = d.rooms && d.rooms.length ? d.rooms : d.room ? [d.room] : [];
     const equipNames = d.equips && d.equips.length ? d.equips : d.equip ? [d.equip] : [];
-    const room = roomNames.length ? rooms.find((c) => f(c.nome) === f(roomNames[0])) : null;
+    // every room (several: a list, the ResolvIA keeps them all)
+    const roomIds = [...new Set(roomNames.map((n) => (rooms.find((c) => f(c.nome) === f(n)) || {}).id).filter(Boolean))];
     // several items: the ResolvIA keeps them all (and their rooms); by the name, the one in the first room,
     // else in one of the rooms, else any
     const pick = (n) => {
@@ -165,10 +166,10 @@ export class Mirror {
       return same.find((x) => roomNames.length && f(x.comodo) === f(roomNames[0])) || same.find((x) => roomNames.some((r) => f(x.comodo) === f(r))) || same[0];
     };
     const equips = [...new Set(equipNames.map((n) => (pick(n) || {}).id).filter(Boolean))];
-    const want = `${room ? room.id : ""}|${equips.join(",")}|${d.summary}`;
+    const want = `${roomIds.join(",")}|${equips.join(",")}|${d.summary}`;
     if (r.links === want) return;
     const event_data = { entity_id: list, tarefa: d.summary, origem: "CronologIA" };
-    if (rooms.length) event_data.comodo = room ? room.id : null;
+    if (rooms.length) event_data.comodo = roomIds.length > 1 ? roomIds : roomIds[0] || null;
     if (items.length) event_data.equipamento = equips.length > 1 ? equips : equips[0] || null;
     await this.ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
     r.links = want;

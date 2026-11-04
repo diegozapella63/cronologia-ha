@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.49.0";
+const VERSION = "1.50.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -363,9 +363,11 @@ class Session {
         const okId = (v) => v && /^[A-Za-z0-9_-]{1,64}$/.test(String(v));
         // several items (ResolvIA 2.31): the ResolvIA takes the room from them
         const equips = (Array.isArray(t.equips) ? t.equips : [t.equip]).filter(okId).map(String).slice(0, 10);
-        if (okId(t.room) || equips.length) {
+        // several rooms (without items): a list (ResolvIA 2.39.2)
+        const rooms = [...new Set((Array.isArray(t.rooms) ? t.rooms : [t.room]).filter(okId).map(String))].slice(0, 10);
+        if (rooms.length || equips.length) {
           const event_data = { entity_id: String(msg.entity_id || ""), tarefa: String(t.summary || "").trim(), origem: "CronologIA" };
-          if (okId(t.room)) event_data.comodo = String(t.room);
+          if (rooms.length) event_data.comodo = rooms.length === 1 ? rooms[0] : rooms;
           if (equips.length) event_data.equipamento = equips.length === 1 ? equips[0] : equips;
           await ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
         }

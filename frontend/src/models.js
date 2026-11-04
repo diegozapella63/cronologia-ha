@@ -774,8 +774,9 @@ export const ModelsMixin = (Base) =>
             return same.find((x) => foldText(x.roomName) === foldText(f.roomNames[0] || "")) || same.find((x) => f.roomNames.some((r) => foldText(x.roomName) === foldText(r))) || same[0];
           };
           f.equips = [...new Set(f.equipNames.map((n) => (pick(n) || {}).id).filter(Boolean))];
-          const r = rooms.find((c) => foldText(c.nome) === foldText(f.roomNames[0] || ""));
-          f.room = r ? r.id : null;
+          // every room by its name (a maintenance can have several); the first one is f.room
+          f.rooms = f.roomNames.map((n) => (rooms.find((c) => foldText(c.nome) === foldText(n)) || {}).id).filter(Boolean);
+          f.room = f.rooms[0] || null;
         }
         // a routine that comes back N days after done (one event, no repetition rule)
         if (k.kind === "rotina" && k.after && !ev.rrule) Object.assign(f, { freq: "depois", afterN: Math.max(1, Math.round(k.after.n * UNITS[k.after.unit][0])) });
@@ -839,9 +840,10 @@ export const ModelsMixin = (Base) =>
         // the ResolvIA here, what it had stays
         const { rooms, items } = this._invLists();
         const eqs = (f.equips || []).map((id) => items.find((x) => x.id === id)).filter(Boolean);
-        const r = rooms.find((c) => c.id === f.room);
+        // several rooms without equipments; with equipments, the rooms are theirs
+        const picked = (f.rooms || (f.room ? [f.room] : [])).map((id) => rooms.find((c) => c.id === id)).filter(Boolean);
         k.equips = items.length ? eqs.map((x) => x.nome) : f.equipNames || [];
-        k.rooms = eqs.length ? [...new Set(eqs.map((x) => x.roomName).filter(Boolean))] : r ? [r.nome] : rooms.length ? [] : f.roomNames || [];
+        k.rooms = eqs.length ? [...new Set(eqs.map((x) => x.roomName).filter(Boolean))] : picked.length ? picked.map((c) => c.nome) : rooms.length ? [] : f.roomNames || [];
       }
       const base = { summary: title, description: buildDescription(k) };
       if ((f.location || "").trim()) base.location = f.location.trim();
@@ -1169,7 +1171,7 @@ export const ModelsMixin = (Base) =>
         const next = f.mode === "edit" ? fromYmd(f.date) : addEvery(fromYmd(f.last || ymd(now)), f.every);
         body = html`
           ${this._whoField("Quem faz")}
-          ${this._renderRoomEquipFields(f)}
+          ${this._renderRoomEquipFields(f, { multiRoom: true })}
           <div class="field"><span class="flabel">A cada</span>
             <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${everyLabel(p)}</button>`)}</div>
             <div class="time-row">

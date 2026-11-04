@@ -292,6 +292,11 @@ describe("Mirror: the room and the equipment go to the ResolvIA", () => {
     await s.m.shareLinks(LIST, { ...d, type: "rotina", room: "", equip: "", rooms: [], equips: [] }, {});
     assert.equal(s.ha.sent.length, 1, "a room set in the ResolvIA stays");
   });
+  it("several rooms without equipments (1.49): a list of rooms", async () => {
+    const s = setup({ maint: [maintItem({ room: "Cozinha", rooms: ["Cozinha", "Sala"], equip: "", equips: [] })], app });
+    await s.m.shareLinks(LIST, s.m.desired(NOW).get("maint|calendar.casa|filtro"), {});
+    assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: ["coz", "sala"], equipamento: null });
+  });
   it("a routine with a room (1.49): the ResolvIA gets it; taken out here, it is cleared there", async () => {
     const s = setup({ maint: [], app });
     const d = { src: "rotina|calendar.casa|cama", type: "rotina", summary: "Arrumar a cama", room: "Cozinha", rooms: ["Cozinha"], equip: "", equips: [] };
@@ -306,13 +311,13 @@ describe("Mirror: the room and the equipment go to the ResolvIA", () => {
     await s.m.shareLinks(LIST, s.m.desired(NOW).get("maint|calendar.casa|filtro"), {});
     assert.equal(s.ha.sent[0].event_data.equipamento, "f-sala");
   });
-  it("several equipments: the ResolvIA gets them all (a list), the room is the first one", async () => {
+  it("several equipments and rooms: the ResolvIA gets them all (lists)", async () => {
     const two = { ...app, equipamentos: { lista: [...app.equipamentos.lista, { id: "tv", nome: "TV", comodo: "Sala" }] } };
     const s = setup({ maint: [maintItem({ room: "Cozinha", rooms: ["Cozinha", "Sala"], equip: "Filtro de água", equips: ["Filtro de água", "TV", "Bicicleta"] })], app: two });
     const r = {};
     await s.m.shareLinks(LIST, s.m.desired(NOW).get("maint|calendar.casa|filtro"), r);
-    assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: "coz", equipamento: ["f-coz", "tv"] });
-    assert.equal(r.links, "coz|f-coz,tv|Trocar o filtro");
+    assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: ["coz", "sala"], equipamento: ["f-coz", "tv"] });
+    assert.equal(r.links, "coz,sala|f-coz,tv|Trocar o filtro");
   });
   it("without the InventarIA lists nothing is sent", async () => {
     const s = setup({ maint: [maintItem()], app: { comodos: null, equipamentos: null } });

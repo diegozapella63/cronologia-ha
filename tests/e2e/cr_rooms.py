@@ -118,6 +118,17 @@ async def main():
             check(False, "an Editar button on the maintenance sheet")
         if await sheet.locator(".icon-btn[aria-label='Fechar']").count():
             await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
+        # a maintenance without equipment: several rooms (1.50)
+        await a.evaluate("(el) => el._openKindForm({ kind: 'manutencao' })"); await pg.wait_for_timeout(500)
+        await sheet.locator(".ev-title-input").fill("Encerar o chão"); await pg.wait_for_timeout(100)
+        mf = sheet.locator(".field:has(.flabel:text-matches('^Cômodos?$'))")
+        await mf.locator(".pick", has_text="Cozinha").click(); await pg.wait_for_timeout(150)
+        await mf.locator(".pick", has_text="Garagem").click(); await pg.wait_for_timeout(150)
+        on = sorted(t.strip() for t in await sheet.locator(".field:has(.flabel:text-is('Cômodos')) .pick.on").all_inner_texts())
+        check(on == ["Cozinha", "Garagem"], f"Manutenção: two rooms without equipment ({on})")
+        await sheet.locator(".btn.primary", has_text="Criar manutenção").click(); await pg.wait_for_timeout(1500)
+        m2 = await a.evaluate("(el) => (el._ix().maint || []).find((x) => x.summary === 'Encerar o chão')")
+        check(m2 and m2.get("rooms") == ["Cozinha", "Garagem"], f"saved with both rooms ({m2 and m2.get('rooms')})")
         # a routine with a room (1.49): only the Cômodo field (no Equipamento), saved in the calendar
         await a.evaluate("(el) => el._openKindForm({ kind: 'rotina' })"); await pg.wait_for_timeout(500)
         await sheet.locator(".ev-title-input").fill("Arrumar a cama"); await pg.wait_for_timeout(100)
