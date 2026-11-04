@@ -1845,24 +1845,34 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
     const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais/calendarios")}>Mostrar</button></div>` : nothing;
     const medsPart = html`${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}`;
+    // the all-day ones (a hotel stay, a birthday) live in the Hoje card, under its title, with when they end
+    const untilOf = (e) => {
+      const last = addDays(new Date(e.end), e.allDay ? -1 : 0);
+      return e.end - e.start > 86400000 && dayDiff(last, today) >= 1 ? ` · até ${dateShort(last, now)}` : "";
+    };
+    const allDayPart = allDay.length
+      ? html`<div class="allday" aria-label="O dia todo">
+          ${shownAllDay.map((e) => html`<button class="ad-chip" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}><span class="dot"></span><span>${e.summary}<small>${untilOf(e)}</small></span></button>`)}
+          ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
+        </div>`
+      : nothing;
     const dayPart = html`${hero || nothing}
-      ${allDay.length
-        ? html`<div class="allday">
-            ${shownAllDay.map((e) => html`<button class="ad-chip" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}><span class="dot"></span><span>${e.summary}</span></button>`)}
-            ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
-          </div>`
-        : nothing}
-      ${sameAsHero
+      ${sameAsHero && !allDay.length
         ? nothing
         : html`<div class="panel agenda">
         ${this._panelHead("calendar-days", "accent", `Hoje · ${dateShort(now, now)}`)}
-        ${timed.length
-          ? timed.map((e) => {
-              const line = !lineDone && e.start > now ? ((lineDone = true), nowLine) : nothing;
-              return html`${line}${this._renderRow(e, today)}`;
-            })
-          : html`<p class="empty-line">${loading ? "Carregando…" : "Nenhum horário marcado hoje."}</p>`}
-        ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}
+        ${allDayPart}
+        ${sameAsHero
+          ? hero
+            ? nothing
+            : html`<p class="empty-line">${loading ? "Carregando…" : timed.length ? "Nada mais com horário hoje." : "Nenhum horário marcado hoje."}</p>`
+          : html`${timed.length
+              ? timed.map((e) => {
+                  const line = !lineDone && e.start > now ? ((lineDone = true), nowLine) : nothing;
+                  return html`${line}${this._renderRow(e, today)}`;
+                })
+              : html`<p class="empty-line">${loading ? "Carregando…" : "Nenhum horário marcado hoje."}</p>`}
+            ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}`}
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
       </div>`}`;
     // Computador, like the InventarIA: the day on the left (next appointment, Hoje, tasks), doses, bills

@@ -520,11 +520,17 @@ export const calStyles = css`
     background: var(--rv-surface-2);
   }
 
+  /* the all-day ones, in the Hoje card under its title */
   .allday {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin: -2px 0 14px;
+    margin: 2px 0 12px;
+  }
+  .ad-chip small {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--rv-muted);
   }
   .ad-chip {
     display: inline-flex;

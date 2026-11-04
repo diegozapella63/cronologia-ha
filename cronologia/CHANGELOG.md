@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.48.1
+
+- **Agora**: os compromissos do dia todo (uma hospedagem, um aniversário) ficam dentro do card **Hoje**, logo abaixo do título, e não mais soltos no fim da tela quando não sobra nada com horário. Os que duram vários dias dizem até quando ("· até 6 nov").
+
 ## 1.48.0
 
 - **Lembrete diário do placar** em **Mais › Configurações › Placar**: uma vez por dia, na hora escolhida (Manhã, Tarde, Noite ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando, por exemplo "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias.".
