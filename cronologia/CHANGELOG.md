@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.44.1
+
+- **Calendário**: no alto, o balão de Conversar e o microfone voltam para a direita, como nas outras telas, e "CronologIA · Olá, Diego" fica numa linha só.
+
 ## 1.44.0
 
 - **Manutenção com vários equipamentos**, como no ResolvIA: no formulário, **Outro equipamento** acrescenta mais um. Os cômodos vêm dos equipamentos e ficam bloqueados. A lista de manutenções e a tela da manutenção mostram todos, e a tarefa no ResolvIA leva todos.

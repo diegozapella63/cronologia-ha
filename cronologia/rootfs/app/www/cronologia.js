@@ -3262,17 +3262,9 @@ window.litDisableBundleWarning=true;
     .menu-row:hover {
       background: var(--rv-surface-2);
     }
-    /* Calendário: the actions at the top right, above the arrows */
-    .cal-top {
-      position: relative;
-    }
+    /* Calendário: the top line goes across the page, so the actions sit at the top right, above the arrows */
     .cal-title {
       flex: 1;
-    }
-    .cal-page .top-acts {
-      position: absolute;
-      top: 0;
-      right: 0;
     }
     .cal-page .head-row {
       min-height: 56px;
@@ -4035,6 +4027,10 @@ window.litDisableBundleWarning=true;
   }
 
   /* ---------- Calendário ---------- */
+  /* the top line (app name, Conversar, microphone) spans the whole width, like on the other screens */
+  .cal-page > .head-row {
+    margin-left: 2px;
+  }
   .cal-top {
     display: flex;
     align-items: flex-end;
@@ -7746,9 +7742,9 @@ ${s}`:e.join(`
       <div class="panel"><div class="empty"><div class="em-icon">${_("calendar-plus")}</div><h3>Comece um calendário</h3><p>O CronologIA mostra os calendários do Home Assistant: um calendário local, o Google Agenda, o Outlook, feriados… Adicione um deles no Home Assistant e ele aparece aqui sozinho.</p></div></div>
       ${this._renderAddCalendars()}
     </section>`}_renderCalendar(){let e=new Date(this._now),t=this._cursor,a=this._mode,s=this._app("week_start",1),i,r,c;if(a==="mes"||a==="lista")i=`${j(be[t.getMonth()])}${t.getFullYear()!==e.getFullYear()?` ${t.getFullYear()}`:""}`,r=()=>this._cursor=a==="lista"?D(t,-30):de(t,-1),c=()=>this._cursor=a==="lista"?D(t,30):de(t,1);else if(a==="semana"||a==="3dias"){let h=a==="3dias"?3:7,x=a==="3dias"?t:Fe(t,s),m=D(x,h-1);i=x.getMonth()===m.getMonth()?`${x.getDate()}\u2013${m.getDate()} ${be[m.getMonth()].slice(0,3)}`:`${x.getDate()} ${be[x.getMonth()].slice(0,3)} \u2013 ${m.getDate()} ${be[m.getMonth()].slice(0,3)}`,r=()=>this._cursor=D(t,-h),c=()=>this._cursor=D(t,h)}else i=I(t,e),r=()=>this._cursor=D(t,-1),c=()=>this._cursor=D(t,1);let d=[["mes","M\xEAs","layout-grid"],["semana","Semana","calendar-range"],["3dias","3 dias","columns-3"],["dia","Dia","calendar"],["lista","Lista","list"]],l;a==="semana"?l=this._renderTimeGrid(Fe(t,s),7):a==="3dias"?l=this._renderTimeGrid(t,3):a==="dia"?l=this._renderTimeGrid(t,1):a==="lista"?l=this._renderList():l=this._renderMonth();let p=a==="mes"?t.getMonth()===e.getMonth()&&t.getFullYear()===e.getFullYear()&&V(t,e):V(t,e);return n`<section class="page cal-page">
+      <div class="head-row"><p class="eyebrow"><span class="brand">${$t()}Cronolog<span>IA</span></span>${this._userName()?n`<span class="sep"> · </span>Olá, ${this._userName()}`:""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
       <div class="cal-top">
         <div class="cal-title">
-          <div class="head-row"><p class="eyebrow"><span class="brand">${$t()}Cronolog<span>IA</span></span>${this._userName()?n`<span class="sep"> · </span>Olá, ${this._userName()}`:""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
           <h1 class="page-title">${i}</h1>
         </div>
         <div class="cal-nav">

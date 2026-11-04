@@ -1994,9 +1994,9 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     else body = this._renderMonth();
     const isToday = mode === "mes" ? cur.getMonth() === now.getMonth() && cur.getFullYear() === now.getFullYear() && sameDay(cur, now) : sameDay(cur, now);
     return html`<section class="page cal-page">
+      <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
       <div class="cal-top">
         <div class="cal-title">
-          <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${this._userName() ? html`<span class="sep"> · </span>Olá, ${this._userName()}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
           <h1 class="page-title">${title}</h1>
         </div>
         <div class="cal-nav">

@@ -544,6 +544,10 @@ export const calStyles = css`
   }
 
   /* ---------- Calendário ---------- */
+  /* the top line (app name, Conversar, microphone) spans the whole width, like on the other screens */
+  .cal-page > .head-row {
+    margin-left: 2px;
+  }
   .cal-top {
     display: flex;
     align-items: flex-end;

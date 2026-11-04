@@ -3141,17 +3141,9 @@ export const extraStyles = css`
     .menu-row:hover {
       background: var(--rv-surface-2);
     }
-    /* Calendário: the actions at the top right, above the arrows */
-    .cal-top {
-      position: relative;
-    }
+    /* Calendário: the top line goes across the page, so the actions sit at the top right, above the arrows */
     .cal-title {
       flex: 1;
-    }
-    .cal-page .top-acts {
-      position: absolute;
-      top: 0;
-      right: 0;
     }
     .cal-page .head-row {
       min-height: 56px;
