@@ -230,50 +230,13 @@ export const TasksMixin = (Base) =>
     }
 
     /**
-     * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room and f.equip are ids.
-     * multi (Novo › Tarefa): several items in f.equips; with items, the rooms are theirs and locked.
+     * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room is an id and f.equips the ids of the
+     * items (several); with items, the rooms are theirs and locked.
      */
-    _renderRoomEquipFields(f, { multi = false } = {}) {
+    _renderRoomEquipFields(f) {
       const { rooms, items } = this._invLists();
       if (!rooms.length && !items.length) return nothing;
-      if (multi) return this._renderRoomEquipMulti(f, rooms, items);
-      // picking an equipment sets its room; another room drops an equipment that is not in it
-      const pickEquip = (id) => {
-        const e = items.find((x) => x.id === id);
-        this._setForm({ equip: id || null, equipQ: "", equipMore: false, ...(e && e.roomId ? { room: e.roomId } : {}) });
-      };
-      const pickRoom = (id) => {
-        const room = f.room === id ? null : id;
-        const e = items.find((x) => x.id === f.equip);
-        this._setForm({ room, ...(e && room && e.roomId !== room ? { equip: null } : {}) });
-      };
-      return html`${rooms.length
-          ? html`<div class="field">
-              <span class="flabel">Cômodo</span>
-              <div class="chip-row">
-                <button class="pick ${!f.room ? "on" : ""}" @click=${() => this._setForm({ room: null })}>Nenhum</button>
-                ${rooms.map((c) => html`<button class="pick ${f.room === c.id ? "on" : ""}" @click=${() => pickRoom(c.id)}>${icon("door-open")}<span>${clip(c.nome, 22)}</span></button>`)}
-              </div>
-            </div>`
-          : nothing}
-        ${items.length
-          ? html`<div class="field">
-              <span class="flabel">Equipamento</span>
-              ${renderEquipPicker({
-                lit: { html, nothing },
-                icon,
-                items,
-                room: f.room || null,
-                roomName: f.room ? (rooms.find((c) => c.id === f.room) || {}).nome || "" : "",
-                value: f.equip || null,
-                query: f.equipQ || "",
-                more: !!f.equipMore,
-                onQuery: (q) => this._setForm({ equipQ: q, equipMore: false }),
-                onMore: () => this._setForm({ equipMore: true }),
-                onPick: pickEquip,
-              })}
-            </div>`
-          : nothing}`;
+      return this._renderRoomEquipMulti(f, rooms, items);
     }
 
     _renderRoomEquipMulti(f, rooms, items) {
@@ -355,7 +318,7 @@ export const TasksMixin = (Base) =>
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
-        ${this._renderRoomEquipFields(f, { multi: true })}
+        ${this._renderRoomEquipFields(f)}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>

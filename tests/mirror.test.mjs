@@ -93,7 +93,7 @@ describe("Mirror: settings and what should be in the list", () => {
     const want = m.desired(NOW);
     assert.deepEqual([...want.keys()].sort(), ["maint|calendar.casa|filtro", "rotina|calendar.casa|lixo", "rotina|calendar.casa|regar"]);
     const f = want.get("maint|calendar.casa|filtro");
-    assert.deepEqual(f, { src: "maint|calendar.casa|filtro", type: "manutencao", cal: "calendar.casa", evUid: "filtro", summary: "Trocar o filtro", dueKey: "2026-11-07", allDay: true, points: 30, notes: "Refil X", occKey: "calendar.casa|filtro|2026-11-07", rrule: false, room: "Cozinha", equip: "Filtro de água" });
+    assert.deepEqual(f, { src: "maint|calendar.casa|filtro", type: "manutencao", cal: "calendar.casa", evUid: "filtro", summary: "Trocar o filtro", dueKey: "2026-11-07", allDay: true, points: 30, notes: "Refil X", occKey: "calendar.casa|filtro|2026-11-07", rrule: false, room: "Cozinha", equip: "Filtro de água", rooms: [], equips: [] });
     const r = want.get("rotina|calendar.casa|regar");
     assert.equal(r.dueKey, "2026-11-03", "today's is done: the next one not done");
     assert.equal(r.points, 5);
@@ -296,6 +296,14 @@ describe("Mirror: the room and the equipment go to the ResolvIA", () => {
     const s = setup({ maint: [maintItem({ room: "Garagem", equip: "Filtro de água" })], app });
     await s.m.shareLinks(LIST, s.m.desired(NOW).get("maint|calendar.casa|filtro"), {});
     assert.equal(s.ha.sent[0].event_data.equipamento, "f-sala");
+  });
+  it("several equipments: the ResolvIA gets them all (a list), the room is the first one", async () => {
+    const two = { ...app, equipamentos: { lista: [...app.equipamentos.lista, { id: "tv", nome: "TV", comodo: "Sala" }] } };
+    const s = setup({ maint: [maintItem({ room: "Cozinha", rooms: ["Cozinha", "Sala"], equip: "Filtro de água", equips: ["Filtro de água", "TV", "Bicicleta"] })], app: two });
+    const r = {};
+    await s.m.shareLinks(LIST, s.m.desired(NOW).get("maint|calendar.casa|filtro"), r);
+    assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: "coz", equipamento: ["f-coz", "tv"] });
+    assert.equal(r.links, "coz|f-coz,tv|Trocar o filtro");
   });
   it("without the InventarIA lists nothing is sent", async () => {
     const s = setup({ maint: [maintItem()], app: { comodos: null, equipamentos: null } });

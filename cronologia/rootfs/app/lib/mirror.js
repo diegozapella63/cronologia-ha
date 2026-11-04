@@ -115,7 +115,7 @@ export class Mirror {
       for (const m of ix.maint || []) {
         if (!m.uid || !m.due) continue;
         const src = `maint|${m.cal}|${m.uid}`;
-        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: m.points || 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "" });
+        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: m.points || 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "", rooms: m.rooms || [], equips: m.equips || [] });
       }
     }
     if (st.routine) {
@@ -153,13 +153,21 @@ export class Mirror {
     const items = (app && app.equipamentos && app.equipamentos.lista) || [];
     if (!rooms.length && !items.length) return;
     const f = (s) => foldText(s || "");
-    const room = d.room ? rooms.find((c) => f(c.nome) === f(d.room)) : null;
-    const equip = d.equip ? items.find((x) => f(x.nome) === f(d.equip) && (!d.room || f(x.comodo) === f(d.room))) || items.find((x) => f(x.nome) === f(d.equip)) : null;
-    const want = `${room ? room.id : ""}|${equip ? equip.id : ""}|${d.summary}`;
+    const roomNames = d.rooms && d.rooms.length ? d.rooms : d.room ? [d.room] : [];
+    const equipNames = d.equips && d.equips.length ? d.equips : d.equip ? [d.equip] : [];
+    const room = roomNames.length ? rooms.find((c) => f(c.nome) === f(roomNames[0])) : null;
+    // several items: the ResolvIA keeps them all (and their rooms); by the name, the one in the first room,
+    // else in one of the rooms, else any
+    const pick = (n) => {
+      const same = items.filter((x) => f(x.nome) === f(n));
+      return same.find((x) => roomNames.length && f(x.comodo) === f(roomNames[0])) || same.find((x) => roomNames.some((r) => f(x.comodo) === f(r))) || same[0];
+    };
+    const equips = [...new Set(equipNames.map((n) => (pick(n) || {}).id).filter(Boolean))];
+    const want = `${room ? room.id : ""}|${equips.join(",")}|${d.summary}`;
     if (r.links === want) return;
     const event_data = { entity_id: list, tarefa: d.summary, origem: "CronologIA" };
     if (rooms.length) event_data.comodo = room ? room.id : null;
-    if (items.length) event_data.equipamento = equip ? equip.id : null;
+    if (items.length) event_data.equipamento = equips.length > 1 ? equips : equips[0] || null;
     await this.ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
     r.links = want;
   }

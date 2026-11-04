@@ -332,7 +332,18 @@ describe("parseKind", () => {
       points: 40,
       room: "Sala",
       equip: "Ar-condicionado",
+      rooms: ["Sala"],
+      equips: ["Ar-condicionado"],
     });
+  });
+  it("manutenção: several equipments (and rooms), \"A; B\"; room/equip are the first ones", () => {
+    const k = parseKind("#manutenção\nA cada: 6 meses\nCômodos: Quarto; Sala\nEquipamentos: Ar-condicionado Split; Ar-condicionado; ar-condicionado split;  \nLimpar os filtros");
+    assert.deepEqual([k.rooms, k.equips, k.room, k.equip, k.notes], [["Quarto", "Sala"], ["Ar-condicionado Split", "Ar-condicionado"], "Quarto", "Ar-condicionado Split", "Limpar os filtros"]);
+    // the singular label with several, and the plural with one, are read the same
+    assert.deepEqual(parseKind("#manutenção\nEquipamento: TV; Som").equips, ["TV", "Som"]);
+    assert.deepEqual(parseKind("#manutenção\nComodos: Sala").rooms, ["Sala"]);
+    const many = Array.from({ length: 14 }, (_, i) => `Item ${i + 1}`).join("; ");
+    assert.equal(parseKind(`#manutenção\nEquipamentos: ${many}`).equips.length, 10, "up to 10");
   });
   it("manutenção defaults: 6 months, warn 7 days, empty history", () => {
     const k = parseKind("#manutenção");
@@ -342,6 +353,7 @@ describe("parseKind", () => {
     assert.equal(k.points, 0);
     assert.equal(k.room, "");
     assert.equal(k.equip, "");
+    assert.deepEqual([k.rooms, k.equips], [[], []]);
   });
   it("manutenção warn: 0 is kept, the maximum is 365", () => {
     assert.equal(parseKind("#manutenção\nAvisar: 0 dias antes").warn, 0);
@@ -377,6 +389,16 @@ describe("buildDescription (inverse of parseKind)", () => {
       buildDescription({ kind: "manutencao", who: "Diego", every: { n: 1, unit: "anos" }, warn: 1, history: ["2026-11-02"], points: 30, room: "Cozinha", equip: "Fogão", notes: "Chamar o técnico" }),
       "#manutenção\nQuem faz: Diego\nA cada: 1 ano\nAvisar: 1 dia antes\nFeito em: 02/11/2026\nPontos: 30\nCômodo: Cozinha\nEquipamento: Fogão\nChamar o técnico",
     );
+  });
+  it("manutenção: several equipments and rooms, with the labels in the plural", () => {
+    assert.equal(
+      buildDescription({ kind: "manutencao", every: { n: 6, unit: "meses" }, warn: 7, rooms: ["Quarto", "Sala"], equips: ["Ar-condicionado Split", "Ar; condicionado"] }),
+      "#manutenção\nA cada: 6 meses\nAvisar: 7 dias antes\nCômodos: Quarto; Sala\nEquipamentos: Ar-condicionado Split; Ar, condicionado",
+      "a ';' in a name becomes ',' (it separates the names)",
+    );
+    // the lists win over the one name of before; an empty list takes the one name
+    assert.match(buildDescription({ kind: "manutencao", every: { n: 1, unit: "anos" }, room: "Velho", rooms: ["Sala"], equip: "", equips: [] }), /\nCômodo: Sala$/);
+    assert.match(buildDescription({ kind: "manutencao", every: { n: 1, unit: "anos" }, equip: "Fogão", equips: [] }), /\nEquipamento: Fogão$/);
     assert.equal(buildDescription({ kind: "manutencao", every: { n: 6, unit: "meses" } }), "#manutenção\nA cada: 6 meses\nAvisar: 7 dias antes");
     assert.equal(buildDescription({ kind: "manutencao", every: { n: 6, unit: "meses" }, warn: 0 }), "#manutenção\nA cada: 6 meses\nAvisar: 0 dias antes");
   });
@@ -405,12 +427,14 @@ describe("buildDescription (inverse of parseKind)", () => {
     { kind: "manutencao", who: "Diego", every: { n: 6, unit: "meses" }, warn: 7, history: ["2026-05-07"], points: 30, room: "Cozinha", equip: "Filtro de água", notes: "Refil modelo X" },
     { kind: "manutencao", who: "", every: { n: 1, unit: "anos" }, warn: 30, history: [], points: 0, room: "", equip: "", notes: "" },
     { kind: "manutencao", who: "", every: { n: 15, unit: "dias" }, warn: 0, history: ["2026-10-01", "2026-09-16"], points: 0, room: "Área de serviço", equip: "", notes: "" },
+    { kind: "manutencao", who: "Ana", every: { n: 3, unit: "meses" }, warn: 7, history: [], points: 10, room: "Quarto", equip: "Ar-condicionado", rooms: ["Quarto", "Sala"], equips: ["Ar-condicionado", "TV"], notes: "Os dois" },
   ];
   for (const k of trips) {
     it(`round trip: ${k.kind} ${JSON.stringify(k).slice(0, 60)}…`, () => {
       const back = parseKind(buildDescription(k));
       const want = { ...k };
       if (k.kind === "rotina" && !k.after) delete want.history;
+      if (k.kind === "manutencao" && !k.equips) Object.assign(want, { rooms: k.room ? [k.room] : [], equips: k.equip ? [k.equip] : [] });
       assert.deepEqual(back, want);
       // and again: the description is stable
       assert.equal(buildDescription(back), buildDescription(k));

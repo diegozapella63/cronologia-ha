@@ -142,7 +142,8 @@ export function parseKind(description) {
     const f = /^([^:]{2,24}):\s*(.*)$/.exec(lines[i]);
     if (!f) break;
     const label = foldText(f[1]);
-    const hit = labels.find(([, l]) => l === label || (l.startsWith("aviso") && label.startsWith("aviso")));
+    // "Equipamentos: A; B" and "Cômodos: A; B" (several) are the same fields
+    const hit = labels.find(([, l]) => l === label || `${l}s` === label || (l.startsWith("aviso") && label.startsWith("aviso")));
     if (!hit) break;
     raw[hit[0]] = f[2].trim();
   }
@@ -168,10 +169,29 @@ export function parseKind(description) {
     out.warn = w ? Math.min(365, Number(w[1])) : 7;
     out.history = parseHistory(raw.history);
     out.points = parsePoints(raw.points);
-    out.room = raw.room || "";
-    out.equip = raw.equip || "";
+    // the rooms and the items of the InventarIA, by name ("A; B" when several); room/equip: the first one
+    out.rooms = nameList(raw.room);
+    out.equips = nameList(raw.equip);
+    out.room = out.rooms[0] || "";
+    out.equip = out.equips[0] || "";
   }
   return out;
+}
+
+/** "Ar-condicionado; Geladeira" -> the names (up to 10, no repeats). */
+function nameList(text) {
+  const out = [];
+  for (const s of String(text || "").split(";")) {
+    const n = s.trim();
+    if (n && !out.some((x) => foldText(x) === foldText(n))) out.push(n);
+  }
+  return out.slice(0, 10);
+}
+
+/** The rooms or the items of a maintenance: the list, or the one name of before. */
+export function namesOf(list, one) {
+  const names = Array.isArray(list) ? list.map((s) => String(s || "").trim()).filter(Boolean) : [];
+  return names.length ? names : one && String(one).trim() ? [String(one).trim()] : [];
 }
 
 /** Description for a model and its fields (the inverse of parseKind). */
@@ -201,9 +221,11 @@ export function buildDescription(k) {
     add(L.warn, `${k.warn ?? 7} ${(k.warn ?? 7) === 1 ? "dia" : "dias"} antes`);
     add(L.history, historyText((k.history || []).slice(0, 8)));
     if (k.points > 0) add(L.points, k.points);
-    // the room and the item of the InventarIA (by name: readable in any calendar)
-    add(L.room, k.room);
-    add(L.equip, k.equip);
+    // the rooms and the items of the InventarIA (by name: readable in any calendar; "A; B" when several)
+    const rooms = namesOf(k.rooms, k.room).map((s) => s.replace(/;/g, ","));
+    const equips = namesOf(k.equips, k.equip).map((s) => s.replace(/;/g, ","));
+    add(rooms.length > 1 ? `${L.room}s` : L.room, rooms.join("; "));
+    add(equips.length > 1 ? `${L.equip}s` : L.equip, equips.join("; "));
   }
   const notes = String(k.notes || "").trim();
   return notes ? `${lines.join("\n")}\n${notes}` : lines.join("\n");
@@ -393,7 +415,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       seenMaint.add(id);
       const st = maintStatus(k, allDay ? raw.start : ymdOf(new Date(start)), today);
       const f = features(cal);
-      out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, room: k.room || "", equip: k.equip || "", ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
+      out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, room: k.room || "", equip: k.equip || "", rooms: k.rooms || [], equips: k.equips || [], ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
     }
   }
   for (const ser of series.values()) {
@@ -416,6 +438,8 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       value: k.value ?? null,
       room: k.room || "",
       equip: k.equip || "",
+      rooms: k.rooms || [],
+      equips: k.equips || [],
       time: o.allDay ? "" : hmOf(o.start),
       next: o.allDay ? o.base.start : ymdOf(new Date(o.start)),
       late: !ser.next,

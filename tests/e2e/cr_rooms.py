@@ -1,4 +1,5 @@
 # CronologIA 1.33.0/1.34.0: the rooms and equipment of the ResolvIA (Cômodos do InventarIA) in Novo › Tarefa and on the tasks.
+# CronologIA 1.44.0: a maintenance with several equipments (their rooms, locked), like the ResolvIA.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -76,30 +77,44 @@ async def main():
         # Manutenção: Cômodo and Equipamento too, kept in the event (by name)
         await a.evaluate("(el) => el._openKindForm({ kind: 'manutencao' })"); await pg.wait_for_timeout(500)
         mfield = sheet.locator(".field:has(.flabel:text-is('Cômodo'))")
-        meq = sheet.locator(".field:has(.flabel:text-is('Equipamento'))")
+        meq = sheet.locator(".field:has(.flabel:text-is('Equipamento')), .field:has(.flabel:text-is('Equipamentos'))")
         check(await mfield.count() == 1 and await meq.count() == 1, "Manutenção: Cômodo and Equipamento")
         await sheet.locator(".ev-title-input").fill("Limpar o filtro do exaustor")
         await meq.locator("input").fill("fog"); await pg.wait_for_timeout(200)
         await meq.locator(".eq-row", has_text="Fogão").click(); await pg.wait_for_timeout(200)
-        check(await mfield.locator(".pick.on", has_text="Cozinha").count() == 1, "the equipment brings its room")
+        check(await mfield.locator(".pick.on", has_text="Cozinha").count() == 1 and await mfield.locator(".pick[disabled]").count() >= 2, "the equipment brings its room (locked)")
+        # several equipments: their rooms, locked
+        await meq.locator(".eq-add", has_text="Outro equipamento").click(); await pg.wait_for_timeout(200)
+        await meq.locator("input").fill("car"); await pg.wait_for_timeout(200)
+        await meq.locator(".eq-row", has_text="Carro").click(); await pg.wait_for_timeout(200)
+        mrooms = sheet.locator(".field:has(.flabel:text-is('Cômodos'))")
+        on = sorted(t.strip() for t in await mrooms.locator(".pick.on").all_inner_texts())
+        check(await meq.locator(".eq-sel").count() == 2 and on == ["Cozinha", "Garagem"] and "Vem dos equipamentos." in await mrooms.inner_text(), f"Manutenção: two equipments, both rooms, locked ({on})")
         await sheet.screenshot(path=f"{data}/maint-form.png")
         await sheet.locator(".btn.primary", has_text="Criar manutenção").click(); await pg.wait_for_timeout(1500)
         m = await a.evaluate("(el) => (el._ix().maint || []).find((x) => x.summary === 'Limpar o filtro do exaustor')")
-        check(m and m.get("room") == "Cozinha" and m.get("equip") == "Fogão", f"saved with the room and the equipment ({m and (m.get('room'), m.get('equip'))})")
+        check(m and m.get("equips") == ["Fogão", "Carro"] and m.get("rooms") == ["Cozinha", "Garagem"] and m.get("room") == "Cozinha" and m.get("equip") == "Fogão", f"saved with both equipments and their rooms ({m and (m.get('rooms'), m.get('equips'))})")
         await a.evaluate("(el) => el._openSheet('maint', {})"); await pg.wait_for_timeout(400)
         row = sheet.locator(".maint", has_text="Limpar o filtro do exaustor")
-        check("Fogão" in await row.inner_text(), "Manutenção da casa: the row shows the equipment")
+        check("Fogão, Carro" in await row.inner_text(), "Manutenção da casa: the row shows both equipments")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
-        check("Fogão (Cozinha)" in await sheet.inner_text(), "its sheet: Fogão (Cozinha)")
+        check("Fogão, Carro (Cozinha, Garagem)" in await sheet.inner_text(), "its sheet: Fogão, Carro (Cozinha, Garagem)")
         await sheet.screenshot(path=f"{data}/maint-sheet.png")
         await a.evaluate("(el) => { const m = el._ix().maint.find((x) => x.summary === 'Limpar o filtro do exaustor'); const e = el._findEvent ? null : null; }")
         edit_btn = sheet.locator(".btn, .icon-btn", has_text="Editar")
         if await edit_btn.count():
             await edit_btn.first.click(); await pg.wait_for_timeout(500)
-            check(await sheet.locator(".field:has(.flabel:text-is('Cômodo')) .pick.on", has_text="Cozinha").count() == 1 and "Fogão" in await sheet.locator(".eq-sel").inner_text(), "editing: the room and the equipment come back")
+            sel = [t.strip() for t in await sheet.locator(".eq-sel").all_inner_texts()]
+            check(await sheet.locator(".field:has(.flabel:text-is('Cômodos')) .pick.on").count() == 2 and len(sel) == 2 and "Fogão" in sel[0] and "Carro" in sel[1], f"editing: the rooms and both equipments come back ({sel})")
+            # one out: one left, and saved so
+            await sheet.locator("button[aria-label='Tirar Carro']").click(); await pg.wait_for_timeout(200)
+            await sheet.locator(".btn.primary").last.click(); await pg.wait_for_timeout(1500)
+            m = await a.evaluate("(el) => (el._ix().maint || []).find((x) => x.summary === 'Limpar o filtro do exaustor')")
+            check(m and m.get("equips") == ["Fogão"] and m.get("rooms") == ["Cozinha"], f"one equipment out: saved with the other ({m and (m.get('rooms'), m.get('equips'))})")
         else:
             check(False, "an Editar button on the maintenance sheet")
-        await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
+        if await sheet.locator(".icon-btn[aria-label='Fechar']").count():
+            await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
         # the ResolvIA without rooms: no field
         # (the CronologIA reads the ResolvIA file at most once a minute: restart it to see the change now)
         global app

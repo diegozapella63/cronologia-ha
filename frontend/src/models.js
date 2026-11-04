@@ -3,7 +3,7 @@
 // app and the "Avisos" settings. Mixed into <cronologia-app>.
 import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
@@ -46,6 +46,12 @@ function dueLabel(due, now, paid) {
   if (d === 0) return "vence hoje";
   if (d === 1) return "vence amanhã";
   return `vence em ${d} dias`;
+}
+
+/** Where a maintenance is done, as words: its equipments ("Ar-condicionado, Geladeira") or its rooms. */
+export function placeText(m) {
+  const equips = namesOf(m.equips, m.equip);
+  return equips.length ? equips.join(", ") : namesOf(m.rooms, m.room).join(", ");
 }
 
 function maintLabel(m, now) {
@@ -456,7 +462,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="maint ${m.state}">
         <button class="maint-main" @click=${() => this._openIndexItem(m)}>
           ${this._ring(m.progress, tone, null, icon("wrench"))}
-          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.equip || m.room ? ` · ${m.equip || m.room}` : ""}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
+          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${placeText(m) ? ` · ${placeText(m)}` : ""}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
         </button>
         ${m.canMove
           ? this._pickWho()
@@ -541,7 +547,7 @@ export const ModelsMixin = (Base) =>
           });
         const list = found.filter((c) => c.kind === sec.kind);
         if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)]));
-        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.equip || c.room, c.who, pts(c)]));
+        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), placeText(c), c.who, pts(c)]));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
       return html`
@@ -601,8 +607,10 @@ export const ModelsMixin = (Base) =>
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
-        if (k.equip) facts.push(["package", k.room ? `${k.equip} (${k.room})` : k.equip]);
-        else if (k.room) facts.push(["door-open", k.room]);
+        const equips = namesOf(k.equips, k.equip);
+        const rooms = namesOf(k.rooms, k.room);
+        if (equips.length) facts.push(["package", rooms.length ? `${equips.join(", ")} (${rooms.join(", ")})` : equips.join(", ")]);
+        else if (rooms.length) facts.push(["door-open", rooms.join(", ")]);
         facts.push(["bell-ring", `Aparece na tela inicial ${plural(k.warn, "dia", "dias")} antes`]);
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }
@@ -730,15 +738,21 @@ export const ModelsMixin = (Base) =>
           period: (ev.allDay && k.period) || "",
           notes: k.notes || "",
           location: ev.location || "",
-          roomName: k.room || "",
-          equipName: k.equip || "",
+          // the names, kept when the lists of the ResolvIA are not here
+          roomNames: namesOf(k.rooms, k.room),
+          equipNames: namesOf(k.equips, k.equip),
+          equips: [],
         };
-        if (k.kind === "manutencao" && (k.room || k.equip)) {
+        if (k.kind === "manutencao" && (f.roomNames.length || f.equipNames.length)) {
           const { rooms, items } = this._invLists();
-          const r = rooms.find((c) => foldText(c.nome) === foldText(k.room));
-          const e = items.find((x) => foldText(x.nome) === foldText(k.equip) && (!k.room || foldText(x.roomName) === foldText(k.room))) || items.find((x) => foldText(x.nome) === foldText(k.equip));
+          // by the name: the item in the first room, else in one of the rooms, else any
+          const pick = (n) => {
+            const same = items.filter((x) => foldText(x.nome) === foldText(n));
+            return same.find((x) => foldText(x.roomName) === foldText(f.roomNames[0] || "")) || same.find((x) => f.roomNames.some((r) => foldText(x.roomName) === foldText(r))) || same[0];
+          };
+          f.equips = [...new Set(f.equipNames.map((n) => (pick(n) || {}).id).filter(Boolean))];
+          const r = rooms.find((c) => foldText(c.nome) === foldText(f.roomNames[0] || ""));
           f.room = r ? r.id : null;
-          f.equip = e ? e.id : null;
         }
         // a routine that comes back N days after done (one event, no repetition rule)
         if (k.kind === "rotina" && k.after && !ev.rrule) Object.assign(f, { freq: "depois", afterN: Math.max(1, Math.round(k.after.n * UNITS[k.after.unit][0])) });
@@ -793,12 +807,13 @@ export const ModelsMixin = (Base) =>
       } else {
         if (!(f.every && f.every.n > 0)) throw new Error("Escolha de quanto em quanto tempo");
         Object.assign(k, { who: f.who, every: f.every, warn: f.warn, history: f.mode === "edit" ? f.history : f.last ? [f.last] : [], points: Math.max(0, Math.round(Number(f.points) || 0)) });
-        // the room and the equipment, by name; without the lists of the ResolvIA here, what it had stays
+        // the rooms and the equipments, by name; with equipments, the rooms are theirs; without the lists of
+        // the ResolvIA here, what it had stays
         const { rooms, items } = this._invLists();
+        const eqs = (f.equips || []).map((id) => items.find((x) => x.id === id)).filter(Boolean);
         const r = rooms.find((c) => c.id === f.room);
-        const e = items.find((x) => x.id === f.equip);
-        k.room = r ? r.nome : rooms.length ? "" : f.roomName || "";
-        k.equip = e ? e.nome : items.length ? "" : f.equipName || "";
+        k.equips = items.length ? eqs.map((x) => x.nome) : f.equipNames || [];
+        k.rooms = eqs.length ? [...new Set(eqs.map((x) => x.roomName).filter(Boolean))] : r ? [r.nome] : rooms.length ? [] : f.roomNames || [];
       }
       const base = { summary: title, description: buildDescription(k) };
       if ((f.location || "").trim()) base.location = f.location.trim();

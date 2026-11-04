@@ -4,9 +4,19 @@ import "./_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { at } from "./helpers.mjs";
-import { KIND_UI, afterSub, routineSub, periodOf, routineLate, byPeriod } from "../frontend/src/models.js";
+import { KIND_UI, afterSub, routineSub, periodOf, routineLate, byPeriod, placeText } from "../frontend/src/models.js";
 
 const MANHA = at(2026, 11, 2, 9), TARDE = at(2026, 11, 2, 15), NOITE = at(2026, 11, 2, 21), MADRUGADA = at(2026, 11, 3, 2);
+
+describe("models: placeText (where a maintenance is done)", () => {
+  it("its equipments, else its rooms; the one name of before too", () => {
+    assert.equal(placeText({ equips: ["Ar-condicionado", "TV"], rooms: ["Quarto", "Sala"] }), "Ar-condicionado, TV");
+    assert.equal(placeText({ equips: [], rooms: ["Quarto", "Sala"] }), "Quarto, Sala");
+    assert.equal(placeText({ equip: "Filtro", room: "Cozinha" }), "Filtro");
+    assert.equal(placeText({ room: "Cozinha" }), "Cozinha");
+    assert.equal(placeText({}), "");
+  });
+});
 
 describe("models: KIND_UI", () => {
   it("every model has a label and an icon; the ones you can do have a verb", () => {

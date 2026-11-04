@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.44.0
+
+- **Manutenção com vários equipamentos**, como no ResolvIA: no formulário, **Outro equipamento** acrescenta mais um. Os cômodos vêm dos equipamentos e ficam bloqueados. A lista de manutenções e a tela da manutenção mostram todos, e a tarefa no ResolvIA leva todos.
+
 ## 1.43.0
 
 - **Mais virou um menu**, como no InventarIA: **Calendários**, **Rotinas**, **Avisos** e **Placar**, cada um na sua tela, e por último **Configurações**, com as abas Integrações, Dados, Aparência e Opções. Em cada tela, **‹ Mais** no alto volta ao menu (o Voltar do celular e arrastar para a direita também). O Mais da barra agora tem três pontinhos.

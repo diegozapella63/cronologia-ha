@@ -339,6 +339,7 @@ describe("buildIndex: maintenance", () => {
     assert.equal(m.points, 30);
     assert.equal(m.room, "Cozinha");
     assert.equal(m.equip, "Filtro");
+    assert.deepEqual([m.rooms, m.equips], [["Cozinha"], ["Filtro"]]);
     assert.deepEqual(m.every, { n: 6, unit: "meses" });
     assert.equal(m.warn, 7);
     assert.equal(m.repeating, false);
