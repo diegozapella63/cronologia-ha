@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.46.0
+
+- **Modo férias** pausa mais coisas:
+  - Em **Recompensas › Para pontuar hoje**, aparece "De férias até…: rotinas, tarefas e manutenção pausadas." no lugar de "Nenhuma tarefa com pontos hoje", e as próximas rotinas ficam escondidas.
+  - Os **deméritos** ficam pausados ("Pausados nas férias."), inclusive os que vêm de automações.
+  - As **tarefas do ResolvIA** saem da tela Agora, do Para pontuar hoje e dos dias de férias no calendário.
+
 ## 1.45.0
 
 - **Férias** vira uma linha do menu **Mais**, no lugar do **Placar**.

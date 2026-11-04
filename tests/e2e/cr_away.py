@@ -43,11 +43,12 @@ async def main():
         a = pg.locator("cronologia-app")
         check(await a.locator(".panel.chores#casa").count() == 1, "before: Rotina da casa on Agora")
         meds_before = await a.locator(".panel.meds .dose").count()
+        todos_before = await a.locator(".panel.todos#tarefas").count()
         # Mais › Férias (its own screen, 1.45)
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
         await a.locator('.menu-row[data-k="ferias"]').click(); await pg.wait_for_timeout(600)
         panel = a.locator("#ferias")
-        check(await panel.count() == 1 and "Rotinas e manutenção pausadas; remédios continuam." in await panel.inner_text() and (await a.locator(".page-title").first.inner_text()).strip() == "Férias", "Mais › Férias: its screen, saying what it does")
+        check(await panel.count() == 1 and "Rotinas, tarefas e manutenção pausadas; remédios continuam." in await panel.inner_text() and (await a.locator(".page-title").first.inner_text()).strip() == "Férias", "Mais › Férias: its screen, saying what it does")
         check(await a.locator(".mais-head").count() == 0, "no heading repeating the title")
         await panel.locator("input[aria-label='De férias']").check(); await pg.wait_for_timeout(800)
         await wait_for(lambda: stored()["app"].get("away") == {"from": D(0), "to": D(4)}, "on: from today, 5 days")
@@ -59,6 +60,8 @@ async def main():
         txt = (await card.inner_text()) if await card.count() else ""
         check("De férias até" in txt and "Remédios continuam." in txt and "Encerrar" in txt, f"Agora: the banner ({txt[:80]!r})")
         check(await a.locator(".panel.chores#casa").count() == 0, "Agora: no Rotina da casa nor maintenance")
+        check(await a.locator(".panel.todos#tarefas").count() == 0, f"Agora: no Tarefas either (before: {todos_before})")
+        check("Rotinas, tarefas e manutenção pausadas." in txt, "the banner says the tasks rest too")
         check(await a.locator(".panel.meds .dose").count() == meds_before, "Agora: the medicines stay")
         await pg.screenshot(path=f"{SP}/shots/cra-agora.png")
         # Calendário: the days away marked, without their routines
@@ -72,12 +75,29 @@ async def main():
         check(any(m in t for t in titles for m in ("Sertralina", "DPrev", "Gardenal")), "the doses are there")
         await day.screenshot(path=f"{SP}/shots/cra-day.png")
         await a.locator(".month, .cells").first.screenshot(path=f"{SP}/shots/cra-month.png")
+        # Recompensas: Para pontuar hoje says the routines are paused (not "nothing with points"); the deméritos too
+        ws = """(msg) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, ...msg})); ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.type === 'result') { ws.close(); res(m); } }; })"""
+        await pg.evaluate(ws, {"type": "cronologia/prefs/set_app", "prefs": {"score": {"enabled": True, "participants": ["Andressa", "Diego"], "period": "semana", "manual": True}, "demerits": [{"id": "toalha01", "title": "Toalha molhada na cama", "points": 5}]}})
+        await pg.wait_for_timeout(1200)
+        await a.locator(".tab", has_text="Recompensas").click(); await pg.wait_for_timeout(900)
+        today_p = a.locator(".score-today")
+        tt = (await today_p.inner_text()) if await today_p.count() else ""
+        check("De férias até" in tt and "rotinas, tarefas e manutenção pausadas" in tt and "Nenhuma tarefa com pontos" not in tt and "Próximas rotinas" not in tt, f"Recompensas › Para pontuar hoje: paused by the vacation ({tt[:120]!r})")
+        dm = a.locator("#demeritos")
+        check(await dm.count() == 1 and "Pausados nas férias." in await dm.inner_text() and await dm.locator(".dm-btn").count() == 0, "Recompensas › Deméritos: paused, nothing to tap")
+        r = await pg.evaluate(ws, {"type": "cronologia/score/demerit", "demerit": "toalha01", "who": "Diego"})
+        check(r.get("success") is False and (r.get("error") or {}).get("code") == "away", f"and the server refuses a demérito on vacation ({r.get('error')})")
+        await pg.screenshot(path=f"{SP}/shots/cra-rewards.png", full_page=True)
         # Encerrar: back to normal
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(600)
         await a.locator(".away-card .text-btn", has_text="Encerrar").click(); await pg.wait_for_timeout(1200)
         await wait_for(lambda: "away" not in stored()["app"], "Encerrar: off")
         await wait_for(lambda: a.locator(".panel.chores#casa").count(), "the routines are back on Agora")
         check(await a.locator(".away-card").count() == 0, "no banner")
+        check(await a.locator(".panel.todos#tarefas").count() == todos_before, "the Tarefas are back")
+        await a.locator(".tab", has_text="Recompensas").click(); await pg.wait_for_timeout(700)
+        check(await a.locator("#demeritos .dm-btn").count() == 2 and "De férias" not in await a.locator(".score-today").inner_text(), "after it: the deméritos are back")
+        await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(500)
         # ahead: Agora says when it starts, today as usual
         await pg.evaluate("""(away) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, type: 'cronologia/prefs/set_app', prefs: {away}})); ws.onmessage = (e) => { if (JSON.parse(e.data).type === 'result') { ws.close(); res(); } }; })""", {"from": D(3), "to": D(6)})
         await pg.wait_for_timeout(1500)

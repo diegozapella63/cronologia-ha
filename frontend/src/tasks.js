@@ -84,7 +84,8 @@ export const TasksMixin = (Base) =>
           }),
         };
       }
-      return this._tEvCache.list.filter((e) => e.start < end && e.end > start);
+      // Modo férias: no tasks on the days away (like the routines)
+      return this._tEvCache.list.filter((e) => e.start < end && e.end > start && !(this._awayDay && this._awayDay(e.start)));
     }
 
     /** Concluir/Reabrir; a task with ResolvIA points goes to whoever did it (asks when unknown, or `by` from the quick buttons). */
@@ -105,6 +106,8 @@ export const TasksMixin = (Base) =>
     }
 
     _renderTodosPanel() {
+      // Modo férias: the tasks rest too (the banner on top says so)
+      if (this._awayNow && this._awayNow()) return nothing;
       const now = new Date(this._now);
       const all = this._todos().items;
       // late, today and tomorrow (done ones of today stay with ✓), then the ones without a due date (option)

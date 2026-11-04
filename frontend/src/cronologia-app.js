@@ -469,7 +469,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     if (!a || a.to < ymd(now)) return nothing;
     const on = this._awayNow();
     const to = dayLabel(fromYmd(a.to), now, { long: false, cap: false });
-    return html`<div class="hint-card away-card">${icon("plane")}<span class="grow"><b>${on ? `De férias até ${to}` : `Férias a partir de ${dayLabel(fromYmd(a.from), now, { long: false, cap: false })}`}</b><small>Rotinas e manutenção pausadas. Remédios continuam.</small></span>
+    return html`<div class="hint-card away-card">${icon("plane")}<span class="grow"><b>${on ? `De férias até ${to}` : `Férias a partir de ${dayLabel(fromYmd(a.from), now, { long: false, cap: false })}`}</b><small>Rotinas, tarefas e manutenção pausadas. Remédios continuam.</small></span>
       <button class="text-btn" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar" : "Cancelar"}</button></div>`;
   }
 
@@ -1705,7 +1705,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const rest = list.filter((e) => !isEvent(e)).sort(order);
     const todo = rest.filter((e) => !this._rowDone(e));
     rest.splice(0, rest.length, ...this._byPeriod(todo, day), ...rest.filter((e) => this._rowDone(e)));
-    const away = this._awayDay(day) ? html`<div class="away-day">${icon("plane")}<span>Férias: rotinas e manutenção pausadas</span></div>` : nothing;
+    const away = this._awayDay(day) ? html`<div class="away-day">${icon("plane")}<span>Férias: rotinas, tarefas e manutenção pausadas</span></div>` : nothing;
     return html`${away}${events.map((e) => this._renderRow(e, day))}${rest.length
       ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
       : nothing}`;
@@ -2394,7 +2394,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const today = ymd(new Date(this._now));
     const set = (from, to) => this._saveAppPrefs({ away: { from, to: to < from ? from : to } });
     return html`<div class="panel" id="ferias">
-      ${head ? this._secHead("plane", "Férias", "Rotinas e manutenção pausadas; remédios continuam.") : html`<p class="panel-lead">Rotinas e manutenção pausadas; remédios continuam.</p>`}
+      ${head ? this._secHead("plane", "Férias", "Rotinas, tarefas e manutenção pausadas; remédios continuam.") : html`<p class="panel-lead">Rotinas, tarefas e manutenção pausadas; remédios continuam.</p>`}
       <div class="row switch-row">
         <div class="grow"><div class="label">De férias</div><div class="hint">${a ? `${dateShort(fromYmd(a.from), new Date(this._now))} a ${dateShort(fromYmd(a.to), new Date(this._now))}` : "Desligado."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${!!a} @change=${(e) => this._saveAppPrefs({ away: e.target.checked ? { from: today, to: ymd(addDays(fromYmd(today), 4)) } : null })} aria-label="De férias" /><span class="track"></span></label>

@@ -25,7 +25,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Rotinas**: tudo o que está cadastrado (rotinas, remédios, manutenções e contas), com busca.
   - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
-  - **Férias**: de quando até quando as rotinas e a manutenção da casa ficam pausadas (os remédios continuam).
+  - **Férias**: de quando até quando as rotinas, as tarefas, os deméritos e a manutenção da casa ficam pausados (os remédios continuam).
   - **Configurações**, por último, em abas no alto (ficam presas no topo ao rolar):
     - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, leitura por IA, Falar, uso da IA e sensores.
     - **Placar**: os ajustes das Recompensas (quem participa, de quanto em quanto tempo fecha, marcar pontos em Recompensas, marcar por outras pessoas, resultado no celular, desligar) e a lista de **deméritos**.
@@ -90,7 +90,7 @@ Uma rotina sem horário pode ter um **período**: **Manhã**, **Tarde** ou **Noi
 
 ### Modo férias
 
-Em **Mais › Férias**, ligue **De férias** e escolha de quando até quando (começa hoje, por 5 dias). Nesses dias as **rotinas** e a **manutenção da casa** ficam pausadas: saem da tela Agora, do Para pontuar hoje e dos dias do calendário, e o sensor de manutenções vencidas fica em zero. Os **remédios** continuam, com os avisos no celular. A tela Agora mostra até quando vão as férias, com **Encerrar**; no calendário, os dias de férias ficam marcados. Na volta, nada aparece como atrasado por causa dos dias fora: a rotina de ontem não fica para fazer e a que volta N dias depois conta o atraso a partir da volta.
+Em **Mais › Férias**, ligue **De férias** e escolha de quando até quando (começa hoje, por 5 dias). Nesses dias as **rotinas**, as **tarefas do ResolvIA** e a **manutenção da casa** ficam pausadas: saem da tela Agora, do Para pontuar hoje (que diz que está de férias) e dos dias do calendário, e o sensor de manutenções vencidas fica em zero. Os **deméritos** também ficam pausados: em Recompensas aparece "Pausados nas férias." e nem uma automação consegue tirar pontos. Os **remédios** continuam, com os avisos no celular. A tela Agora mostra até quando vão as férias, com **Encerrar**; no calendário, os dias de férias ficam marcados. Na volta, nada aparece como atrasado por causa dos dias fora: a rotina de ontem não fica para fazer e a que volta N dias depois conta o atraso a partir da volta.
 
 ### Rotina que volta depois de feita
 

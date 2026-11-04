@@ -786,6 +786,16 @@ describe("Home: extra points, demerits, removing and restoring", () => {
     assert.equal(log.lines.filter((l) => l[0] === "warn").length, 2);
     assert.throws(() => home.demerit("nada", "Diego"), { code: "not_found" });
   });
+  it("on vacation (Modo férias) the deméritos are paused: from the app and from an automation", () => {
+    const { home, store, log } = setup({ app: { score: SCORE, demerits: [{ id: "toalha", title: "Toalha molhada na cama", points: 5 }], away: { from: "2026-11-01", to: "2026-11-05" } } });
+    assert.throws(() => home.demerit("toalha", "Andressa"), { code: "away", message: /De férias/ });
+    home.onDemerit({ nome: "Toalha molhada na cama", quem: "Diego" });
+    assert.equal(store.data.score.entries.length, 0);
+    assert.match(log.lines.at(-1)[1], /De férias/);
+    // after the vacation, again
+    store.setApp({ away: { from: "2026-10-20", to: "2026-11-01" } });
+    assert.equal(home.demerit("toalha", "Andressa").points, -5);
+  });
   it("removePoints keeps the entry 10 minutes for Desfazer (with its date)", () => {
     const { home, store } = setup();
     home.extraPoints("Diego", 7, "Ajudou");

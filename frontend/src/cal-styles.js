@@ -191,6 +191,19 @@ export const calStyles = css`
     width: 18px;
     height: 18px;
   }
+  /* Modo férias in Recompensas: what is paused, with the plane */
+  .empty-line.away-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .empty-line.away-line .i {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: var(--rv-accent-ink);
+  }
   /* a day in a list: a calendar leaf (weekday, day), the date, how many */
   .day-head {
     display: flex;
@@ -3166,6 +3179,19 @@ export const calStyles = css`
   .demerit {
     padding: 10px 16px 12px;
     border-top: 1px solid var(--rv-line);
+  }
+  /* Modo férias: the deméritos rest */
+  .dm-lead.dm-away {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 14px;
+    font-size: 15px;
+  }
+  .dm-lead.dm-away .i {
+    width: 18px;
+    height: 18px;
+    color: var(--rv-accent-ink);
   }
   .dm-lead + .demerit {
     border-top: 0;

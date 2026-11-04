@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -602,10 +602,11 @@ export class Home {
     this.changed();
   }
 
-  /** Recompensas › Deméritos: one of the list, against someone. */
+  /** Recompensas › Deméritos: one of the list, against someone. Not on vacation (Modo férias): paused, like the routines. */
   demerit(id, who) {
     const d = (this.store.data.app.demerits || []).find((x) => x.id === id);
     if (!d) throw coded("not_found", "Esse demérito não existe mais");
+    if (awayOn(this.store.data.app.away, ymdOf(new Date()))) throw coded("away", "De férias: os deméritos estão pausados");
     const person = this.participant(who);
     if (!person) throw coded("invalid_format", "Escolha quem foi");
     const key = `demerito|${d.id}|${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

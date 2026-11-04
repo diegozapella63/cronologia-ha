@@ -28,7 +28,7 @@ export const foldText = (s) =>
     .trim();
 
 const pad = (n) => String(n).padStart(2, "0");
-const ymdOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const ymdOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const dateOf = (s) => {
   const [y, m, d] = String(s).slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d);

@@ -439,10 +439,11 @@ export const RewardsMixin = (Base) =>
       const ix = this._ix();
       const now = new Date(this._now);
       const chores = (ix.routines || []).filter((r) => r.points > 0);
-      // Modo férias: no maintenance to score (the routines are paused by the server)
-      const maint = this._awayNow && this._awayNow() ? [] : (ix.maint || []).filter((m) => m.points > 0 && m.state !== "ok");
+      // Modo férias: no maintenance to score (the routines are paused by the server), and it says so
+      const away = this._awayNow && this._awayNow() ? this._away() : null;
+      const maint = away ? [] : (ix.maint || []).filter((m) => m.points > 0 && m.state !== "ok");
       // ResolvIA tasks with points that are due (or were done) today
-      const tasks = this._todos().items.filter((t) => t.points > 0 && (t.undated || (t.done ? t.days === 0 : t.overdue || t.days === 0)));
+      const tasks = away ? [] : this._todos().items.filter((t) => t.points > 0 && (t.undated || (t.done ? t.days === 0 : t.overdue || t.days === 0)));
       const done = chores.filter((r) => r.done).length + tasks.filter((t) => t.done).length;
       const total = chores.length + tasks.length;
       // Marcar por outras pessoas: the initials on each row, as on the start screen
@@ -472,10 +473,12 @@ export const RewardsMixin = (Base) =>
           </div>`,
         )}
         ${total && !openChores.length && !openTasks.length && !maint.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo pontuado hoje.</p>` : nothing}
-        ${this._renderFutureScore(chores, now, pick)}
-        ${!chores.length && !maint.length && !tasks.length
-          ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
-          : nothing}
+        ${away
+          ? html`<p class="empty-line away-line">${icon("plane")}<span><b>De férias até ${dayLabel(fromYmd(away.to), now, { long: false, cap: false })}</b>: rotinas, tarefas e manutenção pausadas.</span></p>`
+          : html`${this._renderFutureScore(chores, now, pick)}
+            ${!chores.length && !maint.length && !tasks.length
+              ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
+              : nothing}`}
         <div class="score-actions">
           <button class="btn outline sm" @click=${() => this._openKindForm({ kind: "rotina" })}>${icon("plus")}Tarefa com pontos</button>
           <button class="btn outline sm" @click=${() => this._openSheet("extra", { who: this._participant(this._me()) || "", points: 10, title: "" })}>${icon("award")}Pontos avulsos</button>
@@ -555,6 +558,12 @@ export const RewardsMixin = (Base) =>
         return Object.entries(by).map(([w, n]) => `${w} ${n}×`).join(" · ");
       };
       const total = s.entries.filter((e) => e.kind === "demerito").length;
+      // Modo férias: paused, like the routines (the server refuses them too)
+      if (this._awayNow && this._awayNow())
+        return html`<div class="panel chores demerits paused" id="demeritos">
+          ${this._panelHead("thumbs-down", "late", "Deméritos", total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos")}
+          <p class="dm-lead dm-away">${icon("plane")}<span>Pausados nas férias.</span></p>
+        </div>`;
       return html`<div class="panel chores demerits" id="demeritos">
         ${this._panelHead("thumbs-down", "late", "Deméritos", total ? `${plural(total, "vez", "vezes")} ${IN[s.period]}` : "tiram pontos")}
         <p class="dm-lead">Toque em quem foi para descontar.</p>

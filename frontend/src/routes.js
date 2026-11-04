@@ -7,7 +7,7 @@ export const MENU = [
   ["calendarios", "/mais/calendarios", "Calendários", "layers", "Nome, cor e quais aparecem na agenda."],
   ["rotinas", "/mais/rotinas", "Rotinas", "repeat", "Rotinas, remédios, manutenções e contas cadastrados."],
   ["avisos", "/mais/avisos", "Avisos", "bell-ring", "Avisos de remédio no celular, pessoas e pets."],
-  ["ferias", "/mais/ferias", "Férias", "plane", "Rotinas e manutenção pausadas; remédios continuam."],
+  ["ferias", "/mais/ferias", "Férias", "plane", "Rotinas, tarefas e manutenção pausadas; remédios continuam."],
   ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, placar, dados e backup, aparência e opções."],
 ];
 
