@@ -89,6 +89,8 @@ async def main():
         # Tomei in the app + Desfazer (the cat's: "Tomado", not "Tomei")
         gb = a.locator(".dose", has_text="Gardenal").locator(".dose-btn")
         check((await gb.inner_text()).strip() == "Tomado" and await gb.get_attribute("aria-label") == "Mimi tomou: Gardenal", f"someone else's dose: Tomado ({(await gb.inner_text()).strip()})")
+        gs = (await a.locator(".dose", has_text="Gardenal").locator(".dose-tx small").inner_text()).strip()
+        check(gs.startswith("Dose: 1/4 de comprimido"), f"the dose says Dose: ({gs})")
         await a.locator(".dose", has_text="Gardenal").locator(".dose-btn").click()
         async def g_taken(): return await a.locator(".dose.tomado", has_text="Gardenal").count() == 1
         await wait_for(g_taken, "Tomei in the app")
@@ -250,6 +252,10 @@ async def main():
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(400)
         foot = await a.locator(".panel.meds .panel-foot").inner_text()
         check("Sem celular" not in foot, f"no more missing-phone warning ({foot.strip()})")
+        # Mimi is a pet: no phone of hers; the hint names whose phone gets her alert (Diego's)
+        await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { notify: 'mobile_app_pixel_8', pet: true } } })"); await A.wait_for_timeout(1200)
+        foot = (await a.locator(".panel.meds .panel-foot").inner_text()).strip()
+        check("Mimi" not in foot and "Diego" in foot and "Andressa" in foot, f"a pet: the hint names the owner of the phone, not the pet ({foot})")
         # GerencIA turned off: card falls back to calendar bills only
         req = urllib.request.Request("http://127.0.0.1:8191/api/state")
         st = json.loads(urllib.request.urlopen(req).read())

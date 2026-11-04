@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.46.3
+
+- **Remédios de hoje**: a dose aparece como "Dose: 1" (antes ficava só o "1").
+- O aviso embaixo do card não chama o pet de dono de celular: diz de quem é o celular que recebe o aviso dele ("Avisa no celular de Andressa, Diego…").
+
 ## 1.46.2
 
 - **Remédios**: o botão **Tomei** só aparece para quem toma o remédio. Para outra pessoa ou para um pet, a tela Agora mostra **Tomado** e a tela do remédio mostra **Andressa tomou**.

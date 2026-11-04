@@ -366,7 +366,7 @@ export const ModelsMixin = (Base) =>
 
     _renderDose(m) {
       const st = m.state;
-      const info = [m.dose, st === "tomado" ? `tomou às ${hm(new Date(m.taken.at))}${m.taken.by && foldText(m.taken.by) !== foldText(m.who) ? ` · ${m.taken.by}` : ""}` : st === "atrasado" ? `atrasado ${lateLabel(m.late_min)}` : st === "agora" ? "hora de tomar" : ""].filter(Boolean).join(" · ");
+      const info = [m.dose ? `Dose: ${m.dose}` : "", st === "tomado" ? `tomou às ${hm(new Date(m.taken.at))}${m.taken.by && foldText(m.taken.by) !== foldText(m.who) ? ` · ${m.taken.by}` : ""}` : st === "atrasado" ? `atrasado ${lateLabel(m.late_min)}` : st === "agora" ? "hora de tomar" : ""].filter(Boolean).join(" · ");
       return html`<div class="dose ${st}">
         <button class="dose-main" @click=${() => this._openIndexItem(m)}>
           <span class="dose-time">${m.time || "dia"}</span>
@@ -383,7 +383,14 @@ export const ModelsMixin = (Base) =>
       if (a.meds === false) return html`<button class="panel-foot" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>Avisos no celular desligados</span>${icon("chevron-right")}</button>`;
       const noPhone = [...new Set(meds.filter((m) => m.alert && !m.notify && m.who).map((m) => m.who))];
       const care = (a.caregivers || []).length;
-      const withPhone = [...new Set(meds.filter((m) => m.alert && m.notify).map((m) => m.who))];
+      // whose phones get the alerts: a pet has no phone, its alert goes to someone's (said by that person's name)
+      const people = this._ix().people || [];
+      const isPet = (n) => people.some((p) => p.pet && foldText(p.name) === foldText(n));
+      const ownerOf = (target) => {
+        const p = people.find((x) => !x.pet && x.notify === target);
+        return p ? p.name : this._targetName(target);
+      };
+      const withPhone = [...new Set(meds.filter((m) => m.alert && m.notify).map((m) => (isPet(m.who) ? ownerOf(m.notify) : m.who)))];
       const text = noPhone.length && !care ? `Sem celular para ${noPhone.join(", ")}: escolha quem avisar` : withPhone.length ? `Avisa no celular de ${withPhone.join(", ")}${care ? ` e de quem cuida` : ""}` : "Escolha os celulares que recebem os avisos";
       return html`<button class="panel-foot ${noPhone.length && !care ? "warn" : ""}" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>${text}</span>${icon("chevron-right")}</button>`;
     }
