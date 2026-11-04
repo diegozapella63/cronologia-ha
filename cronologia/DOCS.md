@@ -100,7 +100,7 @@ Na **Rotina da casa**, a frequência **Depois de feita** serve para o que conta 
 - Na agenda fica **só a próxima vez**: um evento só, e não um por dia para sempre.
 - Funciona em qualquer calendário que cria e apaga eventos. Na **Google Agenda**, que não deixa editar pelo Home Assistant, o Feito cria o evento na próxima data e apaga o antigo.
 - Na Agora, ela aparece na **Rotina da casa** no dia em que vence. Se não for feita, continua lá nos dias seguintes, no alto e em vermelho ("atrasada há 2 dias").
-- **Feito** (o círculo, os botões de quem fez, a ficha do evento, o Alexa ou NFC com `cronologia_feito`, ou o ResolvIA) leva a próxima vez para **hoje + N dias**, guarda o dia em "Feito em" e dá os pontos. Ela fica marcada como feita na lista de hoje ("feito por Diego · volta terça").
+- **Feito** (o círculo, os botões de quem fez, a ficha do evento, o Alexa ou NFC com `cronologia_feito`, ou o ResolvIA) leva a próxima vez para **hoje + N dias**, guarda o dia em "Feito em" e dá os pontos. Ela fica marcada como feita na lista de hoje ("feito por Beto · volta terça").
 - **Desmarcar** (ou **Desfazer**) volta o evento para onde estava e tira os pontos.
 - Ao editar, dá para mudar os dias e a próxima vez. Uma rotina que se repete por calendário (todo dia, dias da semana…) não vira "Depois de feita" pela edição: crie uma nova.
 - Com **Levar para o ResolvIA** ligado, ela vai para a lista com a próxima data (atrasada também); concluir lá faz o mesmo que o Feito daqui.
@@ -112,7 +112,7 @@ O modelo fica escrito na descrição do evento, assim:
 ```
 #remédio
 Dose: 1 comprimido
-Quem toma: Andressa
+Quem toma: Ana
 Tomar em jejum
 ```
 
@@ -126,7 +126,7 @@ Quando uma rotina não vai ser feita dessa vez, toque nela e escolha **Pular** (
 
 ### Remédios de hoje
 
-Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei** (para quem toma; para outra pessoa ou um pet, **Tomado**, e na tela do remédio **Andressa tomou**). A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
+Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei** (para quem toma; para outra pessoa ou um pet, **Tomado**, e na tela do remédio **Ana tomou**). A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
 
 ### Manutenção da casa
 
@@ -141,14 +141,14 @@ Com os cômodos e equipamentos do InventarIA ligados no ResolvIA, a manutenção
 Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **Recompensas**.
 
 - **Pontos nas tarefas**: os modelos **Rotina da casa** e **Manutenção** têm o campo **Pontos para quem fizer** (5, 10, 20, 30, 50 ou outro valor). A frequência é a de sempre: todo dia, dia sim, dia não, a cada 3 dias, dias da semana… No evento fica `Pontos: 10`.
-- **Cores**: cada pessoa aparece na cor da agenda dela (a agenda que tem o nome dela, como "Pessoal (Andressa)"; mude a cor em **Mais › Calendários**). Quem não tem agenda própria fica com uma cor livre.
-- **Quem fez ganha**: ao marcar **Feito**, os pontos vão para quem está usando o app (o usuário do Home Assistant de cada um vira a pessoa dele). Se você marcar uma tarefa que outra pessoa fez, o aviso de baixo oferece **"Foi Andressa"** para passar os pontos. Num aparelho sem usuário conhecido, o app pergunta **Quem fez?**. Para marcar por outra pessoa sem abrir nada, ligue **Marcar por outras pessoas** (nas opções do placar, desligado por padrão): cada rotina e manutenção da tela inicial e do **Para pontuar hoje** (e, no calendário, as rotinas de hoje, as manutenções e as tarefas com pontos) ganha as iniciais de quem participa (**D**, **A**) à direita, e um toque marca como feito por aquela pessoa, com os pontos. Depois de feita, a linha mostra a inicial de quem ganhou os pontos, na cor da pessoa, ao lado dos pontos (e acompanha um "Foi Diego"). Na tela do evento aparece um botão por pessoa no lugar do Feito. A tarefa que ficou de ontem ainda pode ser marcada.
+- **Cores**: cada pessoa aparece na cor da agenda dela (a agenda que tem o nome dela, como "Pessoal (Ana)"; mude a cor em **Mais › Calendários**). Quem não tem agenda própria fica com uma cor livre.
+- **Quem fez ganha**: ao marcar **Feito**, os pontos vão para quem está usando o app (o usuário do Home Assistant de cada um vira a pessoa dele). Se você marcar uma tarefa que outra pessoa fez, o aviso de baixo oferece **"Foi Ana"** para passar os pontos. Num aparelho sem usuário conhecido, o app pergunta **Quem fez?**. Para marcar por outra pessoa sem abrir nada, ligue **Marcar por outras pessoas** (nas opções do placar, desligado por padrão): cada rotina e manutenção da tela inicial e do **Para pontuar hoje** (e, no calendário, as rotinas de hoje, as manutenções e as tarefas com pontos) ganha as iniciais de quem participa (**D**, **A**) à direita, e um toque marca como feito por aquela pessoa, com os pontos. Depois de feita, a linha mostra a inicial de quem ganhou os pontos, na cor da pessoa, ao lado dos pontos (e acompanha um "Foi Beto"). Na tela do evento aparece um botão por pessoa no lugar do Feito. A tarefa que ficou de ontem ainda pode ser marcada.
 - **Placar**: os pontos de cada um no período, quem está na frente (com a coroa) e quantos dias faltam para fechar.
 - **Extrato** (logo abaixo do placar e do prêmio, antes do Histórico): tudo que mexeu nos pontos **no período atual** (a semana, a quinzena ou o mês, como em **Mais › Configurações › Placar**), do mais novo para o mais antigo, separado por dia: quem ganhou (e quem marcou, se foi outra pessoa), quem tirou pontos de quem (deméritos e o ×), o que foi desmarcado, pontos que passaram de uma pessoa para outra, o Desfazer e o que veio do ResolvIA ou de uma automação. Mostra os 20 mais recentes; **Ver mais** traz os anteriores do período. Quando o período fecha, o Extrato recomeça vazio.
-- **Pontuação errada**: no Extrato, o **×** à direita tira aqueles pontos do placar (ou cancela o demérito), com **Desfazer** no aviso. A retirada vira uma linha nova no Extrato ("Diego tirou 10 pontos de Andressa"); a linha de antes continua lá. O × aparece só nos pontos do período atual que ainda estão no placar. A tarefa continua marcada como feita; só os pontos saem. Para dar os pontos a outra pessoa, desmarque e marque de novo por ela.
-- **Prêmio do período**: toque em **Definir** e escolha **O mesmo para todos** (quem somar mais pontos leva) ou **Um para cada pessoa** ("Se Diego vencer: jantar fora", "Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; empate fica registrado como empate. Dá para deixar já o do próximo período.
+- **Pontuação errada**: no Extrato, o **×** à direita tira aqueles pontos do placar (ou cancela o demérito), com **Desfazer** no aviso. A retirada vira uma linha nova no Extrato ("Beto tirou 10 pontos de Ana"); a linha de antes continua lá. O × aparece só nos pontos do período atual que ainda estão no placar. A tarefa continua marcada como feita; só os pontos saem. Para dar os pontos a outra pessoa, desmarque e marque de novo por ela.
+- **Prêmio do período**: toque em **Definir** e escolha **O mesmo para todos** (quem somar mais pontos leva) ou **Um para cada pessoa** ("Se Beto vencer: jantar fora", "Se Ana vencer: massagem"). No fechamento, quem venceu ganha o seu; empate fica registrado como empate. Dá para deixar já o do próximo período.
 - **Fechamento**: o período fecha **toda semana** (no dia em que a semana começa, em **Mais › Configurações › Opções**), **a cada 15 dias** ou **todo mês**. Ao fechar, o resultado vai para o **Histórico** (quem venceu, o placar e o prêmio) e para o celular de quem participa. Depois é só tocar em **Entregue** quando o prêmio for pago.
-- **Lembrete diário** (em **Mais › Configurações › Placar**): uma vez por dia, na hora escolhida (**Manhã**, **Tarde**, **Noite** ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando ("Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias."). Tocar no aviso abre o app na aba **Recompensas**, como o aviso do fechamento. **Testar** manda agora para o seu celular. Não vai nas férias.
+- **Lembrete diário** (em **Mais › Configurações › Placar**): uma vez por dia, na hora escolhida (**Manhã**, **Tarde**, **Noite** ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando ("Beto na frente por 10 pontos: Beto 135 × Ana 125. Fecha em 5 dias."). Tocar no aviso abre o app na aba **Recompensas**, como o aviso do fechamento. **Testar** manda agora para o seu celular. Não vai nas férias.
 - **Histórico**: os últimos 10 períodos, com quem venceu, o placar e o prêmio. Toque num deles para ver o extrato daquele período (só para consultar; um período fechado não muda mais). O extrato existe desde a 1.19.0; períodos de antes aparecem só com o resultado.
 - **Pontos avulsos**: para o que não está na agenda ("lavou o carro, +20"). Saem do placar pelo ×.
 - **Deméritos**: a lista do que tira pontos, como "Toalha molhada na cama −5" ou "Louça suja na pia −5". A lista se monta em **Mais › Configurações › Placar** (**Novo demérito** ou uma das sugestões; toque num deles para mudar os pontos ou apagar). Na aba Recompensas, quando acontecer, toque no nome de quem foi: desconta na hora, com **Desfazer**. Cada demérito mostra quantas vezes foi marcado no período e por quem; o placar pode ficar negativo e conta os deméritos de cada um. O que já foi descontado sai pelo × no Extrato.
@@ -188,7 +188,7 @@ Com a integração ligada, as tarefas **com prazo** aparecem:
 - no calendário, no dia do prazo (ou no horário, se tiver), com o nome da lista;
 - tocando numa delas: prazo, lista, notas e **Concluir** / **Reabrir**.
 
-Nas tarefas que valem pontos (com o placar ligado), o card mostra um botão com a inicial de cada pessoa: tocar em **D** conclui a tarefa e dá os pontos para o Diego, sem perguntar. O quadradinho conclui do jeito de sempre (para quem está usando o app, ou pergunta **Quem fez?**).
+Nas tarefas que valem pontos (com o placar ligado), o card mostra um botão com a inicial de cada pessoa: tocar em **D** conclui a tarefa e dá os pontos para o Beto, sem perguntar. O quadradinho conclui do jeito de sempre (para quem está usando o app, ou pergunta **Quem fez?**).
 
 **De quem é cada lista**: em **Mais › Configurações › Integrações › Tarefas do ResolvIA**, cada lista tem **De quem é**: **Todos** (o padrão) ou uma pessoa da casa. A lista de uma pessoa (por exemplo, "Tarefas Dessa") só aparece no CronologIA dela, na Agora, no calendário, em Para pontuar hoje e no Novo › Tarefa. Quem é quem vem do usuário do Home Assistant ligado a cada pessoa. Num aparelho cujo usuário não é uma pessoa da casa (um tablet da cozinha, por exemplo), aparecem todas. Para pedir algo a outra pessoa, ligue **Criar tarefas nas listas dos outros** (no mesmo painel, desligado por padrão): o **Novo › Tarefa** passa a oferecer também as listas dela, marcadas com o ícone de pessoa e o aviso de quem é. A tarefa criada aparece só para ela.
 
@@ -220,7 +220,7 @@ As **manutenções** e as **rotinas da casa** podem aparecer também como tarefa
 - com os **pontos** que ela vale (o troféu aparece no ResolvIA 2.9.0 ou mais novo);
 - nas notas, "Manutenção do CronologIA" ou "Rotina da casa do CronologIA" (o ResolvIA esconde a marcação técnica `[cr:…]` que vai junto).
 
-**Concluir no ResolvIA vale como Feito aqui**: a manutenção ganha a próxima data, a rotina de hoje fica marcada, e quem concluiu ganha os pontos no placar (o ResolvIA sabe quem é pelo usuário do Home Assistant, ou pergunta **Quem fez?**). Logo depois, a tarefa volta para a lista, pendente, com a data seguinte. **Foi Andressa** passa os pontos; **Desfazer** (ou reabrir a tarefa) desfaz aqui também. Concluída por um caminho sem nome (a tela do Home Assistant ou o Alexa), a tarefa conta como feita, sem pontos.
+**Concluir no ResolvIA vale como Feito aqui**: a manutenção ganha a próxima data, a rotina de hoje fica marcada, e quem concluiu ganha os pontos no placar (o ResolvIA sabe quem é pelo usuário do Home Assistant, ou pergunta **Quem fez?**). Logo depois, a tarefa volta para a lista, pendente, com a data seguinte. **Foi Ana** passa os pontos; **Desfazer** (ou reabrir a tarefa) desfaz aqui também. Concluída por um caminho sem nome (a tela do Home Assistant ou o Alexa), a tarefa conta como feita, sem pontos.
 
 O nome, a data, as notas e os pontos continuam sendo do CronologIA: mude aqui, no evento, que a tarefa acompanha. No ResolvIA, a tarefa abre só para ver. **Excluir** a tarefa no ResolvIA tira da lista até a próxima data; desligar a chave (ou escolher **Nenhuma**) tira todas, e trocar de lista leva para a nova. Essas tarefas não se repetem no card **Tarefas com prazo** daqui, porque já estão nos cards de manutenção e de rotina. A lista precisa aceitar criar e editar tarefas (uma **Lista de tarefas local** do Home Assistant serve; as do Alexa, não).
 
@@ -243,7 +243,7 @@ data:
     nome: Trocar o filtro de água
 ```
 
-Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Andressa`, os pontos vão para ela (e, se houver dois itens com o mesmo nome, vale o dela). Uma etiqueta NFC para cada pessoa resolve.
+Uma manutenção com esse nome fica feita (e vai para a próxima data); uma rotina ou um remédio de hoje com esse nome fica marcado. Com `quem: Ana`, os pontos vão para ela (e, se houver dois itens com o mesmo nome, vale o dela). Uma etiqueta NFC para cada pessoa resolve.
 
 Para marcar um **demérito** de fora do app (uma rotina da Alexa, uma etiqueta NFC no quarto), dispare `cronologia_demerito` com o nome do demérito e de quem foi:
 
@@ -253,7 +253,7 @@ data:
   event_type: cronologia_demerito
   event_data:
     nome: Toalha molhada na cama
-    quem: Diego
+    quem: Beto
 ```
 
 ## Outlook, Google e Alexa

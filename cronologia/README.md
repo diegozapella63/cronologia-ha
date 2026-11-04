@@ -1,10 +1,12 @@
 # CronologIA
 
-Os calendários do Home Assistant (Google, Outlook, calendário local, feriados…) numa agenda bonita.
+A agenda da família com os calendários do Home Assistant (Google, Outlook, calendário local, feriados…).
 
-- Tela Agora: o que está acontecendo, o que vem a seguir e os próximos dias
-- Calendário por mês, semana, dia ou lista, com busca
-- Criar, editar e apagar eventos nos calendários que permitem, inclusive os que se repetem
-- Eventos criados a partir de mensagens, fotos e arquivos .ics, com a IA do Home Assistant
-- Nome, cor e visibilidade de cada calendário; exportar em .ics
-- Tema claro e escuro seguindo o Home Assistant
+- Tela Agora com o dia de hoje: remédios de cada pessoa e pet, contas, compromissos, rotina e manutenção da casa
+- Calendário por mês, semana, 3 dias, dia ou lista, com busca
+- Modelos de remédio (com aviso no celular), conta, rotina e manutenção
+- Placar de recompensas, deméritos e lembrete diário
+- Férias que pausam rotinas, tarefas e manutenção
+- Tarefas do ResolvIA, contas do GerencIA e cômodos e equipamentos do InventarIA
+- Eventos de mensagens, fotos, fala e arquivos .ics, e conversa com a IA do Home Assistant
+- Tema claro e escuro, com a cor do dia
