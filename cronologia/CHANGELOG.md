@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.48.3
+
+- **Etiquetas de equipamento**: com vários equipamentos, aparece só o primeiro e "+N", sem os cômodos, numa linha só. Com um equipamento, continuam o cômodo e o equipamento.
+
 ## 1.48.2
 
 - **Agora**: um compromisso do dia todo marcado como **Feito** sai da tela Agora (continua no Calendário, feito).

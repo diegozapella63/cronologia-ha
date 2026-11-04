@@ -98,7 +98,7 @@ async def main():
         await a.evaluate("(el) => el._openSheet('maint', {})"); await pg.wait_for_timeout(400)
         row = sheet.locator(".maint", has_text="Limpar o filtro do exaustor")
         tags = [t.strip() for t in await row.locator(".place-tags .tag").all_inner_texts()]
-        check(tags == ["Cozinha", "Garagem", "Fogão", "Carro"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: rooms and equipments as tags under the line, like the ResolvIA ({tags})")
+        check(tags == ["Fogão", "+1"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, only the first one and +1 under the line, no rooms ({tags})")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
         facts = [t.strip() for t in await sheet.locator(".fact").all_inner_texts()]
         check("Cozinha, Garagem" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms, then one line per equipment ({facts})")

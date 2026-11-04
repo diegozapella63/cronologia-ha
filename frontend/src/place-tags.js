@@ -1,5 +1,6 @@
 // The rooms and the equipments (InventarIA, by the ResolvIA) of a maintenance or a task as small tags under
-// its line, like the ResolvIA: one per room, the first two equipments (names cut short) and "+N".
+// its line, like the ResolvIA: one equipment (the name cut short) with its room; several equipments, only
+// the first one and "+N", no rooms (one line, not a wall of tags).
 import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { clip } from "./util.js";
@@ -12,7 +13,7 @@ export function placeTags(rooms = [], equips = []) {
   const rs = (rooms || []).filter(Boolean);
   const es = (equips || []).filter(Boolean);
   if (!rs.length && !es.length) return nothing;
-  return html`<span class="chips place-tags">${rs.map((r) => html`<span class="tag room">${icon("door-open")}${clip(r, 22)}</span>`)}${es
-      .slice(0, 2)
-      .map((e) => html`<span class="tag room" title=${e}>${icon("package")}${clip(e, 26)}</span>`)}${es.length > 2 ? html`<span class="tag room">+${es.length - 2}</span>` : nothing}</span>`;
+  const eq = (e) => html`<span class="tag room" title=${e}>${icon("package")}${clip(e, 26)}</span>`;
+  if (es.length > 1) return html`<span class="chips place-tags">${eq(es[0])}<span class="tag room" title=${es.slice(1).join(", ")}>+${es.length - 1}</span></span>`;
+  return html`<span class="chips place-tags">${rs.map((r) => html`<span class="tag room">${icon("door-open")}${clip(r, 22)}</span>`)}${es.length ? eq(es[0]) : nothing}</span>`;
 }
