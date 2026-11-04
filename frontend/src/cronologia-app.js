@@ -1790,7 +1790,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const todays = eventsOfDay(events, today);
     // Very long timed events (a 15-hour giveaway…) read like all-day ones: chips, not "Agora".
     const long = (e) => e.end - e.start >= 12 * 3600000;
-    const allDay = todays.filter((e) => e.allDay || long(e));
+    // the all-day ones marked Feito leave Agora (the Calendário has them, done)
+    const allDay = todays.filter((e) => (e.allDay || long(e)) && !this._checkOf(e));
     const timed = todays.filter((e) => !e.allDay && !long(e));
     // one already marked Feito is not "Agora" or "A seguir" any more
     const current = timed.filter((e) => e.start <= now && e.end > now && !this._checkOf(e)).sort((a, b) => b.start - a.start);

@@ -1,6 +1,6 @@
 # CronologIA 1.48.1: the all-day events (and the very long ones) live in the Hoje card of Agora, under its
 # title, with until when a stay of several days goes ("· até 7 nov"); never loose at the bottom when nothing
-# else has a time today.
+# else has a time today. Marked Feito, it leaves Agora.
 import os, sys, asyncio, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, summary
@@ -35,6 +35,15 @@ async def main():
             check("Primal Slideee Deluxe (Stove) Giveaway" in texts and not any("o dia todo" in t for t in texts), f"{scheme}: +N o dia todo shows the others ({len(texts)})")
             check(await card.locator(".add-line", has_text="Evento hoje").count() == 1, f"{scheme}: with Evento hoje")
             await card.screenshot(path=f"{SP}/shots/crad-{scheme}.png")
+            if scheme == "dark":
+                # marked Feito: it leaves Agora (the last round: the mark stays on the server)
+                n0 = await chips.count()
+                await chips.filter(has_text="Bad Cheese").click(); await A.wait_for_timeout(500)
+                await a.locator(".sheet .kind-act").click(); await A.wait_for_timeout(1200)
+                if await a.locator(".sheet").count():
+                    await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
+                left = [" ".join(t.split()) for t in await a.locator(".panel.agenda .allday .ad-chip").all_inner_texts()]
+                check(len(left) == n0 - 1 and "Bad Cheese" not in left, f"Feito: it leaves Agora ({left})")
             check(not errs, f"{scheme}: no page errors {errs}")
             await ctx.close()
         await b.close()

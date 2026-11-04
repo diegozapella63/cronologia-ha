@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.48.2
+
+- **Agora**: um compromisso do dia todo marcado como **Feito** sai da tela Agora (continua no Calendário, feito).
+
 ## 1.48.1
 
 - **Agora**: os compromissos do dia todo (uma hospedagem, um aniversário) ficam dentro do card **Hoje**, logo abaixo do título, e não mais soltos no fim da tela quando não sobra nada com horário. Os que duram vários dias dizem até quando ("· até 6 nov").
