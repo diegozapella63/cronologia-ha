@@ -299,7 +299,10 @@ describe("parseKind", () => {
   });
   it("rotina: who, points (capped), period", () => {
     const k = parseKind("#rotina\nQuem faz: Andressa\nPontos: 10 pontos\nPeríodo: Manhã\nO caminhão passa às 20h");
-    assert.deepEqual(k, { kind: "rotina", notes: "O caminhão passa às 20h", who: "Andressa", points: 10, period: "manha", after: null });
+    assert.deepEqual(k, { kind: "rotina", notes: "O caminhão passa às 20h", who: "Andressa", points: 10, period: "manha", after: null, rooms: [], equips: [], room: "", equip: "" });
+    // the room (1.49): like the maintenance
+    const r = parseKind("#rotina\nQuem faz: Diego\nCômodo: Quarto\nArrumar com o lençol novo");
+    assert.deepEqual([r.rooms, r.room, r.notes], [["Quarto"], "Quarto", "Arrumar com o lençol novo"]);
     assert.equal(parseKind("#rotina\nPontos: 5000").points, 1000);
     assert.equal(parseKind("#rotina\nPontos: muitos").points, 0);
     assert.equal(parseKind("#rotina\nPeriodo: tarde").period, "tarde");
@@ -377,6 +380,7 @@ describe("buildDescription (inverse of parseKind)", () => {
     assert.equal(buildDescription({ kind: "rotina", who: "Diego", points: 0, period: "" }), "#rotina\nQuem faz: Diego");
     assert.equal(buildDescription({ kind: "rotina", who: "", points: 5, period: "noite" }), "#rotina\nPontos: 5\nPeríodo: Noite");
     assert.equal(buildDescription({ kind: "rotina", period: "bogus" }), "#rotina");
+    assert.equal(buildDescription({ kind: "rotina", who: "Diego", rooms: ["Quarto"] }), "#rotina\nQuem faz: Diego\nCômodo: Quarto", "the room, like the maintenance");
     assert.equal(
       buildDescription({ kind: "rotina", after: { n: 2, unit: "dias" }, history: ["2026-11-01", "2026-10-28"] }),
       "#rotina\nVolta: 2 dias depois de feita\nFeito em: 01/11/2026, 28/10/2026",
@@ -434,7 +438,7 @@ describe("buildDescription (inverse of parseKind)", () => {
       const back = parseKind(buildDescription(k));
       const want = { ...k };
       if (k.kind === "rotina" && !k.after) delete want.history;
-      if (k.kind === "manutencao" && !k.equips) Object.assign(want, { rooms: k.room ? [k.room] : [], equips: k.equip ? [k.equip] : [] });
+      if ((k.kind === "manutencao" || k.kind === "rotina") && !k.equips) Object.assign(want, { rooms: k.room ? [k.room] : [], equips: k.equip ? [k.equip] : [], room: k.room || "", equip: k.equip || "" });
       assert.deepEqual(back, want);
       // and again: the description is stable
       assert.equal(buildDescription(back), buildDescription(k));

@@ -284,13 +284,22 @@ describe("Mirror: the room and the equipment go to the ResolvIA", () => {
     assert.deepEqual(fired[0], { type: "fire_event", event_type: "resolvia_comodo", event_data: { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: "coz", equipamento: "f-coz" } });
     assert.equal(r.links, "coz|f-coz|Trocar o filtro");
   });
-  it("a room or equipment that is not there goes as null (to clear it); routines never send", async () => {
+  it("a room or equipment that is not there goes as null (to clear it); a routine without a room never sends", async () => {
     const s = setup({ maint: [maintItem({ room: "Garagem", equip: "Bicicleta" })], app });
     const d = s.m.desired(NOW).get("maint|calendar.casa|filtro");
     await s.m.shareLinks(LIST, d, {});
     assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Trocar o filtro", origem: "CronologIA", comodo: null, equipamento: null });
-    await s.m.shareLinks(LIST, { ...d, type: "rotina" }, {});
-    assert.equal(s.ha.sent.length, 1);
+    await s.m.shareLinks(LIST, { ...d, type: "rotina", room: "", equip: "", rooms: [], equips: [] }, {});
+    assert.equal(s.ha.sent.length, 1, "a room set in the ResolvIA stays");
+  });
+  it("a routine with a room (1.49): the ResolvIA gets it; taken out here, it is cleared there", async () => {
+    const s = setup({ maint: [], app });
+    const d = { src: "rotina|calendar.casa|cama", type: "rotina", summary: "Arrumar a cama", room: "Cozinha", rooms: ["Cozinha"], equip: "", equips: [] };
+    const r = {};
+    await s.m.shareLinks(LIST, d, r);
+    assert.deepEqual(s.ha.sent[0].event_data, { entity_id: LIST, tarefa: "Arrumar a cama", origem: "CronologIA", comodo: "coz", equipamento: null });
+    await s.m.shareLinks(LIST, { ...d, room: "", rooms: [] }, r);
+    assert.deepEqual(s.ha.sent[1].event_data, { entity_id: LIST, tarefa: "Arrumar a cama", origem: "CronologIA", comodo: null, equipamento: null });
   });
   it("equipment of another room is used when none matches the room", async () => {
     const s = setup({ maint: [maintItem({ room: "Garagem", equip: "Filtro de água" })], app });

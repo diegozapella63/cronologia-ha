@@ -13,7 +13,7 @@
 export const KINDS = {
   remedio: { tag: "#remédio", label: "Remédio", fields: { dose: "Dose", who: "Quem toma", alert: "Aviso no celular" } },
   conta: { tag: "#conta", label: "Conta a pagar", fields: { value: "Valor" } },
-  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", period: "Período", after: "Volta", history: "Feito em" } },
+  rotina: { tag: "#rotina", label: "Rotina da casa", fields: { who: "Quem faz", points: "Pontos", period: "Período", after: "Volta", history: "Feito em", room: "Cômodo", equip: "Equipamento" } },
   manutencao: { tag: "#manutenção", label: "Manutenção", fields: { who: "Quem faz", every: "A cada", warn: "Avisar", history: "Feito em", points: "Pontos", room: "Cômodo", equip: "Equipamento" } },
 };
 
@@ -162,6 +162,11 @@ export function parseKind(description) {
     // "Volta: 2 dias depois de feita": one event, moved to today + 2 days when done (only the next one in the calendar)
     out.after = raw.after ? parseEvery(raw.after) : null;
     if (out.after) out.history = parseHistory(raw.history);
+    // the room (InventarIA, by the ResolvIA), like the maintenance
+    out.rooms = nameList(raw.room);
+    out.equips = nameList(raw.equip);
+    out.room = out.rooms[0] || "";
+    out.equip = out.equips[0] || "";
   } else {
     out.who = raw.who || "";
     out.every = parseEvery(raw.every) || { n: 6, unit: "meses" };
@@ -194,6 +199,14 @@ export function namesOf(list, one) {
   return names.length ? names : one && String(one).trim() ? [String(one).trim()] : [];
 }
 
+/** The rooms and the items of the InventarIA (by name: readable in any calendar; "A; B" when several). */
+function addPlaces(add, L, k) {
+  const rooms = namesOf(k.rooms, k.room).map((s) => s.replace(/;/g, ","));
+  const equips = namesOf(k.equips, k.equip).map((s) => s.replace(/;/g, ","));
+  add(rooms.length > 1 ? `${L.room}s` : L.room, rooms.join("; "));
+  add(equips.length > 1 ? `${L.equip}s` : L.equip, equips.join("; "));
+}
+
 /** Description for a model and its fields (the inverse of parseKind). */
 export function buildDescription(k) {
   const lines = [KINDS[k.kind].tag];
@@ -215,17 +228,14 @@ export function buildDescription(k) {
       add(L.after, `${everyLabel(k.after)} depois de feita`);
       add(L.history, historyText((k.history || []).slice(0, 8)));
     }
+    addPlaces(add, L, k);
   } else {
     add(L.who, k.who);
     add(L.every, everyLabel(k.every));
     add(L.warn, `${k.warn ?? 7} ${(k.warn ?? 7) === 1 ? "dia" : "dias"} antes`);
     add(L.history, historyText((k.history || []).slice(0, 8)));
     if (k.points > 0) add(L.points, k.points);
-    // the rooms and the items of the InventarIA (by name: readable in any calendar; "A; B" when several)
-    const rooms = namesOf(k.rooms, k.room).map((s) => s.replace(/;/g, ","));
-    const equips = namesOf(k.equips, k.equip).map((s) => s.replace(/;/g, ","));
-    add(rooms.length > 1 ? `${L.room}s` : L.room, rooms.join("; "));
-    add(equips.length > 1 ? `${L.equip}s` : L.equip, equips.join("; "));
+    addPlaces(add, L, k);
   }
   const notes = String(k.notes || "").trim();
   return notes ? `${lines.join("\n")}\n${notes}` : lines.join("\n");
@@ -401,7 +411,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const todays = start < t1 && end > t0;
       const yesterday = !todays && !yesterdayAway && start >= t0 - DAY && start < t0 && !checks[key];
       if (!todays && !yesterday) continue;
-      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday });
+      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday, rooms: k.rooms || [], equips: k.equips || [] });
     } else if (k.kind === "conta") {
       const paid = checks[key] || null;
       // open ones from the last 2 months and the next 8 days; paid ones around today or paid today

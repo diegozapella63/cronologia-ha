@@ -567,7 +567,7 @@ export const ModelsMixin = (Base) =>
             return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
           });
         const list = found.filter((c) => c.kind === sec.kind);
-        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)]));
+        if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip))));
         // the rooms and the equipments as tags under the line, like the ResolvIA
         if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip))));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
@@ -619,6 +619,7 @@ export const ModelsMixin = (Base) =>
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
+        if (namesOf(k.rooms, k.room).length) facts.push(["door-open", namesOf(k.rooms, k.room).join(", ")]);
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         if (periodInfo(k.period)) facts.push([periodInfo(k.period).icon, cap(periodInfo(k.period).when)]);
         if (k.after && !e.rrule) {
@@ -765,7 +766,7 @@ export const ModelsMixin = (Base) =>
           equipNames: namesOf(k.equips, k.equip),
           equips: [],
         };
-        if (k.kind === "manutencao" && (f.roomNames.length || f.equipNames.length)) {
+        if ((k.kind === "manutencao" || k.kind === "rotina") && (f.roomNames.length || f.equipNames.length)) {
           const { rooms, items } = this._invLists();
           // by the name: the item in the first room, else in one of the rooms, else any
           const pick = (n) => {
@@ -822,6 +823,11 @@ export const ModelsMixin = (Base) =>
       else if (f.kind === "rotina") {
         Object.assign(k, { who: f.who, points: Math.max(0, Math.round(Number(f.points) || 0)), period: f.allDay ? f.period || "" : "" });
         if (f.freq === "depois") Object.assign(k, { after: { n: Math.max(1, Math.min(365, Math.round(Number(f.afterN) || 2))), unit: "dias" }, history: f.mode === "edit" ? f.history || [] : [] });
+        // the room (only the room for a routine; an equipment written in the calendar stays)
+        const { rooms } = this._invLists();
+        const r = rooms.find((c) => c.id === f.room);
+        k.rooms = r ? [r.nome] : rooms.length ? [] : f.roomNames || [];
+        k.equips = f.equipNames || [];
       }
       else if (f.kind === "conta") {
         k.value = parseMoney(f.value);
@@ -1142,6 +1148,7 @@ export const ModelsMixin = (Base) =>
       } else if (K === "rotina") {
         body = html`
           ${this._whoField("Quem faz")}
+          ${this._renderRoomEquipFields(f, { equips: false })}
           <div class="field"><span class="flabel">Horário</span>
             <div class="chip-row">
               <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>Qualquer hora</button>

@@ -136,7 +136,7 @@ export class Mirror {
       }
       for (const [src, o] of best) {
         const d = new Date(o.start);
-        out.set(src, { src, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: o.k.points || 0, notes: o.k.notes || "", occKey: o.key });
+        out.set(src, { src, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: o.k.points || 0, notes: o.k.notes || "", occKey: o.key, room: o.k.room || "", equip: o.k.equip || "", rooms: o.k.rooms || [], equips: o.k.equips || [] });
       }
     }
     return out;
@@ -147,7 +147,9 @@ export class Mirror {
    * lists it shares), once per change.
    */
   async shareLinks(list, d, r) {
-    if (d.type !== "manutencao") return;
+    if (d.type !== "manutencao" && d.type !== "rotina") return;
+    // a routine only once it has a room here (or had one: to clear it); a room set in the ResolvIA stays
+    if (d.type === "rotina" && !(d.rooms || []).length && !d.room && !(d.equips || []).length && !d.equip && !r.links) return;
     const app = this.todos.app();
     const rooms = (app && app.comodos && app.comodos.lista) || [];
     const items = (app && app.equipamentos && app.equipamentos.lista) || [];

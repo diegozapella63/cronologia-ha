@@ -982,7 +982,7 @@ describe("Home: Trazer do ResolvIA", () => {
         ["Ligar", "2026-11-05T09:30:00-03:00", "2026-11-05T10:00:00-03:00"],
       ],
     );
-    assert.deepEqual(parseKind(created[1].description), { kind: "rotina", notes: "Com cera", who: "", points: 15, period: "", after: { n: 7, unit: "dias" }, history: [] });
+    assert.deepEqual(parseKind(created[1].description), { kind: "rotina", notes: "Com cera", who: "", points: 15, period: "", after: { n: 7, unit: "dias" }, history: [], rooms: [], equips: [], room: "", equip: "" });
     assert.equal(parseKind(created[2].description).after, null, "a task that doesn't repeat: only once");
     assert.deepEqual(todos.reopened, [["todo.casa", "c", false]]);
     const rm = ha.sent.find((m) => m.service === "remove_item");

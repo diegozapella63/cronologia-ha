@@ -2209,13 +2209,21 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     }
     let events = this._events(start, end);
     if (needle) events = events.filter((e) => fold(`${e.summary} ${e.location} ${e.description}`).includes(needle));
-    const byDay = [];
+    const groups = new Map();
+    const add = (d, e) => {
+      const k = ymd(d);
+      if (!groups.has(k)) groups.set(k, { d, list: [] });
+      groups.get(k).list.push(e);
+    };
     for (const e of events) {
-      const d = startOfDay(e.start < start ? start : e.start);
-      const last = byDay[byDay.length - 1];
-      if (last && sameDay(last.d, d)) last.list.push(e);
-      else byDay.push({ d, list: [e] });
+      const first = startOfDay(e.start < start ? start : e.start);
+      add(first, e);
+      // several days (a hotel stay): on each day it covers, "Dia 2/6"…; in a search, once
+      if (needle) continue;
+      const lastDay = e.allDay ? addDays(startOfDay(new Date(e.end)), -1) : startOfDay(new Date(e.end - 1));
+      for (let d = addDays(first, 1); d <= lastDay && d < end; d = addDays(d, 1)) add(d, e);
     }
+    const byDay = [...groups.values()].sort((a, b) => a.d - b.d);
     const loading = this._store.loading(start, end);
     return html`
       <label class="search-box">

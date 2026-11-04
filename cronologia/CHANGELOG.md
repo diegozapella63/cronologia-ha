@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.49.0
+
+- **Cômodo nas rotinas**: o formulário da **Rotina da casa** ganha o campo **Cômodo** (com os cômodos do InventarIA ligados no ResolvIA). Ele aparece como etiqueta em **Mais › Rotinas** e na tela da rotina, o Buscar acha a rotina pelo cômodo, e a tarefa da rotina no ResolvIA recebe o cômodo. No evento fica `Cômodo: Quarto`.
+- **Calendário › Lista**: um compromisso de vários dias (uma hospedagem) aparece em cada um dos seus dias (Dia 1/6, 2/6…), e não só no primeiro.
+
 ## 1.48.3
 
 - **Etiquetas de equipamento**: com vários equipamentos, aparece só o primeiro e "+N", sem os cômodos, numa linha só. Com um equipamento, continuam o cômodo e o equipamento.

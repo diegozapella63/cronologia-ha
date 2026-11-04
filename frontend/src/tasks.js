@@ -237,10 +237,12 @@ export const TasksMixin = (Base) =>
      * Cômodo and Equipamento (Novo › Tarefa, Manutenção): f.room is an id and f.equips the ids of the
      * items (several); with items, the rooms are theirs and locked.
      */
-    _renderRoomEquipFields(f) {
+    _renderRoomEquipFields(f, { equips = true } = {}) {
       const { rooms, items } = this._invLists();
-      if (!rooms.length && !items.length) return nothing;
-      return this._renderRoomEquipMulti(f, rooms, items);
+      // a routine: only the room
+      const its = equips ? items : [];
+      if (!rooms.length && !its.length) return nothing;
+      return this._renderRoomEquipMulti(f, rooms, its);
     }
 
     _renderRoomEquipMulti(f, rooms, items) {

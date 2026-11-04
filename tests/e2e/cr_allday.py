@@ -44,6 +44,13 @@ async def main():
                     await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
                 left = [" ".join(t.split()) for t in await a.locator(".panel.agenda .allday .ad-chip").all_inner_texts()]
                 check(len(left) == n0 - 1 and "Bad Cheese" not in left, f"Feito: it leaves Agora ({left})")
+            if scheme == "light":
+                # Calendário › Lista: a stay of 3 days on each of its days (Dia 1/3, 2/3, 3/3)
+                await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(700)
+                await a.locator(".seg.compact button", has_text="Lista").first.click(); await A.wait_for_timeout(1000)
+                rows = a.locator(".panel.agenda .ev-row", has_text="Agent A: A puzzle in disguise")
+                days = [" ".join(t.split()) for t in await rows.locator(".ev-time").all_inner_texts()]
+                check(days == ["Dia 1/3", "Dia 2/3", "Dia 3/3"], f"Lista: on each of its days ({days})")
             check(not errs, f"{scheme}: no page errors {errs}")
             await ctx.close()
         await b.close()

@@ -118,11 +118,22 @@ async def main():
             check(False, "an Editar button on the maintenance sheet")
         if await sheet.locator(".icon-btn[aria-label='Fechar']").count():
             await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
+        # a routine with a room (1.49): only the Cômodo field (no Equipamento), saved in the calendar
+        await a.evaluate("(el) => el._openKindForm({ kind: 'rotina' })"); await pg.wait_for_timeout(500)
+        await sheet.locator(".ev-title-input").fill("Arrumar a cama"); await pg.wait_for_timeout(100)
+        rf = sheet.locator(".field:has(.flabel:text-is('Cômodo'))")
+        check(await rf.count() == 1 and await sheet.locator(".field:has(.flabel:text-is('Equipamento'))").count() == 0, "Rotina: the Cômodo field, no Equipamento")
+        await rf.locator(".pick", has_text="Garagem").click(); await pg.wait_for_timeout(150)
+        await sheet.locator(".btn.primary", has_text="Criar rotina").click(); await pg.wait_for_timeout(1500)
+        r = await a.evaluate("(el) => (el._ix().catalog || []).find((x) => x.summary === 'Arrumar a cama')")
+        check(r and r.get("rooms") == ["Garagem"], f"saved with its room ({r and r.get('rooms')})")
         # Mais › Rotinas: the same tags under the line (not the names in it); the search finds it by the equipment
         await a.evaluate("(el) => el._go('/mais/rotinas')"); await pg.wait_for_timeout(600)
         crow = a.locator(".cat-row", has_text="Limpar o filtro do exaustor")
         tags = [t.strip() for t in await crow.locator(".place-tags .tag").all_inner_texts()]
         check(tags == ["Cozinha", "Fogão"] and "Fogão" not in await crow.locator(".hint").inner_text(), f"Mais › Rotinas: the room and the equipment as tags ({tags})")
+        rtags = [t.strip() for t in await a.locator(".cat-row", has_text="Arrumar a cama").locator(".place-tags .tag").all_inner_texts()]
+        check(rtags == ["Garagem"], f"Mais › Rotinas: a routine with its room ({rtags})")
         await a.locator(".cat-search input").fill("fogao"); await pg.wait_for_timeout(300)
         check(await a.locator(".cat-row", has_text="Limpar o filtro do exaustor").count() == 1, "Mais › Rotinas: the search finds it by the equipment")
         await pg.screenshot(path=f"{data}/rotinas-tags.png")
