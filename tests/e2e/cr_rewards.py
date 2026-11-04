@@ -66,7 +66,7 @@ async def main():
         # Mais is a menu (1.43.0); Calendários is its first row, Configurações the last
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-        check(mt == ["Calendários", "Rotinas", "Avisos", "Placar", "Configurações"], f"Mais rows ({mt})")
+        check(mt == ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações"], f"Mais rows ({mt})")
         await open_more(a, "Calendários")
         check(await a.locator(".cal-row").count() >= 5, "Calendários: the calendars")
         await open_more(a, "Dados"); await A.wait_for_timeout(300)

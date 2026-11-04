@@ -2296,8 +2296,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   }
 
   /**
-   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/placar) or Configurações
-   * (/config, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
+   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/ferias) or Configurações
+   * (/config, /config/placar, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
    * Configurações replace the history entry, so Back goes to the menu.
    */
   _renderMore() {
@@ -2308,6 +2308,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     let status = null;
     if (v.config) {
       if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
+      else if (tab === "placar") body = this._renderScoreSettings();
       else if (tab === "dados") body = this._renderDataPanel();
       else if (tab === "aparencia") body = this._renderAppearance();
       else body = this._renderOptions();
@@ -2316,7 +2317,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       const n = this._catalogCount();
       status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
     } else if (tab === "avisos") body = this._renderAlertsPanel();
-    else if (tab === "placar") body = this._renderScoreSettings();
+    else if (tab === "ferias") body = this._renderAwayOptions(false);
     else {
       body = this._renderCalendarsTab();
       const cals = this._cals();
@@ -2372,7 +2373,6 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
           <label class="switch"><input type="checkbox" role="switch" .checked=${details} @change=${(e) => this._saveAppPrefs({ event_details: e.target.checked ? true : null })} aria-label="Local e notas" /><span class="track"></span></label>
         </div>
       </div>
-      ${this._renderAwayOptions()}
       <div class="panel">
         ${this._secHead("calendar-days", "Semana", "Vale para o calendário e o placar.")}
         <div class="seg week-seg" role="radiogroup" aria-label="Início da semana">
@@ -2385,13 +2385,16 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     `;
   }
 
-  /** Mais › Configurações › Opções › Férias: from when to when the routines and the maintenance rest (the medicines go on). */
-  _renderAwayOptions() {
+  /**
+   * Mais › Férias: from when to when the routines and the maintenance rest (the medicines go on). On its own
+   * screen (head false) the title is already Férias: only the line about it.
+   */
+  _renderAwayOptions(head = true) {
     const a = this._away();
     const today = ymd(new Date(this._now));
     const set = (from, to) => this._saveAppPrefs({ away: { from, to: to < from ? from : to } });
     return html`<div class="panel" id="ferias">
-      ${this._secHead("plane", "Férias", "Rotinas e manutenção pausadas; remédios continuam.")}
+      ${head ? this._secHead("plane", "Férias", "Rotinas e manutenção pausadas; remédios continuam.") : html`<p class="panel-lead">Rotinas e manutenção pausadas; remédios continuam.</p>`}
       <div class="row switch-row">
         <div class="grow"><div class="label">De férias</div><div class="hint">${a ? `${dateShort(fromYmd(a.from), new Date(this._now))} a ${dateShort(fromYmd(a.to), new Date(this._now))}` : "Desligado."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${!!a} @change=${(e) => this._saveAppPrefs({ away: e.target.checked ? { from: today, to: ymd(addDays(fromYmd(today), 4)) } : null })} aria-label="De férias" /><span class="track"></span></label>

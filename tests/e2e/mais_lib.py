@@ -1,7 +1,7 @@
-# CronologIA 1.43.0: Mais is a menu. Calendários, Rotinas, Avisos and Placar are rows, each its own
-# screen; Integrações, Dados, Aparência and Opções are tabs of Mais › Configurações (the last row).
-CONFIG = ("Integrações", "Dados", "Aparência", "Opções")
-ROWS = {"Calendários": "calendarios", "Rotinas": "rotinas", "Avisos": "avisos", "Placar": "placar", "Configurações": "config"}
+# CronologIA 1.43.0: Mais is a menu. Calendários, Rotinas, Avisos and Férias (1.45) are rows, each its own
+# screen; Integrações, Placar (1.45), Dados, Aparência and Opções are tabs of Mais › Configurações (the last row).
+CONFIG = ("Integrações", "Placar", "Dados", "Aparência", "Opções")
+ROWS = {"Calendários": "calendarios", "Rotinas": "rotinas", "Avisos": "avisos", "Férias": "ferias", "Configurações": "config"}
 
 async def open_more(a, name, wait=400):
     """Opens Mais › <name> (a row of the menu, or a tab of Configurações) from anywhere, as a person would:

@@ -3096,7 +3096,7 @@ export const calStyles = css`
     margin: 0 0 14px;
     box-shadow: 0 0 0 6px var(--rv-bg);
   }
-  /* the four tabs of Configurações: they keep their width and the bar scrolls sideways if the screen is too narrow */
+  /* the tabs of Configurações: they keep their width and the bar scrolls sideways if the screen is too narrow */
   .more-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -3111,7 +3111,7 @@ export const calStyles = css`
     padding-right: 6px;
     white-space: nowrap;
   }
-  /* phones: smaller, so the four fit */
+  /* phones: smaller, so the five fit */
   @media (max-width: 440px) {
     .seg.compact.more-tabs {
       gap: 1px;
@@ -3120,6 +3120,13 @@ export const calStyles = css`
       font-size: 13px;
       padding-left: 4px;
       padding-right: 4px;
+    }
+  }
+  @media (max-width: 360px) {
+    .seg.compact.more-tabs button {
+      font-size: 12.5px;
+      padding-left: 2px;
+      padding-right: 2px;
     }
   }
   /* the icons only where there is room for them */

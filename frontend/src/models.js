@@ -5,6 +5,7 @@ import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js"
 import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
+import { placeTags } from "./place-tags.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
 const icon = (name, cls = "") =>
@@ -462,7 +463,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="maint ${m.state}">
         <button class="maint-main" @click=${() => this._openIndexItem(m)}>
           ${this._ring(m.progress, tone, null, icon("wrench"))}
-          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${placeText(m) ? ` · ${placeText(m)}` : ""}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small></span>
+          <span class="maint-tx"><b>${m.summary}</b><small>${maintLabel(m, now)} · a cada ${everyLabel(m.every)}${m.who ? ` · ${m.who}` : ""}${m.points > 0 && this._scoreOn() ? ` · +${m.points}` : ""}</small>${placeTags(namesOf(m.rooms, m.room), namesOf(m.equips, m.equip))}</span>
         </button>
         ${m.canMove
           ? this._pickWho()
@@ -497,7 +498,7 @@ export const ModelsMixin = (Base) =>
       const all = this._ix().catalog || [];
       const q = (this._catQ || "").trim();
       const needle = foldText(q);
-      const found = needle ? all.filter((c) => foldText(`${c.summary} ${c.who} ${c.dose} ${c.location}`).includes(needle)) : all;
+      const found = needle ? all.filter((c) => foldText(`${c.summary} ${c.who} ${c.dose} ${c.location} ${namesOf(c.rooms, c.room).join(" ")} ${namesOf(c.equips, c.equip).join(" ")}`).includes(needle)) : all;
       const low = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : "");
       const daily = (c) => /FREQ=DAILY/.test(c.rrule || "") && !/INTERVAL=([2-9]|\d\d)/.test(c.rrule || "");
       const freq = (c) => (c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? low(rruleLabel(c.rrule)) : "uma vez");
@@ -523,14 +524,14 @@ export const ModelsMixin = (Base) =>
           if (c.next < m.first.next || (c.next === m.first.next && c.time < m.first.time)) m.first = c;
         } else meds.push({ id, first: c, times: c.time ? [c.time] : [] });
       }
-      const row = (c, hint, w = null) => html`<button class="row cat-row" style=${colorVars(this._colorOfEvent(c), this._dark)} @click=${() => this._openIndexItem(c)}>
+      const row = (c, hint, w = null, tags = nothing) => html`<button class="row cat-row" style=${colorVars(this._colorOfEvent(c), this._dark)} @click=${() => this._openIndexItem(c)}>
         <span class="tile" aria-hidden="true">${icon(KIND_UI[c.kind].icon)}</span>
-        <span class="grow"><div class="label">${c.summary}</div><div class="hint">${hint}${w ? html`${hint ? " · " : ""}<span class=${w.late ? "late" : ""}>${w.text}</span>` : nothing}</div></span>
+        <span class="grow"><div class="label">${c.summary}</div><div class="hint">${hint}${w ? html`${hint ? " · " : ""}<span class=${w.late ? "late" : ""}>${w.text}</span>` : nothing}</div>${tags}</span>
         ${icon("chevron-right")}
       </button>`;
-      const line = (c, parts) => {
+      const line = (c, parts, tags = nothing) => {
         const ps = parts.filter(Boolean);
-        return row(c, ps.length ? ps.map((p, i) => html`${i ? " · " : ""}${p}`) : "", when(c));
+        return row(c, ps.length ? ps.map((p, i) => html`${i ? " · " : ""}${p}`) : "", when(c), tags);
       };
       const SECS = [
         { kind: "rotina", ic: "spray-can", tone: "ok", title: "Rotina da casa", add: "Nova rotina", none: "Nenhuma rotina cadastrada." },
@@ -547,7 +548,8 @@ export const ModelsMixin = (Base) =>
           });
         const list = found.filter((c) => c.kind === sec.kind);
         if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)]));
-        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), placeText(c), c.who, pts(c)]));
+        // the rooms and the equipments as tags under the line, like the ResolvIA
+        if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip))));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
       return html`
@@ -607,10 +609,10 @@ export const ModelsMixin = (Base) =>
         if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
-        const equips = namesOf(k.equips, k.equip);
+        // the rooms on one line, then one line per equipment
         const rooms = namesOf(k.rooms, k.room);
-        if (equips.length) facts.push(["package", rooms.length ? `${equips.join(", ")} (${rooms.join(", ")})` : equips.join(", ")]);
-        else if (rooms.length) facts.push(["door-open", rooms.join(", ")]);
+        if (rooms.length) facts.push(["door-open", rooms.join(", ")]);
+        for (const e of namesOf(k.equips, k.equip)) facts.push(["package", e]);
         facts.push(["bell-ring", `Aparece na tela inicial ${plural(k.warn, "dia", "dias")} antes`]);
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }

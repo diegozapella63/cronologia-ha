@@ -47,7 +47,8 @@ async def main():
         await a.locator(".panel.todos .add-line", has_text="Mais").click() if await a.locator(".panel.todos .add-line", has_text="Mais").count() else None
         await pg.wait_for_timeout(300)
         row = a.locator(".panel.todos .chore", has_text="Levar o carro na revisão")
-        check(await row.count() == 1 and "Garagem" in await row.inner_text() and "Carro" in await row.inner_text(), f"Agora: the task shows its equipment and room ({(await row.inner_text()).strip()[:80] if await row.count() else ''})")
+        tags = [t.strip() for t in await row.locator(".place-tags .tag").all_inner_texts()] if await row.count() else []
+        check(await row.count() == 1 and tags == ["Garagem", "Carro"], f"Agora: the task shows its room and equipment as tags ({tags})")
         await row.locator(".chore-tx").click(); await pg.wait_for_timeout(400)
         check("Garagem" in await sheet.inner_text() and "Carro" in await sheet.inner_text(), "and its sheet")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
@@ -96,9 +97,11 @@ async def main():
         check(m and m.get("equips") == ["Fogão", "Carro"] and m.get("rooms") == ["Cozinha", "Garagem"] and m.get("room") == "Cozinha" and m.get("equip") == "Fogão", f"saved with both equipments and their rooms ({m and (m.get('rooms'), m.get('equips'))})")
         await a.evaluate("(el) => el._openSheet('maint', {})"); await pg.wait_for_timeout(400)
         row = sheet.locator(".maint", has_text="Limpar o filtro do exaustor")
-        check("Fogão, Carro" in await row.inner_text(), "Manutenção da casa: the row shows both equipments")
+        tags = [t.strip() for t in await row.locator(".place-tags .tag").all_inner_texts()]
+        check(tags == ["Cozinha", "Garagem", "Fogão", "Carro"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: rooms and equipments as tags under the line, like the ResolvIA ({tags})")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
-        check("Fogão, Carro (Cozinha, Garagem)" in await sheet.inner_text(), "its sheet: Fogão, Carro (Cozinha, Garagem)")
+        facts = [t.strip() for t in await sheet.locator(".fact").all_inner_texts()]
+        check("Cozinha, Garagem" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms, then one line per equipment ({facts})")
         await sheet.screenshot(path=f"{data}/maint-sheet.png")
         await a.evaluate("(el) => { const m = el._ix().maint.find((x) => x.summary === 'Limpar o filtro do exaustor'); const e = el._findEvent ? null : null; }")
         edit_btn = sheet.locator(".btn, .icon-btn", has_text="Editar")
@@ -115,6 +118,14 @@ async def main():
             check(False, "an Editar button on the maintenance sheet")
         if await sheet.locator(".icon-btn[aria-label='Fechar']").count():
             await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
+        # Mais › Rotinas: the same tags under the line (not the names in it); the search finds it by the equipment
+        await a.evaluate("(el) => el._go('/mais/rotinas')"); await pg.wait_for_timeout(600)
+        crow = a.locator(".cat-row", has_text="Limpar o filtro do exaustor")
+        tags = [t.strip() for t in await crow.locator(".place-tags .tag").all_inner_texts()]
+        check(tags == ["Cozinha", "Fogão"] and "Fogão" not in await crow.locator(".hint").inner_text(), f"Mais › Rotinas: the room and the equipment as tags ({tags})")
+        await a.locator(".cat-search input").fill("fogao"); await pg.wait_for_timeout(300)
+        check(await a.locator(".cat-row", has_text="Limpar o filtro do exaustor").count() == 1, "Mais › Rotinas: the search finds it by the equipment")
+        await pg.screenshot(path=f"{data}/rotinas-tags.png")
         # the ResolvIA without rooms: no field
         # (the CronologIA reads the ResolvIA file at most once a minute: restart it to see the change now)
         global app

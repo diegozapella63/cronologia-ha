@@ -47,17 +47,18 @@ async def main():
         a = A.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
         heads = {}
-        for tab in ["Calendários", "Avisos", "Placar", "Integrações", "Dados", "Aparência", "Opções"]:
+        for tab in ["Calendários", "Avisos", "Férias", "Placar", "Integrações", "Dados", "Aparência", "Opções"]:
             await open_more(a, tab, 500)
             heads[tab] = [h.strip() for h in await a.locator(".mais-head h2").all_inner_texts()]
             await A.screenshot(path=f"{SP}/shots/crai-{tab}.png")
         print(heads)
-        check(all(heads[t] for t in heads), "every Mais tab opens with icon headings")
+        check(all(heads[t] for t in heads if t != "Férias"), "every Mais tab opens with icon headings")
+        check(heads["Férias"] == [], "Férias: its own screen, no heading repeating the title")
         check(heads["Dados"] == ["Exportar", "Backup na pasta share", "Importar", "Importar eventos (.ics)", "Versões anteriores", "Onde ficam os dados"], "Dados in sections")
         check(heads["Placar"][:1] == ["Ajustes do placar"] and "Deméritos" in heads["Placar"], "Placar: settings and deméritos")
         check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "Leitura por IA", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
         check(await a.locator(".mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
-        check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Novo", "Férias", "Semana"], "Aparência: Tema and Cor do app; Opções: Novo, Férias and Semana")
+        check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Novo", "Semana"], "Aparência: Tema and Cor do app; Opções: Novo and Semana")
         # AI on by default: Novo shows the import strip
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(400)
         check(await a.locator(".sheet .imp-tile").count() == 3, "AI on: Novo has Colar mensagem, Escolher fotos, Digitalizar")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.45.0
+
+- **Férias** vira uma linha do menu **Mais**, no lugar do **Placar**.
+- O **Placar** (quem participa, quando fecha, deméritos) passa a ser uma aba de **Mais › Configurações**, logo depois de Integrações.
+- **Cômodos e equipamentos em etiquetas**, como no ResolvIA: na manutenção (Agora, Manutenção da casa e Mais › Rotinas) e nas tarefas do ResolvIA, embaixo da linha, com o nome encurtado (os dois primeiros equipamentos e "+N"). Na tela da manutenção, um equipamento por linha. O Buscar de Rotinas acha também pelo equipamento.
+
 ## 1.44.1
 
 - **Calendário**: no alto, o balão de Conversar e o microfone voltam para a direita, como nas outras telas, e "CronologIA · Olá, Diego" fica numa linha só.

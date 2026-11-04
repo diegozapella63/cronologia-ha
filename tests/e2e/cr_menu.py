@@ -1,6 +1,6 @@
-# CronologIA 1.43.0: Mais is a menu, like the InventarIA. Calendários, Rotinas, Avisos and Placar are rows,
-# each its own screen, and Configurações is the last one, with the tabs Integrações, Dados, Aparência and
-# Opções. "‹ Mais", Back and a swipe to the right go back to the menu; the old addresses (/mais/dados…)
+# CronologIA 1.43.0: Mais is a menu, like the InventarIA. Calendários, Rotinas, Avisos and Férias are rows,
+# each its own screen, and Configurações is the last one, with the tabs Integrações, Placar, Dados, Aparência
+# and Opções (1.45: Placar went to Configurações, Férias came to the menu). "‹ Mais", Back and a swipe to the right go back to the menu; the old addresses (/mais/dados…)
 # land on the new place; Mais stays lit in the bottom bar and the sidebar; every screen of Mais fits from
 # 320 px to the computer, light and dark.
 import os, sys, asyncio
@@ -8,11 +8,11 @@ from stack_lib import Stack, URL, SP, check, wait_for, summary
 from mais_lib import open_more
 from playwright.async_api import async_playwright
 
-ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("placar", "Placar"), ("config", "Configurações")]
-TABS = [("integracoes", "Integrações", "/config"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
+ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações")]
+TABS = [("integracoes", "Integrações", "/config"), ("placar", "Placar", "/config/placar"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
 # what each screen has (an element only that screen shows)
-MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "placar": "#placar", "config": "#leitura-ia",
-        "integracoes": "#leitura-ia", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": "#ferias"}
+MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "ferias": "#ferias", "config": "#leitura-ia",
+        "integracoes": "#leitura-ia", "placar": "#placar", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": ".week-seg"}
 
 async def main():
     st = Stack("crmenu")
@@ -86,9 +86,9 @@ async def main():
             await a.locator('.menu-row[data-k="avisos"]').click(); await pg.wait_for_timeout(500)
             await mais.click(); await pg.wait_for_timeout(500)
             check(await view() == {"name": "more", "tab": "menu"} and (await state()).get("rvDepth") == 1, "Mais tapped on Avisos: the menu (Back's place)")
-            await a.locator('.menu-row[data-k="placar"]').click(); await pg.wait_for_timeout(500)
+            await a.locator('.menu-row[data-k="ferias"]').click(); await pg.wait_for_timeout(500)
             await a.locator(".tab", has_text="Calendário").click(); await pg.wait_for_timeout(600)
-            check((await view())["name"] == "calendar" and (await state()).get("rvDepth") == 1, "Calendário from Placar")
+            check((await view())["name"] == "calendar" and (await state()).get("rvDepth") == 1, "Calendário from Férias")
             await pg.go_back(); await pg.wait_for_timeout(500)
             check((await view())["name"] == "now", "Back from there: Agora, not the menu")
 
@@ -103,7 +103,7 @@ async def main():
             # old addresses land on the new place (and the history entry is replaced)
             OLD = [("/mais/integracoes", "/config", "integracoes"), ("/mais/dados", "/config/dados", "dados"), ("/mais/aparencia", "/config/aparencia", "aparencia"),
                    ("/mais/opcoes", "/config/opcoes", "opcoes"), ("/agendas", "/mais/calendarios", "calendarios"), ("/mais/rotinas", "/mais/rotinas", "rotinas"),
-                   ("/mais/avisos", "/mais/avisos", "avisos"), ("/mais/placar", "/mais/placar", "placar"), ("/config/integracoes", "/config", "integracoes")]
+                   ("/mais/avisos", "/mais/avisos", "avisos"), ("/mais/placar", "/config/placar", "placar"), ("/mais/ferias", "/mais/ferias", "ferias"), ("/config/integracoes", "/config", "integracoes")]
             for old, new, k in OLD:
                 await el(f"el._go({old!r}, true)"); await pg.wait_for_timeout(400)
                 v = await view()
@@ -119,8 +119,10 @@ async def main():
             check(await view() == {"name": "more", "tab": "opcoes", "config": True} and (await state()).get("rvPath") == "/config/opcoes", "Back to /mais/opcoes: Configurações › Opções, address replaced")
 
             # the helper of the other tests: from anywhere to a tab of Configurações or a row
+            await open_more(a, "Férias")
+            check((await view())["tab"] == "ferias", "open_more: Férias from Configurações")
             await open_more(a, "Placar")
-            check((await view())["tab"] == "placar", "open_more: Placar from Configurações")
+            check((await view())["tab"] == "placar" and (await view()).get("config") is True, "open_more: Placar (a tab of Configurações) from Férias")
             await open_more(a, "Aparência")
             check((await view())["tab"] == "aparencia", "open_more: Aparência from Placar")
             check(not errs, f"phone: no page errors {errs}")
@@ -159,7 +161,7 @@ async def main():
                         if m["doc"] > m["win"] or m["main"] > m["mainW"] + 1 or m["tabs"] > 1: wide.append((path, m))
                         if path in ("/mais", "/config", "/mais/avisos"):
                             await pg.screenshot(path=f"{SP}/shots/crmenu-{w}-{scheme}-{path.strip('/').replace('/', '-')}.png")
-                    check(not wide, f"{w} px {scheme}: nothing wider than the screen, the four tabs fit {wide}")
+                    check(not wide, f"{w} px {scheme}: nothing wider than the screen, the tabs fit {wide}")
                     check(not errs, f"{w} px {scheme}: no page errors {errs}")
                     await ctx.close()
             await b.close()

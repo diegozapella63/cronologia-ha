@@ -6,6 +6,7 @@ import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
 import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { renderEquipPicker } from "./equip-picker.js";
+import { placeTags } from "./place-tags.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
@@ -118,10 +119,10 @@ export const TasksMixin = (Base) =>
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
         const eqs = t.equips && t.equips.length ? t.equips : t.equip ? [t.equip] : [];
         const rms = t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : [];
-        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), eqs.length ? `${eqs[0].nome}${eqs.length > 1 ? ` +${eqs.length - 1}` : ""}` : "", rms.map((r) => r.nome).join(", "), t.listName].filter(Boolean).join(" · ");
+        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
-          <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small></button>
+          <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small>${placeTags(rms.map((r) => r.nome), eqs.map((e) => e.nome))}</button>
           ${quick
             ? html`<div class="qwho" role="group" aria-label="Quem fez ${t.summary}">
                 ${people.map((p) => html`<button class="qw-btn" style=${colorVars(this._pColor(p), this._dark)} aria-label="${p} fez ${t.summary} (+${t.points})" title="${p} fez (+${t.points})" @click=${() => this._todoDone(t, true, p)}>${initial(p)}</button>`)}

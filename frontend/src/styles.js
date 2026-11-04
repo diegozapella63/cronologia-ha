@@ -909,6 +909,14 @@ export const styles = css`
     flex-wrap: wrap;
     gap: 6px;
   }
+  /* the rooms and the equipments of a maintenance or a task, like the ResolvIA */
+  .tag.room {
+    background: color-mix(in srgb, var(--rv-muted) 14%, transparent);
+    color: var(--rv-text-2);
+  }
+  .place-tags {
+    margin: 5px 0 2px;
+  }
   .lnk {
     display: inline-flex;
     align-items: center;

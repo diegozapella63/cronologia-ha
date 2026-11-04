@@ -1,5 +1,5 @@
 // Where each screen lives (frontend/src/routes.js): Mais is a menu (Calendários, Rotinas, Avisos,
-// Placar and, last, Configurações with its tabs), and the old addresses still land on the right screen.
+// Férias and, last, Configurações with its tabs, Placar among them), and the old addresses still land on the right screen.
 import { hostOf } from "./_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -7,14 +7,14 @@ import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, mor
 import { ChatMixin } from "../frontend/src/chat-panel.js";
 
 describe("routes: the menu of Mais", () => {
-  it("Calendários, Rotinas, Avisos, Placar and, last, Configurações; each with an icon and a short line", () => {
+  it("Calendários, Rotinas, Avisos, Férias and, last, Configurações; each with an icon and a short line", () => {
     assert.deepEqual(
       MENU.map(([, , title]) => title),
-      ["Calendários", "Rotinas", "Avisos", "Placar", "Configurações"],
+      ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações"],
     );
     assert.deepEqual(
       MENU.map(([, path]) => path),
-      ["/mais/calendarios", "/mais/rotinas", "/mais/avisos", "/mais/placar", "/config"],
+      ["/mais/calendarios", "/mais/rotinas", "/mais/avisos", "/mais/ferias", "/config"],
     );
     for (const [, , title, ic, lead] of MENU) {
       assert.ok(ic, `${title}: icon`);
@@ -22,10 +22,10 @@ describe("routes: the menu of Mais", () => {
     }
   });
 
-  it("Configurações has the tabs that are settings: Integrações, Dados, Aparência, Opções", () => {
+  it("Configurações has the tabs that are settings: Integrações, Placar, Dados, Aparência, Opções", () => {
     assert.deepEqual(
       CONFIG_TABS.map(([, label]) => label),
-      ["Integrações", "Dados", "Aparência", "Opções"],
+      ["Integrações", "Placar", "Dados", "Aparência", "Opções"],
     );
   });
 
@@ -80,11 +80,12 @@ describe("routes: old addresses land on the new place", () => {
     assert.equal(canonPath("/mais/dados"), "/config/dados");
     assert.equal(canonPath("/mais/aparencia"), "/config/aparencia");
     assert.equal(canonPath("/mais/opcoes"), "/config/opcoes");
+    assert.equal(canonPath("/mais/placar"), "/config/placar", "Placar (a row up to 1.44) is a tab of Configurações");
     assert.equal(canonPath("/config/integracoes"), "/config");
   });
 
   it("/mais/<tab> of the functions stays, /agendas goes to Calendários, an unknown one to the menu", () => {
-    for (const k of ["calendarios", "rotinas", "avisos", "placar"]) assert.equal(canonPath(`/mais/${k}`), `/mais/${k}`);
+    for (const k of ["calendarios", "rotinas", "avisos", "ferias"]) assert.equal(canonPath(`/mais/${k}`), `/mais/${k}`);
     assert.equal(canonPath("/agendas"), "/mais/calendarios");
     assert.equal(canonPath("/mais/xyz"), "/mais");
     assert.equal(canonPath("/mais/"), "/mais");
@@ -97,7 +98,8 @@ describe("routes: the screen in words (Conversa)", () => {
   it("moreName says the path, with Configurações in it", () => {
     assert.equal(moreName(viewOf("/mais")), "Mais (o menu)");
     assert.equal(moreName(viewOf("/mais/calendarios")), "Mais › Calendários");
-    assert.equal(moreName(viewOf("/mais/placar")), "Mais › Placar");
+    assert.equal(moreName(viewOf("/mais/ferias")), "Mais › Férias");
+    assert.equal(moreName(viewOf("/config/placar")), "Mais › Configurações › Placar");
     assert.equal(moreName(viewOf("/config")), "Mais › Configurações › Integrações");
     assert.equal(moreName(viewOf("/mais/dados")), "Mais › Configurações › Dados");
   });
