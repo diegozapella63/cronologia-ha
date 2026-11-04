@@ -262,6 +262,8 @@ describe("data panel: Mais › Dados", () => {
     const v = p._renderDataPanel();
     assert.match(text(v), /Eventos \(CSV\).*Baixar CSV.*Agenda \(\.ics\).*Escolher.*Baixar JSON.*Baixar ZIP/);
     assert.match(text(v), /01\/11\/2026 às 09:05 3,0 MB · cronologia-2026-11-01\.zip Restaurar/);
+    // Versões anteriores says when the copies are made, like the InventarIA (store.js: every 10 min of use, before import/restore, 3 kept)
+    assert.match(text(v), /Versões anteriores Uma cópia a cada 10 minutos de uso e antes de importar ou restaurar\. Ficam as 3 mais recentes\./);
     click(v, "Escolher");
     assert.deepEqual(p.opened, ["export"]);
     assert.match(controls(v).find((c) => c.text === "Escolher .ics").attrs, /disabled/, "no calendar to write to: Importar eventos off");

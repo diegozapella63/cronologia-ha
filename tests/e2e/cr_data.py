@@ -6,6 +6,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 URL = "http://127.0.0.1:8099/"
@@ -63,7 +64,7 @@ async def main():
         await a.locator(".setup-card .btn.primary").click()
         await wait_for(lambda: stored(data)["app"].get("score", {}).get("enabled") is True, "scoreboard on")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Placar").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Placar"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Marcar pontos em Recompensas']").check(); await A.wait_for_timeout(500)
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(400)
         await a.locator(".btn", has_text="Pontos avulsos").click(); await A.wait_for_timeout(300)
@@ -72,10 +73,11 @@ async def main():
         await a.locator(".sheet .btn.primary").click()
         await wait_for(lambda: len(stored(data)["score"]["entries"]) == 1, "points saved")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Calendários")
         await a.locator(".cal-row", has_text="Pessoal").locator(".tile").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet input[type=text]").fill("Minha agenda")
         await a.locator(".sheet .btn.primary", has_text="Salvar").click(); await A.wait_for_timeout(700)
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Dados"); await A.wait_for_timeout(400)
         panel = await a.locator("#dados").inner_text()
         check("Tudo (ZIP)" in panel and "Eventos (CSV)" in panel and "Dados completos (JSON)" in panel and "Agenda (.ics)" in panel and "Criar backup" in panel and "Ver versões" in panel, "Dados panel like the other apps")
         rows = a.locator("#dados .opts > li")
@@ -105,18 +107,18 @@ async def main():
         async def listed(): return await a.locator("#dados .data-item").count() == 1
         await wait_for(listed, "backup listed")
         # change something, then restore the backup
-        await a.locator(".more-tabs button", has_text="Calendários").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Calendários"); await A.wait_for_timeout(300)
         await a.locator(".cal-row", has_text="Minha agenda").locator(".tile").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet input[type=text]").fill("Outro nome")
         await a.locator(".sheet .btn.primary", has_text="Salvar").click(); await A.wait_for_timeout(700)
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Dados"); await A.wait_for_timeout(400)
         await a.locator("#dados .data-item .btn", has_text="Restaurar").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet .btn.primary", has_text="Restaurar").click()
         await wait_for(lambda: stored(data)["calendars"]["calendar.pessoal"]["name"] == "Minha agenda", "backup restored (name back)")
         check(len(stored(data)["score"]["entries"]) == 1 and stored(data)["app"]["score"]["enabled"] is True, "points and settings kept")
-        await a.locator(".more-tabs button", has_text="Calendários").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Calendários"); await A.wait_for_timeout(500)
         check(await a.locator(".cal-row", has_text="Minha agenda").count() == 1, "screen shows the restored name live")
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Dados"); await A.wait_for_timeout(400)
         # versions
         await a.locator("#dados .btn", has_text="Ver versões").click(); await A.wait_for_timeout(600)
         items = await a.locator(".sheet .data-item").all_inner_texts()

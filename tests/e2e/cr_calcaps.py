@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 
 today = datetime.date.today()
 D = lambda n: (today + datetime.timedelta(days=n)).isoformat()
@@ -22,7 +23,7 @@ async def main():
 
         # Mais › Calendários: grouped by integration, each saying what it allows
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Calendários").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Calendários"); await A.wait_for_timeout(500)
         heads = [h.strip() for h in await a.locator(".panel .mais-head h2").all_inner_texts()]
         check(all(g in heads for g in ["CalDAV", "Calendário local", "Calendário remoto (.ics)", "Feriados", "Google Agenda", "Outlook (Microsoft 365)"]), f"one group per integration ({heads[:7]})")
         hint = lambda name: a.locator(".cal-row", has_text=name).locator(".hint").inner_text()

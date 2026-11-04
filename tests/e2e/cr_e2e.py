@@ -6,6 +6,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 URL = "http://127.0.0.1:8099/"
@@ -150,7 +151,7 @@ async def main():
         await wait_for(lambda: "FREQ=WEEKLY;COUNT=10" in fake_log(data) and "Casamento" in fake_log(data), ".ics events created (with the rrule)")
         # .ics export
         await a.locator(".tab").nth(4).click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Dados"); await A.wait_for_timeout(400)
         await a.locator("#dados .opts li", has_text="Agenda (.ics)").locator(".btn").click(); await A.wait_for_timeout(300)
         async with A.expect_download() as dl:
             await a.locator(".sheet a.btn.primary").click()
@@ -160,7 +161,7 @@ async def main():
         check(d.suggested_filename.endswith(".ics") and ics.startswith("BEGIN:VCALENDAR") and "SUMMARY:Casamento da Júlia e do Pedro" in ics and "DTSTART;VALUE=DATE:" in ics, f"export .ics ({d.suggested_filename}, {ics.count('BEGIN:VEVENT')} events)")
         # prefs: color + hide, synced to the other screen and saved
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Calendários").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Calendários"); await A.wait_for_timeout(400)
         await a.locator(".cal-row", has_text="Giveaways").locator(".switch input").uncheck(); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))
         check(prefs["calendars"].get("calendar.giveaways", {}).get("hidden") is True, "hiding a calendar is saved")

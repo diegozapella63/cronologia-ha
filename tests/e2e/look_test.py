@@ -20,6 +20,13 @@ def host(pg):
 async def accent_var(pg):
     return await pg.evaluate("""() => { const el = document.querySelector('cronologia-app, resolvia-panel'); const r = el.shadowRoot || el;
         const w = r.querySelector('[style*="--rv-accent:"]'); return w ? getComputedStyle(w).getPropertyValue('--rv-accent').trim() : null; }""")
+async def config_tab(root, name):
+    """Mais › Configurações › <name>, once Mais is open: Mais is a menu (CronologIA 1.43.0, ResolvIA 2.37.0)
+    with Configurações as its last row; before, the tabs were right in Mais."""
+    cfg = root.locator(".menu-row, .more-row", has_text="Configurações")
+    if not await root.locator(".more-tabs").count() and await cfg.count():
+        await cfg.click(); await root.locator(".more-tabs").wait_for(timeout=5000)
+    await root.locator(".more-tabs button", has_text=name).click()
 async def run(app):
     repo = _os.environ["E2E_" + app.upper()]
     data = f"{SP}/look-{app}"; shutil.rmtree(data, ignore_errors=True); os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
@@ -46,7 +53,7 @@ async def run(app):
                 await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
                 root = pg.locator("cronologia-app") if app == "cronologia" else pg
                 await root.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
-                await root.locator(".more-tabs button", has_text="Aparência").click(); await pg.wait_for_timeout(500)
+                await config_tab(root, "Aparência"); await pg.wait_for_timeout(500)
                 heads = [h.strip() for h in await root.locator(".mais-head h2").all_inner_texts()]
                 if scheme == "dark":
                     check(heads == ["Tema", "Cor do app"], f"{name}: Aparência headings ({heads})")
@@ -74,7 +81,7 @@ async def run(app):
                 await root.locator(".more-tabs").scroll_into_view_if_needed()
                 await pg.screenshot(path=f"{SP}/shots/look-{app}-{scheme}.png")
                 if app == "cronologia" and scheme == "dark":
-                    await root.locator(".more-tabs button", has_text="Opções").click(); await pg.wait_for_timeout(500)
+                    await config_tab(root, "Opções"); await pg.wait_for_timeout(500)
                     oh = [h.strip() for h in await root.locator(".mais-head h2").all_inner_texts()]
                     check(oh == ["Novo", "Férias", "Semana"], f"CronologIA: Opções tab with Novo, Férias and Semana ({oh})")
                     await root.locator(".week-seg button", has_text="Segunda").click(); await pg.wait_for_timeout(500)
@@ -90,7 +97,7 @@ async def run(app):
             await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
             root = pg.locator("cronologia-app") if app == "cronologia" else pg
             await root.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
-            await root.locator(".more-tabs button", has_text="Aparência").click(); await pg.wait_for_timeout(500)
+            await config_tab(root, "Aparência"); await pg.wait_for_timeout(500)
             order = [t.strip() for t in await root.locator(".tag-swatches .tsw").all_inner_texts() if t.strip() != "Grafite"]
             before = (await root.locator(".tsw.on").inner_text()).strip()
             fill_before = await accent_var(pg)

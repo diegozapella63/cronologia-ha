@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok = 0
@@ -34,7 +35,7 @@ async def main():
         await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
         a = pg.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Integrações"); await pg.wait_for_timeout(600)
         st = await a.locator("#resolvia .ai-state").inner_text()
         check("Conectado ao ResolvIA 2.6.0" in st and "4 listas" in st and "repetição do ResolvIA" in st and "atrasadas" in st, f"connected with version ({st})")
         check("ok" in await a.locator("#resolvia .ai-state").get_attribute("class"), "green dot")

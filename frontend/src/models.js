@@ -586,7 +586,7 @@ export const ModelsMixin = (Base) =>
         if (k.dose) facts.push(["pill", `Dose: ${k.dose}`]);
         if (k.who) facts.push(["user-round", `Quem toma: ${k.who}`]);
         const p = this._ix().people.find((x) => foldText(x.name) === foldText(k.who));
-        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : p && p.notify ? `Aviso no celular: ${this._targetName(p.notify)}` : "Aviso no celular: escolha o celular em Mais"]);
+        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : p && p.notify ? `Aviso no celular: ${this._targetName(p.notify)}` : "Aviso no celular: escolha o celular em Mais › Avisos"]);
       } else if (k.kind === "conta") {
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {

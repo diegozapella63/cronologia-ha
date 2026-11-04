@@ -6,6 +6,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 GREPO = GERENCIA
@@ -222,7 +223,7 @@ async def main():
         check(await a.locator(".ev-row.done", has_text="Varrer a varanda").count() >= 1, "done chores marked on the calendar")
         # Mais: people and alerts
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Avisos").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Avisos"); await A.wait_for_timeout(400)
         av = await a.locator("#avisos").inner_text()
         check("Automático: Galaxy S23" in av and "Automático: Pixel 8" in av and "Mimi" in av, "phones found from the person entities")
         await a.locator("#avisos .pick", has_text="Pixel 8").click(); await A.wait_for_timeout(600)
@@ -241,7 +242,7 @@ async def main():
         await wait_for(lambda: any(x["service"] == "mobile_app_pixel_8" and "Tomei chegou" in x.get("message", "") for x in get("http://127.0.0.1:8123/dev/notifications")), "tapping Tomei on the test confirms on the phone")
         async def tested(): return "o botão Tomei chegou ao app" in await a.locator(".toast").inner_text()
         await wait_for(tested, "and on the app screen")
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         g = await a.locator("#gerencia").inner_text()
         check(re.search(r"Conectado ao GerencIA \d+\.\d+\.\d+", g), f"GerencIA connection shown in Mais ({g[:60]!r})")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(400)

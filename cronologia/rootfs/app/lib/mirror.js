@@ -37,7 +37,7 @@ function dueKeyOfItem(due) {
 }
 
 export class Mirror {
-  /** enabled(): Mais › Integrações › Tarefas do ResolvIA › Usar a integração (off: the tasks leave the list). */
+  /** enabled(): Mais › Configurações › Integrações › Tarefas do ResolvIA › Usar a integração (off: the tasks leave the list). */
   constructor({ ha, store, todos, home, log, onChange = () => {}, enabled = () => true }) {
     this.enabled = enabled;
     this.ha = ha;
@@ -86,7 +86,7 @@ export class Mirror {
     return out;
   }
 
-  /** For Mais › Integrações: how many tasks are in the list, and any problem. */
+  /** For Mais › Configurações › Integrações: how many tasks are in the list, and any problem. */
   status() {
     const st = this.settings();
     const n = Object.values(this.recs).filter((r) => r.uid && r.list === st.list).length;

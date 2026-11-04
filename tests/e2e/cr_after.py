@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -141,7 +142,7 @@ async def main():
         await wait_for(lambda: "Volta: 4 dias depois de feita" in events("Limpar o banheiro")[0]["description"] and not events("Limpar o banheiro")[0].get("rrule"), "saved: comes back 4 days after done")
         # 8) Levar para o ResolvIA: a late one goes with its (past) date; done there moves it here
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.casa"); await A.wait_for_timeout(500)
         await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").check(); await A.wait_for_timeout(400)
         def item(s): return next((i for i in json.loads(urllib.request.urlopen("http://127.0.0.1:8123/dev/todo?entity_id=todo.casa").read()) if i["summary"] == s and "[cr:" in (i.get("description") or "")), None)

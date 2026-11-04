@@ -897,7 +897,7 @@ export const RewardsMixin = (Base) =>
         return html`<div class="panel score-set" id="placar">
           ${this._secHead("trophy", "Ajustes do placar")}
           <div class="ai-state off"><span class="dot"></span><div><b>Placar desligado</b><span>Ligue em Recompensas: escolha quem participa e de quanto em quanto tempo o placar fecha.</span></div></div>
-          <div class="score-actions" style="padding-left:0;padding-right:0;border:0"><button class="btn primary sm" @click=${() => this._go("/recompensas", true)}>${icon("trophy")}Ir para Recompensas</button></div>
+          <div class="score-actions" style="padding-left:0;padding-right:0;border:0"><button class="btn primary sm" @click=${() => this._goTab("/recompensas")}>${icon("trophy")}Ir para Recompensas</button></div>
         </div>`;
       }
       return html`${this._renderScoreSettingsPanel(s)} ${this._renderDemeritsSettings()}`;

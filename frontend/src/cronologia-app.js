@@ -19,6 +19,7 @@ import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/ap
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { DataMixin } from "./datapanel.js";
+import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle } from "./routes.js";
 import {
   PALETTE,
   colorById,
@@ -134,7 +135,9 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     this._ready = false;
     this._bootError = null;
     this._online = true;
-    this._path = (history.state && history.state.rvPath) || "";
+    // an old address (kept in the history by an earlier version) becomes the new one
+    this._path = canonPath((history.state && history.state.rvPath) || "");
+    if (history.state && history.state.rvPath != null && history.state.rvPath !== this._path) history.replaceState({ ...history.state, rvPath: this._path }, "");
     this._sheet = null;
     this._form = null;
     this._toast = null;
@@ -363,7 +366,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     return v === undefined ? fallback : v;
   }
 
-  /** Mais › Aparência › Cor do dia: on unless turned off. */
+  /** Mais › Configurações › Aparência › Cor do dia: on unless turned off. */
   _accentDaily() {
     return this._app("accent_daily", true) !== false;
   }
@@ -441,7 +444,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
-  /** Modo férias (Mais › Opções): {from, to} as YYYY-MM-DD, or null. */
+  /** Modo férias (Mais › Configurações › Opções): {from, to} as YYYY-MM-DD, or null. */
   _away() {
     const a = this._app("away", null);
     return a && a.from && a.to ? a : null;
@@ -488,29 +491,41 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
 
   // ------------------------------------------------------------ navigation (same as the other apps)
 
+  /** The screen of the path (routes.js): Agora, Calendário, Recompensas, or Mais (the menu, its screens and Configurações). */
   _view() {
-    const p = (this._path || "").replace(/\/+$/, "");
-    if (p === "/calendario") return { name: "calendar" };
-    if (p === "/agendas") return { name: "more", tab: "calendarios" }; // old address of the Agendas page
-    if (p === "/recompensas") return { name: "rewards" };
-    const more = /^\/mais(?:\/(rotinas|avisos|placar|integracoes|dados|aparencia|opcoes))?$/.exec(p);
-    if (more) return { name: "more", tab: more[1] || "calendarios" };
-    return { name: "now" };
+    return viewOf(this._path);
   }
 
   async _go(path, replace = false) {
+    path = canonPath(path);
     if (this._sheet) this._closeSheet();
     if (this._popping) await this._popping;
-    const depth = ((history.state && history.state.rvDepth) || 0) + (replace ? 0 : 1);
-    if (replace) history.replaceState({ rvDepth: depth, rvPath: path }, "");
-    else history.pushState({ rvDepth: depth, rvPath: path }, "");
+    const st = history.state || {};
+    const depth = (st.rvDepth || 0) + (replace ? 0 : 1);
+    const state = { rvDepth: depth, rvPath: path };
+    // a screen of Mais opened from the menu: "‹ Mais" (and a swipe to the right) go Back to it;
+    // switching the tabs of Configurações keeps that
+    const cur = this._view();
+    if (underMore(viewOf(path)) && (replace ? st.rvUp : cur.name === "more" && cur.tab === "menu")) state.rvUp = true;
+    if (replace) history.replaceState(state, "");
+    else history.pushState(state, "");
     this._path = path;
     if (path === "/calendario") this._scrollWeek = true;
     const main = this.renderRoot && this.renderRoot.querySelector("main");
     if (main) main.scrollTo({ top: 0, behavior: "instant" });
   }
 
-  // Arrastar para o lado: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais (a grade do mês segue trocando o mês)
+  /** "‹ Mais" on a screen of Mais: Back to the menu when it came from there, or else the menu in its place. */
+  async _goMenu() {
+    if (this._sheet) await this._closeSheet();
+    if (history.state && history.state.rvUp) await this._popEntry("rvUp");
+    else await this._go("/mais", true);
+    const main = this.renderRoot && this.renderRoot.querySelector("main");
+    if (main) main.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  // Arrastar para o lado: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais (a grade do mês segue trocando o mês);
+  // numa tela de Mais (Calendários… Configurações), para a direita volta ao menu
   _onSwipeStart(e) {
     this._sw = this._sheet || this._cam ? null : swipeStart(e, ".month");
   }
@@ -519,6 +534,12 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const d = swipeEnd(e, this._sw);
     this._sw = null;
     if (!d || this._sheet) return;
+    if (underMore(this._view())) {
+      if (d > 0) return;
+      this._haptic("light");
+      this._goMenu().then(() => slideIn(this, "more", d));
+      return;
+    }
     const order = [
       ["now", ""],
       ["calendar", "/calendario"],
@@ -533,7 +554,17 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     slideIn(this, order[j][0], d);
   }
 
-  _goTab(path) {
+  async _goTab(path) {
+    const v = this._view();
+    if (path === "/mais" && v.name === "more") {
+      if (underMore(v)) return this._goMenu();
+      const main = this.renderRoot.querySelector("main");
+      if (main) main.scrollTo({ top: 0 });
+      return;
+    }
+    // leaving a screen opened from the menu of Mais: first Back to the menu, so Back from the new tab goes where Mais did
+    if (path !== "" && this._sheet) await this._closeSheet();
+    if (path !== "" && history.state && history.state.rvUp) await this._popEntry("rvUp");
     const view = this._view().name;
     if (path === "") {
       if (view === "now") {
@@ -590,7 +621,9 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       this._sheet = null;
       this._form = null;
     }
-    const path = (history.state && history.state.rvPath) || "";
+    const raw = (history.state && history.state.rvPath) || "";
+    const path = canonPath(raw);
+    if (path !== raw) history.replaceState({ ...history.state, rvPath: path }, "");
     if (path !== this._path) this._path = path;
     for (const done of [...(this._popWaiters || [])]) done();
   }
@@ -924,7 +957,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     this.requestUpdate();
   }
 
-  /** Mais › Integrações › Falar: the speech-to-text the app uses ("" = the voice assistant's). */
+  /** Mais › Configurações › Integrações › Falar: the speech-to-text the app uses ("" = the voice assistant's). */
   async _chooseVoice(id) {
     await this._saveAppPrefs({ voice_engine: id || null });
     await this._loadVoice(true);
@@ -1156,7 +1189,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const text = (this._form.text || "").trim();
     if (!text) return this._focusSheetText();
     if (!this._ai.ready) {
-      this._setForm({ error: "Para ler mensagens, configure uma IA no Home Assistant (veja em Mais › Leitura por IA)." });
+      this._setForm({ error: "Para ler mensagens, configure uma IA no Home Assistant (veja em Mais › Configurações › Integrações)." });
       return;
     }
     this._setForm({ step: "loading", error: null, note: null, prevStep: "text", loadingText: "Procurando eventos com IA…" });
@@ -1383,7 +1416,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
 
   _goAiSettings() {
     this._closeSheet();
-    this._go("/mais/integracoes", this._view().name !== "now").then(() =>
+    this._go("/config", this._view().name !== "now").then(() =>
       this.updateComplete.then(() => {
         const el = this.renderRoot.querySelector("#leitura-ia");
         if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -1444,7 +1477,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Novo evento">
           <span class="pill">${icon("plus")}</span><span>Novo</span>
         </button>
-        ${tab("rewards", "/recompensas", "Recompensas", "trophy")} ${tab("more", "/mais", "Mais", "sliders-horizontal")}
+        ${tab("rewards", "/recompensas", "Recompensas", "trophy")} ${tab("more", "/mais", "Mais", "ellipsis")}
       </div>
     </nav>`;
   }
@@ -1468,7 +1501,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         ${item("now", "", "Agora", "clock-3")}
         <button class="side-link" @click=${() => this._toSearch()}>${icon("search")}<span>Buscar</span><kbd>/</kbd></button>
         ${item("calendar", "/calendario", "Calendário", "calendar-days")}
-        ${item("rewards", "/recompensas", "Recompensas", "trophy")} ${item("more", "/mais", "Mais", "sliders-horizontal")}
+        ${item("rewards", "/recompensas", "Recompensas", "trophy")} ${item("more", "/mais", "Mais", "ellipsis")}
       </div>
       ${this._renderSideMonth(view)}
       ${cals.length
@@ -1520,11 +1553,13 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     </div>`;
   }
 
-  _renderHead(title, status, extra = nothing) {
+  /** The top of every screen; up: the "‹ Mais" link of the screens of Mais, back to the menu. */
+  _renderHead(title, status, extra = nothing, up = false) {
     const name = this._userName();
     const st = !this._online ? { text: "Reconectando ao CronologIA…", tone: "off" } : status;
     return html`<header class="brand-head">
       <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
+      ${up ? html`<button class="uplink" @click=${() => this._goMenu()}>${icon("chevron-left")}<span>Mais</span></button>` : nothing}
       <h1 class="page-title">${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
@@ -1782,7 +1817,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     // right after the last Tomei here, until you leave Agora, so it doesn't vanish from under the finger.
     const meds = this._ix().meds || [];
     const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
-    const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais")}>Mostrar</button></div>` : nothing;
+    const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais/calendarios")}>Mostrar</button></div>` : nothing;
     const medsPart = html`${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}`;
     const dayPart = html`${hero || nothing}
       ${allDay.length
@@ -2239,53 +2274,68 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
 
   // ---------- Mais
 
+  /** Mais: a menu, like the InventarIA. Each row opens its own screen; Configurações is the last one. */
+  _renderMenu() {
+    return html`<section class="page more-menu">
+      ${this._renderHead("Mais", null)}
+      <ul class="panel menu-list" aria-label="Mais">
+        ${MENU.map(
+          ([k, path, title, ic, lead]) => html`<li>
+            <button class="menu-row" data-k=${k} @click=${() => this._go(path)}>
+              <span class="mais-ic" aria-hidden="true">${icon(ic)}</span><span class="mb"><b>${title}</b><span>${lead}</span></span>${icon("chevron-right")}
+            </button>
+          </li>`,
+        )}
+      </ul>
+      ${this._renderFoot()}
+    </section>`;
+  }
+
+  _renderFoot() {
+    return html`<p class="foot"><b>CronologIA</b><br />v${this._version} · usa os calendários nativos do Home Assistant.</p>`;
+  }
+
   /**
-   * Mais is split in tabs at the top: /mais (Calendários), /mais/avisos,
-   * /mais/integracoes, /mais/dados, /mais/aparencia, /mais/opcoes. Switching tabs replaces
-   * the history entry, so Back leaves Mais.
+   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/placar) or Configurações
+   * (/config, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
+   * Configurações replace the history entry, so Back goes to the menu.
    */
   _renderMore() {
-    const tab = this._view().tab;
-    const tabs = [
-      ["calendarios", "Calendários", "layers"],
-      ["rotinas", "Rotinas", "repeat"],
-      ["avisos", "Avisos", "bell-ring"],
-      ["placar", "Placar", "trophy"],
-      ["integracoes", "Integrações", "blocks"],
-      ["dados", "Dados", "archive"],
-      ["aparencia", "Aparência", "palette"],
-      ["opcoes", "Opções", "toggle-right"],
-    ];
-    const go = (k) => {
-      if (k === tab) return;
-      this._haptic("light");
-      this._go(k === "calendarios" ? "/mais" : `/mais/${k}`, true);
-    };
+    const v = this._view();
+    if (v.tab === "menu") return this._renderMenu();
+    const tab = v.tab;
     let body;
-    let status = { text: `CronologIA ${this._version}` };
-    if (tab === "rotinas") {
+    let status = null;
+    if (v.config) {
+      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
+      else if (tab === "dados") body = this._renderDataPanel();
+      else if (tab === "aparencia") body = this._renderAppearance();
+      else body = this._renderOptions();
+    } else if (tab === "rotinas") {
       body = this._renderCatalog();
       const n = this._catalogCount();
       status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
     } else if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "placar") body = this._renderScoreSettings();
-    else if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
-    else if (tab === "dados") body = this._renderDataPanel();
-    else if (tab === "aparencia") body = this._renderAppearance();
-    else if (tab === "opcoes") body = this._renderOptions();
     else {
       body = this._renderCalendarsTab();
       const cals = this._cals();
       const editable = cals.filter((c) => c.canCreate).length;
       status = { text: cals.length ? `${plural(cals.length, "calendário", "calendários")} · ${editable ? plural(editable, "com edição", "com edição") : "só leitura"}` : "Nenhum calendário ainda" };
     }
-    return html`<section class="page">
-      ${this._renderHead("Mais", status)}
-      <div class="seg compact more-tabs" role="tablist" aria-label="Seções">
-        ${tabs.map(([k, label, ic]) => html`<button class=${tab === k ? "on" : ""} role="tab" aria-selected=${tab === k ? "true" : "false"} @click=${() => go(k)}>${icon(ic)}<span>${label}</span></button>`)}
+    if (!v.config) return html`<section class="page more-page">${this._renderHead(moreTitle(v), status, nothing, true)} ${body}</section>`;
+    const go = (k) => {
+      if (k === tab) return;
+      this._haptic("light");
+      this._go(pathOf({ name: "more", tab: k, config: true }), true);
+    };
+    return html`<section class="page more-page">
+      ${this._renderHead("Configurações", status, nothing, true)}
+      <div class="seg compact more-tabs" role="tablist" aria-label="Seções de Configurações">
+        ${CONFIG_TABS.map(([k, label, ic]) => html`<button class=${tab === k ? "on" : ""} role="tab" aria-selected=${tab === k ? "true" : "false"} @click=${() => go(k)}>${icon(ic)}<span>${label}</span></button>`)}
       </div>
-      <div role="tabpanel" aria-label=${tabs.find((t) => t[0] === tab)[1]}>${body}</div>
-      <p class="foot"><b>CronologIA</b><br />v${this._version} · usa os calendários nativos do Home Assistant.</p>
+      <div role="tabpanel" aria-label=${CONFIG_TABS.find((t) => t[0] === tab)[1]}>${body}</div>
+      ${this._renderFoot()}
     </section>`;
   }
 
@@ -2308,7 +2358,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     `;
   }
 
-  /** Mais › Opções: how the agenda works, for the whole house. */
+  /** Mais › Configurações › Opções: how the agenda works, for the whole house. */
   _renderOptions() {
     const ws = this._app("week_start", 1);
     const details = this._app("event_details", false) === true;
@@ -2335,7 +2385,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     `;
   }
 
-  /** Mais › Opções › Férias: from when to when the routines and the maintenance rest (the medicines go on). */
+  /** Mais › Configurações › Opções › Férias: from when to when the routines and the maintenance rest (the medicines go on). */
   _renderAwayOptions() {
     const a = this._away();
     const today = ymd(new Date(this._now));
@@ -2381,7 +2431,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       </div>
       <div class="ai-box">${icon("scan-text")}<span>${ai.ready
         ? "Com uma mensagem ou foto, a IA encontra os eventos, com data, horário e local. Você confere antes de criar."
-        : "Para ler mensagens e fotos, configure a Leitura por IA em Mais › Integrações."}</span></div>`;
+        : "Para ler mensagens e fotos, configure a Leitura por IA em Mais › Configurações › Integrações."}</span></div>`;
   }
 
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
@@ -2389,7 +2439,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     return html`<div class="mais-head"><span class="mais-ic" aria-hidden="true">${icon(ic)}</span><h2>${title}</h2></div>${lead ? html`<p class="panel-lead">${lead}</p>` : nothing}`;
   }
 
-  /** Mais › Integrações › Uso da IA: the calls counted by the server (uso_ia.json). */
+  /** Mais › Configurações › Integrações › Uso da IA: the calls counted by the server (uso_ia.json). */
   async _loadUsage() {
     if (!this.api.aiUsage) return;
     try {
@@ -2413,12 +2463,12 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     });
   }
 
-  /** Mais › Integrações › Usar IA: off hides everything that reads messages and photos with AI. */
+  /** Mais › Configurações › Integrações › Usar IA: off hides everything that reads messages and photos with AI. */
   _aiOn() {
     return !this._app("ai_off", false);
   }
 
-  /** Mais › Integrações › Sensores no Home Assistant: off unless turned on; off removes them. */
+  /** Mais › Configurações › Integrações › Sensores no Home Assistant: off unless turned on; off removes them. */
   _renderSensorsPanel() {
     const on = this._app("sensors_on", false) === true;
     const list = [

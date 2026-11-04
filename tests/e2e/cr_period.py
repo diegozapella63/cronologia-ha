@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -149,7 +150,7 @@ async def main():
         await wait_for(timed, "Num horário: no Período")
         # 7) Mais › Rotinas
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Rotinas").click(); await A.wait_for_timeout(600)
+        await open_more(a, "Rotinas"); await A.wait_for_timeout(600)
         hint = await a.locator(".cat-row", has_text="Abrir janelas").locator(".hint").inner_text()
         check("de manhã" in hint, f"Mais › Rotinas: de manhã ({hint!r})")
         # 8) the afternoon (the page's clock at 15:00): tarde, then the morning one (late), any time, noite

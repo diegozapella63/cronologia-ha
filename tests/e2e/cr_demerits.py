@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -47,7 +48,7 @@ async def main():
         a = A.locator("cronologia-app")
         async def placar():
             await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-            await a.locator(".more-tabs button", has_text="Placar").click(); await A.wait_for_timeout(400)
+            await open_more(a, "Placar"); await A.wait_for_timeout(400)
         async def recompensas():
             await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(500)
         await recompensas()

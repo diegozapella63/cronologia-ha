@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 
 today = datetime.date.today()
 D = lambda n: (today + datetime.timedelta(days=n)).isoformat()
@@ -25,6 +26,7 @@ async def main():
         def evs(name, cal=W): return st.events(cal, T(-1, 0), T(40, 0), name)
         # Mais › Calendários › Calendário padrão: where Novo starts
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Calendários")
         await a.locator("#novos-eventos select").select_option(W)
         await wait_for(lambda: st.stored()["app"].get("default_calendar") == W, "Calendário padrão saved")
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(500)

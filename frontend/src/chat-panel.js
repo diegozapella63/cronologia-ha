@@ -8,11 +8,11 @@ import { renderChat } from "./chat.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ymd, hm, startOfDay, addDays, clip } from "./util.js";
 import { periodInfo } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { moreName } from "./routes.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
 const SAVE_KEY = "cronologia-conversa";
-const MORE_TABS = { calendarios: "Calendários", rotinas: "Rotinas", avisos: "Avisos", placar: "Placar", integracoes: "Integrações", dados: "Dados", aparencia: "Aparência", opcoes: "Opções" };
 const ddmm = (s) => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
 const plus1h = (t) => {
   const [h, m] = t.split(":").map(Number);
@@ -100,7 +100,7 @@ export const ChatMixin = (Base) =>
         return `Calendário${d ? `, no dia ${ddmm(d)}` : ""}`;
       }
       if (v.name === "rewards") return "Recompensas (placar, prêmios e extrato)";
-      if (v.name === "more") return `Mais › ${MORE_TABS[v.tab] || "configurações"}`;
+      if (v.name === "more") return moreName(v);
       return "Agora (o dia de hoje: agenda, remédios, rotinas e contas)";
     }
 

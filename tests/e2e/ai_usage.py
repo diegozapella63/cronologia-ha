@@ -22,6 +22,13 @@ def sensor(entity, token):
     req = urllib.request.Request(f"http://127.0.0.1:8123/api/states/{entity}", headers={"authorization": f"Bearer {token}"})
     return json.loads(urllib.request.urlopen(req).read())
 
+async def config_tab(root, name):
+    """Mais › Configurações › <name>, once Mais is open: Mais is a menu (CronologIA 1.43.0, ResolvIA 2.37.0)
+    with Configurações as its last row; before, the tabs were right in Mais."""
+    cfg = root.locator(".menu-row, .more-row", has_text="Configurações")
+    if not await root.locator(".more-tabs").count() and await cfg.count():
+        await cfg.click(); await root.locator(".more-tabs").wait_for(timeout=5000)
+    await root.locator(".more-tabs button", has_text=name).click()
 async def run(app):
     repo = _os.environ["E2E_" + app.upper()]
     data = f"{SP}/use-{app}"; shutil.rmtree(data, ignore_errors=True); os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
@@ -56,7 +63,7 @@ async def run(app):
             await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
             root = pg.locator("cronologia-app") if app == "cronologia" else pg
             await root.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
-            await root.locator(".more-tabs button", has_text="Integrações").click(); await pg.wait_for_timeout(900)
+            await config_tab(root, "Integrações"); await pg.wait_for_timeout(900)
             panel = root.locator("#uso-ia")
             await panel.wait_for(timeout=8000)
             tiles = [t.replace("\n", " ") for t in await panel.locator(".uso-tile").all_inner_texts()]

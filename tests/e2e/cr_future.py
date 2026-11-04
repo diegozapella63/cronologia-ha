@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -114,7 +115,7 @@ async def main():
         check("Limpar o banheiro" not in names, f"it leaves Próximas rotinas ({names})")
         # from the event window: a routine days ahead can be marked earlier too
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Rotinas").click(); await A.wait_for_timeout(600)
+        await open_more(a, "Rotinas"); await A.wait_for_timeout(600)
         await a.locator("#cat-rotina .cat-row", has_text="Lavar o carro").click(); await A.wait_for_timeout(600)
         who = sheet.locator(".who-btn", has_text="Andressa")
         check(await who.count() == 1, "the event window of a routine 5 days ahead: who did it, to mark it now")

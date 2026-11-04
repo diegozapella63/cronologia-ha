@@ -363,7 +363,7 @@ export class Api {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }
 
-  /** Mais › Integrações › Uso da IA. */
+  /** Mais › Configurações › Integrações › Uso da IA. */
   aiUsage() {
     return this.call("cronologia/ai/usage");
   }

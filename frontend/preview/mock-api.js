@@ -436,7 +436,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.42.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.43.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {
@@ -521,7 +521,7 @@ export class MockApi {
     ];
     const sel = this.prefs.app.ai_entity || "";
     const using = entities.find((e) => e.id === sel) || entities[0];
-    return { ready: true, images: using.images, selected: sel, using: { id: using.id, name: using.name }, entities, reason: using.images ? null : `${using.name} não lê fotos. Escolha outra IA em Mais › Leitura por IA.` };
+    return { ready: true, images: using.images, selected: sel, using: { id: using.id, name: using.name }, entities, reason: using.images ? null : `${using.name} não lê fotos. Escolha outra IA em Mais › Configurações › Integrações.` };
   }
 
   // In the preview nothing leaves the page.

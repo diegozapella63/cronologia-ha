@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -49,7 +50,7 @@ async def main():
         await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
         # settings show every list, with De quem é
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await pg.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await pg.wait_for_timeout(500)
         rows = a.locator("#resolvia .row.switch-row").filter(has=pg.locator(".owner-pick"))
         names = [t.split("\n")[0] for t in await rows.all_inner_texts()]
         check("Trabalho" in names and "Casa" in names, f"settings list every list ({names})")

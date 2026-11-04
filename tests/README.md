@@ -17,3 +17,4 @@ O Home Assistant simulado tem variações pelas variáveis `FAKE_*` (lista no co
 ## Peças que ajudam
 
 - `tests/_lit.mjs`: deixa testar no Node os mixins da tela (Lit) sem navegador. Importe antes do módulo da tela; `text(view)` lê o que a pessoa veria, `click(view, "rótulo")` e `fire(view, rótulo, "change", ev)` rodam o que o botão faz, e `hostOf(Mixin)` dá um app de mentira (toasts, janelas, preferências salvas) com `fakeApi({método: resposta})` no lugar de `this.api`.
+- `tests/e2e/mais_lib.py`: `await open_more(a, "Dados")` abre, de qualquer tela, uma linha do menu Mais (Calendários, Rotinas, Avisos, Placar) ou uma aba de Mais › Configurações (Integrações, Dados, Aparência, Opções), como a pessoa faria.

@@ -435,6 +435,71 @@ export const styles = css`
     height: 21px;
     stroke-width: 1.9;
   }
+  /* Mais: the menu, like the InventarIA (a row per screen, Configurações last) */
+  .menu-list {
+    list-style: none;
+    margin: 0 0 18px;
+  }
+  .menu-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 76px;
+    padding: 12px 0;
+    text-align: left;
+    border-top: 1px solid var(--rv-line);
+  }
+  .menu-list > li:first-child > .menu-row {
+    border-top: 0;
+  }
+  .menu-row .mb {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .menu-row b {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .menu-row .mb span {
+    color: var(--rv-muted);
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .menu-row > .i {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--rv-faint);
+  }
+  @media (hover: hover) {
+    .menu-row:hover b {
+      color: var(--rv-accent-ink);
+    }
+    .uplink:hover {
+      background: var(--rv-surface-2);
+      color: var(--rv-text);
+    }
+  }
+  /* the screens of Mais: "‹ Mais" above the title, back to the menu */
+  .uplink {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin: 12px 0 0 -6px;
+    padding: 6px 10px 6px 2px;
+    border-radius: 10px;
+    color: var(--rv-text-2);
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .uplink .i {
+    width: 20px;
+    height: 20px;
+  }
   /* Novo › Rotina, Remédio, Manutenção › Repete: a grid of two lines, the choice filled like the chips */
   .seg.seg-grid {
     display: grid;
@@ -2529,7 +2594,7 @@ export const extraStyles = css`
     line-height: 1.5;
     color: var(--rv-muted);
   }
-  /* Mais › Integrações: Usar a integração, then how it is going */
+  /* Mais › Configurações › Integrações: Usar a integração, then how it is going */
   .integ-switch + .ai-state {
     margin-top: 8px;
   }
@@ -3063,6 +3128,18 @@ export const extraStyles = css`
       padding: 0;
       margin: 0 0 36px;
       overflow: visible;
+    }
+    /* Mais: the menu as a list between lines, like the InventarIA */
+    .page:not(.cal-page) .panel.menu-list {
+      margin-top: 8px;
+      border-top: 1px solid var(--rv-line);
+      border-bottom: 1px solid var(--rv-line);
+    }
+    .menu-row {
+      padding: 12px 4px;
+    }
+    .menu-row:hover {
+      background: var(--rv-surface-2);
     }
     /* Calendário: the actions at the top right, above the arrows */
     .cal-top {

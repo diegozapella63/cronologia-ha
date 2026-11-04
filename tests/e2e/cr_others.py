@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -51,7 +52,7 @@ async def main():
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
 
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await pg.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await pg.wait_for_timeout(500)
         sw = a.locator("#resolvia input[aria-label='Criar tarefas nas listas dos outros']")
         check(await sw.count() == 1 and not await sw.is_checked(), "Tarefas do ResolvIA: the switch, off")
         await sw.check(); await pg.wait_for_timeout(500)

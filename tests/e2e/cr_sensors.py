@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, urllib.error
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -47,9 +48,9 @@ async def main():
         check(not any(has(e) for e in SENS), "and the app creates none")
         a = A.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Avisos").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Avisos"); await A.wait_for_timeout(400)
         check("No Home Assistant" not in await a.locator(".page").first.inner_text(), "Avisos: no Home Assistant how-to (it is in Integrações › Sensores)")
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         panel = a.locator("#sensores")
         check(await panel.count() == 1 and "Sensores no Home Assistant" in await panel.inner_text(), "Integrações: Sensores no Home Assistant")
         sw = panel.locator("input[aria-label='Criar sensores']")

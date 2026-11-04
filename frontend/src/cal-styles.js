@@ -3084,7 +3084,7 @@ export const calStyles = css`
     color: var(--rv-muted);
   }
 
-  /* ---------- Mais: tabs at the top ---------- */
+  /* ---------- Mais › Configurações: tabs at the top ---------- */
   .more-tabs {
     position: sticky;
     top: 0;
@@ -3092,7 +3092,7 @@ export const calStyles = css`
     margin: 0 0 14px;
     box-shadow: 0 0 0 6px var(--rv-bg);
   }
-  /* six tabs: they keep their width and the bar scrolls sideways when the screen is narrow */
+  /* the four tabs of Configurações: they keep their width and the bar scrolls sideways if the screen is too narrow */
   .more-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -3107,7 +3107,7 @@ export const calStyles = css`
     padding-right: 6px;
     white-space: nowrap;
   }
-  /* phones: smaller so the six fit (below ~400 px the bar scrolls sideways) */
+  /* phones: smaller, so the four fit */
   @media (max-width: 440px) {
     .seg.compact.more-tabs {
       gap: 1px;
@@ -3118,7 +3118,7 @@ export const calStyles = css`
       padding-right: 4px;
     }
   }
-  /* Five tabs: the icons only where there is room for them. */
+  /* the icons only where there is room for them */
   @media (max-width: 600px) {
     .more-tabs .i {
       display: none;
@@ -3269,7 +3269,7 @@ export const calStyles = css`
     color: #f2c14e;
   }
 
-  /* Mais › Integrações › Levar para o ResolvIA */
+  /* Mais › Configurações › Integrações › Levar para o ResolvIA */
   .sub-lead {
     margin: 4px 0 8px;
     font-size: 13.5px;

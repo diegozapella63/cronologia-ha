@@ -8,6 +8,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -31,7 +32,7 @@ async def main():
         await pg.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, participants: ['Andressa', 'Diego'] })")
         await pg.wait_for_timeout(800)
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Placar").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Placar"); await pg.wait_for_timeout(600)
         panel = a.locator("#demeritos-ajustes")
         if not await panel.locator(".demerit").count():
             await panel.locator(".dm-ideas .pick").first.click(); await pg.wait_for_timeout(800)
@@ -49,7 +50,7 @@ async def main():
         check("cronologia_demerito" not in await sheet.inner_text(), "Editar demérito: no event how-to")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(400)
         # Mais › Rotinas: the points in gold
-        await a.locator(".more-tabs button", has_text="Rotinas").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Rotinas"); await pg.wait_for_timeout(600)
         pts = a.locator("#cat-rotina .cat-row .pts-inline")
         n = await pts.count()
         agora_col = None

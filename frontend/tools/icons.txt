@@ -17,3 +17,5 @@ chart-column
 contrast
 
 toggle-right
+
+ellipsis

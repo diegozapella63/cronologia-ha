@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, urllib.error
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -47,7 +48,7 @@ async def main():
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
         heads = {}
         for tab in ["Calendários", "Avisos", "Placar", "Integrações", "Dados", "Aparência", "Opções"]:
-            await a.locator(".more-tabs button", has_text=tab).click(); await A.wait_for_timeout(500)
+            await open_more(a, tab, 500)
             heads[tab] = [h.strip() for h in await a.locator(".mais-head h2").all_inner_texts()]
             await A.screenshot(path=f"{SP}/shots/crai-{tab}.png")
         print(heads)
@@ -63,7 +64,7 @@ async def main():
         await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
         # off
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await a.locator("input[aria-label='Usar IA']").uncheck()
         await wait_for(lambda: stored()["app"].get("ai_off") is True, "Usar IA off saved")
         txt = await a.locator("#leitura-ia").inner_text()
@@ -78,10 +79,10 @@ async def main():
         await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(500)
         check(await a.locator(".mic-top:not(.chat-top):visible").count() == 0, "off: no Falar on Calendário")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Dados"); await A.wait_for_timeout(400)
         check(await a.locator("#dados .btn", has_text="Escolher .ics").count() == 1, "off: .ics import still in Dados")
         # back on
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await a.locator("input[aria-label='Usar IA']").check()
         await wait_for(lambda: "ai_off" not in stored()["app"], "back on")
         check(extract() != (409, "ai_off"), "on: the server reads again")

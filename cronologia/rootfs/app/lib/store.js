@@ -46,19 +46,19 @@ function cleanApp(raw) {
   if (!raw || typeof raw !== "object") fail("ajustes inválidos");
   const out = {};
   if ("accent" in raw) out.accent = COLORS.includes(raw.accent) ? raw.accent : null;
-  // Mais › Aparência › Cor do dia: on unless turned off (false); null = back to on
+  // Mais › Configurações › Aparência › Cor do dia: on unless turned off (false); null = back to on
   if ("accent_daily" in raw) out.accent_daily = raw.accent_daily === false ? false : null;
   if ("week_start" in raw) out.week_start = raw.week_start === 1 ? 1 : raw.week_start === 0 ? 0 : null;
   if ("view" in raw) out.view = VIEWS.includes(raw.view) ? raw.view : null;
   if ("ai_entity" in raw) out.ai_entity = AI_RE.test(raw.ai_entity || "") ? raw.ai_entity : null;
-  // Mais › Integrações › Falar: the speech-to-text (stt.* or an engine of a voice assistant); null = the voice assistant's
+  // Mais › Configurações › Integrações › Falar: the speech-to-text (stt.* or an engine of a voice assistant); null = the voice assistant's
   if ("voice_engine" in raw) out.voice_engine = /^[a-z0-9_.]{1,80}$/.test(raw.voice_engine || "") ? raw.voice_engine : null;
   if ("default_calendar" in raw) out.default_calendar = CAL_RE.test(raw.default_calendar || "") ? raw.default_calendar : null;
   if ("hide_past" in raw) out.hide_past = raw.hide_past ? true : null;
   if ("gerencia_hidden" in raw) out.gerencia_hidden = raw.gerencia_hidden ? true : null;
-  // Mais › Opções › Eventos › Local e notas: the two fields in the event form (off by default)
+  // Mais › Configurações › Opções › Eventos › Local e notas: the two fields in the event form (off by default)
   if ("event_details" in raw) out.event_details = raw.event_details ? true : null;
-  // Mais › Integrações: each integration is off until turned on (true = on)
+  // Mais › Configurações › Integrações: each integration is off until turned on (true = on)
   if ("resolvia_on" in raw) out.resolvia_on = raw.resolvia_on ? true : null;
   if ("gerencia_on" in raw) out.gerencia_on = raw.gerencia_on ? true : null;
   if ("todo_hidden" in raw) {
@@ -82,7 +82,7 @@ function cleanApp(raw) {
     }
     out.todo_owner = Object.keys(owners).length ? owners : null;
   }
-  // Mais › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
+  // Mais › Configurações › Integrações › Usar IA: off hides the AI import (and the server refuses to read with AI)
   if ("ai_off" in raw) out.ai_off = raw.ai_off ? true : null;
   // Modo férias: {from, to}; in it the routines and the maintenance pause, the medicines go on
   if ("away" in raw) {
@@ -93,7 +93,7 @@ function cleanApp(raw) {
       out.away = a;
     }
   }
-  // Mais › Integrações › Sensores no Home Assistant: off unless turned on
+  // Mais › Configurações › Integrações › Sensores no Home Assistant: off unless turned on
   if ("sensors_on" in raw) out.sensors_on = raw.sensors_on ? true : null;
   // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
   if ("mirror" in raw) {

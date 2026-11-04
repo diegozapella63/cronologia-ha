@@ -6,6 +6,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 URL = "http://127.0.0.1:8099/"
@@ -62,15 +63,18 @@ async def main():
         await a.locator(".panel.meds").wait_for(timeout=10000)
         tabs = await a.locator("nav .tab").all_inner_texts()
         check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Recompensas", "Mais"], f"Recompensas tab in place of Agendas ({tabs})")
-        # Mais in tabs; the calendars are the first one
+        # Mais is a menu (1.43.0); Calendários is its first row, Configurações the last
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        mt = [t.strip() for t in await a.locator(".more-tabs button").all_inner_texts()]
-        check(mt == ["Calendários", "Rotinas", "Avisos", "Placar", "Integrações", "Dados", "Aparência", "Opções"], f"Mais tabs ({mt})")
-        check(await a.locator(".cal-row").count() >= 5 and "on" in (await a.locator(".more-tabs button", has_text="Calendários").get_attribute("class")), "Mais opens on Calendários")
-        await a.locator(".more-tabs button", has_text="Dados").click(); await A.wait_for_timeout(300)
-        check(await a.locator("#dados").count() == 1 and await a.locator(".cal-row").count() == 0 and "on" in (await a.locator(".tab", has_text="Mais").get_attribute("class")), "Dados tab shows only Dados (Mais stays lit)")
+        mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
+        check(mt == ["Calendários", "Rotinas", "Avisos", "Placar", "Configurações"], f"Mais rows ({mt})")
+        await open_more(a, "Calendários")
+        check(await a.locator(".cal-row").count() >= 5, "Calendários: the calendars")
+        await open_more(a, "Dados"); await A.wait_for_timeout(300)
+        check(await a.locator("#dados").count() == 1 and await a.locator(".cal-row").count() == 0 and "on" in (await a.locator(".tab", has_text="Mais").get_attribute("class")), "Configurações › Dados shows only Dados (Mais stays lit)")
         await A.go_back(); await A.wait_for_timeout(400)
-        check(await a.locator(".more-tabs").count() == 0, "Back leaves Mais instead of walking the tabs")
+        check(await a.locator(".menu-list").count() == 1 and await a.locator(".more-tabs").count() == 0, "Back goes to the menu of Mais instead of walking the tabs")
+        await A.go_back(); await A.wait_for_timeout(400)
+        check(await a.locator(".menu-list").count() == 0 and await a.locator(".panel.meds").count() == 1, "Back again leaves Mais")
         # setup
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(300)
         setup = await a.locator(".setup-card").inner_text()
@@ -85,7 +89,7 @@ async def main():
         check("0" in board and "Ninguém pontuou ainda" in board, "empty board 0 × 0")
         check(await a.locator(".score-today").count() == 0, "Para pontuar hoje starts off")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Placar").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Placar"); await A.wait_for_timeout(400)
         sw = a.locator("#placar .switch input[aria-label='Marcar pontos em Recompensas']")
         check(await sw.count() == 1 and not await sw.is_checked(), "switch in Mais › Placar, off")
         await sw.check()
@@ -183,7 +187,7 @@ async def main():
         # settings: switch to monthly keeps the points
         check(await a.locator(".score-set").count() == 0, "scoreboard settings are not in Recompensas anymore")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Placar").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Placar"); await A.wait_for_timeout(400)
         check(await a.locator("#placar").count() == 1 and await a.locator("#demeritos-ajustes").count() == 1, "Mais › Placar has the settings and the deméritos")
         await A.screenshot(path=f"{SP}/shots/cr-mais-placar.png")
         await a.locator("#placar .seg button", has_text="Mensal").click()

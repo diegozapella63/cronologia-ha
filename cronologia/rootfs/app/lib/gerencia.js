@@ -12,7 +12,7 @@ const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 
 const coded = (code, message) => Object.assign(new Error(message), { code });
 
 export class Gerencia {
-  /** enabled(): Mais › Integrações › Contas do GerencIA › Usar a integração (off by default). */
+  /** enabled(): Mais › Configurações › Integrações › Contas do GerencIA › Usar a integração (off by default). */
   constructor({ shareDir, log, onChange, enabled = () => true }) {
     this.file = path.join(shareDir, "gerencia", "integracao.json");
     this.log = log;
@@ -35,7 +35,7 @@ export class Gerencia {
   }
 
   async request(method, route, body) {
-    if (!this.enabled()) throw coded("gerencia_off", "A integração com o GerencIA está desligada em Mais › Integrações.");
+    if (!this.enabled()) throw coded("gerencia_off", "A integração com o GerencIA está desligada em Mais › Configurações › Integrações.");
     const info = this.info();
     if (!info) throw Object.assign(new Error("GerencIA não encontrado no Home Assistant"), { code: "no_gerencia" });
     const urls = [info.url, info.ip_url].filter(Boolean);

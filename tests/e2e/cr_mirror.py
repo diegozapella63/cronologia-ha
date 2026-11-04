@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -52,7 +53,7 @@ async def main():
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         sec = await a.locator("#resolvia").inner_text()
         check("LEVAR PARA O RESOLVIA" in sec.upper(), "Mais › Integrações has Levar para o ResolvIA")
         await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.casa"); await A.wait_for_timeout(500)
@@ -114,7 +115,7 @@ async def main():
 
         # 6) routines off: their tasks leave the list
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").uncheck()
         await wait_for(lambda: {i["summary"] for i in mirrored("todo.casa")} == {"Trocar o filtro de água", "Limpar o ar-condicionado", "Trocar a bateria do alarme"}, "routine tasks removed when switched off")
         # 7) another list: they move

@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 
 today = datetime.date.today()
 jsday = lambda d: (d.weekday() + 1) % 7
@@ -134,7 +135,7 @@ async def main():
         # Mais › Placar: the period length; Opções: the week start
         async def placar():
             await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-            await a.locator(".more-tabs button", has_text="Placar").click(); await A.wait_for_timeout(400)
+            await open_more(a, "Placar"); await A.wait_for_timeout(400)
         await placar()
         check("A semana começa na segunda." in await a.locator("#placar").inner_text(), "Placar says the week starts on Monday")
         await a.locator("#placar .seg button", has_text="Quinzenal").click()
@@ -155,7 +156,7 @@ async def main():
         await placar()
         await a.locator("#placar .seg button", has_text="Semanal").click()
         await wait_for(lambda: st.stored()["app"]["score"]["period"] == "semana", "Semanal saved")
-        await a.locator(".more-tabs button", has_text="Opções").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Opções"); await A.wait_for_timeout(300)
         await a.locator(".week-seg button", has_text="Domingo").click()
         sun = week_of(today, 0)
         await wait_for(lambda: st.stored()["score"]["current"]["start"] == sun.isoformat(), "Domingo: the week of the placar starts on Sunday")
@@ -163,7 +164,7 @@ async def main():
         check((await status()).startswith(f"Semana de {label(sun, sun + datetime.timedelta(days=7))}"), f"Recompensas: from Sunday ({await status()})")
         await placar()
         check("A semana começa no domingo." in await a.locator("#placar").inner_text(), "Placar says so")
-        await a.locator(".more-tabs button", has_text="Opções").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Opções"); await A.wait_for_timeout(300)
         await a.locator(".week-seg button", has_text="Segunda").click()
         await wait_for(lambda: st.stored()["score"]["current"]["start"] == monday.isoformat(), "Segunda: from Monday again")
         check(len(st.stored()["score"]["history"]) == 2, "changing the period or the week start never closed one")

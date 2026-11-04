@@ -44,7 +44,7 @@ export const TasksMixin = (Base) =>
     }
 
     /**
-     * The lists and tasks this person sees: a list with an owner (Mais › Integrações ›
+     * The lists and tasks this person sees: a list with an owner (Mais › Configurações › Integrações ›
      * Tarefas do ResolvIA › De quem é) only shows to them. A device whose user isn't a
      * person of the house (a shared tablet) sees everything.
      */
@@ -147,7 +147,7 @@ export const TasksMixin = (Base) =>
               )}`
           : nothing}
         ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosOpen = !this._todosOpen), this.requestUpdate())}>${icon(this._todosOpen ? "chevron-up" : "chevron-down")}${this._todosOpen ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
-        <div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais.</span></div>
+        <div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais › Configurações › Integrações.</span></div>
       </div>`;
     }
 
@@ -393,7 +393,7 @@ export const TasksMixin = (Base) =>
       }
     }
 
-    /** Mais › Integrações › Levar para o ResolvIA: maintenance and routines as tasks in a list. */
+    /** Mais › Configurações › Integrações › Levar para o ResolvIA: maintenance and routines as tasks in a list. */
     _renderMirrorSettings(lists) {
       const m = this._app("mirror", null) || {};
       const st = this._ix().mirror || {};
@@ -423,7 +423,7 @@ export const TasksMixin = (Base) =>
             : nothing}`;
     }
 
-    /** Mais › Integrações › Tarefas do ResolvIA › Usar a integração (off by default). */
+    /** Mais › Configurações › Integrações › Tarefas do ResolvIA › Usar a integração (off by default). */
     _resolviaOn() {
       return this._app("resolvia_on", false) === true;
     }

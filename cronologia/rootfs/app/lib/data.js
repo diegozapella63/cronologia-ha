@@ -85,8 +85,8 @@ export function backupZip(data, calendars, version, range) {
       "o placar das Recompensas e as marcações de Tomei, Paguei e Feito.\n" +
       `A pasta calendarios tem os eventos de cada calendário (${range}) em .ics, que abrem no Google Agenda,\n` +
       "no Outlook e no iPhone; eventos.csv e pontos.csv abrem no Excel.\n" +
-      "Para restaurar os dados do app: Mais > Dados > Importar backup, e escolha este .zip.\n" +
-      "Para trazer os eventos de volta: Mais > Dados > Importar .ics, um calendário de cada vez.\n",
+      "Para restaurar os dados do app: Mais > Configurações > Dados > Importar backup, e escolha este .zip.\n" +
+      "Para trazer os eventos de volta: Mais > Configurações > Dados > Importar .ics, um calendário de cada vez.\n",
   });
   return makeZip(files);
 }

@@ -1,4 +1,4 @@
-// Mais › Dados: exports (ZIP, CSV, JSON, .ics), backups in share/cronologia,
+// Mais › Configurações › Dados: exports (ZIP, CSV, JSON, .ics), backups in share/cronologia,
 // imports and automatic versions, like the other apps. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
@@ -181,7 +181,7 @@ export const DataMixin = (Base) =>
           <div class="btn-row sec-actions"><button class="btn outline sm" ?disabled=${!writable.length} @click=${() => this._openImport("ics")}>${icon("upload")}Escolher .ics</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("archive-restore", "Versões anteriores", "As 3 últimas cópias dos dados, guardadas sozinhas.")}
+          ${this._secHead("archive-restore", "Versões anteriores", "Uma cópia a cada 10 minutos de uso e antes de importar ou restaurar. Ficam as 3 mais recentes.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._openVersions()}>${icon("archive-restore")}Ver versões</button></div>
         </div>
         <div class="panel">

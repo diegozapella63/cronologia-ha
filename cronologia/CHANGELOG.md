@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.43.0
+
+- **Mais virou um menu**, como no InventarIA: **Calendários**, **Rotinas**, **Avisos** e **Placar**, cada um na sua tela, e por último **Configurações**, com as abas Integrações, Dados, Aparência e Opções. Em cada tela, **‹ Mais** no alto volta ao menu (o Voltar do celular e arrastar para a direita também). O Mais da barra agora tem três pontinhos.
+- **Versões anteriores** diz quando as cópias são feitas: uma a cada 10 minutos de uso e antes de importar ou restaurar; ficam as 3 mais recentes.
+
 ## 1.42.0
 
 - **Cor do dia**: a cor do app muda todo dia, sozinha (a mesma em todos os aparelhos, e troca à meia-noite mesmo com o app aberto). Vem ligada; em Mais › Aparência, desligue em **Cor do dia** ou escolha uma cor para ficar sempre nela.

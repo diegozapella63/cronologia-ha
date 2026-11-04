@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -55,7 +56,7 @@ async def main():
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         await a.locator("#resolvia .row", has_text="Trazer uma lista para o CronologIA").click(); await A.wait_for_timeout(400)
         check("Escolha a lista" in await a.locator(".sheet").inner_text(), "sheet opens on the list choice")
         await a.locator(".sheet .bring-lists .row", has_text="Casa").click()

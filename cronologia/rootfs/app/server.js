@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.42.0";
+const VERSION = "1.43.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -51,7 +51,7 @@ if (!TOKEN) log.error("Sem SUPERVISOR_TOKEN. O homeassistant_api está ligado no
 
 const store = new Store(DATA_DIR, log);
 store.trimVersions(); // Versões anteriores: only the 3 newest (older installs kept up to 60)
-// Mais › Integrações: the ResolvIA and the GerencIA are off until turned on there
+// Mais › Configurações › Integrações: the ResolvIA and the GerencIA are off until turned on there
 const resolviaOn = () => store.data.app.resolvia_on === true;
 const gerenciaOn = () => store.data.app.gerencia_on === true;
 // dev only (tests written before 1.16.0): start with both on
@@ -356,7 +356,7 @@ class Session {
         return this.result(id);
 
       case "cronologia/todo/add": {
-        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Configurações › Integrações.");
         const t = msg.task || {};
         await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
         // the room and the equipment (InventarIA in the ResolvIA): the ResolvIA keeps them, by the task name
@@ -372,16 +372,16 @@ class Session {
         return this.result(id);
       }
 
-      // Mais › Integrações › Trazer uma lista do ResolvIA: preview, then create the routines
+      // Mais › Configurações › Integrações › Trazer uma lista do ResolvIA: preview, then create the routines
       case "cronologia/todo/bring_preview":
         return this.result(id, home.bringPreview(String(msg.entity_id || "")));
 
       case "cronologia/todo/bring":
-        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Configurações › Integrações.");
         return this.result(id, await home.bring({ entity_id: String(msg.entity_id || ""), calendar: String(msg.calendar || ""), uids: msg.uids, remove: msg.remove !== false }));
 
       case "cronologia/todo/set": {
-        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
+        if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Configurações › Integrações.");
         await todos.setDone(msg.entity_id, msg.uid, !!msg.done);
         const summary = todos.summaryOf(msg.entity_id, msg.uid);
         const points = todos.pointsOf(msg.entity_id, summary);
@@ -428,14 +428,14 @@ class Session {
 
       // Conversa (the chat beside the microphone): one turn -> {reply, actions, provider}
       case "cronologia/ai/chat": {
-        if (store.data.app.ai_off) return this.error(id, "ai_off", "A IA está desligada em Mais › Integrações");
+        if (store.data.app.ai_off) return this.error(id, "ai_off", "A IA está desligada em Mais › Configurações › Integrações");
         return this.result(id, await ai.chat({ messages: msg.messages, context: msg.context }));
       }
 
       case "cronologia/voice/status":
         return this.result(id, await voice.status({ fresh: !!msg.fresh }));
 
-      // Mais › Integrações › Uso da IA
+      // Mais › Configurações › Integrações › Uso da IA
       case "cronologia/ai/usage":
         return this.result(id, usage.summary());
 
@@ -617,7 +617,7 @@ function handleExtract(req, res) {
     } catch (e) {
       return sendJson(res, 400, { error: "JSON inválido" });
     }
-    if (store.data.app.ai_off) return sendJson(res, 409, { error: "A IA está desligada em Mais › Integrações", code: "ai_off" });
+    if (store.data.app.ai_off) return sendJson(res, 409, { error: "A IA está desligada em Mais › Configurações › Integrações", code: "ai_off" });
     const started = Date.now();
     try {
       const out = await ai.extract({ text: body.text, images: body.images });
@@ -796,7 +796,7 @@ let presenceWarned = false;
 function publishPresence() {
   const placar = home.placarInfo();
   const espelho = mirror.published();
-  // resolvia: Mais › Integrações › Tarefas do ResolvIA (false: the ResolvIA gives no points and shows why)
+  // resolvia: Mais › Configurações › Integrações › Tarefas do ResolvIA (false: the ResolvIA gives no points and shows why)
   const resolvia = resolviaOn();
   const body = JSON.stringify({ placar, espelho, resolvia });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;

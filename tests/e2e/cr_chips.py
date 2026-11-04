@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -37,7 +38,7 @@ async def main():
         a = pg.locator("cronologia-app"); sheet = a.locator(".sheet")
         # Mais › Avisos (the screenshot): Avisar de novo, Quem cuida
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Avisos").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Avisos"); await pg.wait_for_timeout(600)
         await uniform(a, "#avisos", "Avisos")
         late = a.locator("#avisos .chip-row").first.locator(".pick")
         xs = [round((await late.nth(k).bounding_box())["x"]) for k in range(await late.count())]
@@ -55,7 +56,7 @@ async def main():
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(400)
         # Dados › Exportar: one line per file
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Dados").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Dados"); await pg.wait_for_timeout(600)
         rows = a.locator("#dados .opts > li")
         titles = [t.strip() for t in await rows.locator(".ot b").all_inner_texts()]
         check(titles == ["Eventos (CSV)", "Agenda (.ics)", "Dados completos (JSON)", "Tudo (ZIP)"], f"Exportar: one line per file ({titles})")

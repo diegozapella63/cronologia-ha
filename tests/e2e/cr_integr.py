@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 GREPO = GERENCIA
@@ -70,7 +71,7 @@ async def main():
         check(not entries(), "points from the ResolvIA don't count while off")
 
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         res = a.locator("#resolvia"); ger = a.locator("#gerencia")
         sw_r = res.locator("input[aria-label='Usar a integração com o ResolvIA']")
         sw_g = ger.locator("input[aria-label='Usar a integração com o GerencIA']")
@@ -101,7 +102,7 @@ async def main():
 
         # both off again
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await sw_r.uncheck(); await A.wait_for_timeout(300)
         await sw_g.uncheck(); await A.wait_for_timeout(300)
         await wait_for(lambda: "resolvia_on" not in stored()["app"] and "gerencia_on" not in stored()["app"], "off saved (unset)")

@@ -6,6 +6,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 URL = "http://127.0.0.1:8099/"
@@ -69,7 +70,7 @@ async def main():
         check("Café" not in txt and "Passar pano" not in txt and "Relatório mensal" not in txt, "tasks without a due date or done earlier stay out")
         # hide the Problem List
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         st = await a.locator("#resolvia .ai-state").inner_text()
         check("Lendo as listas de tarefas do Home Assistant" in st and "4 listas" in st, f"ResolvIA state without the app ({st})")
         rows = await a.locator("#resolvia .row").all_inner_texts()
@@ -129,7 +130,7 @@ async def main():
         await wait_for(lambda: fake_log(data).count('"status":"completed"') >= 3, "Concluir from the sheet")
         await A.wait_for_timeout(400)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await a.locator("#resolvia .row", has_text="Mostrar no calendário").locator(".switch input").uncheck(); await A.wait_for_timeout(600)
         await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(600)
         rows = await a.locator(".ev-row").all_inner_texts()
@@ -137,7 +138,7 @@ async def main():
         await wait_for(lambda: stored(data)["app"].get("todo_off_calendar") is True, "calendar switch saved")
         # tasks without a due date on Agora (option)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Integrações").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         sw = a.locator("#resolvia .switch input[aria-label='Tarefas sem prazo na Agora']")
         check(await sw.count() == 1 and not await sw.is_checked(), "switch for tasks without a due date, off")
         await sw.check()

@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -27,9 +28,9 @@ async def main():
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        tabs = [t.strip() for t in await a.locator(".more-tabs button").all_inner_texts()]
-        check(tabs[:2] == ["Calendários", "Rotinas"], f"Mais has a Rotinas tab, after Calendários ({tabs[:3]})")
-        await a.locator(".more-tabs button", has_text="Rotinas").click(); await A.wait_for_timeout(600)
+        rows = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
+        check(rows[:2] == ["Calendários", "Rotinas"], f"the menu of Mais has Rotinas, after Calendários ({rows[:3]})")
+        await open_more(a, "Rotinas"); await A.wait_for_timeout(600)
         route = await A.evaluate("() => document.querySelector('cronologia-app')._view()")
         check(route.get("name") == "more" and route.get("tab") == "rotinas", f"its own route /mais/rotinas ({route})")
         heads = [h.split("\n")[0].strip().upper() for h in await a.locator(".cat-sec .chores-head .overline").all_inner_texts()]
@@ -81,7 +82,7 @@ async def main():
         await sheet.locator(".pick", has_text="2x").click(); await A.wait_for_timeout(200)
         await sheet.locator(".btn.primary", has_text="Criar").click(); await A.wait_for_timeout(2500)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Rotinas").click(); await A.wait_for_timeout(800)
+        await open_more(a, "Rotinas"); await A.wait_for_timeout(800)
         vc = a.locator("#cat-remedio .cat-row", has_text="Vitamina C")
         txt = await vc.first.inner_text() if await vc.count() else ""
         n_rows = await a.locator(".cat-row").count()

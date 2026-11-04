@@ -41,10 +41,10 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Sensores** de remédios e manutenção, e o evento `cronologia_feito` para automações e etiquetas NFC.
 - **Calendário** por **mês, semana, dia ou lista**, com busca do último ano ao próximo. Toque num horário vazio da semana para criar um evento ali.
 - **Criar, editar e apagar** nos calendários que permitem, com **repetição** (só este ou este e os próximos) e **Desfazer**.
-- **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. Escolha qual IA em **Mais → Leitura por IA**.
+- **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. Escolha qual IA em **Mais → Configurações → Integrações**.
 - **Arquivos .ics**: importar convites e exportar os calendários.
 - **Dados**: exportar em ZIP, CSV ou JSON, backup em `share/cronologia`, importar e versões anteriores automáticas.
-- **Mais em abas**: Calendários (nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos), Avisos, Integrações (GerencIA, ResolvIA e IA, com o indicador de conectado), Dados e Aparência.
+- **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada calendário, sincronizados entre aparelhos), Rotinas, Avisos, Placar e, por último, Configurações, com Integrações (GerencIA, ResolvIA e IA, com o indicador de conectado), Dados, Aparência e Opções.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Tema claro e escuro** seguindo o Home Assistant.
 

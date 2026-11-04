@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 
 today = datetime.date.today()
 DD = lambda n: today + datetime.timedelta(days=n)
@@ -153,7 +154,7 @@ async def main():
 
         # Mais › Opções › Semana › Domingo: the month and the week from Sunday
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Opções").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Opções"); await A.wait_for_timeout(400)
         check(await a.locator(".week-seg button.on").inner_text() == "Segunda", "Opções: Segunda by default")
         await a.locator(".week-seg button", has_text="Domingo").click()
         await wait_for(lambda: st.stored()["app"].get("week_start") == 0, "Domingo saved")

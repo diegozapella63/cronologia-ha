@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 
 st = Stack("crav", data={"app": {"alerts": {"late": 30, "caregivers": ["mobile_app_pixel_8"]}, "people": {"Mimi": {"notify": None, "pet": True}}}})
 hour = datetime.datetime.now().hour
@@ -49,7 +50,7 @@ async def main():
 
         # Mais › Avisos
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
-        await a.locator(".more-tabs button", has_text="Avisos").click(); await A.wait_for_timeout(500)
+        await open_more(a, "Avisos"); await A.wait_for_timeout(500)
         av = a.locator("#avisos")
         row = lambda name: av.locator(".person-row").filter(has=A.locator(f".grow b:text-is('{name}')"))
         check("Pessoa do Home Assistant" in await row("Andressa").inner_text() and "Pet" in await row("Mimi").inner_text(), "people and the pet")

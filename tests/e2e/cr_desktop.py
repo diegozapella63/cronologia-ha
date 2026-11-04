@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, datetime
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -63,6 +64,7 @@ async def main():
         # turned off in Mais › Calendários: it leaves the sidebar (and stays out after a reload)
         n_before = await side.locator(".side-cal").count()
         await side.locator(".side-link", has_text="Mais").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Calendários")
         await a.locator(".cal-row", has_text="Trabalho").locator("input[role='switch']").uncheck()
         await wait_for(lambda: stored()["calendars"].get("calendar.trabalho", {}).get("hidden") is True, "Trabalho off in Mais (saved)")
         await pg.wait_for_timeout(400)
@@ -80,6 +82,7 @@ async def main():
         check("Pessoal" not in names, f"turned off from the sidebar: gone after a reload ({names})")
         # back on in Mais
         await side.locator(".side-link", has_text="Mais").click(); await pg.wait_for_timeout(600)
+        await open_more(a, "Calendários")
         for nm, cid in (("Trabalho", "calendar.trabalho"), ("Pessoal", "calendar.pessoal")):
             await a.locator(".cal-row", has_text=nm).first.locator("input[role='switch']").check()
             await wait_for(lambda cid=cid: not stored()["calendars"].get(cid, {}).get("hidden"), f"{nm} back on")

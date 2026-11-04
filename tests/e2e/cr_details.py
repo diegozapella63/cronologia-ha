@@ -7,6 +7,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil
 from playwright.async_api import async_playwright
+from mais_lib import open_more
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -63,7 +64,7 @@ async def main():
 
         # Mais › Opções › Novo › Local e notas
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Opções").click(); await A.wait_for_timeout(400)
+        await open_more(a, "Opções"); await A.wait_for_timeout(400)
         sw = a.locator("input[aria-label='Local e notas']")
         check(await sw.count() == 1 and not await sw.is_checked(), "Opções › Novo: Local e notas, off")
         await A.screenshot(path=f"{SP}/shots/crd-opcoes.png")
@@ -79,7 +80,7 @@ async def main():
 
         # off again: an event with a place still shows its fields when edited
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await a.locator(".more-tabs button", has_text="Opções").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Opções"); await A.wait_for_timeout(300)
         await a.locator("input[aria-label='Local e notas']").uncheck(); await A.wait_for_timeout(500)
         check("event_details" not in stored()["app"], "off is saved (unset)")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)

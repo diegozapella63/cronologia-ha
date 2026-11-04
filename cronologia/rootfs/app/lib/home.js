@@ -430,7 +430,7 @@ export class Home {
    */
   onPoints(data) {
     const d = data || {};
-    // Mais › Integrações › Tarefas do ResolvIA off: nothing from there counts
+    // Mais › Configurações › Integrações › Tarefas do ResolvIA off: nothing from there counts
     if (this.store.data.app.resolvia_on !== true) return;
     const key = String(d.chave || "");
     // a maintenance or routine taken to the ResolvIA list (Levar para o ResolvIA)
@@ -855,12 +855,12 @@ export class Home {
   // ---------------------------------------------------------------- Trazer do ResolvIA
 
   /**
-   * The tasks of a to-do list as routines would come out of them (Mais › Integrações ›
+   * The tasks of a to-do list as routines would come out of them (Mais › Configurações › Integrações ›
    * Trazer uma lista): points and repetition from the ResolvIA, the first date, and
    * whether a routine with that name already exists here.
    */
   bringPreview(entityId) {
-    if (this.store.data.app.resolvia_on !== true) throw coded("resolvia_off", "A integração com o ResolvIA está desligada em Mais › Integrações.");
+    if (this.store.data.app.resolvia_on !== true) throw coded("resolvia_off", "A integração com o ResolvIA está desligada em Mais › Configurações › Integrações.");
     const todos = this.todos;
     const st = todos && todos.states.get(entityId);
     if (!st) throw coded("not_found", "Essa lista não existe mais");
@@ -971,7 +971,7 @@ export class Home {
 
   // ---------------------------------------------------------------- sensors
 
-  /** Mais › Integrações › Sensores no Home Assistant (off unless turned on). */
+  /** Mais › Configurações › Integrações › Sensores no Home Assistant (off unless turned on). */
   sensorsOn() {
     return this.store.data.app.sensors_on === true;
   }
