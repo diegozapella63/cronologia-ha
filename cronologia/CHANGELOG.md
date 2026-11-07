@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.53.1
+
+- Tocar num aviso da CronologIA no celular (remédio, rotina, placar) volta a abrir o app. No Home Assistant 2026.2 ou mais novo, ele abria o painel inicial.
+
 ## 1.53.0
 
 - **De quem é cada lista** agora se escolhe no ResolvIA (2.42.0 ou mais novo), em **⋯ › Personalizar**. Em **Tarefas do ResolvIA**, cada lista só mostra de quem é. O que estava escolhido aqui vai sozinho para o ResolvIA, uma vez só. Com um ResolvIA mais antigo, tudo continua como antes.

@@ -128,10 +128,10 @@ describe("openTab: a notification opens the app on Recompensas (?aba=recompensas
     return w;
   };
   it("on the page of the Home Assistant around the app, and the address is cleaned", () => {
-    const ha = win("https://casa.local:8123/hassio/ingress/abc_cronologia?aba=recompensas");
+    const ha = win("https://casa.local:8123/app/abc_cronologia?aba=recompensas");
     const app = win("https://casa.local:8123/api/hassio_ingress/tok/", ha);
     assert.equal(openTab(app), "/recompensas");
-    assert.equal(ha.location.href, "https://casa.local:8123/hassio/ingress/abc_cronologia");
+    assert.equal(ha.location.href, "https://casa.local:8123/app/abc_cronologia");
     assert.deepEqual(ha.replaced[0], { x: 1 }, "the state of the HA page is kept");
     assert.equal(openTab(app), null, "once");
   });
