@@ -531,8 +531,11 @@ export const ModelsMixin = (Base) =>
       const low = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : "");
       const daily = (c) => /FREQ=DAILY/.test(c.rrule || "") && !/INTERVAL=([2-9]|\d\d)/.test(c.rrule || "");
       const freq = (c) => (c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? low(rruleLabel(c.rrule)) : "uma vez");
+      // on vacation, routines and maintenance rest: not late, not due, until it ends (1.56.3)
+      const away = this._awayNow() ? this._away() : null;
       const when = (c) => {
         const d = dayDiff(fromYmd(c.next), now);
+        if (away && (c.kind === "rotina" || c.kind === "manutencao") && (c.late || c.next <= away.to)) return { text: "pausada nas férias" };
         if (c.late || d < 0) {
           const verb = c.kind === "rotina" ? "atrasada" : "venceu";
           return { text: d === -1 ? `${verb} ontem` : `${verb} há ${-d} dias`, late: true };

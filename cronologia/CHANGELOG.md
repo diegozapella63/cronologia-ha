@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.56.3
+
+- **Rotinas** (Mais › Rotinas ou a aba): de férias, uma rotina ou manutenção aparece como **pausada nas férias**, não mais como atrasada.
+
 ## 1.56.2
 
 - **Calendário**: os dias no alto da **Semana**, de **3 dias** e do **Dia** também ficam **verdes** (tudo feito) ou **vermelhos** (algo ficou para trás), como no Mês.

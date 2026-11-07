@@ -97,6 +97,13 @@ async def main():
         r = await pg.evaluate(ws, {"type": "cronologia/score/demerit", "demerit": "toalha01", "who": "Diego"})
         check(r.get("success") is False and (r.get("error") or {}).get("code") == "away", f"and the server refuses a demérito on vacation ({r.get('error')})")
         await pg.screenshot(path=f"{SP}/shots/cra-rewards.png", full_page=True)
+        # 1.56.3: Mais › Rotinas: a routine or maintenance is paused on vacation, not late
+        await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
+        await a.locator('.menu-row[data-k="rotinas"]').click(); await pg.wait_for_timeout(800)
+        hints = [h.strip() for h in await a.locator(".cat-row .hint").all_inner_texts()]
+        cat = await a.locator(".page").first.inner_text()
+        check(any("pausada nas férias" in h for h in hints) and not any(w in cat for w in ("atrasada há", "atrasada ontem")), f"Rotinas: paused on vacation, nothing late ({[h for h in hints if 'férias' in h or 'atrasada' in h][:4]})")
+        await pg.screenshot(path=f"{SP}/shots/cra-rotinas.png")
         # Encerrar: back to normal
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(600)
         await a.locator(".away-card .text-btn", has_text="Encerrar").click(); await pg.wait_for_timeout(1200)
