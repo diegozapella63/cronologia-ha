@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.53.0
+
+- **De quem é cada lista** agora se escolhe no ResolvIA (2.42.0 ou mais novo), em **⋯ › Personalizar**. Em **Tarefas do ResolvIA**, cada lista só mostra de quem é. O que estava escolhido aqui vai sozinho para o ResolvIA, uma vez só. Com um ResolvIA mais antigo, tudo continua como antes.
+
 ## 1.52.0
 
 - **Todos** nos cômodos: na rotina, na manutenção e no **Novo › Tarefa**, o botão **Todos** (ao lado de **Nenhum**) marca a casa inteira; tocar de novo desmarca. A etiqueta vira uma só, **Todos os cômodos**, em vez de um cômodo atrás do outro, e a busca de equipamento procura na casa toda.

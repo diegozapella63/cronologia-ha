@@ -186,6 +186,8 @@ describe("Mirror: sync", () => {
     assert.equal(s.store.data.mirror[src].written.dueKey, "2027-05-02");
   });
   it("a timed task with the same time (in HA's ISO form) is the same", async () => {
+    // the clock of the test, not the real one (on the real one the date is in the past and the task left)
+    mock.timers.enable({ apis: ["Date"], now: NOW });
     const o = occ("Lixo", at(2026, 11, 4, 19), { points: 10 }, { uid: "lixo" });
     const s = setup({ mirror: { list: LIST, maint: false, routine: true }, occurrences: [o] });
     const rsrc = "rotina|calendar.casa|lixo";

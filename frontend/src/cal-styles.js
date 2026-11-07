@@ -3146,6 +3146,23 @@ export const calStyles = css`
     padding-top: 4px;
     border-top: 0;
   }
+  /* Tarefas do ResolvIA › whose the list is, as chosen in the ResolvIA (2.42.0+): only shown */
+  .owner-of {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .owner-of .i {
+    width: 14px;
+    height: 14px;
+  }
   /* Tarefas do ResolvIA › De quem é (Todos, or one person) */
   .owner-pick {
     display: flex;

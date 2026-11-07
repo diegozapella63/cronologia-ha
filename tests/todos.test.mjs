@@ -170,6 +170,13 @@ describe("Todos: the ResolvIA integration file", () => {
     assert.equal(a.comodos, null);
     assert.equal(a.equipamentos, null);
   });
+  it("donos (ResolvIA 2.42.0): whose each list is, checked; null when the ResolvIA doesn't say", () => {
+    const a = make({ app: appFile({ donos: { "todo.casa": "  Ana ", "todo.x": "", "light.y": "Beto", "todo.trabalho": "B".repeat(90) } }) }).t.app(NOW);
+    assert.deepEqual(a.donos, { "todo.casa": "Ana", "todo.trabalho": "B".repeat(80) });
+    assert.equal(make({ app: appFile({}) }).t.app(NOW).donos, null);
+    assert.equal(make({ app: appFile({ donos: ["todo.casa"] }) }).t.app(NOW).donos, null);
+    assert.deepEqual(make({ app: appFile({ donos: {} }) }).t.app(NOW).donos, {}, "none chosen there: everyone's (it still wins)");
+  });
   it("pointsOf: by the folded name, positive, at most 1000", () => {
     const { t } = make({ app: appFile({ pontos: { "todo.casa": { "passar pano na casa": 15, grande: 5000, neg: -3, frac: 2.4 } } }) });
     const app = t.app(NOW);
@@ -247,7 +254,7 @@ describe("Todos: index (Tarefas com prazo)", () => {
     assert.equal(by.t5.overdue, false);
     assert.equal(by.t1.key, "todo|todo.casa|t1");
     assert.equal(by.t1.listName, "Casa");
-    assert.deepEqual(ix.app, { versao: "2.29.0", prazos: true, comodos: [{ id: "sala", nome: "Sala" }, { id: "coz", nome: "Cozinha" }], equipamentos: [{ id: "geladeira", nome: "Geladeira", comodo: "Cozinha" }, { id: "ar", nome: "Ar-condicionado" }] });
+    assert.deepEqual(ix.app, { versao: "2.29.0", prazos: true, comodos: [{ id: "sala", nome: "Sala" }, { id: "coz", nome: "Cozinha" }], equipamentos: [{ id: "geladeira", nome: "Geladeira", comodo: "Cozinha" }, { id: "ar", nome: "Ar-condicionado" }], donos: null });
   });
   it("repetition from the ResolvIA: positive days, at most 3650", () => {
     const { t, ha } = make();

@@ -9,6 +9,14 @@ const DAY = 86400000;
 /** How the ResolvIA keys its points: the task name, folded. */
 export const taskKey = (s) => foldText(s).replace(/\s+/g, " ");
 /** The rooms the ResolvIA shares (null when it does not use them). */
+/** {todo.x: "Ana"} from the ResolvIA, checked; null when it doesn't say (before 2.42.0). */
+export function cleanOwners(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out = {};
+  for (const [id, name] of Object.entries(raw).slice(0, 200)) if (isTodo(id) && typeof name === "string" && name.trim()) out[id] = name.trim().slice(0, 80);
+  return out;
+}
+
 function cleanRooms(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.lista)) return null;
   const lista = raw.lista
@@ -146,6 +154,8 @@ export class Todos {
           comodos: cleanRooms(j.comodos),
           // equipamentos: the items of the InventarIA (2.29.0+): {lista: [{id, nome, comodo}], tarefas: {list: {task key: id}}}
           equipamentos: cleanRooms(j.equipamentos),
+          // donos: whose each list is, chosen there (Personalizar › De quem é, 2.42.0+); null for an older ResolvIA
+          donos: cleanOwners(j.donos),
         };
       }
     } catch (e) {
@@ -234,7 +244,7 @@ export class Todos {
       else k++;
     }
     lists.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-    return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos, comodos: app.comodos ? app.comodos.lista : [], equipamentos: app.equipamentos ? app.equipamentos.lista : [] } : null };
+    return { lists, items, today: ymd(today), app: app ? { versao: app.versao, prazos: app.prazos, comodos: app.comodos ? app.comodos.lista : [], equipamentos: app.equipamentos ? app.equipamentos.lista : [], donos: app.donos } : null };
   }
 
   /** The rooms of a task in the ResolvIA ([{id, nome}]; several when its items are in several rooms). */

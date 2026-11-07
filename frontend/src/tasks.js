@@ -51,7 +51,7 @@ export const TasksMixin = (Base) =>
      */
     _todos() {
       const t = this._todosAll();
-      const owners = this._app("todo_owner", null) || {};
+      const owners = this._listOwners();
       const me = this._me();
       const known = me && (this._ix().people || []).some((p) => p.person && foldText(p.name) === foldText(me));
       if (!Object.keys(owners).length || !known) return t;
@@ -62,6 +62,21 @@ export const TasksMixin = (Base) =>
       const view = { ...t, lists: t.lists.filter((l) => mine(l.id)), items: t.items.filter((i) => mine(i.list)) };
       this._todosView = { src: t, me, key, view };
       return view;
+    }
+
+    /**
+     * Whose each list is: chosen in the ResolvIA (Personalizar › De quem é, 2.42.0+); with an older
+     * ResolvIA, here as before (Tarefas do ResolvIA › De quem é).
+     */
+    _listOwners() {
+      const app = this._todosAll().app;
+      return (app && app.donos) || this._app("todo_owner", null) || {};
+    }
+
+    /** The owners come from the ResolvIA (2.42.0+): here they are only shown. */
+    _ownersFromResolvia() {
+      const app = this._todosAll().app;
+      return !!(app && app.donos);
     }
 
     /** Who can be the owner of a list: the people of the house (Home Assistant persons). */
@@ -193,7 +208,7 @@ export const TasksMixin = (Base) =>
 
     /** The person a list belongs to when it isn't this one (null for theirs or everyone's). */
     _otherOwner(id) {
-      const owner = (this._app("todo_owner", null) || {})[id];
+      const owner = this._listOwners()[id];
       const me = this._me();
       return owner && !(me && foldText(owner) === foldText(me)) ? owner : null;
     }
@@ -430,7 +445,8 @@ export const TasksMixin = (Base) =>
         </div>`;
       }
       const { lists, app } = this._todosAll();
-      const owners = this._app("todo_owner", null) || {};
+      const owners = this._listOwners();
+      const fromResolvia = this._ownersFromResolvia();
       const people = this._todoOwners();
       const setOwner = (id, name) => {
         const next = { ...owners };
@@ -469,7 +485,11 @@ export const TasksMixin = (Base) =>
                   </div>`
                 : nothing}
               <div class="sub-overline">Listas</div>
-              ${this._todoOwners().length ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>` : nothing}`
+              ${fromResolvia
+                ? html`<p class="sub-lead">Escolha quais listas entram. De quem é cada uma se escolhe no ResolvIA (⋯ › Personalizar): a lista de uma pessoa só aparece no CronologIA dela.</p>`
+                : this._todoOwners().length
+                  ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>`
+                  : nothing}`
           : nothing}
         ${repeat(
           lists,
@@ -477,7 +497,11 @@ export const TasksMixin = (Base) =>
           (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
             <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
             <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div>
-              ${people.length && !l.hidden
+              ${fromResolvia
+                ? owners[l.id] && !l.hidden
+                  ? html`<div class="owner-of">${icon("user-round")}<span>De ${owners[l.id]}</span></div>`
+                  : nothing
+                : people.length && !l.hidden
                 ? html`<div class="owner-pick" role="radiogroup" aria-label="De quem é ${l.name}">
                     <span class="op-l">De quem é</span>
                     ${["", ...people].map((p) => {

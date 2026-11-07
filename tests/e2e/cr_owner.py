@@ -1,4 +1,6 @@
 # CronologIA 1.15.0: whose each ResolvIA list is (Tarefas do ResolvIA › De quem é).
+# 1.53.0: with the ResolvIA 2.42.0 or newer, it is chosen there (Personalizar › De quem é) and only shown here;
+# the old choices go to share/cronologia/integracao.json (donos_listas) for the ResolvIA to take once.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -76,6 +78,26 @@ async def main():
         srv = start("")
         pg, a, card = await agora(b)
         check("Revisar contrato" in card and "Pagar o IPVA" in card, "a device with no person of the house sees everything")
+        await pg.close(); srv.kill(); time.sleep(0.4)
+        pres = json.load(open(f"{data}/share/cronologia/integracao.json"))
+        check(pres.get("donos_listas") == {"todo.casa": "Andressa", "todo.trabalho": "Diego"}, f"the old choices go out for the ResolvIA ({pres.get('donos_listas')})")
+        # 1.53.0: the ResolvIA says whose each list is (Trabalho is Andressa's there, Casa everyone's): that wins
+        from datetime import datetime, timezone
+        os.makedirs(f"{data}/share/resolvia", exist_ok=True)
+        json.dump({"app": "ResolvIA", "versao": "2.42.0", "gravado_em": datetime.now(timezone.utc).isoformat(), "prazos": True, "sem_prazo": [], "pontos": {}, "repete": {}, "donos": {"todo.trabalho": "Andressa"}}, open(f"{data}/share/resolvia/integracao.json", "w"))
+        srv = start("u-diego")
+        pg, a, card = await agora(b)
+        pg.on("pageerror", lambda e: errs.append(str(e)))
+        check("Pagar o IPVA" in card and "Revisar contrato" not in card, "Diego: as the ResolvIA says (Casa everyone's, Trabalho Andressa's)")
+        await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
+        await open_more(a, "Integrações"); await pg.wait_for_timeout(500)
+        check(await a.locator("#resolvia .owner-pick").count() == 0, "no choosing here any more")
+        tags = [t.strip() for t in await a.locator("#resolvia .owner-of").all_inner_texts()]
+        check(tags == ["De Andressa"], f"whose it is, only shown ({tags})")
+        lead = await a.locator("#resolvia .sub-lead").first.inner_text()
+        check("se escolhe no ResolvIA" in lead, f"and where it is chosen ({lead})")
+        await a.locator("#resolvia .owner-of").first.scroll_into_view_if_needed(); await pg.wait_for_timeout(200)
+        await pg.screenshot(path=f"{SP}/shots/cro-settings-resolvia.png")
         await pg.close(); srv.kill()
         check(not errs, f"no page errors {errs}")
         await b.close()
