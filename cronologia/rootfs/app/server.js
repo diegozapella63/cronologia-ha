@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.53.1";
+const VERSION = "1.53.2";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -805,14 +805,16 @@ function publishPresence() {
   const resolvia = resolviaOn();
   // donos_listas: whose each list was here (De quem é, before 1.53.0), so the ResolvIA takes it once; it is chosen there now
   const donos_listas = store.data.app.todo_owner || {};
-  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas });
+  // celulares: the phone of each person (Mais › Avisos), where the ResolvIA sends the alert of Prazos
+  const celulares = home.phonesOfPeople();
+  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas, celulares });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
   try {
     const dir = path.join(SHARE_DIR, "cronologia");
     fs.mkdirSync(dir, { recursive: true });
     const tmp = path.join(dir, ".integracao.json.tmp");
     // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas }, null, 1));
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas, celulares }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();

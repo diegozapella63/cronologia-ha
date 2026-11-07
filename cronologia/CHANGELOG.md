@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.53.2
+
+- O aviso de prazos do ResolvIA (2.43.0 ou mais novo) vai para o celular de cada pessoa escolhido aqui em **Mais › Avisos**.
+
 ## 1.53.1
 
 - Tocar num aviso da CronologIA no celular (remédio, rotina, placar) volta a abrir o app. No Home Assistant 2026.2 ou mais novo, ele abria o painel inicial.

@@ -473,6 +473,21 @@ export class Home {
    * What the other apps (ResolvIA) need to give points: whether the scoreboard
    * is on, who plays, and which Home Assistant user is which player.
    */
+  /**
+   * The phone of each person (not the pets), as Avisos sends to it: {"Ana": "mobile_app_pixel_8"}. The
+   * ResolvIA sends its alert of Prazos there (share/cronologia/integracao.json, celulares).
+   */
+  phonesOfPeople() {
+    const out = {};
+    const names = [...[...this.persons.values()].map((p) => p.name), ...Object.keys(this.store.data.app.people || {})];
+    for (const n of names) {
+      if (!n || this.isPet(n) || Object.keys(out).some((k) => foldText(k) === foldText(n))) continue;
+      const t = this.targetFor(n);
+      if (t) out[n] = t;
+    }
+    return out;
+  }
+
   placarInfo() {
     const st = scoreSettings(this.store.data.app);
     const on = !!st.enabled && st.participants.length > 0;
