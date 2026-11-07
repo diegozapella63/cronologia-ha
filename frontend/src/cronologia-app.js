@@ -1651,7 +1651,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const k = e.kind;
     const kind = k ? k.kind : e.todo ? "tarefa" : "conta";
     const done = this._rowDone(e);
-    const pts = k && k.points > 0 && this._scoreOn() ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0;
+    const pts = this._scorePoints(e);
     const past = startOfDay(day) <= startOfDay(new Date(this._now));
     const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0 };
     let mark = null;

@@ -83,11 +83,15 @@ async def main():
         # Avisar de novo: 15 min, 1 hora, Não
         again = av.locator(".field", has_text="Avisar de novo se não tomar")
         check(await again.locator(".pick.on").inner_text() == "30 min", "Avisar de novo: 30 min")
+        care = av.locator(".field", has_text="Quem cuida")
         for label, n in [("15 min depois", 15), ("1 hora", 60), ("Não", 0), ("30 min", 30)]:
             await again.locator(".pick", has_text=label).click()
             await wait_for(lambda n=n: st.stored()["app"]["alerts"]["late"] == n, f"{label}: saved ({n})")
+            # Quem cuida says what it gets: the late alerts, or (Não) only the ones of whoever has no phone
+            await A.wait_for_timeout(300)
+            hint = await av.locator(".field:has(> .flabel:text-is('Quem cuida')) .field-hint").inner_text()
+            check(("Recebe os avisos de quem está sem celular." in hint) if n == 0 else ("Recebe os atrasos de todos." in hint), f"{label}: Quem cuida ({hint})")
         # Quem cuida: more than one phone, or another one
-        care = av.locator(".field", has_text="Quem cuida")
         check(await care.locator(".pick[aria-pressed='true']").inner_text() == "Pixel 8", "Quem cuida: Pixel 8")
         await care.locator(".pick", has_text="Galaxy S23").click()
         await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], "both phones")

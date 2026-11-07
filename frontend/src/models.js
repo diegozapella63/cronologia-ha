@@ -335,8 +335,10 @@ export const ModelsMixin = (Base) =>
       for (const m of meds) {
         const who = m.who || "";
         let g = groups.find((x) => foldText(x.who) === foldText(who));
-        if (!g) groups.push((g = { who, list: [], notify: m.notify }));
+        if (!g) groups.push((g = { who, list: [], notify: null }));
         g.list.push(m);
+        // the bell only when an alert goes to that phone (Avisos on, the medicine with its alert)
+        if (!g.notify && m.alert && m.notify) g.notify = m.notify;
       }
       const all = taken === meds.length;
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
@@ -381,8 +383,12 @@ export const ModelsMixin = (Base) =>
     _alertsHint(meds) {
       const a = this._app("alerts", null) || {};
       if (a.meds === false) return html`<button class="panel-foot" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>Avisos no celular desligados</span>${icon("chevron-right")}</button>`;
+      // every medicine of today without its alert (in its form): no phone to choose
+      if (!meds.some((m) => m.alert)) return html`<div class="panel-foot plain">${icon("bell-ring")}<span>Sem aviso no celular</span></div>`;
       const noPhone = [...new Set(meds.filter((m) => m.alert && !m.notify && m.who).map((m) => m.who))];
-      const care = (a.caregivers || []).length;
+      // quem cuida gets the late alerts (Avisar de novo) and the ones of whoever has no phone
+      const late = a.late == null ? 30 : a.late;
+      const care = (a.caregivers || []).length && (late > 0 || meds.some((m) => m.alert && !m.notify));
       // whose phones get the alerts: a pet has no phone, its alert goes to someone's (said by that person's name)
       const people = this._ix().people || [];
       const isPet = (n) => people.some((p) => p.pet && foldText(p.name) === foldText(n));
@@ -615,20 +621,21 @@ export const ModelsMixin = (Base) =>
         if (k.dose) facts.push(["pill", `Dose: ${k.dose}`]);
         if (k.who) facts.push(["user-round", `Quem toma: ${k.who}`]);
         const p = this._ix().people.find((x) => foldText(x.name) === foldText(k.who));
-        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : p && p.notify ? `Aviso no celular: ${this._targetName(p.notify)}` : "Aviso no celular: escolha o celular em Mais › Avisos"]);
+        const alertsOn = (this._app("alerts", null) || {}).meds !== false;
+        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : !alertsOn ? "Avisos no celular desligados" : p && p.notify ? `Aviso no celular: ${this._targetName(p.notify)}` : "Aviso no celular: escolha o celular em Mais › Avisos"]);
       } else if (k.kind === "conta") {
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         if (namesOf(k.rooms, k.room).length) facts.push(["door-open", roomsShown(namesOf(k.rooms, k.room), this._roomNamesAll()).join(", ")]);
-        if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
+        if (k.points > 0 && this._scoreOn()) facts.push(["award", `${k.points} pontos para quem fizer`]);
         if (periodInfo(k.period)) facts.push([periodInfo(k.period).icon, cap(periodInfo(k.period).when)]);
         if (k.after && !e.rrule) {
           facts.push(["repeat", `Volta ${everyLabel(k.after)} depois de feita (na agenda, só a próxima vez)`]);
           if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
         }
       } else if (k.kind === "manutencao") {
-        if (k.points > 0) facts.push(["award", `${k.points} pontos para quem fizer`]);
+        if (k.points > 0 && this._scoreOn()) facts.push(["award", `${k.points} pontos para quem fizer`]);
         facts.push(["repeat", `A cada ${everyLabel(k.every)}, contando da última vez`]);
         if (k.who) facts.push(["user-round", `Quem faz: ${k.who}`]);
         // the rooms on one line, then one line per equipment
@@ -1108,6 +1115,9 @@ export const ModelsMixin = (Base) =>
       if (K === "remedio") {
         const p = (this._ix().people || []).find((x) => foldText(x.name) === foldText(f.who));
         const timeEdit = f.mode === "add";
+        // Mais › Avisos: off, no alert to turn on here; Avisar de novo "Não", only the one on time
+        const a = this._app("alerts", null) || {};
+        const again = (a.late == null ? 30 : a.late) > 0;
         body = html`
           <label class="field"><span class="flabel">Dose</span><input type="text" .value=${f.dose} placeholder="Ex.: 1 comprimido, 10 gotas, 1 caneta" @input=${(e) => this._setForm({ dose: e.target.value })} /></label>
           ${this._whoField("Quem toma", { pets: true })}
@@ -1125,10 +1135,12 @@ export const ModelsMixin = (Base) =>
           ${this._dateField(f.mode === "add" ? "Começa" : "Data", f.date, (v) => this._setForm({ date: v }), "kf-date")}
           ${this._durField("Por quanto tempo")}
           ${this._calField()}
-          <div class="row switch-row">
-            <div class="grow"><div class="label">Aviso no celular</div><div class="hint">${!f.alert ? "Sem aviso para este remédio." : p && p.notify ? `Na hora e de novo se atrasar, no ${this._targetName(p.notify)}.` : f.who ? html`Escolha o celular de ${f.who} em <button class="text-btn inline" @click=${() => (this._closeSheet(), this._goAlerts())}>Mais › Avisos</button>.` : "Escolha quem toma."}</div></div>
-            <label class="switch"><input type="checkbox" role="switch" .checked=${f.alert} @change=${(e) => this._setForm({ alert: e.target.checked })} aria-label="Aviso no celular" /><span class="track"></span></label>
-          </div>
+          ${a.meds === false
+            ? nothing
+            : html`<div class="row switch-row">
+                <div class="grow"><div class="label">Aviso no celular</div><div class="hint">${!f.alert ? "Sem aviso para este remédio." : p && p.notify ? `Na hora${again ? " e de novo se atrasar" : ""}, no ${this._targetName(p.notify)}.` : f.who ? html`Escolha o celular de ${f.who} em <button class="text-btn inline" @click=${() => (this._closeSheet(), this._goAlerts())}>Mais › Avisos</button>.` : "Escolha quem toma."}</div></div>
+                <label class="switch"><input type="checkbox" role="switch" .checked=${f.alert} @change=${(e) => this._setForm({ alert: e.target.checked })} aria-label="Aviso no celular" /><span class="track"></span></label>
+              </div>`}
           ${notes}`;
       } else if (K === "conta") {
         body = html`
@@ -1315,7 +1327,7 @@ export const ModelsMixin = (Base) =>
                       const sel = care.includes(t.id);
                       return html`<button class="pick ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((x) => x !== t.id) : [...care, t.id] })}>${icon("smartphone")}<span>${t.name}</span></button>`;
                     })}</div>
-                    <span class="field-hint">${icon("info")}<span>Recebe os atrasos de todos.</span></span>
+                    <span class="field-hint">${icon("info")}<span>${late > 0 ? "Recebe os atrasos de todos." : "Recebe os avisos de quem está sem celular."}</span></span>
                   </div>`
                 : nothing}`
           : nothing}

@@ -42,6 +42,13 @@ export const RewardsMixin = (Base) =>
       return !!(s && s.enabled && s.participants.length);
     }
 
+    /** What a line gives on the placar (a routine, maintenance or ResolvIA task with points); 0 with the placar off. */
+    _scorePoints(e) {
+      if (!this._scoreOn()) return 0;
+      const k = e.kind;
+      return k && k.points > 0 ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0;
+    }
+
     _participant(name) {
       const s = this._score();
       if (!s || !name) return "";
@@ -959,14 +966,16 @@ export const RewardsMixin = (Base) =>
       const without = s.participants.filter((n) => !phoneOf(n));
       const list = (ns) => (ns.length > 1 ? `${ns.slice(0, -1).join(", ")} e ${ns.at(-1)}` : ns[0]);
       const mine = phoneOf(this._me ? this._me() : "");
+      // the phone of each person is chosen in Mais › Avisos, only with Avisar no celular on
+      const pick = (this._app("alerts", null) || {}).meds !== false;
       return html`<div class="field remind-field">
         <span class="flabel">Quando</span>
         <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
         <div class="remind-row">
           <input type="time" class="remind-time" .value=${s.remind} aria-label="Horário do lembrete" @change=${(e) => /^\d{2}:\d{2}$/.test(e.target.value) && this._scorePrefs({ remind: e.target.value })} />
-          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : "Sem celular escolhido para você em Avisos"} @click=${() => this._testScoreReminder(mine)}>${icon("send")}Testar</button>
+          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : pick ? "Sem celular escolhido para você em Avisos" : "Sem celular para você"} @click=${() => this._testScoreReminder(mine)}>${icon("send")}Testar</button>
         </div>
-        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? html` Sem celular para ${list(without)}: escolha em <a href="#" @click=${(e) => (e.preventDefault(), this._goAlerts())}>Avisos</a>.` : nothing}</span></span>
+        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? (pick ? html` Sem celular para ${list(without)}: escolha em <a href="#" @click=${(e) => (e.preventDefault(), this._goAlerts())}>Avisos</a>.` : ` Sem celular para ${list(without)}.`) : nothing}</span></span>
       </div>`;
     }
 

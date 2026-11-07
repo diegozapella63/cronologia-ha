@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.53.3
+
+- Os textos só dizem o que vai acontecer:
+  - **Avisar no celular** desligado (Mais › Avisos): o remédio diz **Avisos no celular desligados**, sem o sininho ao lado do nome e sem o **Aviso no celular** no formulário.
+  - **Avisar de novo se não tomar: Não**: o remédio diz só **Na hora**, e **Quem cuida** recebe os avisos de quem está sem celular. O "e de quem cuida" de Remédios de hoje só aparece quando vai algo para lá.
+  - Remédios de hoje todos sem aviso: **Sem aviso no celular**, em vez de pedir para escolher os celulares.
+  - Placar desligado: a rotina, a manutenção, **Qualquer hora** e **Levar para o ResolvIA** não falam de pontos.
+  - **Lembrete diário**: com os avisos de remédio desligados, não manda escolher o celular em Avisos (lá ele não aparece).
+
 ## 1.53.2
 
 - O aviso de prazos do ResolvIA (2.43.0 ou mais novo) vai para o celular de cada pessoa escolhido aqui em **Mais › Avisos**.

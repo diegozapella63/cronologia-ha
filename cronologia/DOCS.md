@@ -166,7 +166,7 @@ Em **Mais › Avisos**:
 - Quem não tem celular (uma criança, o gato) avisa quem cuida já na hora.
 - Quando a dose é marcada, o aviso some dos celulares.
 
-O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home Assistant no celular, pelo rastreador dela); dá para escolher outro em cada pessoa e **testar** pelo sininho: o teste chega igual ao aviso de verdade, com **Tomei** e **Adiar**, e tocar num deles confirma no celular e na tela do app que o botão chegou ao CronologIA. Os avisos usam o app Home Assistant do celular (`notify.mobile_app_…`), no canal "Remédios" no Android, com prioridade alta. Cada remédio pode ficar sem aviso (no formulário). O aviso do que vence hoje do ResolvIA (2.43.0 ou mais novo) também vai para esse celular.
+O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home Assistant no celular, pelo rastreador dela); dá para escolher outro em cada pessoa e **testar** pelo sininho: o teste chega igual ao aviso de verdade, com **Tomei** e **Adiar**, e tocar num deles confirma no celular e na tela do app que o botão chegou ao CronologIA. Os avisos usam o app Home Assistant do celular (`notify.mobile_app_…`), no canal "Remédios" no Android, com prioridade alta. Cada remédio pode ficar sem aviso (no formulário). Com **Avisar no celular** desligado, nenhum remédio avisa: a opção some do formulário e o remédio diz **Avisos no celular desligados**. O aviso do que vence hoje do ResolvIA (2.43.0 ou mais novo) também vai para esse celular.
 
 ## Contas do GerencIA
 

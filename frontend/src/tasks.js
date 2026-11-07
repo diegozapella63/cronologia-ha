@@ -406,8 +406,10 @@ export const TasksMixin = (Base) =>
         <label class="switch"><input type="checkbox" role="switch" .checked=${!!on} ?disabled=${!m.list} @change=${(e) => save({ [key]: e.target.checked })} aria-label=${label} /><span class="track"></span></label>
       </div>`;
       const active = m.list && (m.maint || m.routine);
+      // the points only with the placar on (off, nobody gets them)
+      const score = this._scoreOn();
       return html`<div class="sub-overline" id="levar">Levar para o ResolvIA</div>
-        <p class="sub-lead">Cada manutenção e cada rotina da casa vira uma tarefa numa lista do ResolvIA, com a próxima data e os pontos. Concluir lá vale como feito aqui (os pontos vão para quem concluiu) e a tarefa volta com a data seguinte.</p>
+        <p class="sub-lead">Cada manutenção e cada rotina da casa vira uma tarefa numa lista do ResolvIA, com a próxima data${score ? " e os pontos" : ""}. Concluir lá vale como feito aqui${score ? " (os pontos vão para quem concluiu)" : ""} e a tarefa volta com a data seguinte.</p>
         <label class="field" style="margin:6px 0 4px">
           <span class="flabel">Lista</span>
           <select class="select" aria-label="Lista do ResolvIA" @change=${(e) => save({ list: e.target.value || null })}>
