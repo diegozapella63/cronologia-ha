@@ -7,6 +7,13 @@ async def open_more(a, name, wait=400):
     """Opens Mais › <name> (a row of the menu, or a tab of Configurações) from anywhere, as a person would:
     a tab of Configurações right there, or else back to the menu (‹ Mais, the bottom bar or the sidebar) and the row."""
     pg = a.page
+    # 1.56.0: with Recompensas off, Rotinas is a tab of the bar (and leaves the menu)
+    if name == "Rotinas":
+        for loc in (a.locator("nav .tab", has_text="Rotinas"), a.locator(".side-link", has_text="Rotinas")):
+            if await loc.count() and await loc.is_visible():
+                await loc.click()
+                await pg.wait_for_timeout(wait)
+                return
     if name in CONFIG and await a.locator(".more-tabs").count():
         await a.locator(".more-tabs button", has_text=name).click()
         await pg.wait_for_timeout(wait)

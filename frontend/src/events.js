@@ -2,7 +2,7 @@
 // Each range ("window") holds one live subscription per calendar
 // (calendar/event/subscribe); when Home Assistant is older and has no such
 // command, it falls back to reading the events every few minutes.
-import { parseWhen, addDays, startOfDay, isoLocal } from "./util.js";
+import { parseWhen, addDays, startOfDay, isoLocal, ymd } from "./util.js";
 import { parseKind, occurrenceKey } from "../../cronologia/rootfs/app/lib/kinds.js";
 
 const MAX_WINDOWS = 4;
@@ -194,7 +194,24 @@ export class EventStore {
 export function eventsOfDay(events, d) {
   const a = startOfDay(d);
   const b = addDays(a, 1);
-  return events.filter((e) => e.start < b && e.end > a);
+  return events.filter((e) => e.start < b && e.end > a).map((e) => onDay(e, a));
+}
+
+/**
+ * An event of several days (a hotel stay, a trip): Feito is marked day by day. Only plain events (not a model,
+ * a task of the ResolvIA or a bill), all day or 24 hours or more; one that just crosses midnight is one thing.
+ */
+export function multiDay(e) {
+  if (e.kind || e.todo || e.gerencia || e.movedDone) return false;
+  const last = e.allDay ? addDays(startOfDay(e.end), -1) : startOfDay(new Date(e.end.getTime() - 1));
+  return last > startOfDay(e.start) && (e.allDay || e.end - e.start >= 86400000);
+}
+
+/** The event as it stands on a day: one of several days is a copy with the key of that day (key|AAAA-MM-DD). */
+export function onDay(e, d) {
+  if (!multiDay(e)) return e;
+  const day = ymd(d);
+  return { ...e, key: `${e.key}|${day}`, day };
 }
 
 /** Side-by-side columns for overlapping timed events of one day. */

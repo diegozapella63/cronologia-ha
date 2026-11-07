@@ -26,7 +26,8 @@ const SCREENS = MENU.filter(([k]) => k !== "config").map(([k]) => k);
 const TABS = CONFIG_TABS.map(([k]) => k);
 
 /**
- * The screen of a path: {name: "now" | "calendar" | "rewards" | "more", tab?, config?}.
+ * The screen of a path: {name: "now" | "calendar" | "rewards" | "routines" | "more", tab?, config?}.
+ * routines (/rotinas): the Rotinas of Mais as a tab of the bottom bar, in place of Recompensas when it is off.
  * In Mais, tab is "menu", a screen of the menu (calendarios, rotinas, avisos, ferias, sobre) or, with
  * config: true, a tab of Configurações. Old addresses still work: /mais/integracoes, /mais/placar (and
  * the other tabs that moved to Configurações) and /agendas (the Agendas page, later Mais › Calendários).
@@ -35,6 +36,7 @@ export function viewOf(path) {
   const p = (path || "").replace(/\/+$/, "");
   if (p === "/calendario") return { name: "calendar" };
   if (p === "/recompensas") return { name: "rewards" };
+  if (p === "/rotinas") return { name: "routines" };
   if (p === "/agendas") return { name: "more", tab: "calendarios" };
   if (p === "/config") return { name: "more", tab: TABS[0], config: true };
   const m = /^\/(mais|config)\/([a-z]+)$/.exec(p);
@@ -49,6 +51,7 @@ export function viewOf(path) {
 export function pathOf(v) {
   if (v.name === "calendar") return "/calendario";
   if (v.name === "rewards") return "/recompensas";
+  if (v.name === "routines") return "/rotinas";
   if (v.name !== "more") return "";
   if (v.config) return v.tab === TABS[0] ? "/config" : `/config/${v.tab}`;
   return v.tab === "menu" ? "/mais" : `/mais/${v.tab}`;

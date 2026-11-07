@@ -9,7 +9,7 @@ import { swipeStart, swipeEnd, slideIn } from "./swipe.js";
 import { styles, extraStyles } from "./styles.js";
 import { calStyles } from "./cal-styles.js";
 import { parentHass, detectDark } from "./api.js";
-import { EventStore, eventsOfDay, layoutDay } from "./events.js";
+import { EventStore, eventsOfDay, layoutDay, onDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod } from "./models.js";
@@ -567,13 +567,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       this._goMenu().then(() => slideIn(this, "more", d));
       return;
     }
-    const order = [
-      ["now", ""],
-      ["calendar", "/calendario"],
-      ["rewards", "/recompensas"],
-      ["more", "/mais"],
-    ];
-    const i = order.findIndex(([n]) => n === this._view().name);
+    const order = [["now", ""], ["calendar", "/calendario"], this._fourthTab(), ["more", "/mais"]];
+    const i = order.findIndex(([n]) => n === this._shownView().name);
     const j = i + d;
     if (i < 0 || j < 0 || j >= order.length) return;
     this._haptic("light");
@@ -1468,7 +1463,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     if (!this._ready) {
       return html`<div class="root"><div class="app"><main><div class="boot-msg">${this._bootError ? html`${icon("circle-alert")}<span>Não consegui abrir o CronologIA: ${this._bootError}. Tentando de novo…</span>` : html`<span class="spin">${icon("loader-circle")}</span><span>Abrindo a agenda…</span>`}</div></main></div></div>`;
     }
-    const view = this._view();
+    const view = this._shownView();
     const accent = this._accent();
     const dark = this._dark;
     const style = `--rv-accent:${accent.fill};--rv-accent-ink:${dark ? accent.fill : accent.ink};--rv-accent-soft:${hexToRgba(accent.fill, dark ? 0.18 : 0.14)};--rv-accent-faint:${hexToRgba(accent.fill, dark ? 0.08 : 0.07)};--rv-accent-ink-light:${accent.ink};`;
@@ -1476,8 +1471,9 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     if (view.name === "calendar") page = this._renderCalendar();
     else if (view.name === "more") page = this._renderMore();
     else if (view.name === "rewards") page = this._renderRewards();
+    else if (view.name === "routines") page = this._renderRoutinesTab();
     else page = this._renderNow();
-    if (view.name === "calendar" || view.name === "more" || view.name === "rewards") this._medsHold = this._choresHold = false;
+    if (view.name !== "now") this._medsHold = this._choresHold = false;
     return html`
       <div class="root" style=${style}>
         <div class="app">
@@ -1504,9 +1500,32 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Novo evento">
           <span class="pill">${icon("plus")}</span><span>Novo</span>
         </button>
-        ${tab("rewards", "/recompensas", "Recompensas", "trophy")} ${tab("more", "/mais", "Mais", "ellipsis")}
+        ${tab(...this._fourthTab())} ${tab("more", "/mais", "Mais", "ellipsis")}
       </div>
     </nav>`;
+  }
+
+  /**
+   * The fourth tab (bottom bar and sidebar): Recompensas, or, with Usar recompensas off (Mais › Configurações ›
+   * Recompensas), Rotinas, which then leaves the menu of Mais: [name, path, label, icon].
+   */
+  _fourthTab() {
+    return this._scoreOn() ? ["rewards", "/recompensas", "Recompensas", "trophy"] : ["routines", "/rotinas", "Rotinas", "repeat"];
+  }
+
+  /** The screen to show: Recompensas off (an old address, a notification) shows Rotinas, which takes its place. */
+  _shownView() {
+    const v = this._view();
+    return v.name === "rewards" && !this._scoreOn() ? { name: "routines" } : v;
+  }
+
+  /** Rotinas as a tab of the bottom bar (Recompensas off): the same screen as Mais › Rotinas. */
+  _renderRoutinesTab() {
+    const n = this._catalogCount();
+    return html`<section class="page more-page routines-tab">
+      ${this._renderHead("Rotinas", { text: n ? plural(n, "cadastro", "cadastros") : "Nada cadastrado ainda" })}
+      ${this._renderCatalog()}
+    </section>`;
   }
 
   /**
@@ -1528,7 +1547,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         ${item("now", "", "Agora", "clock-3")}
         <button class="side-link" @click=${() => this._toSearch()}>${icon("search")}<span>Buscar</span><kbd>/</kbd></button>
         ${item("calendar", "/calendario", "Calendário", "calendar-days")}
-        ${item("rewards", "/recompensas", "Recompensas", "trophy")} ${item("more", "/mais", "Mais", "ellipsis")}
+        ${item(...this._fourthTab())} ${item("more", "/mais", "Mais", "ellipsis")}
       </div>
       ${this._renderSideMonth(view)}
       ${cals.length
@@ -1614,6 +1633,20 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   /** An event of a calendar (not a routine, task, maintenance, dose or bill). */
   _realEvent(e) {
     return !e.kind && !e.todo && !e.gerencia;
+  }
+
+  /**
+   * Mês: the number of a day in green when everything to mark there was done (doses, routines, tasks, bills,
+   * maintenance; an appointment counts once marked Feito), in red when something was left behind (a day before
+   * today). Today only goes green; the days ahead, and a day with nothing to mark, stay as they are.
+   */
+  _dayState(list, d, now) {
+    const today = startOfDay(now);
+    if (startOfDay(d) > today) return "";
+    const marks = list.filter((e) => !this._realEvent(e) || this._rowDone(e));
+    if (!marks.length) return "";
+    if (marks.every((e) => this._rowDone(e))) return "all-done";
+    return startOfDay(d) < today ? "left" : "";
   }
 
   /** Done (or paid) as the lists show it: maintenance has no done state (it moves to its next date). */
@@ -2089,7 +2122,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
           ${cells.slice(0, weeks * 7).map(({ d, list }) => {
             const out = d.getMonth() !== cur.getMonth();
             const colors = [...new Set(list.map((e) => this._colorOfEvent(e).fill))].slice(0, 4);
-            return html`<button class="cell ${out ? "out" : ""} ${sameDay(d, now) ? "today" : ""} ${sameDay(d, cur) ? "sel" : ""} ${this._awayDay(d) ? "away" : ""}" @click=${() => (this._cursor = d)} aria-label="${dayLabel(d, now)}${this._awayDay(d) ? " (férias)" : ""}: ${plural(list.length, "evento", "eventos")}">
+            const st = this._dayState(list, d, now);
+            return html`<button class="cell ${out ? "out" : ""} ${sameDay(d, now) ? "today" : ""} ${sameDay(d, cur) ? "sel" : ""} ${this._awayDay(d) ? "away" : ""} ${st}" @click=${() => (this._cursor = d)} aria-label="${dayLabel(d, now)}${this._awayDay(d) ? " (férias)" : ""}: ${plural(list.length, "evento", "eventos")}${st === "all-done" ? ", tudo feito" : st === "left" ? ", algo ficou para trás" : ""}">
               <span class="num">${d.getDate()}</span>
               <span class="dots">${colors.map((c) => html`<i style="background:${c}"></i>`)}${list.length > 4 ? html`<b>+</b>` : nothing}</span>
             </button>`;
@@ -2218,11 +2252,11 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     };
     for (const e of events) {
       const first = startOfDay(e.start < start ? start : e.start);
-      add(first, e);
-      // several days (a hotel stay): on each day it covers, "Dia 2/6"…; in a search, once
+      add(first, onDay(e, first));
+      // several days (a hotel stay): on each day it covers, "Dia 2/6"…, each with its own Feito; in a search, once
       if (needle) continue;
       const lastDay = e.allDay ? addDays(startOfDay(new Date(e.end)), -1) : startOfDay(new Date(e.end - 1));
-      for (let d = addDays(first, 1); d <= lastDay && d < end; d = addDays(d, 1)) add(d, e);
+      for (let d = addDays(first, 1); d <= lastDay && d < end; d = addDays(d, 1)) add(d, onDay(e, d));
     }
     const byDay = [...groups.values()].sort((a, b) => a.d - b.d);
     const loading = this._store.loading(start, end);
@@ -2325,7 +2359,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     return html`<section class="page more-menu">
       ${this._renderHead("Mais", null)}
       <ul class="panel menu-list" aria-label="Mais">
-        ${MENU.map(
+        ${MENU.filter(([k]) => k !== "rotinas" || this._scoreOn()).map(
           ([k, path, title, ic, lead]) => html`<li>
             <button class="menu-row" data-k=${k} @click=${() => this._go(path)}>
               <span class="mais-ic" aria-hidden="true">${icon(ic)}</span><span class="mb"><b>${title}</b><span>${lead}</span></span>${icon("chevron-right")}
@@ -2712,8 +2746,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     const it = { key: e.key, summary: e.summary };
     if (chk)
       return html`<div class="kind-state">${icon("circle-check")}<span>Feito${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, "evento")}>Desfazer</button></div>`;
-    // the ones of today, tomorrow and before: far ahead it is too early to say it was done
-    if (e.start >= addDays(startOfDay(now), 2)) return nothing;
+    // the ones of today, tomorrow and before: far ahead it is too early to say it was done (a day of several: that day)
+    if ((e.day ? fromYmd(e.day) : e.start) >= addDays(startOfDay(now), 2)) return nothing;
     return html`<button class="btn outline kind-act ev-done-btn" @click=${() => this._check(it, "evento").then(() => this._closeSheet())}>${icon("check")}Feito</button>`;
   }
 

@@ -44,6 +44,27 @@ async def main():
                     await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
                 left = [" ".join(t.split()) for t in await a.locator(".panel.agenda .allday .ad-chip").all_inner_texts()]
                 check(len(left) == n0 - 1 and "Bad Cheese" not in left, f"Feito: it leaves Agora ({left})")
+                # 1.56.0: a stay of several days is marked day by day: Feito today is only today's
+                await chips.filter(has_text="Agent A: A puzzle in disguise").click(); await A.wait_for_timeout(500)
+                await a.locator(".sheet .kind-act").click(); await A.wait_for_timeout(1200)
+                if await a.locator(".sheet").count():
+                    await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
+                keys = [k for k in st.stored()["checks"] if "Agent A" in k or k.endswith(f"|{today.isoformat()}")]
+                check(any(k.endswith(f"|{today.isoformat()}") for k in keys), f"the mark is of today ({keys})")
+                await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(700)
+                await a.locator(".seg.compact button", has_text="Lista").first.click(); await A.wait_for_timeout(1000)
+                rows = a.locator(".panel.agenda .ev-row", has_text="Agent A: A puzzle in disguise")
+                done = [("done" in ((await rows.nth(i).get_attribute("class")) or "").split()) or await rows.nth(i).locator(".ev-done").count() > 0 for i in range(await rows.count())]
+                check(done == [True, False, False], f"Lista: only Dia 1/3 done ({done})")
+                # Mês: today, everything to mark there is done (the two marked; the others are appointments; the
+                # tasks of the ResolvIA and the bills off the calendar, so only these count)
+                await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ todo_off_calendar: true, gerencia_hidden: true })"); await A.wait_for_timeout(800)
+                await a.locator(".seg.compact button", has_text="Mês").first.click(); await A.wait_for_timeout(1000)
+                await a.locator(".month .cell[aria-label^='Amanhã']").first.click(); await A.wait_for_timeout(300)
+                hc = ((await a.locator(".month .cell[aria-label^='Hoje']").first.get_attribute("class")) or "").split()
+                check("all-done" in hc, f"Mês: today in green ({hc})")
+                ac = ((await a.locator(".month .cell[aria-label^='Amanhã']").first.get_attribute("class")) or "").split()
+                check("all-done" not in ac and "left" not in ac, f"Mês: tomorrow as it is ({ac})")
             if scheme == "light":
                 # Calendário › Lista: a stay of 3 days on each of its days (Dia 1/3, 2/3, 3/3)
                 await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(700)

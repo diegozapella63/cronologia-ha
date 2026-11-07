@@ -48,6 +48,8 @@ describe("routes: viewOf / pathOf", () => {
     assert.deepEqual(viewOf("/calendario"), { name: "calendar" });
     assert.deepEqual(viewOf("/calendario/"), { name: "calendar" });
     assert.deepEqual(viewOf("/recompensas"), { name: "rewards" });
+    assert.deepEqual(viewOf("/rotinas"), { name: "routines" }, "Rotinas in the bar, with Recompensas off (1.56.0)");
+    assert.equal(pathOf({ name: "routines" }), "/rotinas");
     assert.deepEqual(viewOf("/mais"), { name: "more", tab: "menu" });
     assert.equal(underMore(viewOf("/mais")), false, "the menu itself has no ‹ Mais");
     assert.equal(underMore(viewOf("/calendario")), false);

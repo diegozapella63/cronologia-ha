@@ -86,7 +86,7 @@ export const ChatMixin = (Base) =>
     }
 
     _chatExamples() {
-      const v = this._view();
+      const v = this._shownView ? this._shownView() : this._view();
       if (v.name === "calendar") return ["O que tenho esta semana?", "Estou livre amanhã à tarde?"];
       if (v.name === "rewards") return ["Quem está ganhando?", "O que ainda dá pontos hoje?"];
       return ["O que tenho hoje?", "Por onde eu começo?", "Marca dentista sexta às 15h"];
@@ -94,12 +94,13 @@ export const ChatMixin = (Base) =>
 
     /** Where the person is, in words for the AI. */
     _chatScreen() {
-      const v = this._view();
+      const v = this._shownView ? this._shownView() : this._view();
       if (v.name === "calendar") {
         const d = this._cursor ? ymd(this._cursor) : "";
         return `Calendário${d ? `, no dia ${ddmm(d)}` : ""}`;
       }
       if (v.name === "rewards") return "Recompensas (placar, prêmios e extrato)";
+      if (v.name === "routines") return "Rotinas (rotinas, remédios, manutenções e contas cadastrados)";
       if (v.name === "more") return moreName(v);
       return "Agora (o dia de hoje: agenda, remédios, rotinas e contas)";
     }

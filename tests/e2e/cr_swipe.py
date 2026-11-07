@@ -1,4 +1,5 @@
 # CronologIA 1.27.0: a swipe to the side changes the tab (Agora, Calendário, Recompensas, Mais); the app icon by the name.
+# 1.56.0: with Recompensas off (as here), the third tab is Rotinas.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -39,13 +40,13 @@ async def main():
         print("icon", body, "accent", acc)
         check(body != "rgb(0, 0, 0)" and body != "none", f"in the color of the app ({body})")
         await a.locator(".brand-head").first.screenshot(path=f"{SP}/shots/crsw-icon.png")
-        # Agora -> Calendário -> Recompensas -> Mais
+        # Agora -> Calendário -> Rotinas (Recompensas off) -> Mais
         check(await view() == "now", "starts on Agora")
         await swipe(pg, H, "main .page", 300, 420, 110, 430)
         check(await view() == "calendar", "finger to the left: Calendário")
         title0 = await a.locator(".page-title").first.inner_text()
         await swipe(pg, H, ".cal-top", 300, 120, 110, 125)
-        check(await view() == "rewards", "again (outside the month): Recompensas")
+        check(await view() == "routines", "again (outside the month): Rotinas, in place of Recompensas")
         await swipe(pg, H, "main .page", 300, 420, 110, 430)
         check(await view() == "more", "again: Mais")
         await swipe(pg, H, "main .page", 300, 520, 110, 520)
@@ -62,7 +63,7 @@ async def main():
         await swipe(pg, H, "main .page", 110, 520, 300, 520)
         check(await view() == "more" and await tab() == "menu", "Avisos: finger to the right, back to the menu")
         await swipe(pg, H, "main .page", 110, 520, 300, 520)
-        check(await view() == "rewards", "finger to the right: back to Recompensas")
+        check(await view() == "routines", "finger to the right: back to Rotinas")
         await swipe(pg, H, "main .page", 110, 420, 300, 420)
         check(await view() == "calendar", "and to Calendário")
         # in the month grid the swipe still changes the month

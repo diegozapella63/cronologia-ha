@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.56.0
+
+- Com **Usar recompensas** desligado, a aba **Recompensas** da barra de baixo (e da barra lateral) dá lugar a **Rotinas**, que sai do menu Mais. Ligado de novo em **Mais › Configurações › Recompensas**, tudo volta como era.
+- **Calendário › Mês**: o número de um dia que já passou fica **verde** quando tudo o que havia para marcar foi feito e **vermelho** quando algo ficou para trás (um remédio sem Tomei, uma rotina, uma tarefa, uma conta). Hoje só fica verde; os dias que vêm não mudam.
+- Um evento de vários dias (uma hospedagem, uma viagem) é marcado **Feito** dia a dia: marcar o dia 1 não marca os outros. Um Feito dado antes desta versão num evento assim precisa ser marcado de novo no dia certo.
+
 ## 1.55.0
 
 - **Mais › Configurações**: a aba **Placar** agora se chama **Recompensas** e tem **Usar recompensas** no alto, como as outras opções (sai o **Desligar o placar** do fim). Desligado, não aparece mais nada, nem os **deméritos**; em Integrações somem o evento `cronologia_demerito` e o sensor do placar. Ligado de novo, volta com as mesmas pessoas.

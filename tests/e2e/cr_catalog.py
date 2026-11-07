@@ -27,12 +27,13 @@ async def main():
         errs = []; A.on("pageerror", lambda e: errs.append(str(e)))
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app")
+        # Recompensas off (1.56.0): Rotinas is a tab of the bar, in its place, and not in the menu of Mais
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         rows = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-        check(rows[:2] == ["Calendários", "Rotinas"], f"the menu of Mais has Rotinas, after Calendários ({rows[:3]})")
+        check("Rotinas" not in rows, f"the menu of Mais without Rotinas ({rows})")
         await open_more(a, "Rotinas"); await A.wait_for_timeout(600)
         route = await A.evaluate("() => document.querySelector('cronologia-app')._view()")
-        check(route.get("name") == "more" and route.get("tab") == "rotinas", f"its own route /mais/rotinas ({route})")
+        check(route.get("name") == "routines", f"its own tab /rotinas ({route})")
         heads = [h.split("\n")[0].strip().upper() for h in await a.locator(".cat-sec .chores-head .overline").all_inner_texts()]
         check(heads == ["ROTINA DA CASA", "REMÉDIOS", "MANUTENÇÃO DA CASA", "CONTAS A PAGAR"], f"sections by kind ({heads})")
         check(await a.locator(".cat-sec .chores-head .sec-ic").count() == 4, "each section has its icon")

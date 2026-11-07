@@ -685,6 +685,19 @@ export const calStyles = css`
     color: var(--rv-on-accent);
     box-shadow: none;
   }
+  /* Mês: everything done that day (green), something left behind (red) */
+  .cell.all-done:not(.sel) .num {
+    color: var(--rv-ok);
+    background: var(--rv-ok-soft);
+  }
+  .cell.left:not(.sel) .num {
+    color: var(--rv-late);
+    background: var(--rv-late-soft);
+  }
+  .cell.out.all-done:not(.sel) .num,
+  .cell.out.left:not(.sel) .num {
+    opacity: 0.6;
+  }
   .cell .dots {
     display: flex;
     gap: 3px;
@@ -3084,36 +3097,6 @@ export const calStyles = css`
   details.score-set summary .i {
     color: var(--rv-muted);
     transition: transform 0.2s;
-  }
-  .text-btn.danger {
-    color: var(--rv-late);
-    margin: 4px 0 12px;
-  }
-
-  .setup-card {
-    padding: 22px 18px 18px;
-    text-align: left;
-  }
-  .setup-art {
-    width: 64px;
-    height: 64px;
-    border-radius: 20px;
-    display: grid;
-    place-items: center;
-    background: #f2c14e;
-    color: #5b3e00;
-    margin-bottom: 14px;
-  }
-  .setup-art .i {
-    width: 34px;
-    height: 34px;
-  }
-  .setup-title {
-    font-family: var(--rv-display);
-    font-size: 26px;
-    font-weight: 600;
-    margin: 0 0 6px;
-    line-height: 1.15;
   }
 
   /* ---------- tarefas com prazo (ResolvIA) ---------- */

@@ -69,9 +69,9 @@ async def main():
         await A.screenshot(path=f"{SP}/shots/crv-review.png")
         await sheet.locator(".btn.primary", has_text="Adicionar").click()
         await wait_for(lambda: "event created" in fake_log() and "Dentista quinta" in fake_log().split("event created", 1)[1], "added to the calendar")
-        # Recompensas and the Calendário have it too
-        await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(500)
-        check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "Recompensas: the microphone too")
+        # Rotinas (in place of Recompensas, off here) and the Calendário have it too
+        await a.locator(".tab", has_text="Rotinas").click(); await A.wait_for_timeout(500)
+        check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "Rotinas: the microphone too")
         await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(500)
         check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "Calendário: the microphone too")
         box = await a.locator(".mic-top:not(.chat-top):visible").bounding_box()

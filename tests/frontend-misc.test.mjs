@@ -3,7 +3,7 @@
 import { at, isoLocal, flushPromises } from "./helpers.mjs";
 import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { toEvent, EventStore, eventsOfDay, layoutDay } from "../frontend/src/events.js";
+import { toEvent, EventStore, eventsOfDay, layoutDay, multiDay, onDay } from "../frontend/src/events.js";
 import { searchEquips, renderEquipPicker } from "../frontend/src/equip-picker.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "../frontend/src/voice.js";
 
@@ -46,6 +46,20 @@ describe("events: eventsOfDay / layoutDay", () => {
       eventsOfDay(list, at(2026, 11, 2, 15)).map((e) => e.summary),
       ["hoje", "noite"],
     );
+  });
+  it("an event of several days is marked Feito day by day: on each day its own key (1.56.0)", () => {
+    const hotel = { ...ev("Hotel", at(2026, 11, 5), at(2026, 11, 11), true), key: "calendar.x|h1|2026-11-05" };
+    const trip = { ...ev("Viagem", at(2026, 11, 2, 9), at(2026, 11, 4, 18)), key: "calendar.x|t1|2026-11-02T09:00:00" };
+    const night = { ...ev("Show", at(2026, 11, 2, 22), at(2026, 11, 3, 1)), key: "calendar.x|n1|night" };
+    const one = { ...ev("Feriado", at(2026, 11, 2), at(2026, 11, 3), true), key: "calendar.x|f1|2026-11-02" };
+    assert.deepEqual([hotel, trip, night, one].map(multiDay), [true, true, false, false], "a night across midnight or one day: one thing");
+    assert.equal(multiDay({ ...hotel, kind: { kind: "rotina" } }), false, "a model has its own marks");
+    assert.equal(multiDay({ ...hotel, todo: {} }), false);
+    const d3 = eventsOfDay([hotel, night, one], at(2026, 11, 7, 15));
+    assert.deepEqual(d3.map((e) => [e.summary, e.key, e.day]), [["Hotel", "calendar.x|h1|2026-11-05|2026-11-07", "2026-11-07"]]);
+    assert.equal(d3[0].start, hotel.start, "still the whole stay (Dia 3/6)");
+    assert.equal(onDay(one, at(2026, 11, 2)), one, "one day: the event itself");
+    assert.equal(eventsOfDay([night], at(2026, 11, 3))[0].key, "calendar.x|n1|night");
   });
   it("layoutDay: overlapping events side by side, short ones at least half an hour, clipped to the day", () => {
     const day = at(2026, 11, 2);

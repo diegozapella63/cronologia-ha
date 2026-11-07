@@ -61,12 +61,16 @@ async def main():
         await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ sensors_on: true })")
         a = A.locator("cronologia-app"); bb = B.locator("cronologia-app")
         await a.locator(".panel.meds").wait_for(timeout=10000)
+        # 1.56.0: Recompensas off (as it starts): Rotinas is the tab in its place, and leaves the menu of Mais
         tabs = await a.locator("nav .tab").all_inner_texts()
-        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Recompensas", "Mais"], f"Recompensas tab in place of Agendas ({tabs})")
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        await a.locator("nav .tab", has_text="Rotinas").click(); await A.wait_for_timeout(500)
+        check(await a.locator(".routines-tab .cat-sec").count() >= 1 and await a.locator(".uplink").count() == 0 and "on" in (await a.locator("nav .tab", has_text="Rotinas").get_attribute("class")), "the Rotinas tab: the registered ones, lit, no ‹ Mais")
+        await A.screenshot(path=f"{SP}/shots/cr-rotinas-tab.png")
         # Mais is a menu (1.43.0); Calendários is its first row, Configurações the last
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-        check(mt == ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações", "Sobre"], f"Mais rows ({mt})")
+        check(mt == ["Calendários", "Avisos", "Férias", "Configurações", "Sobre"], f"off: Mais rows without Rotinas ({mt})")
         await open_more(a, "Calendários")
         check(await a.locator(".cal-row").count() >= 5, "Calendários: the calendars")
         await open_more(a, "Dados"); await A.wait_for_timeout(300)
@@ -75,15 +79,19 @@ async def main():
         check(await a.locator(".menu-list").count() == 1 and await a.locator(".more-tabs").count() == 0, "Back goes to the menu of Mais instead of walking the tabs")
         await A.go_back(); await A.wait_for_timeout(400)
         check(await a.locator(".menu-list").count() == 0 and await a.locator(".panel.meds").count() == 1, "Back again leaves Mais")
-        # setup
-        await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(300)
-        setup = await a.locator(".setup-card").inner_text()
-        check("Quem faz mais em casa?" in setup and "Andressa" in setup and "Diego" in setup, "setup shows the people from Home Assistant")
-        on = await a.locator(".setup-card .pick.person.on").all_inner_texts()
-        check(sorted(x.split("\n")[-1] for x in on) == ["Andressa", "Diego"], f"HA people preselected, pets left out ({on})")
-        await a.locator(".setup-card .seg button", has_text="Semanal").click()
-        await a.locator(".setup-card .btn.primary").click()
+        # turned on in Configurações › Recompensas: the people of Home Assistant (no pets), weekly
+        await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
+        await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
         await wait_for(lambda: stored(data)["app"].get("score", {}).get("enabled") is True and stored(data)["score"]["current"], "scoreboard on, current period saved")
+        sc = stored(data)["app"]["score"]
+        check(sorted(sc["participants"]) == ["Andressa", "Diego"] and sc["period"] == "semana", f"the people of Home Assistant, weekly ({sc['participants']}, {sc['period']})")
+        await A.wait_for_timeout(400)
+        tabs = await a.locator("nav .tab").all_inner_texts()
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Recompensas", "Mais"], f"on: Recompensas back in the bar ({tabs})")
+        await a.locator(".uplink").click(); await A.wait_for_timeout(400)
+        mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
+        check(mt == ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações", "Sobre"], f"on: Rotinas back in Mais ({mt})")
+        await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(300)
         await a.locator(".panel.board").wait_for(timeout=5000)
         board = await a.locator(".panel.board").inner_text()
         check("0" in board and "Ninguém pontuou ainda" in board, "empty board 0 × 0")
@@ -210,9 +218,8 @@ async def main():
         await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         sens = await a.locator("#sensores").inner_text()
         check("cronologia_demerito" not in sens and "sensor.cronologia_placar" not in sens and "se vale pontos" not in sens, "off: no demérito, placar sensor nor points in the events")
-        await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(400)
-        check(await a.locator(".setup-card").count() == 1 and await a.locator("#demeritos, .panel.demerits").count() == 0, "off: Recompensas shows the start, no deméritos")
-        await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
+        tabs = [t.strip() for t in await a.locator("nav .tab").all_inner_texts()]
+        check(tabs == ["Agora", "Calendário", "Novo", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
         await wait_for(lambda: stored(data)["app"]["score"]["enabled"] is True and stored(data)["app"]["score"]["participants"] == ["Andressa", "Diego"] and stored(data)["app"]["score"]["period"] == "mes", "on again: the same people and period")

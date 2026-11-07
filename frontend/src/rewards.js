@@ -228,7 +228,8 @@ export const RewardsMixin = (Base) =>
 
     _renderRewards() {
       const s = this._score();
-      if (!s || !s.enabled || !s.participants.length) return this._renderRewardsSetup();
+      // off, the bar shows Rotinas instead (_shownView); this only while the index catches up
+      if (!s || !s.enabled || !s.participants.length) return this._renderRoutinesTab();
       const now = new Date(this._now);
       const cur = s.current;
       const left = dayDiff(fromYmd(cur.end), now);
@@ -989,31 +990,5 @@ export const RewardsMixin = (Base) =>
       } catch (err) {
         this._showToast(`Não foi: ${err.message}`);
       }
-    }
-
-    _renderRewardsSetup() {
-      const s = this._score() || {};
-      const people = (this._ix().people || []).filter((p) => p.person);
-      const pick = this._setupPick || (s.participants && s.participants.length ? s.participants : people.map((p) => p.name));
-      const period = this._setupPeriod || s.period || "semana";
-      const all = [...new Set([...(this._ix().people || []).filter((p) => !p.pet).map((p) => p.name), ...pick])];
-      return html`<section class="page rewards">
-        ${this._renderHead("Recompensas", { text: "Placar da casa" })}
-        <div class="panel setup-card">
-          <div class="setup-art">${icon("trophy")}</div>
-          <h2 class="setup-title">Quem faz mais em casa?</h2>
-          <p class="panel-lead">Quem marca <b>Feito</b> ganha os pontos; no fim do período, quem somar mais leva o prêmio.</p>
-          <div class="field"><span class="flabel">Quem participa</span>
-            <div class="chip-row">${all.map((n) => {
-              const on = pick.includes(n);
-              return html`<button class="pick person ${on ? "on" : ""}" aria-pressed=${on ? "true" : "false"} @click=${() => ((this._setupPick = on ? pick.filter((x) => x !== n) : [...pick, n]), this.requestUpdate())}><span class="avatar sm">${initial(n)}</span><span>${n}</span></button>`;
-            })}</div>
-          </div>
-          <div class="field"><span class="flabel">O placar fecha</span>
-            <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${period === k ? "on" : ""} @click=${() => ((this._setupPeriod = k), this.requestUpdate())}>${p.label}</button>`)}</div>
-          </div>
-          <button class="btn primary" style="width:100%" ?disabled=${!pick.length} @click=${() => this._saveAppPrefs({ score: { enabled: true, participants: pick, period, anchor: ymd(new Date()), notify: true } })}>${icon("trophy")}Começar o placar</button>
-        </div>
-      </section>`;
     }
   };
