@@ -60,9 +60,18 @@ async def main():
                 # tasks of the ResolvIA and the bills off the calendar, so only these count)
                 await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ todo_off_calendar: true, gerencia_hidden: true })"); await A.wait_for_timeout(800)
                 await a.locator(".seg.compact button", has_text="Mês").first.click(); await A.wait_for_timeout(1000)
+                # today: green only when every row of the day is marked (the appointments too, 1.56.1); never red
+                await a.locator(".month .cell[aria-label^='Hoje']").first.click(); await A.wait_for_timeout(500)
+                rows = a.locator(".day-panel .ev-row")
+                n = await rows.count()
+                done = sum([1 for i in range(n) if await rows.nth(i).locator(".ev-done").count() or "done" in ((await rows.nth(i).get_attribute("class")) or "").split()])
                 await a.locator(".month .cell[aria-label^='Amanhã']").first.click(); await A.wait_for_timeout(300)
                 hc = ((await a.locator(".month .cell[aria-label^='Hoje']").first.get_attribute("class")) or "").split()
-                check("all-done" in hc, f"Mês: today in green ({hc})")
+                check(("all-done" in hc) == (n > 0 and done == n) and "left" not in hc and done >= 2, f"Mês: today green only with all {n} rows done ({done} done: {hc})")
+                # 1.56.1: an appointment not marked Feito leaves a day behind too
+                yl = await a.locator(".month .cell[aria-label^='Ontem']").first.get_attribute("aria-label") or ""
+                yc = ((await a.locator(".month .cell[aria-label^='Ontem']").first.get_attribute("class")) or "").split()
+                check(("left" in yc) == (not yl.startswith("Ontem: 0 ") and "evento" in yl), f"Mês: yesterday, appointments not marked: red ({yl}: {yc})")
                 ac = ((await a.locator(".month .cell[aria-label^='Amanhã']").first.get_attribute("class")) or "").split()
                 check("all-done" not in ac and "left" not in ac, f"Mês: tomorrow as it is ({ac})")
             if scheme == "light":

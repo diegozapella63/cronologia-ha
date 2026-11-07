@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.56.1
+
+- **Calendário › Mês**: um compromisso que não foi marcado **Feito** (como um dia da hospedagem) também deixa o dia vermelho; antes, o dia ficava verde.
+
 ## 1.56.0
 
 - Com **Usar recompensas** desligado, a aba **Recompensas** da barra de baixo (e da barra lateral) dá lugar a **Rotinas**, que sai do menu Mais. Ligado de novo em **Mais › Configurações › Recompensas**, tudo volta como era.

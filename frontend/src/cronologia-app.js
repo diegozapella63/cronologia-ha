@@ -1636,16 +1636,14 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   }
 
   /**
-   * Mês: the number of a day in green when everything to mark there was done (doses, routines, tasks, bills,
-   * maintenance; an appointment counts once marked Feito), in red when something was left behind (a day before
-   * today). Today only goes green; the days ahead, and a day with nothing to mark, stay as they are.
+   * Mês: the number of a day in green when everything on it was marked Feito (doses, routines, tasks, bills,
+   * maintenance and the appointments too, 1.56.1: each day of a stay of several days on its own), in red when
+   * something was left behind (a day before today). Today only goes green; the days ahead, and an empty day, stay.
    */
   _dayState(list, d, now) {
     const today = startOfDay(now);
-    if (startOfDay(d) > today) return "";
-    const marks = list.filter((e) => !this._realEvent(e) || this._rowDone(e));
-    if (!marks.length) return "";
-    if (marks.every((e) => this._rowDone(e))) return "all-done";
+    if (startOfDay(d) > today || !list.length) return "";
+    if (list.every((e) => this._rowDone(e))) return "all-done";
     return startOfDay(d) < today ? "left" : "";
   }
 
