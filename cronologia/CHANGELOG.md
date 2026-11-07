@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.53.5
+
+- O aviso de prazos do ResolvIA (2.44.1 ou mais novo) não usa mais o celular escolhido aqui em **Mais › Avisos**: vai para os celulares ligados a cada pessoa no Home Assistant.
+
 ## 1.53.4
 
 - Com o placar desligado, as manutenções e rotinas levadas para o ResolvIA deixam de dizer "+N pontos" nas notas.

@@ -92,10 +92,6 @@ describe("Home: people", () => {
     assert.equal(home.targetFor(""), null);
     assert.equal(home.autoTarget("Andressa"), "mobile_app_galaxy_s23");
   });
-  it("phonesOfPeople (for the ResolvIA): each person's phone as Avisos sends to it; no pets, nobody without a phone", () => {
-    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], app: { people: { Andréssa: { notify: "mobile_app_tablet_x" }, Mimi: { notify: "mobile_app_pixel_8", pet: true }, Cida: { notify: "mobile_app_cida" }, Vó: { notify: null } } } });
-    assert.deepEqual(home.phonesOfPeople(), { Andressa: "mobile_app_tablet_x", "Diego Zapella": "mobile_app_pixel_8", Cida: "mobile_app_cida" });
-  });
   it("a tracker without a mobile app gives no phone", () => {
     const { home } = setup({ persons, targets: [] });
     assert.equal(home.autoTarget("Diego"), null);
