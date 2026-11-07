@@ -46,7 +46,7 @@ tests/                            testes (ver tests/README.md)
 
 Estes arquivos têm cópia igual no `resolvia-ha`. Ao mudar um, mude o outro (e rode os testes dos dois):
 
-- `frontend/src/equip-picker.js`, `frontend/src/chat.js` (a janela da Conversa), `frontend/src/voice.js`, `frontend/src/look.js`, `frontend/src/swipe.js`, `frontend/src/about.js` (Mais › Sobre)
+- `frontend/src/equip-picker.js`, `frontend/src/chat.js` (a janela da Conversa), `frontend/src/voice.js`, `frontend/src/look.js`, `frontend/src/swipe.js`, `frontend/src/about.js` (Mais › Sobre), `frontend/src/selectsheet.js` (as caixas de seleção; igual também na MemorIA, GerencIA, InventarIA e EconomIA)
 - `cronologia/rootfs/app/lib/voice.js`, `ws.js`, `zip.js`, `ha.js`, `usage.js`, `phones.js` (os celulares de cada pessoa) (no ResolvIA, em `resolvia/rootfs/app/lib/`)
 
 ## Como os apps conversam

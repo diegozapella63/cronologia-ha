@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.57.0
+
+- **Caixas de seleção** (Fala para texto, IA usada pelo app, Calendário padrão, a lista do ResolvIA, a categoria do GerencIA, quem recebe os avisos de um pet) abrem uma janela no visual do app, de baixo para cima, com as opções em linhas e a atual marcada na cor do app, no tema claro ou escuro, e não mais a janela padrão do celular. O Voltar do celular, o X ou tocar fora fecham só ela.
+
 ## 1.56.3
 
 - **Rotinas** (Mais › Rotinas ou a aba): de férias, uma rotina ou manutenção aparece como **pausada nas férias**, não mais como atrasada.

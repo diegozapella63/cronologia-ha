@@ -2644,6 +2644,10 @@ export const extraStyles = css`
     color: var(--rv-muted);
     line-height: 1.45;
   }
+  /* the boxes open the sheet of selectsheet.js, never the window of the phone */
+  select:not([multiple]) {
+    pointer-events: none;
+  }
   .select {
     width: 100%;
     font: inherit;

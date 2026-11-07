@@ -34,6 +34,8 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
     - **Opções**: **Local e notas** no Novo (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
   - **Sobre**, por último: quem faz o app (**CorrerIA Code**), os outros apps da família, cada um com uma linha e o link para o GitHub, e **Meu GitHub**.
 
+As caixas de seleção (como **Calendário padrão** ou **Fala para texto**) abrem uma janela de baixo para cima com as opções; a atual vem marcada. O Voltar do celular, o **X** ou tocar fora fecham sem mudar nada. No computador, a janela abre no meio da tela, e dá para escolher com as setas e Enter.
+
 ### No computador
 
 Com a tela larga (1000 pixels ou mais, como no InventarIA), as abas de baixo viram uma **barra lateral**: o botão **Novo**, as seções (Agora, Calendário, Recompensas, Mais), um **mês pequeno** (toque num dia para abri-lo no Calendário; as setas trocam o mês) e os **calendários**, cada um com a sua cor: tocar mostra ou esconde, como em **Mais › Calendários**. O Calendário usa a largura toda, e as janelas (Novo, editar, escolher) abrem no meio da tela. No celular e no tablet nada muda.
