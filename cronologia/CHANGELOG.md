@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.55.0
+
+- **Mais › Configurações**: a aba **Placar** agora se chama **Recompensas** e tem **Usar recompensas** no alto, como as outras opções (sai o **Desligar o placar** do fim). Desligado, não aparece mais nada, nem os **deméritos**; em Integrações somem o evento `cronologia_demerito` e o sensor do placar. Ligado de novo, volta com as mesmas pessoas.
+- Avisos e testes acham o celular de cada pessoa pelo aparelho do app Home Assistant ligado a ela, mesmo quando o rastreador tem outro nome (como "Celular Diego" sendo `goku_phone`). Um rastreador do roteador não conta como celular.
+- O teste (o sininho em **Avisos** e o **Testar** do lembrete diário) vai para todos os aparelhos da pessoa; se um falhar, os outros recebem. O registro do app diz para onde foi.
+
 ## 1.54.0
 
 - **Avisos de remédio** pela pessoa, não pelo aparelho: o aviso vai para os celulares ligados a cada pessoa no Home Assistant (**Configurações › Pessoas**), e **Mais › Avisos** mostra só as pessoas, sem nome de celular.

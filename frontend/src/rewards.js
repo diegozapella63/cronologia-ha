@@ -906,25 +906,30 @@ export const RewardsMixin = (Base) =>
       return this._saveAppPrefs({ score: { ...cur, ...changes } });
     }
 
-    /** Mais › Placar: who plays, when the period closes, the result on the phones. */
+    /**
+     * Mais › Configurações › Recompensas: Usar recompensas at the top, like the other options. Off, nothing else
+     * (no deméritos either). On: who plays, when the period closes, the result on the phones, the deméritos.
+     */
     _renderScoreSettings() {
       const s = this._score();
-      if (!s || !s.enabled || !s.participants.length) {
-        return html`<div class="panel score-set" id="placar">
-          ${this._secHead("trophy", "Ajustes do placar")}
-          <div class="ai-state off"><span class="dot"></span><div><b>Placar desligado</b><span>Ligue em Recompensas: escolha quem participa e de quanto em quanto tempo o placar fecha.</span></div></div>
-          <div class="score-actions" style="padding-left:0;padding-right:0;border:0"><button class="btn primary sm" @click=${() => this._goTab("/recompensas")}>${icon("trophy")}Ir para Recompensas</button></div>
-        </div>`;
-      }
-      return html`${this._renderScoreSettingsPanel(s)} ${this._renderDemeritsSettings()}`;
+      const on = !!(s && s.enabled && s.participants.length);
+      // turned on here: who played before, else the people of Home Assistant (pets do not play)
+      const start = s && s.participants && s.participants.length ? s.participants : (this._ix().people || []).filter((p) => p.person && !p.pet).map((p) => p.name);
+      const sw = html`<div class="row switch-row">
+        <div class="grow"><div class="label">Usar recompensas</div><div class="hint">${on || start.length ? "Placar da casa, prêmio e deméritos." : "Sem pessoas no Home Assistant."}</div></div>
+        <label class="switch"><input type="checkbox" role="switch" .checked=${on} ?disabled=${!on && !start.length} @change=${(e) => this._scorePrefs(e.target.checked ? { enabled: true, participants: start, anchor: ymd(new Date()) } : { enabled: false })} aria-label="Usar recompensas" /><span class="track"></span></label>
+      </div>`;
+      if (!on) return html`<div class="panel score-set" id="placar">${this._secHead("trophy", "Recompensas")} ${sw}</div>`;
+      return html`${this._renderScoreSettingsPanel(s, sw)} ${this._renderDemeritsSettings()}`;
     }
 
-    _renderScoreSettingsPanel(s) {
+    _renderScoreSettingsPanel(s, sw) {
       // pets do not play
       const people = (this._ix().people || []).filter((p) => !p.pet).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
-        ${this._secHead("trophy", "Ajustes do placar")}
+        ${this._secHead("trophy", "Recompensas")}
+        ${sw}
         <div class="field"><span class="flabel">Quem participa</span>
           <div class="chip-row">${names.map((n) => {
             const on = s.participants.includes(n);
@@ -952,7 +957,6 @@ export const RewardsMixin = (Base) =>
           <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.remind} @change=${(e) => this._scorePrefs({ remind: e.target.checked ? "20:00" : null })} aria-label="Lembrete diário" /><span class="track"></span></label>
         </div>
         ${s.remind ? this._renderScoreRemind(s) : nothing}
-        <button class="text-btn danger" @click=${() => this._scorePrefs({ enabled: false })}>Desligar o placar</button>
       </div>`;
     }
 

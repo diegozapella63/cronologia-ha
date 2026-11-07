@@ -61,7 +61,7 @@ async def main():
 
         # Mais › Placar › Marcar por outras pessoas
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await open_more(a, "Placar"); await A.wait_for_timeout(500)
+        await open_more(a, "Recompensas"); await A.wait_for_timeout(500)
         sw = a.locator("input[aria-label='Marcar por outras pessoas']")
         if not await sw.is_visible():
             await a.locator("details.score-set summary").first.click(); await A.wait_for_timeout(300)

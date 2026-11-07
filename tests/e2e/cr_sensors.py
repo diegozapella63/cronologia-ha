@@ -56,13 +56,14 @@ async def main():
         sw = panel.locator("input[aria-label='Criar sensores']")
         check(not await sw.is_checked() and await panel.locator(".sensor-list:not(.ha-events .sensor-list) .sensor-row").count() == 0, "off, no list of sensors")
         ev = await panel.locator(".ha-events").inner_text()
-        check("cronologia_feito" in ev and "cronologia_demerito" in ev, "the events for automations are here, sensors on or off")
+        # without Recompensas (1.55.0): no demérito, no points, no sensor of the placar
+        check("cronologia_feito" in ev and "cronologia_demerito" not in ev and "se vale pontos" not in ev, "the events for automations are here, sensors on or off; no demérito without Recompensas")
         await sw.check()
         await wait_for(lambda: json.load(open(f"{data}/cronologia.json"))["app"].get("sensors_on") is True, "on: saved")
         await wait_for(lambda: all(has(e) for e in SENS), "on: the sensors are created")
         check(req("GET", "sensor.cronologia_remedios_hoje")["attributes"].get("total") == 5, "with the doses of today")
         rows = [t.split("\n")[0] for t in await panel.locator(":scope > .sensor-list .sensor-row > code").all_inner_texts()]
-        check("binary_sensor.cronologia_remedio_atrasado" in rows and len(rows) == 5, f"the list of sensors ({len(rows)})")
+        check("binary_sensor.cronologia_remedio_atrasado" in rows and len(rows) == 4 and "sensor.cronologia_placar" not in rows, f"the list of sensors, no placar without Recompensas ({rows})")
         await A.screenshot(path=f"{SP}/shots/crs-on.png", full_page=True)
         await sw.uncheck()
         await wait_for(lambda: not any(has(e) for e in SENS), "off: the sensors are removed")

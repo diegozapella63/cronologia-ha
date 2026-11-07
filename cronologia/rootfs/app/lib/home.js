@@ -12,6 +12,7 @@ import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, bu
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
+import { trackerDevices, trackerPhones } from "./phones.js";
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
@@ -58,6 +59,7 @@ export class Home {
     this.tracked = new Map(); // cal -> {sub, events, day, poll}
     this.persons = new Map(); // person.x -> {id, name, trackers}
     this.targets = new Set(); // mobile_app_x
+    this.trackerDevices = null; // device_tracker.x -> {name, mobile}: from the registries (null: by the id)
     this.byHash = new Map(); // alert hash -> occurrence
     this.undo = new Map(); // cal|uid -> previous event (maintenance)
     this.index = null;
@@ -98,6 +100,8 @@ export class Home {
       this.persons.set(st.entity_id, { id: st.entity_id, name: a.friendly_name || st.entity_id.slice(7), user_id: a.user_id || null, trackers: Array.isArray(a.device_trackers) ? a.device_trackers : [] });
     }
     this.targets = new Set(Object.keys((services && services.notify) || {}).filter((s) => /^mobile_app_[a-z0-9_]+$/.test(s)));
+    // the device of each tracker (its phone is named after the device, not after the tracker)
+    this.trackerDevices = await trackerDevices(this.ha);
     this.migratePhones();
     this.changed();
   }
@@ -225,7 +229,7 @@ export class Home {
     if (!name) return [];
     const p = [...this.persons.values()].find((x) => foldText(x.name) === foldText(name) || foldText(x.name).split(" ")[0] === foldText(name));
     if (!p) return [];
-    return [...new Set(p.trackers.map((t) => `mobile_app_${String(t).replace(/^device_tracker\./, "")}`).filter((svc) => this.targets.has(svc)))];
+    return trackerPhones(p.trackers, this.targets, this.trackerDevices);
   }
 
   /** Who gets the alerts of one without a phone (a pet, a child), chosen in Mais › Avisos: a person, or "" (Quem cuida). */
@@ -374,7 +378,28 @@ export class Home {
     const phones = this.phonesOf(person);
     if (!phones.length) throw coded("no_phone", "Sem celular ligado a você no Home Assistant");
     const { title, message } = this.scoreReminderText(new Date());
-    for (const target of phones) await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } });
+    return this.sendEach(`Teste do lembrete para ${person}`, phones, (target) => this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } }));
+  }
+
+  /**
+   * A test on each phone of the person: one that fails does not stop the others; fails only when none got it.
+   * The log says where it went (the screens never name a device).
+   */
+  async sendEach(what, phones, send) {
+    let sent = 0;
+    let last = null;
+    for (const target of phones) {
+      try {
+        await send(target);
+        sent++;
+        this.log.info(`${what}: enviado para notify.${target}`);
+      } catch (err) {
+        last = err;
+        this.log.warn(`${what}: notify.${target} falhou (${err.message})`);
+      }
+    }
+    if (!sent) throw last;
+    return { sent };
   }
 
   async sendAlerts() {
@@ -454,11 +479,8 @@ export class Home {
   async testAlert(person) {
     const phones = this.phonesOf(String(person || ""));
     if (!phones.length) throw coded("no_phone", `Sem celular para ${person || "ninguém"}`);
-    for (const target of phones) {
-      this.testNames.set(target, String(person));
-      await this.sendTest(target);
-    }
-    return { sent: phones.length };
+    for (const target of phones) this.testNames.set(target, String(person));
+    return this.sendEach(`Teste do aviso para ${person}`, phones, (target) => this.sendTest(target));
   }
 
   async sendTest(target) {

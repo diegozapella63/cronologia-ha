@@ -2521,11 +2521,14 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   /** Mais › Configurações › Integrações › Sensores no Home Assistant: off unless turned on; off removes them. */
   _renderSensorsPanel() {
     const on = this._app("sensors_on", false) === true;
+    // without Usar recompensas: no sensor of the placar, no demérito, no points
+    const sc = this._score && this._score();
+    const score = !!(sc && sc.enabled && sc.participants.length);
     const list = [
       ["sensor.cronologia_remedios_hoje", "doses a tomar hoje (com as atrasadas e a próxima)"],
       ["binary_sensor.cronologia_remedio_atrasado", "liga quando um remédio atrasa"],
       ["sensor.cronologia_manutencoes_vencidas", "manutenções vencidas e as próximas"],
-      ["sensor.cronologia_placar", "quem lidera o placar e os pontos (com o placar ligado)"],
+      ...(score ? [["sensor.cronologia_placar", "quem lidera o placar e os pontos"]] : []),
       ["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"],
     ];
     return html`<div class="panel" id="sensores">
@@ -2539,8 +2542,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         <b>Eventos para automações</b>
         <span class="ha-ev-lead">Para marcar de fora do app, numa automação, numa rotina da Alexa ou numa etiqueta NFC. Funcionam com os sensores ligados ou não.</span>
         <div class="sensor-list">
-          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code> (e <code>quem: Diego</code>, se vale pontos): a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
-          <div class="sensor-row"><code>cronologia_demerito</code><span>com <code>nome</code> e <code>quem</code>: desconta esse demérito de quem foi.</span></div>
+          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code>${score ? html` (e <code>quem: Diego</code>, se vale pontos)` : nothing}: a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
+          ${score ? html`<div class="sensor-row"><code>cronologia_demerito</code><span>com <code>nome</code> e <code>quem</code>: desconta esse demérito de quem foi.</span></div>` : nothing}
         </div>
       </div>
     </div>`;

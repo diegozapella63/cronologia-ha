@@ -137,6 +137,37 @@ describe("Home: people", () => {
     assert.deepEqual([...home.targets], ["mobile_app_ana"]);
     assert.deepEqual(home.phonesOf("Ana"), ["mobile_app_ana"]);
   });
+  it("loadPeople: the phone named after the device of the app, not after the tracker (device_tracker.goku_phone is the Pixel 8); the router's tracker is no phone", async () => {
+    const { home, ha } = setup();
+    ha.reply = (m) =>
+      m.type === "get_states"
+        ? [{ entity_id: "person.diego", attributes: { friendly_name: "Diego", device_trackers: ["device_tracker.goku_phone", "device_tracker.note_diego"] } }]
+        : m.type === "get_services"
+          ? { notify: { mobile_app_pixel_8: {}, mobile_app_note_diego: {} } }
+          : m.type === "config/device_registry/list"
+            ? [
+                { id: "d1", name: "Pixel 8", name_by_user: "Celular Diego", identifiers: [["mobile_app", "x"]] },
+                { id: "d2", name: "note_diego", identifiers: [["mac", "b0"]] },
+              ]
+            : { entities: [{ ei: "device_tracker.goku_phone", di: "d1" }, { ei: "device_tracker.note_diego", di: "d2" }] };
+    await home.loadPeople();
+    assert.deepEqual(home.phonesOf("Diego"), ["mobile_app_pixel_8"]);
+  });
+  it("a test goes to every phone of the person: one that fails does not stop the others; fails only when none got it", async () => {
+    const persons = [{ id: "person.diego", name: "Diego", trackers: ["device_tracker.relogio", "device_tracker.pixel_8"] }];
+    const { home, ha } = setup({ persons, targets: ["mobile_app_relogio", "mobile_app_pixel_8"] });
+    const failing = new Set(["mobile_app_relogio"]);
+    const send = ha.send;
+    ha.send = async (m) => {
+      if (m.domain === "notify" && failing.has(m.service)) throw new Error("offline");
+      return send(m);
+    };
+    assert.deepEqual(await home.testAlert("Diego"), { sent: 1 });
+    assert.deepEqual(await home.testScoreReminder("Diego"), { sent: 1 });
+    assert.deepEqual(ha.sent.filter((m) => m.domain === "notify").map((m) => m.service), ["mobile_app_pixel_8", "mobile_app_pixel_8"]);
+    failing.add("mobile_app_pixel_8");
+    await assert.rejects(home.testAlert("Diego"), /offline/);
+  });
   it("the phones picked before 1.54.0 become the people whose phones they are, once, with the people of Home Assistant known", async () => {
     const { home, ha, store } = setup({
       app: {

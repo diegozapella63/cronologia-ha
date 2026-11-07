@@ -9,7 +9,7 @@ from mais_lib import open_more
 from playwright.async_api import async_playwright
 
 ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações"), ("sobre", "Sobre")]
-TABS = [("integracoes", "Integrações", "/config"), ("placar", "Placar", "/config/placar"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
+TABS = [("integracoes", "Integrações", "/config"), ("placar", "Recompensas", "/config/placar"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
 # what each screen has (an element only that screen shows)
 MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "ferias": "#ferias", "config": "#leitura-ia", "sobre": ".about-hero",
         "integracoes": "#leitura-ia", "placar": "#placar", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": ".week-seg"}
@@ -121,7 +121,7 @@ async def main():
             # the helper of the other tests: from anywhere to a tab of Configurações or a row
             await open_more(a, "Férias")
             check((await view())["tab"] == "ferias", "open_more: Férias from Configurações")
-            await open_more(a, "Placar")
+            await open_more(a, "Recompensas")
             check((await view())["tab"] == "placar" and (await view()).get("config") is True, "open_more: Placar (a tab of Configurações) from Férias")
             await open_more(a, "Aparência")
             check((await view())["tab"] == "aparencia", "open_more: Aparência from Placar")

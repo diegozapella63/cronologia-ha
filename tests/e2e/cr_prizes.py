@@ -135,7 +135,7 @@ async def main():
         # Mais › Placar: the period length; Opções: the week start
         async def placar():
             await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-            await open_more(a, "Placar"); await A.wait_for_timeout(400)
+            await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await placar()
         check("A semana começa na segunda." in await a.locator("#placar").inner_text(), "Placar says the week starts on Monday")
         await a.locator("#placar .seg button", has_text="Quinzenal").click()

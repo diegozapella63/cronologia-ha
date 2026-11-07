@@ -32,7 +32,7 @@ async def main():
         await pg.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, participants: ['Andressa', 'Diego'] })")
         await pg.wait_for_timeout(800)
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
-        await open_more(a, "Placar"); await pg.wait_for_timeout(600)
+        await open_more(a, "Recompensas"); await pg.wait_for_timeout(600)
         panel = a.locator("#demeritos-ajustes")
         if not await panel.locator(".demerit").count():
             await panel.locator(".dm-ideas .pick").first.click(); await pg.wait_for_timeout(800)

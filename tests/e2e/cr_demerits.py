@@ -48,7 +48,7 @@ async def main():
         a = A.locator("cronologia-app")
         async def placar():
             await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-            await open_more(a, "Placar"); await A.wait_for_timeout(400)
+            await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         async def recompensas():
             await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(500)
         await recompensas()

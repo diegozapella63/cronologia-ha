@@ -1,6 +1,7 @@
 // Where each screen lives (the path is kept in history.state, not in the address bar).
 // Mais is a menu, like the InventarIA: Calendários, Rotinas, Avisos and Férias, each its own
-// screen, then Configurações, with its tabs (Integrações, Placar, Dados, Aparência, Opções), and Sobre last.
+// screen, then Configurações, with its tabs (Integrações, Recompensas, Dados, Aparência, Opções), and Sobre last.
+// The tab Recompensas (the placar) keeps the key "placar" (/config/placar).
 
 /** The rows of Mais, in order: [key, path, title, icon, the line under the title]. */
 export const MENU = [
@@ -8,14 +9,14 @@ export const MENU = [
   ["rotinas", "/mais/rotinas", "Rotinas", "repeat", "Rotinas, remédios, manutenções e contas cadastrados."],
   ["avisos", "/mais/avisos", "Avisos", "bell-ring", "Avisos de remédio no celular, pessoas e pets."],
   ["ferias", "/mais/ferias", "Férias", "plane", "Rotinas, tarefas e manutenção pausadas; remédios continuam."],
-  ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, placar, dados e backup, aparência e opções."],
+  ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, recompensas, dados, aparência e opções."],
   ["sobre", "/mais/sobre", "Sobre", "info", "CorrerIA Code, os apps e o GitHub."],
 ];
 
 /** The tabs of Mais › Configurações: [key, label, icon]. The first one is /config. */
 export const CONFIG_TABS = [
   ["integracoes", "Integrações", "blocks"],
-  ["placar", "Placar", "trophy"],
+  ["placar", "Recompensas", "trophy"],
   ["dados", "Dados", "archive"],
   ["aparencia", "Aparência", "palette"],
   ["opcoes", "Opções", "toggle-right"],

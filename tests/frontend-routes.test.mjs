@@ -25,7 +25,7 @@ describe("routes: the menu of Mais", () => {
   it("Configurações has the tabs that are settings: Integrações, Placar, Dados, Aparência, Opções", () => {
     assert.deepEqual(
       CONFIG_TABS.map(([, label]) => label),
-      ["Integrações", "Placar", "Dados", "Aparência", "Opções"],
+      ["Integrações", "Recompensas", "Dados", "Aparência", "Opções"],
     );
   });
 
@@ -100,7 +100,7 @@ describe("routes: the screen in words (Conversa)", () => {
     assert.equal(moreName(viewOf("/mais/calendarios")), "Mais › Calendários");
     assert.equal(moreName(viewOf("/mais/ferias")), "Mais › Férias");
     assert.equal(moreName(viewOf("/mais/sobre")), "Mais › Sobre");
-    assert.equal(moreName(viewOf("/config/placar")), "Mais › Configurações › Placar");
+    assert.equal(moreName(viewOf("/config/placar")), "Mais › Configurações › Recompensas", "the tab of the placar is Recompensas (1.55.0)");
     assert.equal(moreName(viewOf("/config")), "Mais › Configurações › Integrações");
     assert.equal(moreName(viewOf("/mais/dados")), "Mais › Configurações › Dados");
   });

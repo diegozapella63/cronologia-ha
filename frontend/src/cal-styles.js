@@ -3287,11 +3287,13 @@ export const calStyles = css`
       padding-right: 4px;
     }
   }
+  /* 320 px: the five (with Recompensas, 1.55.0) still fit */
   @media (max-width: 360px) {
     .seg.compact.more-tabs button {
-      font-size: 12.5px;
-      padding-left: 2px;
-      padding-right: 2px;
+      font-size: 11.5px;
+      padding-left: 1px;
+      padding-right: 1px;
+      letter-spacing: -0.1px;
     }
   }
   /* the icons only where there is room for them */

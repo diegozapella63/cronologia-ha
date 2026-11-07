@@ -64,7 +64,7 @@ async def main():
         await a.locator(".setup-card .btn.primary").click()
         await wait_for(lambda: stored(data)["app"].get("score", {}).get("enabled") is True, "scoreboard on")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
-        await open_more(a, "Placar"); await A.wait_for_timeout(400)
+        await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Marcar pontos em Recompensas']").check(); await A.wait_for_timeout(500)
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(400)
         await a.locator(".btn", has_text="Pontos avulsos").click(); await A.wait_for_timeout(300)

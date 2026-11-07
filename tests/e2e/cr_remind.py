@@ -26,7 +26,7 @@ async def main():
         A.on("pageerror", lambda e: errs.append(str(e)))
         await A.goto(URL); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app")
-        await open_more(a, "Placar"); await A.wait_for_timeout(500)
+        await open_more(a, "Recompensas"); await A.wait_for_timeout(500)
         sw = a.locator("input[aria-label='Lembrete diário']")
         check(await sw.count() == 1 and not await sw.is_checked() and await a.locator(".remind-field").count() == 0, "Placar: Lembrete diário, off at first")
         await a.locator(".row.switch-row", has=A.locator("input[aria-label='Lembrete diário']")).locator(".switch").click(); await A.wait_for_timeout(900)
