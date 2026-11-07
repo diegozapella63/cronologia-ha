@@ -2160,18 +2160,17 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       const done = list.filter((e) => this._rowDone(e)).length;
       return { done, total: list.length, all: done === list.length };
     };
+    // the days on top in green or red, as in the Mês (Dia: the whole week of the strip)
+    const stripDays = n > 1 ? days : Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(this._cursor, ws), i));
+    const stripEvents = n > 1 ? events : this._events(stripDays[0], addDays(stripDays[6], 1));
+    const wsDay = (d) => {
+      const st = this._dayState(eventsOfDay(stripEvents, d), d, now);
+      return html`<button class="ws-day ${sameDay(d, now) ? "today" : ""} ${sameDay(d, this._cursor) ? "sel" : ""} ${st}" @click=${() => (this._cursor = d)} aria-label="${dayLabel(d, now)}${st === "all-done" ? ", tudo feito" : st === "left" ? ", algo ficou para trás" : ""}">
+        <span>${WEEKDAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b>
+      </button>`;
+    };
     return html`
-      ${n > 1
-        ? html`<div class="week-strip" style="--n:${n}">
-            ${days.map((d) => html`<button class="ws-day ${sameDay(d, now) ? "today" : ""} ${sameDay(d, this._cursor) ? "sel" : ""}" @click=${() => (this._cursor = d)}>
-              <span>${WEEKDAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b>
-            </button>`)}
-          </div>`
-        : html`<div class="week-strip day-strip">
-            ${Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(this._cursor, ws), i)).map(
-              (d) => html`<button class="ws-day ${sameDay(d, now) ? "today" : ""} ${sameDay(d, this._cursor) ? "sel" : ""}" @click=${() => (this._cursor = d)}><span>${WEEKDAYS_SHORT[d.getDay()]}</span><b>${d.getDate()}</b></button>`,
-            )}
-          </div>`}
+      ${n > 1 ? html`<div class="week-strip" style="--n:${n}">${stripDays.map(wsDay)}</div>` : html`<div class="week-strip day-strip">${stripDays.map(wsDay)}</div>`}
       ${anyRows.some((l) => l.length)
         ? n === 1
           ? (() => {

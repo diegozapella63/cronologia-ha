@@ -1,7 +1,7 @@
 # CronologIA 1.56.0: Calendário › Mês: the number of a day in green when everything to mark there was done, in red
 # when something was left behind (a day before today: here, yesterday's doses, never marked Tomei). The days ahead
-# stay as they are; today only goes green.
-import os, sys, asyncio
+# stay as they are; today only goes green. 1.56.2: the days on top of Semana, 3 dias and Dia too.
+import os, re, sys, asyncio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, summary
 from playwright.async_api import async_playwright
@@ -32,6 +32,19 @@ async def main():
             color = await cell("Ontem").locator(".num").evaluate("(el) => getComputedStyle(el).color")
             check(color == ("rgb(217, 45, 32)" if scheme == "light" else "rgb(255, 107, 94)"), f"{scheme}: the number in red ({color})")
             await A.screenshot(path=f"{SP}/shots/crdm-{scheme}.png")
+            # Semana, 3 dias and Dia: the days on top too (Dia: the whole week of the strip)
+            for view in ("Semana", "3 dias", "Dia"):
+                await a.locator(".seg.compact button", has_text=re.compile(f"^{view}$")).first.click(); await A.wait_for_timeout(900)
+                check(await a.locator(".seg.compact button.on").first.inner_text() == view, f"{scheme}: {view} open")
+                if view == "Dia":
+                    await a.locator(".week-strip .ws-day[aria-label^='Hoje']").first.click(); await A.wait_for_timeout(500)
+                ws = a.locator(".week-strip .ws-day[aria-label^='Ontem']")
+                if await ws.count():
+                    yc = ((await ws.first.get_attribute("class")) or "").split()
+                    check("left" in yc and "algo ficou para trás" in (await ws.first.get_attribute("aria-label") or ""), f"{scheme} {view}: yesterday in red ({yc})")
+                hc = ((await a.locator(".week-strip .ws-day[aria-label^='Hoje']").first.get_attribute("class")) or "").split()
+                check("left" not in hc, f"{scheme} {view}: today never red ({hc})")
+            await A.screenshot(path=f"{SP}/shots/crdm-dia-{scheme}.png")
             check(not errs, f"{scheme}: no page errors {errs}")
             await ctx.close()
         await b.close()

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.56.2
+
+- **Calendário**: os dias no alto da **Semana**, de **3 dias** e do **Dia** também ficam **verdes** (tudo feito) ou **vermelhos** (algo ficou para trás), como no Mês.
+
 ## 1.56.1
 
 - **Calendário › Mês**: um compromisso que não foi marcado **Feito** (como um dia da hospedagem) também deixa o dia vermelho; antes, o dia ficava verde.

@@ -793,6 +793,15 @@ export const calStyles = css`
     color: var(--rv-on-accent);
     box-shadow: none;
   }
+  /* everything done that day (green), something left behind (red), as in the Mês */
+  .ws-day.all-done:not(.sel) b {
+    color: var(--rv-ok);
+    background: var(--rv-ok-soft);
+  }
+  .ws-day.left:not(.sel) b {
+    color: var(--rv-late);
+    background: var(--rv-late-soft);
+  }
   /* Semana / Dia › Qualquer hora: a counter per day (done/total), the list opens from it */
   .tgrid-any {
     display: grid;
