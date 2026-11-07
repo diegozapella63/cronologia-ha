@@ -2273,7 +2273,7 @@ export const calStyles = css`
   .switch-row .hint {
     white-space: normal;
   }
-  /* Name on top, the phone below it, the test bell on the right: fits any width. */
+  /* Name on top, the buttons on the right; below, the whole width: who gets the alerts of one without a phone. */
   .person-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -2305,14 +2305,14 @@ export const calStyles = css`
     white-space: nowrap;
   }
   .person-row > .select.sm {
-    grid-column: 2;
+    grid-column: 2 / -1;
     grid-row: 2;
     width: 100%;
     max-width: 100%;
   }
   .person-row > .p-acts {
     grid-column: 3;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     display: flex;
     align-items: center;
   }

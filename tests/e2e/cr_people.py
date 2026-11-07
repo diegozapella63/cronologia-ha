@@ -1,4 +1,5 @@
 # CronologIA 1.29.0/1.32.0: people and pets are added only in Mais › Avisos; a pet gets the phone of whoever takes care of it, and stays out of chores and the placar.
+# 1.54.0: no device to pick, only people: one without a phone gets theirs on the phone of a person (or Quem cuida).
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -35,7 +36,7 @@ async def main():
         check(await who.locator(".pick", has_text="Outra pessoa").count() == 0 and await sheet.locator(".who-input").count() == 0, "no Outra pessoa in the form")
         check("Mais › Avisos" in await who.inner_text(), "says where to add someone")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
-        # Mais › Avisos: add a pet with the phone of Andressa
+        # Mais › Avisos: add someone, then who gets their alerts: Andressa
         await a.evaluate("(el) => el._go('/mais/avisos')"); await pg.wait_for_timeout(600)
         av = a.locator("#avisos")
         addb = av.locator(".add-line", has_text="Adicionar pessoa ou pet")
@@ -43,19 +44,19 @@ async def main():
         await addb.click(); await pg.wait_for_timeout(300)
         box = av.locator(".person-add")
         check(await box.locator("input").evaluate("(e) => e === e.getRootNode().activeElement"), "the name field gets the focus")
-        opts = await box.locator("select option").all_inner_texts()
-        print("OPTIONS:", opts)
-        check(any(o.startswith("Celular de Andressa") for o in opts) and any(o.startswith("Celular de Diego") for o in opts), f"the phones say whose they are ({opts})")
+        check(await box.locator("select").count() == 0, "no device to pick when adding")
         await box.locator("input").fill("Thor")
-        gs = [o for o in opts if o.startswith("Celular de Andressa")][0]
-        await box.locator("select").select_option(label=gs)
         await pg.screenshot(path=f"{SP}/shots/crp-add.png")
         await box.locator(".btn.primary", has_text="Adicionar").click(); await pg.wait_for_timeout(700)
         pp = prefs().get("people") or {}
-        check(pp.get("Thor") == {"notify": "mobile_app_galaxy_s23"}, f"saved with Andressa's phone ({pp})")
+        check(pp.get("Thor") == {}, f"saved ({pp})")
         row = av.locator(".person-row", has_text="Thor")
         check(await row.count() == 1 and "Só no CronologIA" in await row.inner_text(), "Thor in the list")
-        check(await row.locator("select").evaluate("(s) => s.value") == "mobile_app_galaxy_s23", "his phone: Andressa's")
+        opts = [o.strip() for o in await row.locator("select option").all_inner_texts()]
+        check(opts == ["No celular de quem cuida", "No celular de Andressa", "No celular de Diego"], f"who gets his alerts: Quem cuida or a person ({opts})")
+        await row.locator("select").select_option("Andressa"); await pg.wait_for_timeout(600)
+        check((prefs().get("people") or {}).get("Thor") == {"care": "Andressa"}, f"on the phone of Andressa ({prefs().get('people')})")
+        check(await row.locator("select").evaluate("(s) => s.value") == "Andressa", "his alerts: Andressa")
         check(await row.locator(".icon-btn[aria-label^='Testar']").count() == 1 and await row.locator(".icon-btn[aria-label='Tirar Thor']").count() == 1, "Testar and Tirar")
         check(await av.locator(".person-row:has(b:text-is('Andressa'))").count() == 1 and await av.locator(".person-row:has(b:text-is('Andressa'))").locator(".icon-btn[aria-label^='Tirar']").count() == 0, "a person of Home Assistant cannot be taken out")
         await pg.screenshot(path=f"{SP}/shots/crp-list.png")
@@ -66,9 +67,9 @@ async def main():
         check("já está na lista" in await a.locator(".toast").inner_text(), "the same name twice: says it")
         await av.locator(".person-add .btn", has_text="Cancelar").click(); await pg.wait_for_timeout(200)
         check(await av.locator(".person-add").count() == 0, "Cancelar closes it")
-        # without a phone, it stays
+        # back to Quem cuida, it stays
         await row.locator("select").select_option(""); await pg.wait_for_timeout(600)
-        check((prefs().get("people") or {}).get("Thor") == {"notify": None}, f"without a phone, Thor stays ({prefs().get('people')})")
+        check((prefs().get("people") or {}).get("Thor") == {}, f"back to Quem cuida, Thor stays ({prefs().get('people')})")
         check(await av.locator(".person-row", has_text="Thor").count() == 1, "still in the list")
         # in the form
         await a.evaluate("(el) => el._openKindForm({ kind: 'remedio' })"); await pg.wait_for_timeout(500)
@@ -90,7 +91,7 @@ async def main():
         await box.locator(".seg button", has_text="Pet").click(); await pg.wait_for_timeout(150)
         await pg.screenshot(path=f"{SP}/shots/crp-pet-add.png")
         await box.locator(".btn.primary", has_text="Adicionar").click(); await pg.wait_for_timeout(700)
-        check((prefs().get("people") or {}).get("Mel") == {"notify": None, "pet": True}, f"Mel saved as a pet ({prefs().get('people')})")
+        check((prefs().get("people") or {}).get("Mel") == {"pet": True}, f"Mel saved as a pet ({prefs().get('people')})")
         mel = av.locator(".person-row:has(b:text-is('Mel'))")
         check("Pet" in await mel.inner_text() and await mel.locator(".avatar svg").count() == 1, "the row says Pet, with a paw")
         check(await mel.locator(".pet-btn").get_attribute("aria-pressed") == "true", "the paw button on")
@@ -106,7 +107,7 @@ async def main():
         check(await toma.locator(".pick", has_text="Mel").count() == 1 and await toma.locator(".pick", has_text="Mel").locator(".avatar svg").count() == 1, "Remédio › Quem toma: the pet, with a paw")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
         # someone already in the placar turns out to be a pet: leaves it
-        await a.evaluate("(el) => el._saveAppPrefs({ people: { ...(el._app('people', null) || {}), Bob: { notify: null } } })"); await pg.wait_for_timeout(500)
+        await a.evaluate("(el) => el._saveAppPrefs({ people: { ...(el._app('people', null) || {}), Bob: {} } })"); await pg.wait_for_timeout(500)
         await a.evaluate("(el) => el._scorePrefs({ enabled: true, manual: true, participants: ['Andressa', 'Diego', 'Bob'] })"); await pg.wait_for_timeout(500)
         await av.locator(".person-row:has(b:text-is('Bob')) .pet-btn").click(); await pg.wait_for_timeout(800)
         app = prefs()

@@ -102,12 +102,17 @@ function cleanApp(raw) {
     out.mirror = list || m.maint || m.routine ? { list, maint: !!m.maint, routine: !!m.routine } : null;
   }
   if ("people" in raw) {
-    // {"Andressa": {notify: "mobile_app_galaxy_s23"}}: whose phone gets the alerts of each person
+    // {"Mimi": {pet: true, care: "Andressa"}}: the people and pets added in Mais › Avisos; care: the person who
+    // gets the alerts of one without a phone (none: Quem cuida). notify: a phone picked before 1.54.0, until
+    // Home Assistant says whose it is (Home.migratePhones)
     const people = {};
     for (const [name, v] of Object.entries(raw.people && typeof raw.people === "object" ? raw.people : {}).slice(0, 40)) {
       const n = String(name).trim().slice(0, 40);
       if (!n) continue;
-      people[n] = { notify: v && NOTIFY_RE.test(v.notify || "") ? v.notify : null };
+      people[n] = {};
+      if (v && NOTIFY_RE.test(v.notify || "")) people[n].notify = v.notify;
+      const care = v && typeof v.care === "string" ? v.care.trim().slice(0, 40) : "";
+      if (care) people[n].care = care;
       // a pet: takes medicines, but does not do chores nor play in the placar
       if (v && v.pet === true) people[n].pet = true;
     }
@@ -147,7 +152,8 @@ function cleanApp(raw) {
     out.alerts = {
       meds: a.meds !== false,
       late: LATE.includes(Number(a.late)) ? Number(a.late) : 30,
-      caregivers: [...new Set((Array.isArray(a.caregivers) ? a.caregivers : []).filter((t) => NOTIFY_RE.test(t)))].slice(0, 10),
+      // Quem cuida: people (a phone of before 1.54.0 until Home Assistant says whose it is)
+      caregivers: [...new Set((Array.isArray(a.caregivers) ? a.caregivers : []).map((t) => (typeof t === "string" ? t.trim().slice(0, 60) : "")).filter(Boolean))].slice(0, 10),
     };
   }
   return out;

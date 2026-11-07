@@ -35,8 +35,9 @@ before(async () => {
     data: {
       app: {
         week_start: 1,
+        // as saved before 1.54.0: Quem cuida by phone (the phone of Diego), a pet with a phone picked for it
         alerts: { late: 30, caregivers: ["mobile_app_pixel_8"] },
-        people: { Mimi: { notify: null, pet: true } },
+        people: { Mimi: { notify: "mobile_app_pixel_8", pet: true } },
         score: { enabled: true, participants: ["Diego", "Andressa"], period: "semana" },
       },
       score: {
@@ -131,9 +132,14 @@ describe("the placar: a period that ended closes when the server starts", () => 
 
 describe("phone alerts of the doses (the server's own timer)", () => {
   const med = (name) => h.latest.meds.find((m) => m.summary === name);
-  it("the pet's dose goes to whoever takes care of it (it has no phone)", { skip: lateNight && "near midnight the fake doses move" }, async () => {
+  it("the phones picked before 1.54.0 became the people whose phones they are", async () => {
+    const s = await storedWhen((x) => x.app.alerts.caregivers[0] === "Diego", "Quem cuida migrated");
+    assert.deepEqual(s.app.alerts.caregivers, ["Diego"]);
+    assert.deepEqual(s.app.people, { Mimi: { pet: true, care: "Diego" } });
+  });
+  it("the pet's dose goes to the person chosen for it (it has no phone)", { skip: lateNight && "near midnight the fake doses move" }, async () => {
     const g = med("Gardenal");
-    assert.equal(g.notify, null);
+    assert.equal(g.phone, true, "on the phone of Diego");
     const sent = await waitFor(async () => {
       const n = await notes((x) => /Gardenal/.test(x.title || ""));
       return n.length && n;
@@ -177,7 +183,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
     assert.deepEqual(cleared.map((n) => n.service), ["mobile_app_pixel_8"]);
   });
   it("the test alert's Adiar comes back too: confirmed on the phone and on the screens", async () => {
-    await c.call("cronologia/notify/test", { target: "mobile_app_galaxy_s23" });
+    await c.call("cronologia/notify/test", { person: "Andressa" });
     const [test] = await notes((x) => x.title === "💊 Teste do CronologIA" && x.service === "mobile_app_galaxy_s23");
     assert.deepEqual(
       test.data.actions.map((a) => a.title),
@@ -185,14 +191,15 @@ describe("phone alerts of the doses (the server's own timer)", () => {
     );
     await stack.fire("mobile_app_notification_action", { action: test.data.actions[1].action });
     const ix = await h.wait((x) => x.test && x.test.action === "adiar", "the Adiar of the test");
-    assert.equal(ix.test.target, "mobile_app_galaxy_s23");
+    assert.equal(ix.test.person, "Andressa");
     const ok = await waitFor(async () => {
       const n = await notes((x) => x.title === "✅ Funcionou" && x.service === "mobile_app_galaxy_s23");
       return n.length && n[0];
     }, { what: "the confirmation" });
     assert.equal(ok.message, "O botão Adiar chegou ao CronologIA. Num aviso de verdade, ele avisa de novo em 15 minutos.");
   });
-  it("a phone that is not a mobile app can't be tested", async () => {
-    await assert.rejects(c.call("cronologia/notify/test", { target: "persistent_notification" }), { code: "invalid_format" });
+  it("only a person is tested, on the phones tied to them (never a device)", async () => {
+    await assert.rejects(c.call("cronologia/notify/test", { target: "persistent_notification" }), { code: "no_phone" });
+    await assert.rejects(c.call("cronologia/notify/test", { person: "Zeca" }), { code: "no_phone" });
   });
 });

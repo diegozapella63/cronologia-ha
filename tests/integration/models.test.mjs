@@ -21,7 +21,7 @@ before(async () => {
   await c.call("cronologia/prefs/set_app", {
     prefs: {
       score: { enabled: true, participants: ["Diego", "Andressa"], period: "semana" },
-      people: { Mimi: { notify: null, pet: true } },
+      people: { Mimi: { pet: true } },
       demerits: [{ id: "toalha", title: "Toalha molhada na cama", points: 5 }],
     },
   });
@@ -36,15 +36,16 @@ const points = (ix, who) => (ix.score.rows.find((r) => r.name === who) || {}).po
 const rawOf = async (cal, uid) => (await stack.events(cal, -10, 400)).find((e) => e.uid === uid);
 
 describe("the Agora index from the fake calendars", () => {
-  it("today's doses with who takes them and whose phone gets the alert (pets have none)", () => {
+  it("today's doses with who takes them and whether a phone gets the alert (a pet has none; no device names)", () => {
     const ix = h.latest;
     const by = Object.fromEntries(ix.meds.map((m) => [m.summary, m]));
     assert.deepEqual(Object.keys(by).sort(), ["DPrev 10.000 UI", "Gardenal", "Mounjaro 2,5 mg", "Sertralina", "Ômega 3"].sort());
     assert.equal(by.Sertralina.who, "Andressa");
-    assert.equal(by.Sertralina.notify, "mobile_app_galaxy_s23");
-    assert.equal(by["Ômega 3"].notify, "mobile_app_pixel_8");
+    assert.equal(by.Sertralina.phone, true);
+    assert.equal(by["Ômega 3"].phone, true);
     assert.equal(by.Gardenal.who, "Mimi");
-    assert.equal(by.Gardenal.notify, null);
+    assert.equal(by.Gardenal.phone, false);
+    assert.doesNotMatch(JSON.stringify(ix.meds), /mobile_app/);
     for (const m of ix.meds) assert.ok(["depois", "agora", "atrasado"].includes(m.state), m.state);
   });
   it("today's routines and yesterday's not done", () => {
@@ -76,16 +77,14 @@ describe("the Agora index from the fake calendars", () => {
     assert.equal(ix.maint[0].summary, "Limpar o ar-condicionado", "most late first");
     assert.ok(ix.maint.every((x) => x.canMove));
   });
-  it("people: HA persons with their phones, the pet without; phones with their owners", () => {
+  it("people: HA persons with a phone tied to them, the pet without; no devices (1.54.0)", () => {
     const ix = h.latest;
     const p = Object.fromEntries(ix.people.map((x) => [x.name, x]));
-    assert.deepEqual([p.Diego.person, p.Diego.notify, p.Diego.pet], ["person.diego", "mobile_app_pixel_8", false]);
-    assert.deepEqual([p.Andressa.notify, p.Andressa.auto], ["mobile_app_galaxy_s23", "mobile_app_galaxy_s23"]);
-    assert.deepEqual([p.Mimi.person, p.Mimi.pet], [null, true]);
-    assert.deepEqual(ix.targets, [
-      { id: "mobile_app_galaxy_s23", name: "Galaxy S23", owner: "Andressa" },
-      { id: "mobile_app_pixel_8", name: "Pixel 8", owner: "Diego" },
-    ]);
+    assert.deepEqual([p.Diego.person, p.Diego.phone, p.Diego.pet], ["person.diego", true, false]);
+    assert.deepEqual([p.Andressa.phone, p.Andressa.reach], [true, true]);
+    assert.deepEqual([p.Mimi.person, p.Mimi.pet, p.Mimi.phone, p.Mimi.reach], [null, true, false, false]);
+    assert.equal("targets" in ix, false);
+    assert.doesNotMatch(JSON.stringify(ix.people), /mobile_app/);
   });
   it("the catalog (Mais › Rotinas) has one line per registered item", () => {
     const names = h.latest.catalog.map((x) => x.summary);
@@ -274,17 +273,18 @@ describe("doses and bills", () => {
     const ix = await h.wait((x) => x.bills.find((y) => y.key === b.key).paid, "paid");
     assert.equal(ix.bills.find((y) => y.key === b.key).overdue, false);
   });
-  it("the test alert reaches the phone and its button comes back", async () => {
-    await c.call("cronologia/notify/test", { target: "mobile_app_pixel_8" });
+  it("the test alert reaches the phone of the person and its button comes back", async () => {
+    assert.deepEqual(await c.call("cronologia/notify/test", { person: "Diego" }), { sent: 1 });
     let n = await stack.notifications();
     const test = n.find((x) => x.title === "💊 Teste do CronologIA");
     assert.equal(test.service, "mobile_app_pixel_8");
     await stack.fire("mobile_app_notification_action", { action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
     const ix = await h.wait((x) => x.test, "the test button");
-    assert.equal(ix.test.action, "tomei");
+    assert.deepEqual([ix.test.person, ix.test.action], ["Diego", "tomei"]);
     n = await waitFor(async () => (await stack.notifications()).find((x) => x.title === "✅ Funcionou"), { what: "the confirmation" });
     assert.equal(n.service, "mobile_app_pixel_8");
-    await assert.rejects(c.call("cronologia/notify/test", { target: "notify.x" }), { code: "invalid_format" });
+    await assert.rejects(c.call("cronologia/notify/test", { person: "Mimi" }), { code: "no_phone" });
+    await assert.rejects(c.call("cronologia/notify/test", { target: "mobile_app_pixel_8" }), { code: "no_phone" }, "a device is not a person");
   });
 });
 

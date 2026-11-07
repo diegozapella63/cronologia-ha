@@ -90,6 +90,8 @@ async def main():
             t2 = await day_text(a, A, d2)
             r2 = a.locator(".day-panel .ev-row", has_text="Limpar o banheiro")
             check("Limpar o banheiro" in t2 and await r2.locator(".ev-done").count() == 0, "the new date: open")
+            # back to today: on a Friday or a Saturday the new date is in the next week
+            await day_text(a, A, today)
         # Semana: today's counter counts it as done; the list marks it done and can undo
         await a.locator(".seg button", has_text="Semana").click(); await A.wait_for_timeout(800)
         tg = a.locator(".tgrid-any .tg-any[aria-label*='Hoje']")

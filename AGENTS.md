@@ -66,7 +66,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 - Botões lado a lado com o mesmo tamanho e alinhados; nada torto.
 - O que depende da IA respeita o interruptor **Usar IA** (desligado, some ou fica inativo). O que depende de uma integração (cômodos, equipamentos, ResolvIA, GerencIA) só aparece com ela ligada; um botão de algo desligado fica inativo, não some sem explicação.
 - Em http (sem https) não há câmera, microfone nem área de transferência: explicar em vez de abrir a galeria ou falhar calado.
-- Pets são pessoas sem celular: não aparecem em rotinas, recompensas nem placar, só em remédios, e o aviso vai para o celular de alguém.
+- Pets são pessoas sem celular: não aparecem em rotinas, recompensas nem placar, só em remédios, e o aviso vai para a pessoa escolhida para ele (ou quem cuida).
+- Os apps olham para a pessoa, nunca para o aparelho: os celulares são os ligados a cada pessoa no Home Assistant. Nada de escolher um celular nem mostrar nome de aparelho na tela.
 - Celular primeiro (390 px); com 1000 px ou mais, barra lateral. Tema claro e escuro.
 
 ## Conversa com o dono

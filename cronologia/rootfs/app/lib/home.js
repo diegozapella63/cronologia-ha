@@ -61,7 +61,8 @@ export class Home {
     this.byHash = new Map(); // alert hash -> occurrence
     this.undo = new Map(); // cal|uid -> previous event (maintenance)
     this.index = null;
-    this.lastTest = null; // {target, action, at}: a button tapped on the test alert
+    this.lastTest = null; // {person, action, at}: a button tapped on the test alert
+    this.testNames = new Map(); // phone of a test alert -> the person it was for
     this.indexJson = "";
     this.sensorsJson = "";
     this.sensorsAt = 0;
@@ -97,7 +98,41 @@ export class Home {
       this.persons.set(st.entity_id, { id: st.entity_id, name: a.friendly_name || st.entity_id.slice(7), user_id: a.user_id || null, trackers: Array.isArray(a.device_trackers) ? a.device_trackers : [] });
     }
     this.targets = new Set(Object.keys((services && services.notify) || {}).filter((s) => /^mobile_app_[a-z0-9_]+$/.test(s)));
+    this.migratePhones();
     this.changed();
+  }
+
+  /**
+   * Before 1.54.0 a phone was picked here (each person's, and those of Quem cuida). The apps look at the person,
+   * never at a device: a phone picked for someone becomes the person whose phone it is (Quem cuida of that one,
+   * or nothing when it was their own), once, with the people of Home Assistant known.
+   */
+  migratePhones() {
+    if (!this.persons.size) return;
+    const app = this.store.data.app;
+    const a = app.alerts || {};
+    const legacy = (v) => /^mobile_app_[a-z0-9_]+$/.test(v || "");
+    const care = Array.isArray(a.caregivers) ? a.caregivers : [];
+    const people = app.people || {};
+    if (!care.some(legacy) && !Object.values(people).some((v) => v && v.notify)) return;
+    const owner = (target) => {
+      const p = [...this.persons.values()].find((x) => this.ownPhones(x.name).includes(target));
+      return p ? p.name : null;
+    };
+    const names = [];
+    for (const c of care) {
+      const n = legacy(c) ? owner(c) : c;
+      if (n && !names.some((x) => foldText(x) === foldText(n))) names.push(n);
+    }
+    const next = {};
+    for (const [n, v] of Object.entries(people)) {
+      const { notify, ...rest } = v || {};
+      const who = notify && !this.ownPhones(n).includes(notify) ? owner(notify) : null;
+      next[n] = who && foldText(who) !== foldText(n) ? { ...rest, care: who } : rest;
+    }
+    this.store.setApp({ alerts: { ...a, caregivers: names }, people: next });
+    this.log.info("Avisos: os celulares escolhidos viraram as pessoas donas deles");
+    if (this.onPrefs) this.onPrefs();
   }
 
   /** Looks for model events in every calendar (a few days back, two months ahead). */
@@ -185,39 +220,43 @@ export class Home {
     return !!(key && people[key].pet);
   }
 
-  /** Phone of a person: chosen in Mais, or the one from their person entity's tracker. */
-  targetFor(name) {
-    if (!name) return null;
+  /** The phones of a person: the mobile apps among the device trackers of their person in Home Assistant. */
+  ownPhones(name) {
+    if (!name) return [];
+    const p = [...this.persons.values()].find((x) => foldText(x.name) === foldText(name) || foldText(x.name).split(" ")[0] === foldText(name));
+    if (!p) return [];
+    return [...new Set(p.trackers.map((t) => `mobile_app_${String(t).replace(/^device_tracker\./, "")}`).filter((svc) => this.targets.has(svc)))];
+  }
+
+  /** Who gets the alerts of one without a phone (a pet, a child), chosen in Mais › Avisos: a person, or "" (Quem cuida). */
+  careOf(name) {
     const people = this.store.data.app.people || {};
     const key = Object.keys(people).find((n) => foldText(n) === foldText(name));
-    if (key && people[key].notify) return people[key].notify;
-    return this.autoTarget(name);
+    return (key && people[key].care) || "";
   }
 
-  /** The phone of the person entity with this name (its device tracker is a mobile app). */
-  autoTarget(name) {
-    const p = [...this.persons.values()].find((x) => foldText(x.name) === foldText(name) || foldText(x.name).split(" ")[0] === foldText(name));
-    if (!p) return null;
-    for (const t of p.trackers) {
-      const svc = `mobile_app_${String(t).replace(/^device_tracker\./, "")}`;
-      if (this.targets.has(svc)) return svc;
-    }
-    return null;
+  /** Where the alerts of a person go: their phones; without one, the phones of the person chosen to get them. */
+  phonesOf(name) {
+    const own = this.ownPhones(name);
+    if (own.length || !name) return own;
+    const care = this.careOf(name);
+    return care && foldText(care) !== foldText(name) ? this.ownPhones(care) : [];
   }
 
+  /** Quem cuida (Mais › Avisos): people; their phones get the late alerts and those of whoever has no phone. */
+  carePhones() {
+    return [...new Set(this.settings().caregivers.flatMap((n) => this.ownPhones(n)))];
+  }
+
+  /** The people of Mais › Avisos: no device here, only whether a phone gets their alerts (phone: their own). */
   peopleInfo(names) {
     const all = new Map();
     for (const p of this.persons.values()) all.set(foldText(p.name), { name: p.name, person: p.id });
     for (const n of Object.keys(this.store.data.app.people || {})) if (!all.has(foldText(n))) all.set(foldText(n), { name: n, person: null });
     for (const n of names) if (n && !all.has(foldText(n))) all.set(foldText(n), { name: n, person: null });
-    return {
-      list: [...all.values()].map((p) => ({ ...p, pet: !p.person && this.isPet(p.name), notify: this.targetFor(p.name), auto: this.autoTarget(p.name) })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
-      // owner: the person whose phone it is (so a pet can get the phone of whoever takes care of it)
-      targets: [...this.targets].sort().map((id) => {
-        const owner = [...this.persons.values()].find((p) => this.autoTarget(p.name) === id);
-        return { id, name: id.replace(/^mobile_app_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), owner: owner ? owner.name : null };
-      }),
-    };
+    return [...all.values()]
+      .map((p) => ({ ...p, pet: !p.person && this.isPet(p.name), phone: this.ownPhones(p.name).length > 0, care: this.careOf(p.name) || null, reach: this.phonesOf(p.name).length > 0 }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }
 
   // ---------------------------------------------------------------- index
@@ -229,7 +268,7 @@ export class Home {
 
   settings() {
     const a = this.store.data.app.alerts || {};
-    return { meds: a.meds !== false, late: a.late == null ? 30 : a.late, caregivers: a.caregivers || [] };
+    return { meds: a.meds !== false, late: a.late == null ? 30 : a.late, caregivers: (a.caregivers || []).filter((n) => !/^mobile_app_/.test(n)) };
   }
 
   /** All model occurrences of the followed calendars. */
@@ -247,14 +286,14 @@ export class Home {
     const now = Date.now();
     const { late, meds: alertsOn, caregivers } = this.settings();
     const occs = [...this.occurrences()];
-    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, late, alertsOn, features: (cal) => this.features(cal), targetFor: (n) => this.targetFor(n), now, away: this.store.data.app.away || null });
+    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, late, alertsOn, features: (cal) => this.features(cal), reach: (n) => this.phonesOf(n).length > 0, now, away: this.store.data.app.away || null });
     // Alert buttons find their dose by a short hash (doses of yesterday, today and tomorrow).
     this.byHash.clear();
     const t0 = startOfDay(new Date(now)).getTime();
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people: people.list, targets: people.targets, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos && this.store.data.app.resolvia_on === true ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
+    this.index = { ...out, people, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos && this.store.data.app.resolvia_on === true ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;
@@ -295,7 +334,7 @@ export class Home {
     if (now < at || now - at > 2 * 3600 * 1000) return;
     const key = `placar|${day}`;
     if (this.store.data.sent[key]) return;
-    const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
+    const targets = [...new Set(st.participants.flatMap((n) => this.phonesOf(n)))];
     this.store.markSent(key, "on", targets);
     const { title, message } = this.scoreReminderText(now);
     for (const target of targets) {
@@ -330,23 +369,25 @@ export class Home {
     return { tag, group: "cronologia-placar", channel: "Placar", ...(url ? { url, clickAction: url } : {}) };
   }
 
-  /** Mais › Configurações › Placar › Lembrete diário › Testar: the reminder now, to one phone. */
-  async testScoreReminder(target) {
-    if (!/^mobile_app_[a-z0-9_]+$/.test(target || "")) throw coded("invalid_format", "Celular inválido");
+  /** Mais › Configurações › Placar › Lembrete diário › Testar: the reminder now, on the phones of the one using the app. */
+  async testScoreReminder(person) {
+    const phones = this.phonesOf(person);
+    if (!phones.length) throw coded("no_phone", "Sem celular ligado a você no Home Assistant");
     const { title, message } = this.scoreReminderText(new Date());
-    await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } });
+    for (const target of phones) await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } });
   }
 
   async sendAlerts() {
     if (!this.index || !this.ha.ready) return;
-    const { meds: on, late, caregivers } = this.settings();
+    const { meds: on, late } = this.settings();
     if (!on) return;
+    const caregivers = this.carePhones();
     const now = Date.now();
     for (const m of this.index.meds) {
       if (m.taken || !m.alert) continue;
       const start = msOf(m.start);
       const sent = this.store.data.sent[m.key] || {};
-      const own = m.notify ? [m.notify] : [];
+      const own = this.phonesOf(m.who);
       const lateMs = late * 60000;
       if (!sent.on && now >= start && now - start < Math.max(lateMs, 30 * 60000)) {
         await this.notify(m, own.length ? own : caregivers, "on");
@@ -410,8 +451,17 @@ export class Home {
    * comes back here (mobile_app_notification_action) and the phone gets a
    * confirmation, so the whole round trip is tested.
    */
-  async testAlert(target) {
-    if (!/^mobile_app_[a-z0-9_]+$/.test(target || "")) throw coded("invalid_format", "Celular inválido");
+  async testAlert(person) {
+    const phones = this.phonesOf(String(person || ""));
+    if (!phones.length) throw coded("no_phone", `Sem celular para ${person || "ninguém"}`);
+    for (const target of phones) {
+      this.testNames.set(target, String(person));
+      await this.sendTest(target);
+    }
+    return { sent: phones.length };
+  }
+
+  async sendTest(target) {
     const url = ingressUrl();
     await this.ha.send({
       type: "call_service",
@@ -440,7 +490,7 @@ export class Home {
   /** A button of the test alert was tapped: confirm on that phone and on the app screen. */
   async onTestAction(kind, target) {
     this.log.info(`Teste do aviso: botão ${kind === "TOMEI" ? "Tomei" : "Adiar"} tocado em ${target}`);
-    this.lastTest = { target, action: kind === "TOMEI" ? "tomei" : "adiar", at: Date.now() };
+    this.lastTest = { person: this.testNames.get(target) || "", action: kind === "TOMEI" ? "tomei" : "adiar", at: Date.now() };
     this.changed();
     const message =
       kind === "TOMEI"
@@ -783,7 +833,7 @@ export class Home {
     const per = sc.prizes[cur.key] || {};
     const nextReward = Object.keys(per).length ? st.participants.map((n) => `${n}: ${per[n] || sc.rewards[cur.key] || "livre"}`).join(" · ") : sc.rewards[cur.key];
     const message = `${winner ? `${winner} venceu: ${score}.` : rows.some((r) => r.points > 0) ? `Empate: ${score}.` : "Ninguém pontuou."}${winner && reward ? ` Prêmio: ${reward}.` : ""}${nextReward ? ` Prêmio agora: ${nextReward}.` : ""}`;
-    const targets = [...new Set(st.participants.map((n) => this.targetFor(n)).filter(Boolean))];
+    const targets = [...new Set(st.participants.flatMap((n) => this.phonesOf(n)))];
     for (const target of targets) {
       await this.ha
         .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "🏆 Placar fechado", message, data: this.scoreNoteData("cronologia-placar") } })

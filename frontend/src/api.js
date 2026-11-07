@@ -381,12 +381,14 @@ export class Api {
     return this.call("cronologia/todo/set", { entity_id: entityId, uid, done, who });
   }
 
-  testAlert(target) {
-    return this.call("cronologia/notify/test", { target });
+  /** Testar (Mais › Avisos): a test alert on the phones of this person (never a device picked here). */
+  testAlert(person) {
+    return this.call("cronologia/notify/test", { person });
   }
 
-  testScoreReminder(target) {
-    return this.call("cronologia/score/remind_test", { target });
+  /** Lembrete diário › Testar: on the phones of the one using the app. */
+  testScoreReminder() {
+    return this.call("cronologia/score/remind_test", {});
   }
 
   exportUrl({ calendars, start, end }) {

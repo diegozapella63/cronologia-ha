@@ -956,33 +956,32 @@ export const RewardsMixin = (Base) =>
       </div>`;
     }
 
-    /** Lembrete diário: when (Manhã, Tarde, Noite or the exact time), whose phones, and Testar on mine. */
+    /** Lembrete diário: when (Manhã, Tarde, Noite or the exact time), who gets it, and Testar on my phone. */
     _renderScoreRemind(s) {
       const SLOTS = { manha: "09:00", tarde: "14:00", noite: "20:00" };
       const cur = periodOfHour(Number(s.remind.slice(0, 2)));
+      // the phones are the ones tied to each person in Home Assistant (a child without one: the person chosen in Avisos)
       const people = this._ix().people || [];
-      const phoneOf = (n) => (people.find((p) => foldText(p.name) === foldText(n)) || {}).notify || null;
-      const withPhone = s.participants.filter((n) => phoneOf(n));
-      const without = s.participants.filter((n) => !phoneOf(n));
+      const reach = (n) => !!(people.find((p) => foldText(p.name) === foldText(n)) || {}).reach;
+      const withPhone = s.participants.filter((n) => reach(n));
+      const without = s.participants.filter((n) => !reach(n));
       const list = (ns) => (ns.length > 1 ? `${ns.slice(0, -1).join(", ")} e ${ns.at(-1)}` : ns[0]);
-      const mine = phoneOf(this._me ? this._me() : "");
-      // the phone of each person is chosen in Mais › Avisos, only with Avisar no celular on
-      const pick = (this._app("alerts", null) || {}).meds !== false;
+      const mine = reach(this._me ? this._me() : "");
       return html`<div class="field remind-field">
         <span class="flabel">Quando</span>
         <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
         <div class="remind-row">
           <input type="time" class="remind-time" .value=${s.remind} aria-label="Horário do lembrete" @change=${(e) => /^\d{2}:\d{2}$/.test(e.target.value) && this._scorePrefs({ remind: e.target.value })} />
-          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : pick ? "Sem celular escolhido para você em Avisos" : "Sem celular para você"} @click=${() => this._testScoreReminder(mine)}>${icon("send")}Testar</button>
+          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testScoreReminder()}>${icon("send")}Testar</button>
         </div>
-        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? (pick ? html` Sem celular para ${list(without)}: escolha em <a href="#" @click=${(e) => (e.preventDefault(), this._goAlerts())}>Avisos</a>.` : ` Sem celular para ${list(without)}.`) : nothing}</span></span>
+        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? `${withPhone.length ? " " : ""}Sem celular para ${list(without)}.` : ""}</span></span>
       </div>`;
     }
 
-    async _testScoreReminder(target) {
+    async _testScoreReminder() {
       try {
-        await this.api.testScoreReminder(target);
-        this._showToast(`Lembrete enviado para ${this._targetName(target)}. Toque nele para abrir Recompensas.`);
+        await this.api.testScoreReminder();
+        this._showToast("Lembrete enviado para o seu celular. Toque nele para abrir Recompensas.");
       } catch (err) {
         this._showToast(`Não foi: ${err.message}`);
       }

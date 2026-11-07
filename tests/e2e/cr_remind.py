@@ -44,6 +44,10 @@ async def main():
         await wait_for(lambda: any(n.get("data", {}).get("tag") == "cronologia-placar-teste" for n in st.notifications()), "Testar sends it now")
         t = [n for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-teste"][-1]
         check(t["service"] == "mobile_app_pixel_8" and t["title"] == "🏆 Placar" and t["message"].startswith("Diego na frente por 10 pontos: Diego 30 × Andressa 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
+        # 1.54.0: the app says it by the person, never the device
+        toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
+        check("Lembrete enviado para o seu celular." in toast and "Pixel" not in toast, f"the toast, no device ({toast!r})")
+        check("Pixel" not in await fld.inner_text() and "Vai para o celular de Diego e Andressa." in await fld.inner_text(), "who gets it: the players by name")
         # the exact time: this minute; the server sends it to both within a round (20 s)
         hm = datetime.datetime.now(SPT).strftime("%H:%M")
         await fld.locator("input.remind-time").fill(hm); await fld.locator("input.remind-time").dispatch_event("change"); await A.wait_for_timeout(700)

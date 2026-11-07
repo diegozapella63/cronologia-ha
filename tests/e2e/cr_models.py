@@ -73,7 +73,7 @@ async def main():
         # the sample Mounjaro dose is an hour before now: right after midnight it falls on yesterday
         if datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).hour >= 1:
             check(await a.locator(".panel.meds.alert .meds-alert", has_text="Mounjaro").count() == 1, "late dose turns the card red with a warning")
-        check("atrasado" in await a.locator(".brand-head .status").inner_text(), "status line warns about the late dose")
+            check("atrasado" in await a.locator(".brand-head .status").inner_text(), "status line warns about the late dose")
         check(await a.locator(".meds-who", has_text="Andressa").count() == 1 and await a.locator(".meds-who", has_text="Mimi").count() == 1, "doses grouped by who takes them (people and pets)")
         check("Sem celular para Mimi" in await a.locator(".panel.meds .panel-foot").inner_text(), "warns when a person has no phone for the alerts")
         # phone alert for the late dose, then "Tomei" pressed on the phone
@@ -104,7 +104,7 @@ async def main():
         # event sheet of a dose
         await a.locator(".dose", has_text="Sertralina").locator(".dose-main").click(); await A.wait_for_timeout(300)
         sheet = await a.locator(".sheet").inner_text()
-        check("Dose: 50 mg" in sheet and "Quem toma: Andressa" in sheet and "Galaxy S23" in sheet and "#remédio" not in sheet, "dose sheet shows dose, who and phone (not the raw tags)")
+        check("Dose: 50 mg" in sheet and "Quem toma: Andressa" in sheet and "Aviso no celular de Andressa" in sheet and "Galaxy" not in sheet and "#remédio" not in sheet, "dose sheet shows dose, who and whose phone (no device, no raw tags)")
         # edit the series through the template form
         await a.locator(".sheet .btn", has_text="Editar").click(); await A.wait_for_timeout(300)
         check(await a.locator(".sheet .flabel", has_text="Dose").count() == 1, "Editar opens the remédio form")
@@ -229,14 +229,14 @@ async def main():
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
         await open_more(a, "Avisos"); await A.wait_for_timeout(400)
         av = await a.locator("#avisos").inner_text()
-        check("Automático: Galaxy S23" in av and "Automático: Pixel 8" in av and "Mimi" in av, "phones found from the person entities")
-        await a.locator("#avisos .pick", has_text="Pixel 8").click(); await A.wait_for_timeout(600)
+        check("Mimi" in av and not re.search(r"Pixel|Galaxy|mobile_app|Automático", av), "the people, no devices (their phones are the ones tied to them in Home Assistant)")
+        await a.locator("#avisos .pick", has_text="Diego").click(); await A.wait_for_timeout(600)
         await a.locator("#avisos .pick", has_text="1 hora").click(); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
-        check(prefs.get("alerts") == {"meds": True, "late": 60, "caregivers": ["mobile_app_pixel_8"]}, f"alerts saved ({prefs.get('alerts')})")
-        await a.locator("#avisos .person-row", has_text="Mimi").locator("select").select_option("mobile_app_pixel_8"); await A.wait_for_timeout(600)
+        check(prefs.get("alerts") == {"meds": True, "late": 60, "caregivers": ["Diego"]}, f"alerts saved, Quem cuida by person ({prefs.get('alerts')})")
+        await a.locator("#avisos .person-row", has_text="Mimi").locator("select").select_option("Diego"); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
-        check(prefs.get("people") == {"Mimi": {"notify": "mobile_app_pixel_8"}}, f"phone for a pet saved ({prefs.get('people')})")
+        check(prefs.get("people") == {"Mimi": {"care": "Diego"}}, f"the person who gets Mimi's alerts saved ({prefs.get('people')})")
         await a.locator("#avisos .person-row", has_text="Mimi").locator(".icon-btn[aria-label^='Testar']").click()
         await wait_for(lambda: any(x.get("data", {}).get("tag") == "cronologia-teste" and x["service"] == "mobile_app_pixel_8" for x in get("http://127.0.0.1:8123/dev/notifications")), "Testar sends a test alert")
         tn = [x for x in get("http://127.0.0.1:8123/dev/notifications") if x.get("data", {}).get("tag") == "cronologia-teste"][-1]
@@ -253,7 +253,7 @@ async def main():
         foot = await a.locator(".panel.meds .panel-foot").inner_text()
         check("Sem celular" not in foot, f"no more missing-phone warning ({foot.strip()})")
         # Mimi is a pet: no phone of hers; the hint names whose phone gets her alert (Diego's)
-        await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { notify: 'mobile_app_pixel_8', pet: true } } })"); await A.wait_for_timeout(1200)
+        await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { care: 'Diego', pet: true } } })"); await A.wait_for_timeout(1200)
         foot = (await a.locator(".panel.meds .panel-foot").inner_text()).strip()
         check("Mimi" not in foot and "Diego" in foot and "Andressa" in foot, f"a pet: the hint names the owner of the phone, not the pet ({foot})")
         # GerencIA turned off: card falls back to calendar bills only

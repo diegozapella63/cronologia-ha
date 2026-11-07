@@ -26,7 +26,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.53.5";
+const VERSION = "1.54.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -79,6 +79,8 @@ const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: (
 // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
 const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed(), enabled: resolviaOn, scored: () => home.placarInfo().ativo });
 home.mirror = mirror;
+// Avisos: the phones picked before 1.54.0 became people (the screens get the new prefs)
+home.onPrefs = () => pushPrefs();
 
 const isCal = (id) => typeof id === "string" && /^calendar\.[a-z0-9_]+$/.test(id);
 const coded = (code, message) => Object.assign(new Error(message), { code });
@@ -417,12 +419,12 @@ class Session {
         return this.result(id, counts());
       }
 
+      // the tests go to a person (on the phones tied to them in Home Assistant), never to a device picked here
       case "cronologia/score/remind_test":
-        await home.testScoreReminder(msg.target);
+        await home.testScoreReminder(home.personOfUser(this.user.id, this.user.name));
         return this.result(id);
       case "cronologia/notify/test":
-        await home.testAlert(msg.target);
-        return this.result(id);
+        return this.result(id, await home.testAlert(String(msg.person || "")));
 
       case "cronologia/registry":
         registryCache = null;

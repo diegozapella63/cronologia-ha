@@ -1,4 +1,6 @@
-# CronologIA: avisos de remédio — the pet's dose to quem cuida, the late one to the person and quem cuida, Adiar and Tomei from the phone, the sininho (testar) with its Adiar, and the Mais › Avisos settings (phone of each one, avisar de novo, quem cuida, off).
+# CronologIA: avisos de remédio — the pet's dose to quem cuida, the late one to the person and quem cuida, Adiar and Tomei from the phone, the sininho (testar) with its Adiar, and the Mais › Avisos settings (who gets the alerts of one without a phone, avisar de novo, quem cuida, off).
+# 1.54.0: the app looks at the person, never at a device: the phones are the ones tied to each person in Home Assistant,
+# Quem cuida and the one who gets the alerts of a pet are people; the phones picked before (the data below) became people.
 import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
@@ -49,61 +51,67 @@ async def main():
             print("-- doses skipped near midnight")
 
         # Mais › Avisos
+        await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["Diego"], "Quem cuida of before (the phone of Diego) became Diego")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
         await open_more(a, "Avisos"); await A.wait_for_timeout(500)
         av = a.locator("#avisos")
         row = lambda name: av.locator(".person-row").filter(has=A.locator(f".grow b:text-is('{name}')"))
+        txt = await av.inner_text()
         check("Pessoa do Home Assistant" in await row("Andressa").inner_text() and "Pet" in await row("Mimi").inner_text(), "people and the pet")
-        check(await row("Andressa").locator("select option:checked").inner_text() == "Automático: Galaxy S23" and await row("Mimi").locator("select option:checked").inner_text() == "Sem celular", "each one's phone (found by the app) and the pet without")
-        check(await row("Andressa").locator(".icon-btn[aria-label='Testar aviso para Andressa']").count() == 1 and await row("Mimi").locator(".icon-btn[aria-label^='Testar']").count() == 0, "the sininho only for who has a phone")
+        check(not re.search(r"Pixel|Galaxy|mobile_app|Automático", txt), "no device anywhere: only people")
+        check(await row("Andressa").locator("select").count() == 0, "a person with a phone in Home Assistant: nothing to pick")
+        mimi_sel = row("Mimi").locator("select[aria-label='Quem recebe os avisos de Mimi']")
+        opts = [o.strip() for o in await mimi_sel.locator("option").all_inner_texts()]
+        check(opts == ["No celular de quem cuida", "No celular de Andressa", "No celular de Diego"] and await mimi_sel.locator("option:checked").inner_text() == "No celular de quem cuida", f"the pet: Quem cuida or a person with a phone ({opts})")
+        check(await row("Andressa").locator(".icon-btn[aria-label='Testar aviso para Andressa']").count() == 1 and await row("Mimi").locator(".icon-btn[aria-label^='Testar']").count() == 0, "the sininho only for who gets the alerts on a phone")
         await A.screenshot(path=f"{SP}/shots/crav-avisos.png", full_page=True)
-        # the sininho: a test like the real one; its Adiar comes back to the app
+        # the sininho: a test like the real one, on the phones of the person; its Adiar comes back to the app
         await row("Andressa").locator(".icon-btn[aria-label='Testar aviso para Andressa']").click()
         await wait_for(lambda: notes(lambda n: n.get("title") == "💊 Teste do CronologIA" and n["service"] == "mobile_app_galaxy_s23"), "Testar: the test alert on Andressa's phone")
         # the toast comes right after the phone gets it: wait for it instead of reading at once
         for _ in range(40):
-            if "Aviso de teste enviado para Galaxy S23" in await toast(): break
+            if "Aviso de teste enviado para o celular de Andressa" in await toast(): break
             await A.wait_for_timeout(100)
         t = await toast()
-        check("Aviso de teste enviado para Galaxy S23" in t, f"the app says it was sent ({t!r})")
+        check("Aviso de teste enviado para o celular de Andressa" in t, f"the app says it was sent, by the person ({t!r})")
         test = notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]
         st.fire("mobile_app_notification_action", {"action": test["data"]["actions"][1]["action"]})
-        async def adiar_back(): return "Galaxy S23: o botão Adiar chegou ao app" in await toast()
+        async def adiar_back(): return "Andressa: o botão Adiar chegou ao app" in await toast()
         await wait_for(adiar_back, "tapping Adiar on the test: the app says it arrived")
         await wait_for(lambda: notes(lambda n: n.get("title") == "✅ Funcionou" and "Adiar chegou" in n.get("message", "")), "and the phone gets the confirmation")
-        # another phone for Andressa: the test goes there
-        await row("Andressa").locator("select").select_option("mobile_app_pixel_8")
-        await wait_for(lambda: st.stored()["app"]["people"].get("Andressa", {}).get("notify") == "mobile_app_pixel_8", "a phone chosen for Andressa")
+        # the pet's alerts on the phone of Andressa: the sininho of Mimi tests there
+        await mimi_sel.select_option("Andressa")
+        await wait_for(lambda: st.stored()["app"]["people"].get("Mimi") == {"pet": True, "care": "Andressa"}, "Andressa gets the alerts of Mimi")
         n0 = len(notes(lambda n: n.get("title") == "💊 Teste do CronologIA"))
         await A.wait_for_timeout(500)
-        await row("Andressa").locator(".icon-btn[aria-label='Testar aviso para Andressa']").click()
-        await wait_for(lambda: len(notes(lambda n: n.get("title") == "💊 Teste do CronologIA")) == n0 + 1 and notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]["service"] == "mobile_app_pixel_8", "the test goes to the phone chosen")
-        await row("Andressa").locator("select").select_option("")
-        await wait_for(lambda: not st.stored()["app"]["people"].get("Andressa", {}).get("notify"), "back to the automatic one")
+        await row("Mimi").locator(".icon-btn[aria-label='Testar aviso para Mimi']").click()
+        await wait_for(lambda: len(notes(lambda n: n.get("title") == "💊 Teste do CronologIA")) == n0 + 1 and notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]["service"] == "mobile_app_galaxy_s23", "the test of Mimi goes to the phone of Andressa")
+        await mimi_sel.select_option("")
+        await wait_for(lambda: st.stored()["app"]["people"].get("Mimi") == {"pet": True}, "back to Quem cuida")
         # Avisar de novo: 15 min, 1 hora, Não
         again = av.locator(".field", has_text="Avisar de novo se não tomar")
         check(await again.locator(".pick.on").inner_text() == "30 min", "Avisar de novo: 30 min")
-        care = av.locator(".field", has_text="Quem cuida")
+        care = av.locator(".field:has(> .flabel:text-is('Quem cuida'))")
         for label, n in [("15 min depois", 15), ("1 hora", 60), ("Não", 0), ("30 min", 30)]:
             await again.locator(".pick", has_text=label).click()
             await wait_for(lambda n=n: st.stored()["app"]["alerts"]["late"] == n, f"{label}: saved ({n})")
             # Quem cuida says what it gets: the late alerts, or (Não) only the ones of whoever has no phone
             await A.wait_for_timeout(300)
-            hint = await av.locator(".field:has(> .flabel:text-is('Quem cuida')) .field-hint").inner_text()
+            hint = await care.locator(".field-hint").inner_text()
             check(("Recebe os avisos de quem está sem celular." in hint) if n == 0 else ("Recebe os atrasos de todos." in hint), f"{label}: Quem cuida ({hint})")
-        # Quem cuida: more than one phone, or another one
-        check(await care.locator(".pick[aria-pressed='true']").inner_text() == "Pixel 8", "Quem cuida: Pixel 8")
-        await care.locator(".pick", has_text="Galaxy S23").click()
-        await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], "both phones")
-        await care.locator(".pick", has_text="Pixel 8").click()
-        await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["mobile_app_galaxy_s23"], "only Galaxy S23")
+        # Quem cuida: people (those with a phone), more than one or another one
+        check([x.strip() for x in await care.locator(".pick").all_inner_texts()] == ["Andressa", "Diego"] and await care.locator(".pick[aria-pressed='true']").inner_text() == "Diego", "Quem cuida: the people with a phone, Diego on")
+        await care.locator(".pick", has_text="Andressa").click()
+        await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["Diego", "Andressa"], "both")
+        await care.locator(".pick", has_text="Diego").click()
+        await wait_for(lambda: st.stored()["app"]["alerts"]["caregivers"] == ["Andressa"], "only Andressa")
         check(await care.locator(".pick[aria-pressed='true']").count() == 1, "one on")
         # off: no phone alerts, the choices leave the screen
         await av.locator("input[aria-label='Avisar no celular']").uncheck()
         await wait_for(lambda: st.stored()["app"]["alerts"]["meds"] is False, "Avisar no celular off: saved")
-        check(await av.locator(".icon-btn[aria-label^='Testar']").count() == 0 and await av.locator(".field", has_text="Quem cuida").count() == 0 and await av.locator(".field", has_text="Avisar de novo").count() == 0, "no sininho, no Avisar de novo, no Quem cuida")
+        check(await av.locator(".icon-btn[aria-label^='Testar']").count() == 0 and await av.locator(".field", has_text="Quem cuida").count() == 0 and await av.locator(".field", has_text="Avisar de novo").count() == 0 and await av.locator("select").count() == 0, "no sininho, no Avisar de novo, no Quem cuida, no choice")
         await av.locator("input[aria-label='Avisar no celular']").check()
-        await wait_for(lambda: st.stored()["app"]["alerts"] == {"meds": True, "late": 30, "caregivers": ["mobile_app_galaxy_s23"]}, "on again, the choices kept")
+        await wait_for(lambda: st.stored()["app"]["alerts"] == {"meds": True, "late": 30, "caregivers": ["Andressa"]}, "on again, the choices kept")
         check(not errs, f"no page errors {errs}")
         await b.close()
 try:

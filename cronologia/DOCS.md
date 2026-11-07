@@ -24,7 +24,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 - **Mais** (os três pontinhos) abre um menu. Cada linha abre a sua tela, com **‹ Mais** no alto para voltar ao menu (o Voltar do celular e arrastar para a direita também voltam):
   - **Calendários**: os calendários agrupados por integração, com nome, cor e **mostrar/ocultar**; o calendário padrão para eventos novos; atalhos para adicionar calendários.
   - **Rotinas**: tudo o que está cadastrado (rotinas, remédios, manutenções e contas), com busca.
-  - **Avisos**: avisos de remédio no celular, o celular de cada pessoa e quem cuida.
+  - **Avisos**: avisos de remédio no celular, as pessoas e pets e quem cuida.
   - **Férias**: de quando até quando as rotinas, as tarefas, os deméritos e a manutenção da casa ficam pausados (os remédios continuam).
   - **Configurações**, em abas no alto (ficam presas no topo ao rolar):
     - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, leitura por IA, Falar, uso da IA e sensores.
@@ -163,10 +163,10 @@ Em **Mais › Avisos**:
 
 - **Na hora** de cada dose, o celular de quem toma recebe um aviso com **Tomei** e **Adiar 15 min**. Tomei no aviso marca a dose no app; Adiar avisa de novo em 15 minutos.
 - **Se não tomar** (15 min, 30 min ou 1 hora depois, você escolhe), avisa de novo, também para **quem cuida**.
-- Quem não tem celular (uma criança, o gato) avisa quem cuida já na hora.
+- Quem não tem celular (uma criança, o gato) avisa já na hora a pessoa escolhida para ele ou, sem escolha, **quem cuida**.
 - Quando a dose é marcada, o aviso some dos celulares.
 
-O celular de cada pessoa vem sozinho do Home Assistant (a pessoa com o app Home Assistant no celular, pelo rastreador dela); dá para escolher outro em cada pessoa e **testar** pelo sininho: o teste chega igual ao aviso de verdade, com **Tomei** e **Adiar**, e tocar num deles confirma no celular e na tela do app que o botão chegou ao CronologIA. Os avisos usam o app Home Assistant do celular (`notify.mobile_app_…`), no canal "Remédios" no Android, com prioridade alta. Cada remédio pode ficar sem aviso (no formulário). Com **Avisar no celular** desligado, nenhum remédio avisa: a opção some do formulário e o remédio diz **Avisos no celular desligados**.
+O app olha para a pessoa, nunca para um aparelho: o aviso vai para os celulares ligados a cada pessoa no Home Assistant (o app Home Assistant no celular, em **Configurações › Pessoas**), e a tela mostra só as pessoas. Quem não tem celular (um pet, uma criança, alguém **Só no CronologIA**) tem embaixo do nome para quem vão os avisos dele: **No celular de quem cuida** ou no de uma pessoa da casa. **Quem cuida** também é escolhido entre as pessoas com celular. O sininho ao lado de cada um **testa** o aviso: o teste chega igual ao aviso de verdade, com **Tomei** e **Adiar**, e tocar num deles confirma no celular e na tela do app que o botão chegou ao CronologIA. Os celulares escolhidos antes da 1.54.0 viram, sozinhos, as pessoas donas deles. Os avisos usam o app Home Assistant do celular (`notify.mobile_app_…`), no canal "Remédios" no Android, com prioridade alta. Cada remédio pode ficar sem aviso (no formulário). Com **Avisar no celular** desligado, nenhum remédio avisa: a opção some do formulário e o remédio diz **Avisos no celular desligados**.
 
 ## Contas do GerencIA
 
@@ -307,7 +307,7 @@ Em **Mais › Configurações › Dados**, como nos outros apps:
 - **Importar backup ou JSON**: traz os dados do app de um .zip ou .json do CronologIA (nome e cor das agendas, preferências, pessoas e avisos, placar e marcações). Os eventos não mudam: para trazê-los, use **Importar eventos (.ics)** com o .ics do calendário que está no ZIP.
 - **Versões anteriores**: o app guarda sozinho uma cópia dos dados a cada 10 minutos de uso e antes de cada importação ou restauração, e mantém só as 3 mais recentes.
 
-Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com o celular de cada pessoa), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
+Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com as pessoas e pets e quem recebe os avisos de cada um), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 
 ## Segurança
 

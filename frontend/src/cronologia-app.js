@@ -307,7 +307,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
           const t = ix && ix.test;
           if (t && this._home && t.at !== this._testSeen && Date.now() - t.at < 120000) {
             this._haptic("success");
-            this._showToast(`${this._targetName(t.target)}: o botão ${t.action === "tomei" ? "Tomei" : "Adiar"} chegou ao app`);
+            this._showToast(`${t.person ? `${t.person}: o` : "O"} botão ${t.action === "tomei" ? "Tomei" : "Adiar"} chegou ao app`);
           }
           this._testSeen = t && t.at;
           this._home = ix;

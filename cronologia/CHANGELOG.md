@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.54.0
+
+- **Avisos de remédio** pela pessoa, não pelo aparelho: o aviso vai para os celulares ligados a cada pessoa no Home Assistant (**Configurações › Pessoas**), e **Mais › Avisos** mostra só as pessoas, sem nome de celular.
+- Quem não tem celular (pet, criança) escolhe embaixo do nome para quem vão os avisos: **No celular de quem cuida** ou no de uma pessoa da casa. **Quem cuida** também é escolhido entre as pessoas.
+- Os celulares escolhidos antes viram, sozinhos, as pessoas donas deles.
+- Remédios de hoje, o remédio e o formulário dizem de quem é o celular ("Aviso no celular de Ana"). O **Lembrete diário** do placar mostra só as pessoas, e o **Testar** manda para o seu celular.
+
 ## 1.53.5
 
 - O aviso de prazos do ResolvIA (2.44.1 ou mais novo) não usa mais o celular escolhido aqui em **Mais › Avisos**: vai para os celulares ligados a cada pessoa no Home Assistant.

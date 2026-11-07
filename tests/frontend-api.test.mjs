@@ -190,7 +190,8 @@ describe("api: what each call sends", () => {
     api.bring("todo.casa", "calendar.a", ["u1"]);
     api.bring("todo.casa", "calendar.a", ["u1"], false);
     api.setTodo("todo.casa", "u1", true);
-    api.testAlert("notify.celular");
+    api.testAlert("Andressa");
+    api.testScoreReminder();
     api.voiceStatus();
     api.voiceStatus(true);
     assert.deepEqual(ws.sent.map(strip), [
@@ -233,7 +234,8 @@ describe("api: what each call sends", () => {
       { type: "cronologia/todo/bring", entity_id: "todo.casa", calendar: "calendar.a", uids: ["u1"], remove: true },
       { type: "cronologia/todo/bring", entity_id: "todo.casa", calendar: "calendar.a", uids: ["u1"], remove: false },
       { type: "cronologia/todo/set", entity_id: "todo.casa", uid: "u1", done: true, who: "" },
-      { type: "cronologia/notify/test", target: "notify.celular" },
+      { type: "cronologia/notify/test", person: "Andressa" },
+      { type: "cronologia/score/remind_test" },
       { type: "cronologia/voice/status" },
       { type: "cronologia/voice/status", fresh: true },
     ]);

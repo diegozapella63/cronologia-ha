@@ -340,7 +340,7 @@ export function cleanAway(v) {
 /** A day (YYYY-MM-DD) inside the vacation. */
 export const awayOn = (away, day) => !!(away && day >= away.from && day <= away.to);
 
-export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = true, features = () => 7, targetFor = () => null, now = Date.now(), away = null }) {
+export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = true, features = () => 7, reach = () => false, now = Date.now(), away = null }) {
   const today = new Date(now);
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const t1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
@@ -387,7 +387,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       if (start < t0 || start >= t1) continue;
       const taken = checks[key] || null;
       const state = taken ? "tomado" : now < start ? "depois" : now < start + lateMs ? "agora" : "atrasado";
-      out.meds.push({ ...base, kind: "remedio", dose: k.dose, who: k.who, alert: k.alert && alertsOn, time: allDay ? "" : hmOf(start), taken, state, late_min: state === "atrasado" || state === "agora" ? Math.floor((now - start) / 60000) : 0, notify: targetFor(k.who) });
+      out.meds.push({ ...base, kind: "remedio", dose: k.dose, who: k.who, alert: k.alert && alertsOn, time: allDay ? "" : hmOf(start), taken, state, late_min: state === "atrasado" || state === "agora" ? Math.floor((now - start) / 60000) : 0, phone: !!reach(k.who) });
     } else if (k.kind === "rotina" && k.after && !raw.rrule) {
       // One event, always the next time: shown from its day on (late ones stay until done), and as done today after "Feito"
       const id = `${cal}|${raw.uid || raw.summary}`;

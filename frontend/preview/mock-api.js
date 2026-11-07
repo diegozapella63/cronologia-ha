@@ -116,19 +116,19 @@ export class MockApi {
     const now = Date.now();
     const occurrences = [];
     for (const cal of this.model.ids()) for (const raw of this.model.occurrences(cal, now - 200 * 86400000, now + 800 * 86400000)) if (parseKind(raw.description)) occurrences.push({ cal, raw });
-    const ix = buildIndex({ occurrences, checks: this.checks, late: (this.prefs.app.alerts || {}).late || 30, features: (cal) => this.model.calendars[cal].features, targetFor: (n) => (this.prefs.app.people || {})[n]?.notify || ({ Andressa: "mobile_app_galaxy_s23", Diego: "mobile_app_pixel_8" })[n] || null, now });
+    // the people of Home Assistant with a phone tied to them; one without a phone: the person chosen for it
+    const phoned = ["Andressa", "Diego"];
+    const careOf = (n) => (this.prefs.app.people || {})[n]?.care || "";
+    const reach = (n) => phoned.includes(n) || phoned.includes(careOf(n));
+    const ix = buildIndex({ occurrences, checks: this.checks, late: (this.prefs.app.alerts || {}).late || 30, features: (cal) => this.model.calendars[cal].features, reach, now });
     const names = new Set(["Andressa", "Diego", ...ix.names, ...Object.keys(this.prefs.app.people || {})]);
     delete ix.names;
     return {
       ...ix,
       people: [...names].sort().map((name) => {
-        const auto = ({ Andressa: "mobile_app_galaxy_s23", Diego: "mobile_app_pixel_8" })[name] || null;
-        return { name, person: auto ? `person.${name.toLowerCase()}` : null, pet: !!(this.prefs.app.people || {})[name]?.pet, auto, notify: (this.prefs.app.people || {})[name]?.notify || auto };
+        const person = phoned.includes(name);
+        return { name, person: person ? `person.${name.toLowerCase()}` : null, pet: !!(this.prefs.app.people || {})[name]?.pet, phone: person, care: careOf(name) || null, reach: reach(name) };
       }),
-      targets: [
-        { id: "mobile_app_galaxy_s23", name: "Galaxy S23" },
-        { id: "mobile_app_pixel_8", name: "Pixel 8" },
-      ],
       caregivers: (this.prefs.app.alerts || {}).caregivers || [],
       tracked: ["calendar.remedios", "calendar.casa"],
       gerencia: this.prefs.app.gerencia_on ? clone(this.gerencia) : { ligado: false, desligado: true, contas: [], categorias: [] },
@@ -421,6 +421,7 @@ export class MockApi {
 
   async testAlert() {
     await wait(200);
+    return { sent: 1 };
   }
 
   onStatus() {}
@@ -436,7 +437,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.53.5", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.54.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

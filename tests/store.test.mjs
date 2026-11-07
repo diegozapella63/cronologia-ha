@@ -181,13 +181,13 @@ describe("Store: app settings", () => {
     assert.deepEqual(set({ mirror: { list: "bad" } }), {});
     assert.deepEqual(set({ mirror: null }), {});
   });
-  it("people: phone of each person, pets, names trimmed", () => {
-    const people = set({ people: { " Andressa ": { notify: "mobile_app_galaxy_s23" }, Mimi: { notify: "mobile_app_galaxy_s23", pet: true }, Diego: { notify: "notify.x" }, "": {}, Rex: { pet: "yes" } } }).people;
+  it("people: pets, the person who gets the alerts of one without a phone, names trimmed; a phone of before 1.54.0 kept until migrated", () => {
+    const people = set({ people: { " Andressa ": { notify: "mobile_app_galaxy_s23" }, Mimi: { care: " Andressa ", pet: true }, Diego: { notify: "notify.x", care: 3 }, "": {}, Rex: { pet: "yes" } } }).people;
     assert.deepEqual(people, {
       Andressa: { notify: "mobile_app_galaxy_s23" },
-      Mimi: { notify: "mobile_app_galaxy_s23", pet: true },
-      Diego: { notify: null },
-      Rex: { notify: null },
+      Mimi: { care: "Andressa", pet: true },
+      Diego: {},
+      Rex: {},
     });
     assert.deepEqual(set({ people: {} }), {});
   });
@@ -221,8 +221,8 @@ describe("Store: app settings", () => {
     assert.equal(list[1].points, 3);
     assert.match(list[1].id, /^[a-z0-9]{4,16}$/);
   });
-  it("alerts: meds on by default, late from the list, caregivers are phones", () => {
-    assert.deepEqual(set({ alerts: { late: 45, caregivers: ["mobile_app_pixel_8", "mobile_app_pixel_8", "notify.x"] } }).alerts, { meds: true, late: 45, caregivers: ["mobile_app_pixel_8"] });
+  it("alerts: meds on by default, late from the list, caregivers are people (a phone of before 1.54.0 kept until migrated)", () => {
+    assert.deepEqual(set({ alerts: { late: 45, caregivers: [" Ana ", "Ana", "mobile_app_pixel_8", "", 7] } }).alerts, { meds: true, late: 45, caregivers: ["Ana", "mobile_app_pixel_8"] });
     assert.deepEqual(set({ alerts: { meds: false, late: 17 } }).alerts, { meds: false, late: 30, caregivers: [] });
     assert.equal(set({ alerts: { late: "0" } }).alerts.late, 0);
   });

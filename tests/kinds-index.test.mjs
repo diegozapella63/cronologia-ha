@@ -68,20 +68,20 @@ describe("buildIndex: today's doses", () => {
       ["atrasado", "agora"],
     );
   });
-  it("fields: dose, who, time, alert (model and settings), notify target, key", () => {
+  it("fields: dose, who, time, alert (model and settings), whether a phone gets it (no device), key", () => {
     const off = timed("Gardenal", at(2026, 11, 2, 19), 15, MED("Mimi", "\nAviso no celular: não\nMeio comprimido"));
-    const ix = index([d9, off], { targetFor: (who) => (who === "Andressa" ? "mobile_app_galaxy_s23" : null) });
+    const ix = index([d9, off], { reach: (who) => who === "Andressa" });
     const [a, b] = ix.meds;
     assert.equal(a.dose, "1 comprimido");
     assert.equal(a.who, "Andressa");
     assert.equal(a.time, "09:00");
     assert.equal(a.alert, true);
-    assert.equal(a.notify, "mobile_app_galaxy_s23");
+    assert.equal(a.phone, true);
     assert.equal(a.key, keyOf(d9));
     assert.equal(a.kind, "remedio");
     assert.equal(a.allDay, false);
     assert.equal(b.alert, false);
-    assert.equal(b.notify, null);
+    assert.equal(b.phone, false);
     assert.equal(b.notes, "Meio comprimido");
     const silent = index([d9], { alertsOn: false });
     assert.equal(silent.meds[0].alert, false, "alerts turned off in Mais › Avisos");

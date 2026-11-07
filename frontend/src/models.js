@@ -126,7 +126,7 @@ export const ModelsMixin = (Base) =>
     // ------------------------------------------------------------ data
 
     _ix() {
-      return this._home || { meds: [], routines: [], bills: [], maint: [], checks: {}, people: [], targets: [], caregivers: [], gerencia: { ligado: false, contas: [] } };
+      return this._home || { meds: [], routines: [], bills: [], maint: [], checks: {}, people: [], caregivers: [], gerencia: { ligado: false, contas: [] } };
     }
 
     _checkOf(e) {
@@ -135,14 +135,20 @@ export const ModelsMixin = (Base) =>
       return this._ix().checks[e.key] || null;
     }
 
-    /** A phone in a picker: whose it is first ("Celular de Diego · Galaxy S23"). */
-    _targetLabel(t) {
-      return t.owner ? `Celular de ${t.owner} · ${t.name}` : t.name;
+    /**
+     * Quem cuida (Mais › Avisos) has someone with a phone. The apps look at the person, never at a device: the
+     * phones are the ones tied to each person in Home Assistant.
+     */
+    _careOn() {
+      const people = this._ix().people || [];
+      const care = (this._app("alerts", null) || {}).caregivers || [];
+      return care.some((n) => people.some((p) => p.phone && foldText(p.name) === foldText(n)));
     }
 
-    _targetName(id) {
-      const t = this._ix().targets.find((x) => x.id === id);
-      return t ? t.name : (id || "").replace(/^mobile_app_/, "").replace(/_/g, " ");
+    /** Whose phone gets the alerts of this person: theirs, or the person chosen for one without a phone. */
+    _phoneOwner(name) {
+      const p = (this._ix().people || []).find((x) => foldText(x.name) === foldText(name));
+      return p && p.reach ? (p.phone ? p.name : p.care) : "";
     }
 
     /** The GerencIA bills as all-day events, for the calendar screens. */
@@ -284,10 +290,10 @@ export const ModelsMixin = (Base) =>
       }
     }
 
-    async _testAlert(target) {
+    async _testAlert(person) {
       try {
-        await this.api.testAlert(target);
-        this._showToast(`Aviso de teste enviado para ${this._targetName(target)}. Toque em Tomei nele para conferir o botão.`);
+        await this.api.testAlert(person);
+        this._showToast(`Aviso de teste enviado para o celular de ${this._phoneOwner(person) || person}. Toque em Tomei nele para conferir o botão.`);
       } catch (err) {
         this._showToast(`Não foi: ${err.message}`);
       }
@@ -335,10 +341,10 @@ export const ModelsMixin = (Base) =>
       for (const m of meds) {
         const who = m.who || "";
         let g = groups.find((x) => foldText(x.who) === foldText(who));
-        if (!g) groups.push((g = { who, list: [], notify: null }));
+        if (!g) groups.push((g = { who, list: [], phone: false }));
         g.list.push(m);
-        // the bell only when an alert goes to that phone (Avisos on, the medicine with its alert)
-        if (!g.notify && m.alert && m.notify) g.notify = m.notify;
+        // the bell only when an alert goes to a phone of that person (Avisos on, the medicine with its alert)
+        if (m.alert && m.phone) g.phone = true;
       }
       const all = taken === meds.length;
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
@@ -354,7 +360,7 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${groups.map(
           (g) => html`${groups.length > 1 || g.who
-              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.notify ? html`<span class="who-bell" title="Aviso no celular: ${this._targetName(g.notify)}">${icon("bell-ring")}</span>` : nothing}</div>`
+              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.phone ? html`<span class="who-bell" title="Aviso no celular de ${this._phoneOwner(g.who)}">${icon("bell-ring")}</span>` : nothing}</div>`
               : nothing}
             ${repeat(g.list, (m) => m.key, (m) => this._renderDose(m))}`,
         )}
@@ -385,20 +391,16 @@ export const ModelsMixin = (Base) =>
       if (a.meds === false) return html`<button class="panel-foot" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>Avisos no celular desligados</span>${icon("chevron-right")}</button>`;
       // every medicine of today without its alert (in its form): no phone to choose
       if (!meds.some((m) => m.alert)) return html`<div class="panel-foot plain">${icon("bell-ring")}<span>Sem aviso no celular</span></div>`;
-      const noPhone = [...new Set(meds.filter((m) => m.alert && !m.notify && m.who).map((m) => m.who))];
+      const noPhone = [...new Set(meds.filter((m) => m.alert && !m.phone && m.who).map((m) => m.who))];
       // quem cuida gets the late alerts (Avisar de novo) and the ones of whoever has no phone
       const late = a.late == null ? 30 : a.late;
-      const care = (a.caregivers || []).length && (late > 0 || meds.some((m) => m.alert && !m.notify));
-      // whose phones get the alerts: a pet has no phone, its alert goes to someone's (said by that person's name)
-      const people = this._ix().people || [];
-      const isPet = (n) => people.some((p) => p.pet && foldText(p.name) === foldText(n));
-      const ownerOf = (target) => {
-        const p = people.find((x) => !x.pet && x.notify === target);
-        return p ? p.name : this._targetName(target);
-      };
-      const withPhone = [...new Set(meds.filter((m) => m.alert && m.notify).map((m) => (isPet(m.who) ? ownerOf(m.notify) : m.who)))];
-      const text = noPhone.length && !care ? `Sem celular para ${noPhone.join(", ")}: escolha quem avisar` : withPhone.length ? `Avisa no celular de ${withPhone.join(", ")}${care ? ` e de quem cuida` : ""}` : "Escolha os celulares que recebem os avisos";
-      return html`<button class="panel-foot ${noPhone.length && !care ? "warn" : ""}" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>${text}</span>${icon("chevron-right")}</button>`;
+      const careOn = this._careOn();
+      const care = careOn && (late > 0 || meds.some((m) => m.alert && !m.phone));
+      // whose phones get the alerts: a pet has none, its alert goes to the person chosen for it (by name)
+      const withPhone = [...new Set(meds.filter((m) => m.alert && m.phone).map((m) => this._phoneOwner(m.who) || m.who))];
+      const warn = !careOn && (noPhone.length > 0 || !withPhone.length);
+      const text = noPhone.length && !careOn ? `Sem celular para ${noPhone.join(", ")}: escolha quem cuida` : withPhone.length ? `Avisa no celular de ${withPhone.join(", ")}${care ? ` e de quem cuida` : ""}` : careOn ? "Avisa no celular de quem cuida" : "Escolha quem cuida";
+      return html`<button class="panel-foot ${warn ? "warn" : ""}" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>${text}</span>${icon("chevron-right")}</button>`;
     }
 
     _renderBillsPanel() {
@@ -620,9 +622,9 @@ export const ModelsMixin = (Base) =>
       if (k.kind === "remedio") {
         if (k.dose) facts.push(["pill", `Dose: ${k.dose}`]);
         if (k.who) facts.push(["user-round", `Quem toma: ${k.who}`]);
-        const p = this._ix().people.find((x) => foldText(x.name) === foldText(k.who));
+        const owner = this._phoneOwner(k.who);
         const alertsOn = (this._app("alerts", null) || {}).meds !== false;
-        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : !alertsOn ? "Avisos no celular desligados" : p && p.notify ? `Aviso no celular: ${this._targetName(p.notify)}` : "Aviso no celular: escolha o celular em Mais › Avisos"]);
+        facts.push(["bell-ring", !k.alert ? "Sem aviso no celular" : !alertsOn ? "Avisos no celular desligados" : owner ? `Aviso no celular de ${owner}` : this._careOn() ? "Aviso no celular de quem cuida" : "Sem celular: escolha quem cuida em Mais › Avisos"]);
       } else if (k.kind === "conta") {
         if (k.value != null) facts.push(["receipt", formatMoney(k.value)]);
       } else if (k.kind === "rotina") {
@@ -1113,7 +1115,8 @@ export const ModelsMixin = (Base) =>
       const notes = html`<label class="field"><span class="flabel">Observações</span><textarea rows="2" .value=${f.notes} placeholder=${K === "remedio" ? "Ex.: tomar em jejum, depois do almoço" : "Detalhes"} @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>`;
       let body;
       if (K === "remedio") {
-        const p = (this._ix().people || []).find((x) => foldText(x.name) === foldText(f.who));
+        // whose phone gets the alert: theirs, or the person chosen for one without a phone (Mais › Avisos)
+        const owner = this._phoneOwner(f.who);
         const timeEdit = f.mode === "add";
         // Mais › Avisos: off, no alert to turn on here; Avisar de novo "Não", only the one on time
         const a = this._app("alerts", null) || {};
@@ -1138,7 +1141,7 @@ export const ModelsMixin = (Base) =>
           ${a.meds === false
             ? nothing
             : html`<div class="row switch-row">
-                <div class="grow"><div class="label">Aviso no celular</div><div class="hint">${!f.alert ? "Sem aviso para este remédio." : p && p.notify ? `Na hora${again ? " e de novo se atrasar" : ""}, no ${this._targetName(p.notify)}.` : f.who ? html`Escolha o celular de ${f.who} em <button class="text-btn inline" @click=${() => (this._closeSheet(), this._goAlerts())}>Mais › Avisos</button>.` : "Escolha quem toma."}</div></div>
+                <div class="grow"><div class="label">Aviso no celular</div><div class="hint">${!f.alert ? "Sem aviso para este remédio." : !f.who ? "Escolha quem toma." : owner || this._careOn() ? `Na hora${again ? " e de novo se atrasar" : ""}, no celular de ${owner || "quem cuida"}.` : html`Sem celular para ${f.who}: escolha quem cuida em <button class="text-btn inline" @click=${() => (this._closeSheet(), this._goAlerts())}>Mais › Avisos</button>.`}</div></div>
                 <label class="switch"><input type="checkbox" role="switch" .checked=${f.alert} @change=${(e) => this._setForm({ alert: e.target.checked })} aria-label="Aviso no celular" /><span class="track"></span></label>
               </div>`}
           ${notes}`;
@@ -1219,6 +1222,11 @@ export const ModelsMixin = (Base) =>
 
     // ------------------------------------------------------------ Mais
 
+    /**
+     * Mais › Avisos. The app looks at the person, never at a device: each person gets the alerts on the phones
+     * tied to them in Home Assistant. One without a phone (a pet, a child) gets them on the phone of the person
+     * chosen for it, or of Quem cuida. Quem cuida is people too.
+     */
     _renderAlertsPanel() {
       const ix = this._ix();
       const a = this._app("alerts", null) || {};
@@ -1226,15 +1234,20 @@ export const ModelsMixin = (Base) =>
       const late = a.late == null ? 30 : a.late;
       const care = a.caregivers || [];
       const people = ix.people || [];
-      const targets = ix.targets || [];
+      // who can get alerts: the people with a phone tied to them in Home Assistant
+      const phoned = people.filter((p) => p.phone);
       const manual = this._app("people", null) || {};
       const setAlerts = (ch) => this._saveAppPrefs({ alerts: { meds: on, late, caregivers: care, ...ch } });
-      // kept even without a phone: a pet added here stays in Quem toma
-      const setPerson = (name, notify) => this._saveAppPrefs({ people: { ...manual, [name]: { ...(manual[name] || {}), notify: notify || null } } });
+      // the person who gets the alerts of one without a phone ("": Quem cuida)
+      const setCare = (name, who) => {
+        const next = { ...(manual[name] || {}) };
+        if (who) next.care = who;
+        else delete next.care;
+        return this._saveAppPrefs({ people: { ...manual, [name]: next } });
+      };
       // a pet leaves Quem faz and the placar
       const setPet = (name, pet) => {
-        const cur = manual[name] || { notify: null };
-        const next = { ...cur };
+        const next = { ...(manual[name] || {}) };
         if (pet) next.pet = true;
         else delete next.pet;
         const s = this._score && this._score();
@@ -1255,12 +1268,18 @@ export const ModelsMixin = (Base) =>
           return;
         }
         this._newPerson = null;
-        this._saveAppPrefs({ people: { ...manual, [name]: { notify: add.notify || null, ...(add.pet ? { pet: true } : {}) } } });
+        this._saveAppPrefs({ people: { ...manual, [name]: add.pet ? { pet: true } : {} } });
       };
-      const phoneSelect = (label, value, auto, onPick) => html`<select class="select sm" aria-label=${label} @change=${(e) => onPick(e.target.value)}>
-        <option value="" ?selected=${!value}>${auto ? `Automático: ${this._targetName(auto)}` : "Sem celular"}</option>
-        ${targets.map((t) => html`<option value=${t.id} ?selected=${value === t.id}>${this._targetLabel(t)}</option>`)}
-      </select>`;
+      const careSelect = (p) => {
+        const others = phoned.filter((x) => foldText(x.name) !== foldText(p.name));
+        const gone = p.care && !others.some((x) => foldText(x.name) === foldText(p.care));
+        return html`<select class="select sm" aria-label="Quem recebe os avisos de ${p.name}" @change=${(e) => setCare(p.name, e.target.value)}>
+          <option value="" ?selected=${!p.care}>No celular de quem cuida</option>
+          ${others.map((x) => html`<option value=${x.name} ?selected=${!!p.care && foldText(p.care) === foldText(x.name)}>No celular de ${x.name}</option>`)}
+          ${gone ? html`<option value=${p.care} selected>${p.care} (sem celular)</option>` : nothing}
+        </select>`;
+      };
+      const sub = (p) => (p.person ? (on && !p.phone ? "Pessoa do Home Assistant, sem celular" : "Pessoa do Home Assistant") : p.pet ? "Pet" : "Só no CronologIA");
       return html`<div class="panel" id="avisos">
         ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora da dose, com <b>Tomei</b> e <b>Adiar 15 min</b>.`)}
         <div class="row switch-row">
@@ -1268,20 +1287,19 @@ export const ModelsMixin = (Base) =>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => setAlerts({ meds: e.target.checked })} aria-label="Avisar no celular" /><span class="track"></span></label>
         </div>
         <div class="field people-field">
-          <span class="flabel">${on ? "Pessoas, pets e o celular que avisa" : "Pessoas e pets"}</span>
+          <span class="flabel">Pessoas e pets</span>
           ${people.length
             ? people.map((p) => {
-                const chosen = manual[p.name] && manual[p.name].notify;
                 const own = !p.person && !!manual[p.name];
                 return html`<div class="person-row ${p.pet ? "is-pet" : ""}">
                   <span class="avatar">${p.pet ? icon("paw-print") : initial(p.name)}</span>
-                  <span class="grow"><b>${p.name}</b><small>${p.person ? "Pessoa do Home Assistant" : p.pet ? "Pet" : "Só no CronologIA"}</small></span>
-                  ${on ? phoneSelect(`Celular de ${p.name}`, chosen, p.auto, (v) => setPerson(p.name, v)) : nothing}
+                  <span class="grow"><b>${p.name}</b><small>${sub(p)}</small></span>
+                  ${on && !p.phone && phoned.length ? careSelect(p) : nothing}
                   <span class="p-acts">
                     ${!p.person
                       ? html`<button class="icon-btn pet-btn ${p.pet ? "on" : ""}" aria-pressed=${p.pet ? "true" : "false"} aria-label="${p.name} é um pet" title=${p.pet ? "Pet" : "Marcar como pet"} @click=${() => setPet(p.name, !p.pet)}>${icon("paw-print")}</button>`
                       : nothing}
-                    ${on && p.notify ? html`<button class="icon-btn" aria-label="Testar aviso para ${p.name}" @click=${() => this._testAlert(p.notify)}>${icon("bell-ring")}</button>` : nothing}
+                    ${on && p.reach ? html`<button class="icon-btn" aria-label="Testar aviso para ${p.name}" @click=${() => this._testAlert(p.name)}>${icon("bell-ring")}</button>` : nothing}
                     ${own ? html`<button class="icon-btn mini" aria-label="Tirar ${p.name}" @click=${() => dropPerson(p.name)}>${icon("x")}</button>` : nothing}
                   </span>
                 </div>`;
@@ -1296,36 +1314,36 @@ export const ModelsMixin = (Base) =>
                   <button class=${add.pet ? "" : "on"} @click=${() => ((this._newPerson = { ...this._newPerson, pet: false }), this.requestUpdate())}>${icon("user-round")}Pessoa</button>
                   <button class=${add.pet ? "on" : ""} @click=${() => ((this._newPerson = { ...this._newPerson, pet: true }), this.requestUpdate())}>${icon("paw-print")}Pet</button>
                 </div>
-                ${on && targets.length
-                  ? html`<label class="field-sub"><span>Avisar no celular de</span>${phoneSelect("Celular que avisa", add.notify, null, (v) => ((this._newPerson = { ...this._newPerson, notify: v }), this.requestUpdate()))}</label>`
-                  : nothing}
                 <div class="person-add-acts">
                   <button class="btn outline sm" @click=${() => ((this._newPerson = null), this.requestUpdate())}>Cancelar</button>
                   <button class="btn primary sm" ?disabled=${!(add.name || "").trim()} @click=${addPerson}>Adicionar</button>
                 </div>
               </div>`
             : html`<button class="add-line" @click=${() => {
-                this._newPerson = { name: "", notify: "", pet: false };
+                this._newPerson = { name: "", pet: false };
                 this.requestUpdate();
                 this.updateComplete.then(() => {
                   const el = this.renderRoot.querySelector(".person-add input");
                   if (el) el.focus();
                 });
               }}>${icon("plus")}Adicionar pessoa ou pet</button>`}
-          ${on ? html`<span class="field-hint">${icon("info")}<span>Pet ou criança sem celular: escolha o celular de quem cuida.</span></span>` : nothing}
-          ${on && !targets.length ? html`<span class="field-hint">${icon("info")}<span>Nenhum celular com o app Home Assistant encontrado (serviços notify.mobile_app_…).</span></span>` : nothing}
+          ${on
+            ? html`<span class="field-hint">${icon("info")}<span>${phoned.length
+                ? "Vai para o celular ligado a cada pessoa no Home Assistant. Sem celular (pet ou criança): para quem você escolher."
+                : "Ninguém tem celular ligado no Home Assistant (Configurações › Pessoas)."}</span></span>`
+            : nothing}
         </div>
         ${on
           ? html`<div class="field">
                 <span class="flabel">Avisar de novo se não tomar</span>
                 <div class="chip-row">${[[0, "Não"], [15, "15 min depois"], [30, "30 min"], [60, "1 hora"]].map(([n, l]) => html`<button class="pick ${late === n ? "on" : ""}" @click=${() => setAlerts({ late: n })}>${l}</button>`)}</div>
               </div>
-              ${targets.length
+              ${phoned.length
                 ? html`<div class="field">
                     <span class="flabel">Quem cuida</span>
-                    <div class="chip-row">${targets.map((t) => {
-                      const sel = care.includes(t.id);
-                      return html`<button class="pick ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((x) => x !== t.id) : [...care, t.id] })}>${icon("smartphone")}<span>${t.name}</span></button>`;
+                    <div class="chip-row care-pick">${phoned.map((p) => {
+                      const sel = care.some((n) => foldText(n) === foldText(p.name));
+                      return html`<button class="pick ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((n) => foldText(n) !== foldText(p.name)) : [...care, p.name] })}>${icon("user-round")}<span>${p.name}</span></button>`;
                     })}</div>
                     <span class="field-hint">${icon("info")}<span>${late > 0 ? "Recebe os atrasos de todos." : "Recebe os avisos de quem está sem celular."}</span></span>
                   </div>`
