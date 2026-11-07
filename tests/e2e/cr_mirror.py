@@ -56,6 +56,8 @@ async def main():
         await open_more(a, "Integrações"); await A.wait_for_timeout(500)
         sec = await a.locator("#resolvia").inner_text()
         check("LEVAR PARA O RESOLVIA" in sec.upper(), "Mais › Integrações has Levar para o ResolvIA")
+        # 1.53.3: the points are said only with the placar on (it is on here)
+        check("com a próxima data e os pontos. Concluir lá vale como feito aqui (os pontos vão para quem concluiu)" in " ".join(sec.split()), "Levar para o ResolvIA: with the placar on, it says the points go along")
         await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.casa"); await A.wait_for_timeout(500)
         await a.locator("#resolvia .switch input[aria-label='Manutenções']").check(); await A.wait_for_timeout(400)
         await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").check(); await A.wait_for_timeout(400)

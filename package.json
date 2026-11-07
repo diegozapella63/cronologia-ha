@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Unit and integration tests of the CronologIA add-on (node:test, no dependencies).",
   "scripts": {
-    "test": "TZ=America/Sao_Paulo node --test \"tests/*.test.mjs\" \"tests/integration/*.test.mjs\"",
+    "test": "TZ=America/Sao_Paulo node --test \"tests/*.test.mjs\" \"tests/integration/*.test.mjs\" \"tests/ui/*.test.mjs\"",
+    "test:ui": "TZ=America/Sao_Paulo node --test \"tests/ui/*.test.mjs\"",
     "test:unit": "TZ=America/Sao_Paulo node --test \"tests/*.test.mjs\"",
     "test:integration": "TZ=America/Sao_Paulo node --test \"tests/integration/*.test.mjs\"",
     "test:coverage": "TZ=America/Sao_Paulo node --test --experimental-test-coverage --test-coverage-include=\"cronologia/rootfs/app/**\" --test-coverage-include=\"frontend/src/**\" --test-coverage-lines=77 --test-coverage-branches=92 --test-coverage-functions=86 \"tests/*.test.mjs\" \"tests/integration/*.test.mjs\""

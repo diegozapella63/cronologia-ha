@@ -38,8 +38,10 @@ function dueKeyOfItem(due) {
 
 export class Mirror {
   /** enabled(): Mais › Configurações › Integrações › Tarefas do ResolvIA › Usar a integração (off: the tasks leave the list). */
-  constructor({ ha, store, todos, home, log, onChange = () => {}, enabled = () => true }) {
+  /** scored(): the placar is on (off: the tasks go without "+N pontos", since nobody gets them). */
+  constructor({ ha, store, todos, home, log, onChange = () => {}, enabled = () => true, scored = () => true }) {
     this.enabled = enabled;
+    this.scored = scored;
     this.ha = ha;
     this.store = store;
     this.todos = todos;
@@ -111,11 +113,12 @@ export class Mirror {
     const out = new Map();
     if (!st.list || (!st.maint && !st.routine)) return out;
     const ix = this.home.index || {};
+    const scored = this.scored();
     if (st.maint) {
       for (const m of ix.maint || []) {
         if (!m.uid || !m.due) continue;
         const src = `maint|${m.cal}|${m.uid}`;
-        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: m.points || 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "", rooms: m.rooms || [], equips: m.equips || [] });
+        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: scored ? m.points || 0 : 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "", rooms: m.rooms || [], equips: m.equips || [] });
       }
     }
     if (st.routine) {
@@ -136,7 +139,7 @@ export class Mirror {
       }
       for (const [src, o] of best) {
         const d = new Date(o.start);
-        out.set(src, { src, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: o.k.points || 0, notes: o.k.notes || "", occKey: o.key, room: o.k.room || "", equip: o.k.equip || "", rooms: o.k.rooms || [], equips: o.k.equips || [] });
+        out.set(src, { src, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: scored ? o.k.points || 0 : 0, notes: o.k.notes || "", occKey: o.key, room: o.k.room || "", equip: o.k.equip || "", rooms: o.k.rooms || [], equips: o.k.equips || [] });
       }
     }
     return out;

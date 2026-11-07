@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.53.4
+
+- Com o placar desligado, as manutenções e rotinas levadas para o ResolvIA deixam de dizer "+N pontos" nas notas.
+
 ## 1.53.3
 
 - Os textos só dizem o que vai acontecer:

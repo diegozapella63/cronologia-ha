@@ -19,6 +19,8 @@ jobs:
         run: |
           set -o pipefail
           npm run test:coverage 2>&1 | tee cobertura.txt
+      - name: Telas montadas (tests/ui, fora da cobertura)
+        run: npm run test:ui
       - name: Cobertura no resumo
         if: always()
         run: |

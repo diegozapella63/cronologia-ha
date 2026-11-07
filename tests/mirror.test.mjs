@@ -21,7 +21,7 @@ const occ = (summary, start, k, extra = {}) => {
   return { cal: "calendar.casa", raw, k: { kind: "rotina", points: 0, notes: "", ...k }, key: extra.key || `calendar.casa|${raw.uid}|${raw.recurrence_id || raw.start}`, start: ms, allDay };
 };
 
-function setup({ mirror = { list: LIST, maint: true, routine: true }, features = ALL, items = [], maint = [], occurrences = [], checks = {}, enabled = true, app = null, points = {} } = {}) {
+function setup({ mirror = { list: LIST, maint: true, routine: true }, features = ALL, items = [], maint = [], occurrences = [], checks = {}, enabled = true, app = null, points = {}, scored = true } = {}) {
   const store = {
     data: { app: { mirror }, mirror: {}, checks },
     saves: 0,
@@ -69,7 +69,7 @@ function setup({ mirror = { list: LIST, maint: true, routine: true }, features =
     },
   };
   let changes = 0;
-  const m = new Mirror({ ha, store, todos, home, log: makeLog(), onChange: () => changes++, enabled: () => enabled });
+  const m = new Mirror({ ha, store, todos, home, log: makeLog(), onChange: () => changes++, enabled: () => enabled, scored: () => scored });
   m.scheduled = [];
   m.schedule = (ms) => m.scheduled.push(ms); // no timers: the tests call sync() themselves
   return { m, ha, store, todos, home, changes: () => changes };
@@ -144,6 +144,14 @@ describe("Mirror: sync", () => {
   const src = "maint|calendar.casa|filtro";
   const tag = tagOf(src);
   const marked = (extra = {}) => ({ uid: "t1", summary: "Trocar o filtro", status: "needs_action", due: "2026-11-07", description: `Refil X\n\nManutenção do CronologIA · +30 pontos [cr:${tag}]`, ...extra });
+
+  it("the placar off: the task goes without '+N pontos' and the ResolvIA is told 0 points", async () => {
+    mock.timers.enable({ apis: ["Date"], now: NOW });
+    const s = setup({ maint: [maintItem()], scored: false });
+    await s.m.sync();
+    assert.deepEqual(services(s.ha), [["add_item", { item: "Trocar o filtro", due_date: "2026-11-07", description: `Refil X\n\nManutenção do CronologIA [cr:${tag}]` }]]);
+    assert.equal(s.store.data.mirror[src].written.points, 0);
+  });
 
   it("adds the task once, then links it by its marker; nothing else when it is the same", async () => {
     mock.timers.enable({ apis: ["Date"], now: NOW });

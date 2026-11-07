@@ -1,14 +1,17 @@
+// tests/ui: tests that build the screen mixins (ModelsMixin, RewardsMixin, TasksMixin) to read what they show.
+// They run in npm test and in their own CI step, but not in npm run test:coverage: a mixin built here makes
+// every method of it count in the coverage (most are covered by the visual tests, not by these).
 // What the screens say only when it is true: with Avisar no celular off (Mais › Avisos), Avisar de novo
 // "Não", a medicine without its alert or the placar off, no line promises an alert, a phone or points.
-import { at } from "./helpers.mjs";
-import "./_lit.mjs";
+import { at } from "../helpers.mjs";
+import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { html } from "../frontend/vendor/lit-all.min.js";
-import { text, render, fakeApi, hostOf } from "./_lit.mjs";
-import { ModelsMixin } from "../frontend/src/models.js";
-import { RewardsMixin } from "../frontend/src/rewards.js";
-import { TasksMixin } from "../frontend/src/tasks.js";
+import { html } from "../../frontend/vendor/lit-all.min.js";
+import { text, render, fakeApi, hostOf } from "../_lit.mjs";
+import { ModelsMixin } from "../../frontend/src/models.js";
+import { RewardsMixin } from "../../frontend/src/rewards.js";
+import { TasksMixin } from "../../frontend/src/tasks.js";
 
 const NOW = at(2026, 11, 6, 10);
 const PIXEL = "mobile_app_pixel_8";
