@@ -3631,9 +3631,6 @@ select:not([multiple]){pointer-events:none}
     width: 16px;
     height: 16px;
   }
-  .ev-row.past {
-    opacity: 0.5;
-  }
   .ev-row.live {
     background: var(--cs);
   }
@@ -5639,7 +5636,7 @@ select:not([multiple]){pointer-events:none}
   .ev-row.done .ev-title {
     color: var(--rv-muted);
   }
-  /* done: faded like the ones whose time has passed */
+  /* done or skipped: faded (only these: one whose time passed but is not done stays clear) */
   .ev-row.done {
     opacity: 0.5;
   }
@@ -7499,10 +7496,10 @@ ${s}`:e.join(`
         ${d&&!p.length&&!h.length&&!i.length?n`<p class="empty-line all-done">${V("circle-check")}Tudo pontuado hoje.</p>`:u}
         ${s?n`<p class="empty-line away-line">${V("plane")}<span><b>De férias até ${B(O(s.to),t,{long:!1,cap:!1})}</b>: rotinas, tarefas e manutenção pausadas.</span></p>`:n`${this._renderFutureScore(a,t,l)}
             ${!a.length&&!i.length&&!r.length?n`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn()?", ou a uma tarefa no ResolvIA":""}.</p>`:u}`}
-        <div class="score-actions">
-          <button class="btn outline sm" ?disabled=${!!s} title=${s?"De f\xE9rias":""} @click=${()=>this._openKindForm({kind:"rotina"})}>${V("plus")}Tarefa com pontos</button>
-          <button class="btn outline sm" ?disabled=${!!s} title=${s?"De f\xE9rias":""} @click=${()=>this._openSheet("extra",{who:this._participant(this._me())||"",points:10,title:""})}>${V("award")}Pontos avulsos</button>
-        </div>
+        ${s?u:n`<div class="score-actions">
+              <button class="btn outline sm" @click=${()=>this._openKindForm({kind:"rotina"})}>${V("plus")}Tarefa com pontos</button>
+              <button class="btn outline sm" @click=${()=>this._openSheet("extra",{who:this._participant(this._me())||"",points:10,title:""})}>${V("award")}Pontos avulsos</button>
+            </div>`}
       </div>`}_demerits(){return this._app("demerits",null)||[]}async _saveDemerits(e){await this._saveAppPrefs({demerits:e.length?e:null})}async _addDemerit(e,t){await this._saveDemerits([...this._demerits(),{id:Ti(),title:e,points:t}]),this._haptic("light"),this._showToast(`Dem\xE9rito criado: ${q(e,28)} \xB7 \u2212${t}`)}async _markDemerit(e,t){try{let a=await this.api.scoreDemerit(e.id,t);this._haptic("warning"),this._showToast(`\u2212${e.points} para ${t}: ${q(e.title,24)}`,{label:"Desfazer",run:()=>this.api.scoreRemove(a.key).catch(s=>this._showToast(s.message))})}catch(a){this._showToast(a.message)}}_openDemeritForm(e=null){this._openSheet("demerit",e?{id:e.id,title:e.title,points:e.points,mode:"edit"}:{id:null,title:"",points:5,mode:"add"})}async _saveDemeritForm(){let e=this._form,t=(e.title||"").trim(),a=Math.round(Math.abs(Number(e.points)||0));if(!t||a<1)return;let s=this._demerits(),i=e.id?s.map(r=>r.id===e.id?{...r,title:t,points:a}:r):[...s,{id:Ti(),title:t,points:a}];await this._closeSheet(),await this._saveDemerits(i),this._showToast(e.id?"Dem\xE9rito salvo":`Dem\xE9rito criado: ${q(t,28)} \xB7 \u2212${a}`)}_deleteDemerit(){let e=this._form;this._openSheet("confirm",{title:"Apagar este dem\xE9rito?",text:`\u201C${q(e.title||"",40)}\u201D sai da lista. Os pontos j\xE1 descontados continuam no placar (d\xE1 para tirar cada um no hist\xF3rico de pontos).`,label:"Apagar",danger:!0,run:async()=>{await this._closeSheet(),await this._saveDemerits(this._demerits().filter(t=>t.id!==e.id)),this._showToast("Dem\xE9rito apagado")}})}_renderDemerits(e){let t=this._demerits();if(!t.length)return u;let a=i=>{let r={};for(let c of e.entries)c.kind==="demerito"&&String(c.key).startsWith(`demerito|${i.id}|`)&&(r[c.who]=(r[c.who]||0)+1);return Object.entries(r).map(([c,d])=>`${c} ${d}\xD7`).join(" \xB7 ")},s=e.entries.filter(i=>i.kind==="demerito").length;return this._awayNow&&this._awayNow()?n`<div class="panel chores demerits paused" id="demeritos">
           ${this._panelHead("thumbs-down","late","Dem\xE9ritos",s?`${E(s,"vez","vezes")} ${Yt[e.period]}`:"tiram pontos")}
           <p class="dm-lead dm-away">${V("plane")}<span>Pausados nas férias.</span></p>

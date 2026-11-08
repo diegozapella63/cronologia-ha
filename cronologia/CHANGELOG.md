@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.57.2
+
+- **Calendário** e **Agora**: só fica apagado o que foi feito ou pulado. Um remédio ou evento cuja hora já passou, sem ser feito, continua normal.
+- **Recompensas** de férias: **Tarefa com pontos** e **Pontos avulsos** somem (voltam quando as férias acabam).
+
 ## 1.57.1
 
 - **Caixas de seleção**: tocar num botão que fica por cima de uma caixa (como a barra no fim de uma janela, com a lista rolada por baixo) aciona o botão, e não abre a caixa escondida.

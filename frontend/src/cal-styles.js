@@ -111,9 +111,6 @@ export const calStyles = css`
     width: 16px;
     height: 16px;
   }
-  .ev-row.past {
-    opacity: 0.5;
-  }
   .ev-row.live {
     background: var(--cs);
   }
@@ -2119,7 +2116,7 @@ export const calStyles = css`
   .ev-row.done .ev-title {
     color: var(--rv-muted);
   }
-  /* done: faded like the ones whose time has passed */
+  /* done or skipped: faded (only these: one whose time passed but is not done stays clear) */
   .ev-row.done {
     opacity: 0.5;
   }

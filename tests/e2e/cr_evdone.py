@@ -76,6 +76,7 @@ async def main():
         check("Pilates" not in txt, f"A seguir moves on ({txt.splitlines()[2] if len(txt.splitlines()) > 2 else txt[:30]})")
         row = a.locator(".panel.agenda .ev-row", has_text="Pilates")
         check(await row.count() == 1 and "done" in await row.get_attribute("class") and await row.locator(".ev-done").count() == 1, "the row of Hoje: done, with the green check")
+        check(await row.evaluate("(r) => getComputedStyle(r).opacity") == "0.5", "done: faded")
         # reload: still done
         await pg.reload(); await pg.wait_for_timeout(2000)
         await a.locator(".tab", has_text="Calendário").click(); await pg.wait_for_timeout(1000)
@@ -87,6 +88,12 @@ async def main():
         check(not [k for k, v in stored()["checks"].items() if v.get("kind") == "evento"], "Desfazer: unmarked on the server")
         check("done" not in await blk.get_attribute("class"), "and not green any more")
         if await sheet.count(): await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(400)
+        # 1.57.2: only done or skipped is faded; one whose time passed, not done, stays clear
+        await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(700)
+        row = a.locator(".panel.agenda .ev-row", has_text="Pilates")
+        op = await row.evaluate("(r) => { r.classList.add('past'); const o = getComputedStyle(r).opacity; r.classList.remove('past'); return o; }")
+        check("done" not in await row.get_attribute("class") and op == "1", f"time passed, not done: not faded ({op})")
+        await a.locator(".tab", has_text="Calendário").click(); await pg.wait_for_timeout(800)
         # far ahead: no Feito yet
         await a.locator(".seg button", has_text="Lista").click(); await pg.wait_for_timeout(1000)
         far = a.locator(".ev-row", has_text="Anivers").first
