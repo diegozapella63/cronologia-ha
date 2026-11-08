@@ -25,6 +25,15 @@ app = subprocess.Popen(["node", f"{REPO}/cronologia/rootfs/app/server.js"], env=
 time.sleep(1.2)
 def stored(): return json.load(open(f"{data}/cronologia.json"))
 D = lambda n: (datetime.date.today() + datetime.timedelta(days=n)).isoformat()
+JS = """const [summary, start, end, description] = process.argv.slice(1); const ws = new WebSocket('ws://127.0.0.1:8123/api/websocket'); ws.onmessage = (e) => { const m = JSON.parse(e.data);
+ if (m.type === 'auth_required') ws.send(JSON.stringify({type:'auth', access_token:'dev'}));
+ else if (m.type === 'auth_ok') ws.send(JSON.stringify({id:1, type:'calendar/event/create', entity_id:'calendar.casa', event:{summary, dtstart:start, dtend:end, description}}));
+ else if (m.id === 1) { console.log(JSON.stringify(m)); ws.close(); } };"""
+def mk_event(summary, day, description):
+    """An all-day event on calendar.casa, straight in the fake Home Assistant."""
+    end = (datetime.date.fromisoformat(day) + datetime.timedelta(days=1)).isoformat()
+    out = json.loads(subprocess.check_output(["node", "-e", JS, summary, day, end, description], timeout=20).decode())
+    assert out.get("success"), out
 async def wait_for(fn, label, tries=40):
     for _ in range(tries):
         try:
@@ -82,6 +91,23 @@ async def main():
         check(any(m in t for t in titles for m in ("Sertralina", "DPrev", "Gardenal")), "the doses are there")
         await day.screenshot(path=f"{SP}/shots/cra-day.png")
         await a.locator(".month, .cells").first.screenshot(path=f"{SP}/shots/cra-month.png")
+        # 1.57.3: a routine that comes back N days after done (one event, waiting for its Feito) and a maintenance
+        # item due in the days away go to the day back (they used to leave the calendar); the daily ones are there
+        mk_event("Trocar a água do filtro", D(2), "#rotina\nPontos: 10\nVolta: 1 dia depois de feita")
+        mk_event("Limpar o ar-condicionado", D(3), "#manutencao\nA cada: 30 dias")
+        async def day_titles(n):
+            await a.evaluate(f"(e) => {{ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + {n}); e._cursor = d; e.requestUpdate(); }}")
+            await pg.wait_for_timeout(900)
+            return [t.strip() for t in await a.locator(".day-panel .ev-row .ev-title").all_inner_texts()]
+        back = await day_titles(5)
+        check(await a.locator(".day-panel .away-day").count() == 0, "the day back is no vacation day")
+        check(any("Trocar a água do filtro" in t for t in back) and any("Limpar o ar-condicionado" in t for t in back), f"the day back: the routine that comes back after done and the maintenance due in the days away ({back[:8]})")
+        check(any("Regar as plantas" in t for t in back) and any("Lavar a louça" in t for t in back), "the day back: the daily routines")
+        await a.locator(".day-panel").screenshot(path=f"{SP}/shots/cra-back.png")
+        mid = await day_titles(2)
+        check(not any("Trocar a água do filtro" in t for t in mid), f"not on its day away ({mid[:6]})")
+        check(not any("Trocar a água do filtro" in t for t in await day_titles(6)), "nor after the day back")
+        await day_titles(0)
         # Recompensas: Para pontuar hoje says the routines are paused (not "nothing with points"); the deméritos too
         ws = """(msg) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, ...msg})); ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.type === 'result') { ws.close(); res(m); } }; })"""
         await pg.evaluate(ws, {"type": "cronologia/prefs/set_app", "prefs": {"score": {"enabled": True, "participants": ["Andressa", "Diego"], "period": "semana", "manual": True}, "demerits": [{"id": "toalha01", "title": "Toalha molhada na cama", "points": 5}]}})

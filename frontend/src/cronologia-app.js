@@ -446,9 +446,27 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     this._store.ensure(start, end);
     let list = this._store.query(start, end);
     // Modo férias: the routines and the maintenance of the days away are not there (the medicines are)
-    if (this._away()) list = list.filter((e) => !(e.kind && (e.kind.kind === "rotina" || e.kind.kind === "manutencao") && this._awayDay(e.start)));
+    const away = this._away();
+    if (away) list = [...list.filter((e) => !(e.kind && (e.kind.kind === "rotina" || e.kind.kind === "manutencao") && this._awayDay(e.start))), ...this._awayBack(away, start, end)];
     const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...this._movedDoneEvents(start, end)];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
+  }
+
+  /**
+   * Modo férias: a routine that comes back N days after done and a maintenance item are one event that waits
+   * for its Feito, so one due in the days away would leave the calendar; it shows on the day back instead (as on
+   * Agora, where it counts from that day), with its time.
+   */
+  _awayBack(away, start, end) {
+    const back = addDays(fromYmd(away.to), 1);
+    if (!(back < end && addDays(back, 1) > start)) return [];
+    const from = fromYmd(away.from);
+    this._store.ensure(from, back);
+    const waits = (e) => e.kind && !e.rrule && ((e.kind.kind === "rotina" && e.kind.after) || e.kind.kind === "manutencao");
+    return this._store.query(from, back).filter((e) => waits(e) && this._awayDay(e.start)).map((e) => {
+      const s = e.allDay ? back : new Date(back.getFullYear(), back.getMonth(), back.getDate(), e.start.getHours(), e.start.getMinutes());
+      return { ...e, start: s, end: e.allDay ? addDays(back, 1) : new Date(s.getTime() + Math.max(0, e.end - e.start)), awayBack: true };
+    });
   }
 
   /** Modo férias (Mais › Configurações › Opções): {from, to} as YYYY-MM-DD, or null. */

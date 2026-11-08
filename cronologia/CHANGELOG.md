@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.57.3
+
+- **Calendário** depois das férias: a rotina que **volta N dias depois de feita** e a manutenção que venceram nos dias fora aparecem no dia da volta (antes sumiam do calendário).
+
 ## 1.57.2
 
 - **Calendário** e **Agora**: só fica apagado o que foi feito ou pulado. Um remédio ou evento cuja hora já passou, sem ser feito, continua normal.
