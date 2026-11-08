@@ -143,8 +143,7 @@ async def main():
         # 8) Levar para o ResolvIA: a late one goes with its (past) date; done there moves it here
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Integrações"); await A.wait_for_timeout(500)
-        await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.casa"); await A.wait_for_timeout(500)
-        await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").check(); await A.wait_for_timeout(400)
+        await a.locator("#resolvia select[aria-label='Lista: Rotina da casa']").select_option("todo.casa"); await A.wait_for_timeout(500)
         def item(s): return next((i for i in json.loads(urllib.request.urlopen("http://127.0.0.1:8123/dev/todo?entity_id=todo.casa").read()) if i["summary"] == s and "[cr:" in (i.get("description") or "")), None)
         await wait_for(lambda: item("Limpar o banheiro") and item("Limpar o banheiro")["due"] == D(0), "in the ResolvIA list with today's date")
         it = item("Limpar o banheiro")
