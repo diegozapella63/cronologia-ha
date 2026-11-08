@@ -46,9 +46,10 @@ async def main():
         check(stat.S_IMODE(os.stat(FILE).st_mode) == 0o600, "the file is only the owner's (600)")
         j = json.load(open(FILE))
         check(j["app"] == "cronologia" and j["ferramentas"] == "/api/integracao/ferramentas" and j["url"] == URL.rstrip("/"), f"the file of the contract ({ {k: v for k, v in j.items() if k != 'chave'} })")
-        await A.wait_for_timeout(400)
-        t = " ".join((await card.inner_text()).split())
-        check("Ligado: pelo WhatsApp, o Claude e o Gemini leem e mudam a agenda." in t and "Nenhum uso ainda" in t and "Conecte no app CorrerIA." in t, f"on, not used yet ({t})")
+        async def not_used():
+            t = " ".join((await card.inner_text()).split())
+            return "Ligado: pelo WhatsApp, o Claude e o Gemini leem e mudam a agenda." in t and "Nenhum uso ainda" in t and "Conecte no app CorrerIA." in t
+        await wait_for(not_used, "on, not used yet")
         key = j["chave"]
         s, lst = call(key)
         check(s == 200 and len(lst["ferramentas"]) == 10, f"GET with the key: the tools ({s})")
@@ -72,8 +73,11 @@ async def main():
         await sw.uncheck()
         await wait_for(lambda: not os.path.exists(FILE), "off: the file goes away")
         check(call(key)[0] == 401 and call(key, {"nome": "resumo"})[0] == 401, "and the same key stops working")
-        t = " ".join((await card.inner_text()).split())
-        check("Desligado." in t and "usou" not in t, "off: only the switch")
+        # the screen redraws when the settings come back (a moment after the file goes)
+        async def only_switch():
+            t = " ".join((await card.inner_text()).split())
+            return "Desligado." in t and "usou" not in t
+        await wait_for(only_switch, "off: only the switch")
         # the computer: the card in the sidebar layout
         await A.set_viewport_size({"width": 1280, "height": 900}); await A.wait_for_timeout(500)
         await card.scroll_into_view_if_needed()
