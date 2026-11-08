@@ -56,8 +56,26 @@ async def main():
         s, r = call(key, {"nome": "resumo", "argumentos": {}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
         lixo = next((x for x in json.loads(r["texto"])["rotinas_hoje"] if x["nome"] == "Tirar o lixo" and x["situacao"] == "a fazer"), None)
         check(s == 200 and lixo is not None, "resumo: today's chore with its id")
+        # another phone with Agora open: it gets the change live, as when another person marks something
+        B = await ctx.new_page(); B.on("pageerror", lambda e: errs.append(str(e)))
+        await B.goto(URL); await B.wait_for_timeout(1500)
+        b_app = B.locator("cronologia-app")
+        lixo_row = b_app.locator(".chore", has=B.locator("b", has_text="Tirar o lixo"))
+        check(await lixo_row.count() == 1 and "done" not in (await lixo_row.get_attribute("class") or ""), "Agora (another phone): Tirar o lixo to do")
         s, r = call(key, {"nome": "marcar_feito", "argumentos": {"id": lixo["id"]}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
         check(s == 200 and r["texto"].startswith("Feita por Ana: Tirar o lixo"), f"marcar_feito through the WhatsApp ({r})")
+        # done: it leaves the list to do and goes under Mostrar concluídas, without reloading
+        fold = b_app.locator("#casa .done-fold")
+        async def row_done():
+            return await lixo_row.count() == 0 and await fold.count() == 1 and "Mostrar concluídas (1)" in await fold.inner_text()
+        await wait_for(row_done, "Agora (another phone): Tirar o lixo goes to the done ones, without reloading")
+        await fold.click(); await B.wait_for_timeout(300)
+        check(await lixo_row.count() == 1 and "done" in (await lixo_row.get_attribute("class") or "").split(), "Mostrar concluídas: Tirar o lixo done")
+        s, r = call(key, {"nome": "resumo", "argumentos": {}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
+        now = next((x for x in json.loads(r["texto"])["rotinas_hoje"] if x["id"] == lixo["id"]), {})
+        check(now.get("situacao") == "feita" and now.get("feita_por") == "Ana", f"resumo reads it done by Ana ({now})")
+        await B.screenshot(path=f"{SP}/shots/crcorreria-agora.png")
+        await B.close()
         async def used():
             return "WhatsApp usou hoje às" in await card.inner_text()
         await wait_for(used, "the screen shows who used it, at once")
@@ -67,9 +85,9 @@ async def main():
         await A.screenshot(path=f"{SP}/shots/crcorreria-on-dark.png")
         over = await A.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
         check(over <= 0, f"nothing past the edge ({over})")
-        # Agora: the chore done, by Ana
-        st_data = st.stored()
-        check(st_data["checks"].get(lixo["id"], {}).get("by") == "Ana", "the chore is done in the app (by Ana)")
+        # and in /data/cronologia.json: the store writes it 400 ms after the last change, and any other change in that
+        # time (like a medicine alert the app sends by itself) starts the 400 ms again, so it lands a moment later
+        await wait_for(lambda: st.stored()["checks"].get(lixo["id"], {}).get("by") == "Ana", "saved in the app's data (by Ana)")
         await sw.uncheck()
         await wait_for(lambda: not os.path.exists(FILE), "off: the file goes away")
         check(call(key)[0] == 401 and call(key, {"nome": "resumo"})[0] == 401, "and the same key stops working")
