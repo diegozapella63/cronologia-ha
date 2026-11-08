@@ -46,7 +46,7 @@ async def main():
         allday = await a.locator(".tgrid-allday").inner_text() if await a.locator(".tgrid-allday").count() else ""
         check(not any(r[:6] in allday for r in ROUTINES), f"Semana: no routine in dia todo ({allday[:60]!r})")
         import datetime as _dt
-        in_week = (_dt.date.today().isoweekday() % 7) + 5 <= 6  # Aniversário da Ana is in 5 days; the week runs Sunday to Saturday
+        in_week = (_dt.date.today().isoweekday() - 1) + 5 <= 6  # Aniversário da Ana is in 5 days; the week runs Monday to Sunday (week_start 1)
         check(("Anivers" in allday) if in_week else ("Bad" in allday or "Age" in allday), "a real all-day event stays there")
         counters = [t.strip() for t in await a.locator(".tgrid-any .tg-any").all_inner_texts()]
         check(counters and all("/" in c for c in counters), f"a counter per day ({counters})")
