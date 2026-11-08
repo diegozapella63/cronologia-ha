@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.59.0
+
+- **Remédios de hoje**: a dose tomada (ou pulada) sai da lista. Quem já tomou tudo aparece numa linha só ("Luna tomou todos"), e **Mostrar tomados** abre as doses tomadas, para desfazer.
+- **Férias no Google**: com o modo férias, as rotinas e manutenções que se repetem num calendário do Google (ou outro de fora do Home Assistant) saem dos dias de férias, e o Google Agenda não avisa nada nesses dias. A série para no dia antes das férias e volta igual a partir do dia da volta. A rotina que volta N dias depois de feita e a manutenção que vencem nas férias vão para o dia da volta.
+- Encerrar, cancelar ou mudar as datas das férias traz tudo de volta nos dias certos. O calendário do próprio Home Assistant não muda (ele não avisa no celular).
+- **Mais › Férias** diz quando as rotinas voltam no Google; em **Mais › Rotinas**, a rotina pausada continua numa linha só.
+- **Levar para o ResolvIA**: uma lista para as **Manutenções** e outra para a **Rotina da casa** (ou a mesma para as duas), no lugar de uma lista só com uma chave para cada. O que já estava escolhido continua igual.
+
 ## 1.58.0
 
 - **Remédios**: **Pular** na tela do remédio, abaixo de **Tomei**, para uma dose que não vai ser tomada. A dose pulada não fica atrasada, não avisa no celular e sai da conta do dia ("3 de 4 tomados"); fica na lista com a marca amarela, e tocar nela desfaz.

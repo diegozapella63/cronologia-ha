@@ -142,6 +142,11 @@ async def main():
         await skip.click(); await A.wait_for_timeout(1500)
         toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
         check("pulado" in toast and "Desfazer" in toast, f"toast: pulado ({toast!r})")
+        # 1.59.0: taken or skipped, the dose leaves the list; Mostrar tomados opens them
+        check(await meds.locator(".dose", has_text=name).count() == 0, "a skipped dose leaves the list")
+        fold = meds.locator(".done-fold")
+        check(await fold.count() == 1 and "Mostrar tomados (1)" in await fold.inner_text(), f"Mostrar tomados (1) ({await fold.inner_text() if await fold.count() else ''})")
+        await fold.click(); await A.wait_for_timeout(400)
         row = meds.locator(".dose.pulado")
         check(await row.count() == 1 and name in await row.inner_text() and "pulado" in await row.inner_text(), f"the row: pulado ({(await row.inner_text()).strip()[:60] if await row.count() else ''})")
         col = await row.locator(".dose-done.skipped").evaluate("(el) => getComputedStyle(el).color") if await row.count() else ""
@@ -155,6 +160,13 @@ async def main():
         await meds.screenshot(path=f"{data}/dose-skipped.png")
         await row.locator(".dose-done").click(); await A.wait_for_timeout(1200)
         check(await meds.locator(".dose.pulado").count() == 0 and k not in stored()["checks"], "tapping the mark undoes it")
+        await meds.locator(".done-fold").count() and await meds.locator(".done-fold").click()
+        # whoever has nothing left: one name on a line (Mimi has one dose: Gardenal)
+        await meds.locator(".dose", has_text="Gardenal").locator(".dose-btn").click(); await A.wait_for_timeout(1200)
+        ready = meds.locator(".meds-ready .ready-who", has_text="Mimi")
+        check(await ready.count() == 1 and "tomou todos" in await ready.inner_text() and await meds.locator(".dose", has_text="Gardenal").count() == 0, f"Mimi tomou todos, without the dose ({await ready.inner_text() if await ready.count() else ''})")
+        check(await meds.locator(".meds-who", has_text="Mimi").count() == 0, "and without her heading")
+        await meds.screenshot(path=f"{data}/meds-ready.png")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()
 try:

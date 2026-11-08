@@ -9,10 +9,12 @@
 // completion is processed a few seconds after it is seen in the list, so that
 // event can say who gets the points; without it, it counts as done with no points.
 //
+// The maintenance and the routines can go to different lists (1.59.0): app.mirror {maint_list, routine_list};
+// up to 1.58 one list and a switch for each ({list, maint, routine}), still read.
 // Links live in store.data.mirror: {source key: {list, uid, tag, type, cal, evUid, written, lastDone, gone}}.
 // Each task carries a marker "[cr:<tag>]" in its notes, so it is found again after a restart.
 import crypto from "node:crypto";
-import { foldText } from "./kinds.js";
+import { foldText, mirrorLists } from "./kinds.js";
 
 /** Today as YYYY-MM-DD in the local time (the key of a maintenance done today, as in home.js). */
 const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -57,13 +59,12 @@ export class Mirror {
   }
 
   settings() {
-    const m = this.store.data.app.mirror || {};
-    return { list: m.list || null, maint: !!m.maint, routine: !!m.routine };
+    return mirrorLists(this.store.data.app.mirror);
   }
 
   /** What the sync works with: nothing while the ResolvIA integration is off. */
   active() {
-    return this.enabled() ? this.settings() : { list: null, maint: false, routine: false };
+    return this.enabled() ? this.settings() : { maint_list: null, routine_list: null };
   }
 
   get recs() {
@@ -91,7 +92,7 @@ export class Mirror {
   /** For Mais › Configurações › Integrações: how many tasks are in the list, and any problem. */
   status() {
     const st = this.settings();
-    const n = Object.values(this.recs).filter((r) => r.uid && r.list === st.list).length;
+    const n = Object.values(this.recs).filter((r) => r.uid && r.list === (r.type === "manutencao" ? st.maint_list : st.routine_list)).length;
     return { ...st, count: n, problem: this.problem };
   }
 
@@ -111,17 +112,17 @@ export class Mirror {
   desired(now = Date.now()) {
     const st = this.active();
     const out = new Map();
-    if (!st.list || (!st.maint && !st.routine)) return out;
+    if (!st.maint_list && !st.routine_list) return out;
     const ix = this.home.index || {};
     const scored = this.scored();
-    if (st.maint) {
+    if (st.maint_list) {
       for (const m of ix.maint || []) {
         if (!m.uid || !m.due) continue;
         const src = `maint|${m.cal}|${m.uid}`;
-        out.set(src, { src, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: scored ? m.points || 0 : 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "", rooms: m.rooms || [], equips: m.equips || [] });
+        out.set(src, { src, list: st.maint_list, type: "manutencao", cal: m.cal, evUid: m.uid, summary: m.summary, dueKey: m.due, allDay: true, points: scored ? m.points || 0 : 0, notes: m.notes || "", occKey: m.key, rrule: !!m.repeating, room: m.room || "", equip: m.equip || "", rooms: m.rooms || [], equips: m.equips || [] });
       }
     }
-    if (st.routine) {
+    if (st.routine_list) {
       const t0 = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
       const checks = this.store.data.checks;
       const best = new Map(); // series -> earliest occurrence not done, from today on
@@ -139,7 +140,7 @@ export class Mirror {
       }
       for (const [src, o] of best) {
         const d = new Date(o.start);
-        out.set(src, { src, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: scored ? o.k.points || 0 : 0, notes: o.k.notes || "", occKey: o.key, room: o.k.room || "", equip: o.k.equip || "", rooms: o.k.rooms || [], equips: o.k.equips || [] });
+        out.set(src, { src, list: st.routine_list, type: "rotina", cal: o.cal, evUid: o.raw.uid, summary: o.raw.summary || "Rotina", dueKey: o.allDay ? ymd(d) : `${ymd(d)} ${hmOf(d)}`, allDay: o.allDay, points: scored ? o.k.points || 0 : 0, notes: o.k.notes || "", occKey: o.key, room: o.k.room || "", equip: o.k.equip || "", rooms: o.k.rooms || [], equips: o.k.equips || [] });
       }
     }
     return out;
@@ -212,34 +213,43 @@ export class Mirror {
     this.busy = true;
     let changed = false;
     try {
-      const st = this.active();
       const want = this.desired();
       const recs = this.recs;
       // tasks of another list, or of something that isn't wanted anymore: out
       for (const [src, r] of Object.entries(recs)) {
-        if (r.list === st.list && want.has(src)) continue;
+        const d = want.get(src);
+        if (d && r.list === d.list) continue;
         if (this.pending.has(src)) continue;
         await this.remove(r);
         delete recs[src];
         changed = true;
       }
       this.problem = null;
-      if (!st.list || !want.size) return;
-      const lstate = this.todos.states.get(st.list);
-      const items = this.todos.items.get(st.list);
-      if (!lstate || !items) {
-        this.problem = lstate ? null : "A lista escolhida não existe mais no Home Assistant.";
-        return;
-      }
-      const features = Number((lstate.attributes && lstate.attributes.supported_features) || 0);
-      if (!(features & TF.CREATE) || !(features & TF.UPDATE)) {
-        this.problem = "Essa lista não deixa criar e editar tarefas. Escolha outra (uma Lista de tarefas local, por exemplo).";
-        return;
+      if (!want.size) return;
+      // each list chosen (one for the maintenance, one for the routines, or the same)
+      const ready = new Map();
+      for (const list of new Set([...want.values()].map((d) => d.list))) {
+        const lstate = this.todos.states.get(list);
+        const items = this.todos.items.get(list);
+        if (!lstate || !items) {
+          if (!lstate) this.problem = this.problem || "A lista escolhida não existe mais no Home Assistant.";
+          continue;
+        }
+        const features = Number((lstate.attributes && lstate.attributes.supported_features) || 0);
+        if (!(features & TF.CREATE) || !(features & TF.UPDATE)) {
+          this.problem = this.problem || "Essa lista não deixa criar e editar tarefas. Escolha outra (uma Lista de tarefas local, por exemplo).";
+          continue;
+        }
+        ready.set(list, { features, items });
       }
       for (const [src, d] of want) {
+        const L = ready.get(d.list);
+        if (!L) continue;
+        const { features, items } = L;
+        const list = d.list;
         let r = recs[src];
         if (!r) {
-          r = recs[src] = { list: st.list, uid: null, tag: tagOf(src), type: d.type, cal: d.cal, evUid: d.evUid };
+          r = recs[src] = { list, uid: null, tag: tagOf(src), type: d.type, cal: d.cal, evUid: d.evUid };
           changed = true;
         }
         r.cal = d.cal;
@@ -258,12 +268,12 @@ export class Mirror {
         if (!item) {
           if (r.gone && r.gone === (target.dueKey || target.occKey)) continue;
           if (r.adding && Date.now() - r.adding < 15000) continue;
-          await this.call(st.list, "add_item", { item: d.summary, ...this.fields(d, features, r.tag) });
-          await this.shareLinks(st.list, d, r);
+          await this.call(list, "add_item", { item: d.summary, ...this.fields(d, features, r.tag) });
+          await this.shareLinks(list, d, r);
           r.adding = Date.now();
           r.written = target;
           delete r.gone;
-          this.todos.refresh(st.list);
+          this.todos.refresh(list);
           changed = true;
           continue;
         }
@@ -282,7 +292,7 @@ export class Mirror {
           }
           if (this.pending.has(src)) continue;
         }
-        await this.shareLinks(st.list, d, r);
+        await this.shareLinks(list, d, r);
         const same = item.status !== "completed" && item.summary === target.summary && dueKeyOfItem(item.due) === target.dueKey && (target.description == null || (item.description || "") === target.description);
         if (same) {
           if (!r.written || r.written.occKey !== target.occKey || r.written.points !== target.points) {
@@ -293,10 +303,10 @@ export class Mirror {
         }
         const data = { item: item.uid, status: "needs_action", ...this.fields(d, features, r.tag) };
         if (item.summary !== d.summary) data.rename = d.summary;
-        await this.call(st.list, "update_item", data);
+        await this.call(list, "update_item", data);
         r.written = target;
         changed = true;
-        this.todos.refresh(st.list);
+        this.todos.refresh(list);
       }
     } finally {
       this.busy = false;
@@ -422,4 +432,4 @@ export class Mirror {
   }
 }
 
-export { MARK_RE };
+export { MARK_RE, mirrorLists };

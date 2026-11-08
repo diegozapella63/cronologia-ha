@@ -349,6 +349,17 @@ export const ModelsMixin = (Base) =>
         if (m.alert && m.phone) g.phone = true;
       }
       const all = taken === live.length;
+      // 1.59.0: what was taken (or skipped) leaves the list, so the card doesn't keep the whole day; whoever has
+      // nothing left is one name on a line (✓ took all, the yellow mark with a skipped one); Mostrar tomados opens them
+      const doneN = meds.filter((m) => m.taken).length;
+      // all undone: folded again for the next one taken
+      if (!doneN && this._medsDoneN) this._medsDoneOpen = false;
+      this._medsDoneN = doneN;
+      const open = !!this._medsDoneOpen;
+      const left = (g) => g.list.filter((m) => !m.taken);
+      const ready = groups.filter((g) => !left(g).length);
+      const pet = (who) => (this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(who));
+      const shown = open ? groups : groups.filter((g) => left(g).length);
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
         <div class="meds-head">
           <span class="meds-ic">${icon("pill")}</span>
@@ -360,12 +371,25 @@ export const ModelsMixin = (Base) =>
               ? html`<b>${late[0].summary}</b>${late[0].who ? ` de ${late[0].who}` : ""} está atrasado ${lateLabel(late[0].late_min)}`
               : html`<b>${late.length} doses atrasadas</b>: ${late.map((m) => m.summary).join(", ")}`}</span></div>`
           : nothing}
-        ${groups.map(
+        ${shown.map(
           (g) => html`${groups.length > 1 || g.who
-              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.state === "tomado").length} de ${g.list.filter((m) => m.state !== "pulado").length}</small>${g.phone ? html`<span class="who-bell" title="Aviso no celular de ${this._phoneOwner(g.who)}">${icon("bell-ring")}</span>` : nothing}</div>`
+              ? html`<div class="meds-who"><span class="avatar">${pet(g.who) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b>${g.list.some((m) => m.state !== "pulado") ? html`<small>${g.list.filter((m) => m.state === "tomado").length} de ${g.list.filter((m) => m.state !== "pulado").length}</small>` : nothing}${g.phone ? html`<span class="who-bell" title="Aviso no celular de ${this._phoneOwner(g.who)}">${icon("bell-ring")}</span>` : nothing}</div>`
               : nothing}
-            ${repeat(g.list, (m) => m.key, (m) => this._renderDose(m))}`,
+            ${repeat(open ? g.list : left(g), (m) => m.key, (m) => this._renderDose(m))}`,
         )}
+        ${ready.length && !open
+          ? html`<div class="meds-ready">${ready.map((g) => {
+              const skipped = g.list.some((m) => m.state === "pulado");
+              const took = g.list.some((m) => m.state === "tomado");
+              const what = took && !skipped ? `${g.who ? "tomou" : "Tomados"} todos` : took ? "em dia" : "pulou";
+              return html`<span class="ready-who ${took && !skipped ? "" : "skipped"}">${g.who ? html`<span class="avatar">${pet(g.who) ? icon("paw-print") : initial(g.who)}</span><b>${g.who}</b>` : nothing}<span>${what}</span>${icon(took && !skipped ? "check" : "skip-forward")}</span>`;
+            })}</div>`
+          : nothing}
+        ${doneN
+          ? html`<button class="add-line done-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._medsDoneOpen = !open), this.requestUpdate())}>
+              ${icon(open ? "chevron-down" : "chevron-right")}${open ? "Esconder tomados" : `Mostrar tomados (${doneN})`}
+            </button>`
+          : nothing}
         ${this._alertsHint(meds)}
       </div>`;
     }

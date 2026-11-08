@@ -19,6 +19,7 @@ import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
+import { AwayCal } from "./lib/awaycal.js";
 import { Gerencia } from "./lib/gerencia.js";
 import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
@@ -26,7 +27,7 @@ import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, read
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 
-const VERSION = "1.58.0";
+const VERSION = "1.59.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -79,6 +80,16 @@ const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: (
 // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
 const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed(), enabled: resolviaOn, scored: () => home.placarInfo().ativo });
 home.mirror = mirror;
+// Modo férias nos calendários que avisam no celular (Google…): the routines out of the days away, back on the day back
+const awayCal = new AwayCal({
+  ha,
+  store,
+  log,
+  tracked: () => home.tracked,
+  features: (cal) => home.features(cal),
+  platform: async (cal) => ((await registry()).entities[cal] || {}).platform || null,
+  refresh: (cal) => home.refreshCalendar(cal),
+});
 // Avisos: the phones picked before 1.54.0 became people (the screens get the new prefs)
 home.onPrefs = () => pushPrefs();
 
@@ -464,8 +475,11 @@ class Session {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
         if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
-        // Modo férias: Agora (and the sensors) change at once
-        if (msg.prefs && "away" in msg.prefs) home.rebuild();
+        // Modo férias: Agora (and the sensors) change at once; the calendars that alert on the phone, too
+        if (msg.prefs && "away" in msg.prefs) {
+          home.rebuild();
+          awayCal.sync();
+        }
         // Sensores no Home Assistant: on creates them now, off removes them
         if (msg.prefs && "sensors_on" in msg.prefs) {
           if (store.data.app.sensors_on === true) {
@@ -826,6 +840,10 @@ function publishPresence() {
 }
 publishPresence();
 setInterval(publishPresence, 30 * 1000);
+// Modo férias: a routine made during the days away, a restart, the end of the vacation (every 30 min; first once
+// the events have been read)
+setTimeout(() => awayCal.sync(), 90 * 1000);
+setInterval(() => awayCal.sync(), 30 * 60 * 1000);
 
 server.listen(PORT, () => log.info(`CronologIA ${VERSION} ouvindo na porta ${PORT}${DEV ? " (modo dev)" : ""}`));
 home.start();

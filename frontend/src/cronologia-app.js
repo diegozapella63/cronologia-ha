@@ -2499,7 +2499,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         ? html`<div class="away-dates">
             <label class="field"><span class="flabel">De</span><input type="date" .value=${a.from} @change=${(e) => e.target.value && set(e.target.value, a.to)} aria-label="Férias de" /></label>
             <label class="field"><span class="flabel">Até</span><input type="date" .value=${a.to} min=${a.from} @change=${(e) => e.target.value && set(a.from, e.target.value)} aria-label="Férias até" /></label>
-          </div>`
+          </div>
+          <span class="field-hint away-cal">${icon("calendar-x")}<span>No Google, as rotinas saem desses dias e voltam em ${dateShort(addDays(fromYmd(a.to), 1), new Date(this._now))}.</span></span>`
         : nothing}
     </div>`;
   }

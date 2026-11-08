@@ -40,6 +40,7 @@ async def main():
             await wait_for(lambda: any(v.get("snooze_until") for v in st.stored().get("sent", {}).values()), "the next alert is set for 15 minutes later")
             check("tomou" not in await dose("Gardenal").inner_text(), "Adiar does not mark the dose")
             # Tomei on the phone: the dose is marked on the screen, the alert leaves the phone
+            await a.evaluate("(e) => { e._medsDoneOpen = true; e.requestUpdate(); }")  # 1.59.0: the taken doses are folded
             st.fire("mobile_app_notification_action", {"action": tomei})
             async def taken(): return "tomou às" in await dose("Gardenal").inner_text()
             await wait_for(taken, "Tomei on the phone: marked on the screen")

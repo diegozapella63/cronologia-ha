@@ -62,6 +62,8 @@ async def main():
         await panel.locator("input[aria-label='De férias']").check(); await pg.wait_for_timeout(800)
         await wait_for(lambda: stored()["app"].get("away") == {"from": D(0), "to": D(4)}, "on: from today, 5 days")
         check(await panel.locator("input[aria-label='Férias até']").input_value() == D(4), "the dates to change")
+        hint = await panel.locator(".away-cal").inner_text() if await panel.locator(".away-cal").count() else ""
+        check("No Google, as rotinas saem desses dias e voltam em" in hint, f"1.59.0: says what happens in the Google calendar ({hint!r})")
         await panel.screenshot(path=f"{SP}/shots/cra-options.png")
         # Agora: the banner, no routines nor maintenance, the medicines stay
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(900)

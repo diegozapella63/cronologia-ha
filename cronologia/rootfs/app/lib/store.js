@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { actor } from "./actor.js";
-import { cleanAway } from "./kinds.js";
+import { cleanAway, mirrorLists } from "./kinds.js";
 
 export const COLORS = ["vermelho", "coral", "laranja", "ouro", "verde", "menta", "turquesa", "azul", "indigo", "lilas", "rosa", "grafite"];
 const CAL_RE = /^calendar\.[a-z0-9_]+$/;
@@ -95,11 +95,11 @@ function cleanApp(raw) {
   }
   // Mais › Configurações › Integrações › Sensores no Home Assistant: off unless turned on
   if ("sensors_on" in raw) out.sensors_on = raw.sensors_on ? true : null;
-  // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
+  // Levar para o ResolvIA: the maintenance and the routines as tasks, each in its list (1.59.0; up to 1.58 one
+  // list and a switch for each: taken as the same list for both)
   if ("mirror" in raw) {
-    const m = raw.mirror && typeof raw.mirror === "object" ? raw.mirror : {};
-    const list = /^todo\.[a-z0-9_]+$/.test(m.list || "") ? m.list : null;
-    out.mirror = list || m.maint || m.routine ? { list, maint: !!m.maint, routine: !!m.routine } : null;
+    const m = mirrorLists(raw.mirror);
+    out.mirror = m.maint_list || m.routine_list ? m : null;
   }
   if ("people" in raw) {
     // {"Mimi": {pet: true, care: "Andressa"}}: the people and pets added in Mais › Avisos; care: the person who
@@ -168,7 +168,7 @@ const merge = (target, changes) => {
   return next;
 };
 
-const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], score: { entries: [], history: [], rewards: {}, prizes: {}, current: null, log: [], log_seq: 0 } });
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], away_cal: { splits: [], moved: [] }, score: { entries: [], history: [], rewards: {}, prizes: {}, current: null, log: [], log_seq: 0 } });
 
 /**
  * The saved data, checked field by field. `strict` (imports) also runs the
@@ -198,6 +198,9 @@ function normalize(raw, strict = false) {
     out.app = obj(raw.app);
   }
   for (const k of ["checks", "sent", "mirror"]) out[k] = obj(raw[k]);
+  // Modo férias nos calendários (1.59.0): the series paused and the events moved, to bring back
+  const ac = obj(raw.away_cal);
+  out.away_cal = { splits: Array.isArray(ac.splits) ? ac.splits.filter((x) => x && CAL_RE.test(x.cal || "") && Array.isArray(x.starts)) : [], moved: Array.isArray(ac.moved) ? ac.moved.filter((x) => x && CAL_RE.test(x.cal || "") && x.from && x.to) : [] };
   for (const [k, v] of Object.entries(out.checks)) if (!v || typeof v !== "object" || !Number.isFinite(Date.parse(v.at))) delete out.checks[k];
   out.kind_cals = Array.isArray(raw.kind_cals) ? raw.kind_cals.filter((id) => CAL_RE.test(id)) : [];
   const sc = obj(raw.score);

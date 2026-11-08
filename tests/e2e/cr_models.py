@@ -80,6 +80,7 @@ async def main():
         await wait_for(lambda: any("Mounjaro" in n.get("title", "") for n in get("http://127.0.0.1:8123/dev/notifications")), "late alert sent to Andressa's phone (auto-detected)", tries=120)
         n = next(n for n in get("http://127.0.0.1:8123/dev/notifications") if "Mounjaro" in n.get("title", ""))
         check(n["service"] == "mobile_app_galaxy_s23" and [x["title"] for x in n["data"]["actions"]] == ["Tomei", "Adiar 15 min"], f"alert has Tomei / Adiar buttons ({n['service']})")
+        for el in (a, bb): await el.evaluate("(e) => { e._medsDoneOpen = true; e.requestUpdate(); }")  # 1.59.0: the taken doses are folded
         fire("mobile_app_notification_action", {"action": n["data"]["actions"][0]["action"]})
         async def taken_mj():
             return "tomou" in await bb.locator(".dose", has_text="Mounjaro").inner_text()

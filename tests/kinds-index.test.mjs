@@ -201,6 +201,18 @@ describe("buildIndex: routines that come back N days after done", () => {
     assert.equal(ix.routines[0].next, "2026-11-01");
     assert.equal(ix.routines[0].time, "07:00");
   });
+  it("1.59.0: a routine paused for the vacation (two series: until the day before, and from the day back) is one line", () => {
+    const D = "#rotina\nPontos: 5";
+    const old = (day) => allDay("Lavar a louça", day, D, { uid: "a", raw: { rrule: "FREQ=DAILY;UNTIL=20261104", recurrence_id: day.replace(/-/g, "") } });
+    const fresh = (day) => allDay("Lavar a louça", day, D, { uid: "b", raw: { rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") } });
+    const other = allDay("Lavar a louça", "2026-11-03", D, { uid: "c", raw: { rrule: "FREQ=WEEKLY", recurrence_id: "20261103" } });
+    let ix = index([old(TODAY), old("2026-11-03"), old("2026-11-04"), fresh("2026-11-09"), fresh("2026-11-10")]);
+    assert.deepEqual(ix.catalog.map((c) => [c.uid, c.next]), [["a", TODAY]], "before the vacation: the old one, with today");
+    ix = index([fresh("2026-11-09"), old(TODAY)].reverse());
+    assert.deepEqual(ix.catalog.map((c) => [c.uid, c.next]), [["a", TODAY]], "in any order");
+    ix = index([fresh("2026-11-09"), other]);
+    assert.equal(ix.catalog.length, 2, "two routines of the same name without an end: both");
+  });
   it("a future one is not in today's list (but is in the catalog)", () => {
     const ix = index([due("2026-11-05")]);
     assert.equal(ix.routines.length, 0);

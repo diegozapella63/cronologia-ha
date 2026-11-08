@@ -31,6 +31,7 @@ async def main():
             if await a.locator(".sheet .btn.outline", has_text="Ninguém").count():
                 await a.locator(".sheet .btn.outline", has_text="Ninguém").click(); await A.wait_for_timeout(600)
         # a dose taken
+        await a.evaluate("(e) => { e._medsDoneOpen = true; e.requestUpdate(); }")  # 1.59.0: the taken doses are folded
         await a.locator(".dose", has_text="Gardenal").locator(".dose-btn").click(); await A.wait_for_timeout(1200); await who()
         check(await a.locator(".dose.tomado", has_text="Gardenal").count() == 1, "Gardenal taken")
         await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(400)

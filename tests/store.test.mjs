@@ -175,9 +175,11 @@ describe("Store: app settings", () => {
     assert.deepEqual(set({ todo_owner: { "todo.tarefas_dessa": "  Andressa ", "todo.x": "", "light.y": "Diego" } }).todo_owner, { "todo.tarefas_dessa": "Andressa" });
     assert.deepEqual(set({ todo_owner: null }), {});
   });
-  it("mirror: list and what goes there", () => {
-    assert.deepEqual(set({ mirror: { list: "todo.casa", maint: 1, routine: 0 } }).mirror, { list: "todo.casa", maint: true, routine: false });
-    assert.deepEqual(set({ mirror: { list: "calendar.x", maint: true } }).mirror, { list: null, maint: true, routine: false });
+  it("mirror: the list of the maintenance and the one of the routines (1.59.0; the old shape becomes the new one)", () => {
+    assert.deepEqual(set({ mirror: { maint_list: "todo.casa", routine_list: "todo.rotinas" } }).mirror, { maint_list: "todo.casa", routine_list: "todo.rotinas" });
+    assert.deepEqual(set({ mirror: { maint_list: "todo.casa", routine_list: "calendar.x" } }).mirror, { maint_list: "todo.casa", routine_list: null });
+    assert.deepEqual(set({ mirror: { list: "todo.casa", maint: 1, routine: 0 } }).mirror, { maint_list: "todo.casa", routine_list: null });
+    assert.deepEqual(set({ mirror: { list: "calendar.x", maint: true } }), {});
     assert.deepEqual(set({ mirror: { list: "bad" } }), {});
     assert.deepEqual(set({ mirror: null }), {});
   });

@@ -79,9 +79,12 @@ const services = (ha) => ha.sent.filter((s) => s.type === "call_service").map((s
 describe("Mirror: settings and what should be in the list", () => {
   it("settings come from the app; off: nothing is wanted", () => {
     const { m } = setup({ enabled: false });
-    assert.deepEqual(m.settings(), { list: LIST, maint: true, routine: true });
-    assert.deepEqual(m.active(), { list: null, maint: false, routine: false });
-    assert.deepEqual(setup({ mirror: null }).m.settings(), { list: null, maint: false, routine: false });
+    // up to 1.58: one list and a switch for each, read as the same list for both
+    assert.deepEqual(m.settings(), { maint_list: LIST, routine_list: LIST });
+    assert.deepEqual(m.active(), { maint_list: null, routine_list: null });
+    assert.deepEqual(setup({ mirror: null }).m.settings(), { maint_list: null, routine_list: null });
+    assert.deepEqual(setup({ mirror: { list: LIST, maint: false, routine: true } }).m.settings(), { maint_list: null, routine_list: LIST });
+    assert.deepEqual(setup({ mirror: { maint_list: "todo.manutencao", routine_list: "bad" } }).m.settings(), { maint_list: "todo.manutencao", routine_list: null });
   });
   it("desired: one per maintenance (all-day, at its due) and per routine series", () => {
     const daily = (day) => occ("Regar", day, { who: "Diego", points: 5, notes: "Só as da varanda" }, { uid: "regar", raw: { rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") } });
@@ -93,7 +96,7 @@ describe("Mirror: settings and what should be in the list", () => {
     const want = m.desired(NOW);
     assert.deepEqual([...want.keys()].sort(), ["maint|calendar.casa|filtro", "rotina|calendar.casa|lixo", "rotina|calendar.casa|regar"]);
     const f = want.get("maint|calendar.casa|filtro");
-    assert.deepEqual(f, { src: "maint|calendar.casa|filtro", type: "manutencao", cal: "calendar.casa", evUid: "filtro", summary: "Trocar o filtro", dueKey: "2026-11-07", allDay: true, points: 30, notes: "Refil X", occKey: "calendar.casa|filtro|2026-11-07", rrule: false, room: "Cozinha", equip: "Filtro de água", rooms: [], equips: [] });
+    assert.deepEqual(f, { src: "maint|calendar.casa|filtro", list: LIST, type: "manutencao", cal: "calendar.casa", evUid: "filtro", summary: "Trocar o filtro", dueKey: "2026-11-07", allDay: true, points: 30, notes: "Refil X", occKey: "calendar.casa|filtro|2026-11-07", rrule: false, room: "Cozinha", equip: "Filtro de água", rooms: [], equips: [] });
     const r = want.get("rotina|calendar.casa|regar");
     assert.equal(r.dueKey, "2026-11-03", "today's is done: the next one not done");
     assert.equal(r.points, 5);
@@ -115,6 +118,26 @@ describe("Mirror: settings and what should be in the list", () => {
     assert.deepEqual([...setup({ ...opts, mirror: { list: LIST, maint: false, routine: true } }).m.desired(NOW).keys()], ["rotina|calendar.casa|lixo"]);
     assert.equal(setup({ ...opts, mirror: { list: null, maint: true, routine: true } }).m.desired(NOW).size, 0);
     assert.equal(setup({ ...opts, enabled: false }).m.desired(NOW).size, 0);
+  });
+  it("1.59.0: the maintenance in one list, the routines in another", async () => {
+    mock.timers.enable({ apis: ["Date"], now: NOW });
+    const OTHER = "todo.rotinas";
+    const s = setup({ mirror: { maint_list: LIST, routine_list: OTHER }, maint: [maintItem()], occurrences: [occ("Lixo", "2026-11-03", {}, { uid: "lixo" })] });
+    s.todos.states.set(OTHER, { attributes: { supported_features: ALL } });
+    s.todos.items.set(OTHER, []);
+    const want = s.m.desired(NOW);
+    assert.deepEqual([...want.values()].map((d) => [d.type, d.list]), [["manutencao", LIST], ["rotina", OTHER]]);
+    await s.m.sync();
+    const adds = s.ha.sent.filter((x) => x.service === "add_item").map((x) => [x.target.entity_id, x.service_data.item]);
+    assert.deepEqual(adds, [[LIST, "Trocar o filtro"], [OTHER, "Lixo"]]);
+    // the routines move to the list of the maintenance: out of the other, into this one
+    s.todos.items.set(OTHER, [{ uid: "r1", summary: "Lixo", status: "needs_action", description: `Rotina da casa do CronologIA [cr:${s.store.data.mirror["rotina|calendar.casa|lixo"].tag}]` }]);
+    await s.m.sync();
+    s.store.data.app.mirror = { maint_list: LIST, routine_list: LIST };
+    await s.m.sync();
+    const removed = s.ha.sent.filter((x) => x.service === "remove_item").map((x) => [x.target.entity_id, x.service_data.item]);
+    assert.deepEqual(removed, [[OTHER, ["r1"]]]);
+    assert.deepEqual(s.ha.sent.filter((x) => x.service === "add_item").map((x) => x.target.entity_id).slice(-1), [LIST]);
   });
 });
 
@@ -176,7 +199,7 @@ describe("Mirror: sync", () => {
     assert.equal("adding" in r, false);
     assert.deepEqual(s.m.uids(), new Set([`${LIST}|t1`]));
     assert.deepEqual(s.m.published(), { [LIST]: { t1: { pontos: 30, tipo: "manutencao" } } });
-    assert.deepEqual(s.m.status(), { list: LIST, maint: true, routine: true, count: 1, problem: null });
+    assert.deepEqual(s.m.status(), { maint_list: LIST, routine_list: LIST, count: 1, problem: null });
   });
   it("adds again after 15 s if the list never showed it", async () => {
     mock.timers.enable({ apis: ["Date"], now: NOW });

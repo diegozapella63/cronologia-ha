@@ -4,7 +4,7 @@
 import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
-import { foldText } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { foldText, mirrorLists } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { renderEquipPicker } from "./equip-picker.js";
 import { placeTags, roomsShown } from "./place-tags.js";
 
@@ -395,35 +395,33 @@ export const TasksMixin = (Base) =>
       }
     }
 
-    /** Mais › Configurações › Integrações › Levar para o ResolvIA: maintenance and routines as tasks in a list. */
+    /**
+     * Mais › Configurações › Integrações › Levar para o ResolvIA: the maintenance and the routines as tasks, each in
+     * the list chosen for it (1.59.0; the same list for both is fine).
+     */
     _renderMirrorSettings(lists) {
-      const m = this._app("mirror", null) || {};
+      const m = mirrorLists(this._app("mirror", null));
       const st = this._ix().mirror || {};
       const usable = lists.filter((l) => l.features & TF.CREATE && l.features & TF.UPDATE && !l.unavailable);
-      const save = (ch) => this._saveAppPrefs({ mirror: { list: m.list || null, maint: !!m.maint, routine: !!m.routine, ...ch } });
-      const sw = (on, label, hint, key) => html`<div class="row switch-row">
-        <div class="grow"><div class="label">${label}</div><div class="hint">${hint}</div></div>
-        <label class="switch"><input type="checkbox" role="switch" .checked=${!!on} ?disabled=${!m.list} @change=${(e) => save({ [key]: e.target.checked })} aria-label=${label} /><span class="track"></span></label>
-      </div>`;
-      const active = m.list && (m.maint || m.routine);
+      const save = (ch) => this._saveAppPrefs({ mirror: { ...m, ...ch } });
+      const pick = (key, label) => html`<label class="field mirror-pick">
+          <span class="flabel">${label}</span>
+          <select class="select" aria-label=${`Lista: ${label}`} @change=${(e) => save({ [key]: e.target.value || null })}>
+            <option value="" ?selected=${!m[key]}>Nenhuma (não levar)</option>
+            ${usable.map((l) => html`<option value=${l.id} ?selected=${m[key] === l.id}>${l.name}${l.features & TF.DUE_DATE ? "" : " (sem prazo)"}</option>`)}
+            ${m[key] && !usable.some((l) => l.id === m[key]) ? html`<option value=${m[key]} selected>${m[key]} (não encontrada)</option>` : nothing}
+          </select>
+        </label>`;
+      const active = m.maint_list || m.routine_list;
       // the points only with the placar on (off, nobody gets them)
       const score = this._scoreOn();
       return html`<div class="sub-overline" id="levar">Levar para o ResolvIA</div>
         <p class="sub-lead">Cada manutenção e cada rotina da casa vira uma tarefa numa lista do ResolvIA, com a próxima data${score ? " e os pontos" : ""}. Concluir lá vale como feito aqui${score ? " (os pontos vão para quem concluiu)" : ""} e a tarefa volta com a data seguinte.</p>
-        <label class="field" style="margin:6px 0 4px">
-          <span class="flabel">Lista</span>
-          <select class="select" aria-label="Lista do ResolvIA" @change=${(e) => save({ list: e.target.value || null })}>
-            <option value="" ?selected=${!m.list}>Nenhuma (não levar)</option>
-            ${usable.map((l) => html`<option value=${l.id} ?selected=${m.list === l.id}>${l.name}${l.features & TF.DUE_DATE ? "" : " (sem prazo)"}</option>`)}
-            ${m.list && !usable.some((l) => l.id === m.list) ? html`<option value=${m.list} selected>${m.list} (não encontrada)</option>` : nothing}
-          </select>
-        </label>
-        ${sw(m.maint, "Manutenções", "A próxima data de cada manutenção.", "maint")}
-        ${sw(m.routine, "Rotina da casa", "A próxima vez de cada rotina.", "routine")}
+        ${pick("maint_list", "Manutenções")} ${pick("routine_list", "Rotina da casa")}
         ${st.problem
           ? html`<p class="data-note">${st.problem}</p>`
           : active
-            ? html`<p class="sub-lead with-icon">${icon("circle-check")}<span>${plural(st.count || 0, "tarefa", "tarefas")} na lista. Elas não se repetem no card de Tarefas daqui.</span></p>`
+            ? html`<p class="sub-lead with-icon">${icon("circle-check")}<span>${plural(st.count || 0, "tarefa", "tarefas")} ${m.maint_list && m.routine_list && m.maint_list !== m.routine_list ? "nas listas" : "na lista"}. Elas não se repetem no card de Tarefas daqui.</span></p>`
             : nothing}`;
     }
 

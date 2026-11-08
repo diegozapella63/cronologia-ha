@@ -323,6 +323,16 @@ const hmOf = (ms) => {
  * Today's doses and chores, the bills around today and every maintenance item,
  * from model occurrences [{cal, raw}] and the marks (checks).
  */
+const TODO_RE = /^todo\.[a-z0-9_]+$/;
+
+/** The lists of Levar para o ResolvIA: {maint_list, routine_list} (null: not taken), from either shape. */
+export function mirrorLists(m) {
+  const ok = (v) => (TODO_RE.test(v || "") ? v : null);
+  if (!m || typeof m !== "object") return { maint_list: null, routine_list: null };
+  if ("maint_list" in m || "routine_list" in m) return { maint_list: ok(m.maint_list), routine_list: ok(m.routine_list) };
+  return { maint_list: m.maint ? ok(m.list) : null, routine_list: m.routine ? ok(m.list) : null };
+}
+
 /** Modo férias: {from, to} as real days YYYY-MM-DD (from <= to, at most a year), or null. */
 export function cleanAway(v) {
   if (!v || typeof v !== "object") return null;
@@ -428,6 +438,9 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       out.maint.push({ ...base, kind: "manutencao", who: k.who, points: k.points || 0, every: k.every, warn: k.warn, history: k.history, room: k.room || "", equip: k.equip || "", rooms: k.rooms || [], equips: k.equips || [], ...st, repeating: !!raw.rrule, canMove: !!(f & 4) || (!!(f & 1) && !!(f & 2)) });
     }
   }
+  // Modo férias (1.59.0): a routine paused in a calendar that alerts on the phone is two series (until the day
+  // before the vacation, with UNTIL, and from the day back): one line, the next one
+  const pieces = new Map();
   for (const ser of series.values()) {
     const k = ser.k;
     // one event that moves after it is done (maintenance, "volta N dias depois"): late is still registered;
@@ -435,7 +448,16 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
     const moving = k.kind === "manutencao" || (k.kind === "rotina" && k.after);
     const o = ser.next || (ser.last && (moving || (k.kind === "conta" && !checks[ser.last.base.key] && ser.last.start >= t0 - 62 * DAY)) ? ser.last : null);
     if (!o) continue;
-    out.catalog.push({
+    if (o.base.rrule && ser.next) {
+      const id = `${o.base.cal}|${k.kind}|${o.base.summary}`;
+      const twin = pieces.get(id);
+      if (twin && (/UNTIL=/.test(twin.rrule) || /UNTIL=/.test(o.base.rrule))) {
+        if (twin.start <= o.start) continue;
+        out.catalog.splice(out.catalog.indexOf(twin.row), 1);
+      }
+      pieces.set(id, { rrule: o.base.rrule, start: o.start, row: null });
+    }
+    const row = {
       ...o.base,
       kind: k.kind,
       who: k.who || "",
@@ -453,7 +475,9 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       time: o.allDay ? "" : hmOf(o.start),
       next: o.allDay ? o.base.start : ymdOf(new Date(o.start)),
       late: !ser.next,
-    });
+    };
+    out.catalog.push(row);
+    if (o.base.rrule && ser.next) pieces.get(`${o.base.cal}|${k.kind}|${o.base.summary}`).row = row;
   }
   out.catalog.sort((a, b) => a.summary.localeCompare(b.summary, "pt-BR") || a.next.localeCompare(b.next) || a.time.localeCompare(b.time));
   out.meds.sort((a, b) => msOf(a.start) - msOf(b.start) || a.summary.localeCompare(b.summary, "pt-BR"));

@@ -1500,6 +1500,42 @@ export const calStyles = css`
     color: var(--rv-muted);
     font-size: 13px;
   }
+  /* 1.59.0: whoever has no dose left today, one name each (the doses folded under Mostrar tomados) */
+  .meds-ready {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px 4px;
+  }
+  .ready-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 3px 12px 3px 4px;
+    border-radius: 999px;
+    background: var(--rv-surface-2);
+    font-size: 14px;
+    color: var(--rv-muted);
+  }
+  .ready-who b {
+    color: var(--rv-text);
+    font-weight: 600;
+  }
+  .ready-who .avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+  .ready-who > .i {
+    width: 17px;
+    height: 17px;
+    stroke-width: 2.6;
+    color: var(--rv-ok);
+  }
+  .ready-who.skipped > .i {
+    color: var(--rv-warn);
+  }
   .who-bell {
     margin-left: auto;
     color: var(--rv-muted);
@@ -2108,6 +2144,13 @@ export const calStyles = css`
   }
   .away-dates .field {
     margin: 0;
+  }
+  .field-hint.away-cal {
+    margin-top: 10px;
+  }
+  /* Levar para o ResolvIA: a list for the maintenance and one for the routines */
+  .field.mirror-pick {
+    margin: 6px 0 10px;
   }
   /* Cômodo locked by the equipment (Novo › Tarefa): the rooms of the items stay marked, the others fade */
   .chip-row.locked .pick:disabled {

@@ -58,10 +58,12 @@ async def main():
         check("LEVAR PARA O RESOLVIA" in sec.upper(), "Mais › Integrações has Levar para o ResolvIA")
         # 1.53.3: the points are said only with the placar on (it is on here)
         check("com a próxima data e os pontos. Concluir lá vale como feito aqui (os pontos vão para quem concluiu)" in " ".join(sec.split()), "Levar para o ResolvIA: with the placar on, it says the points go along")
-        await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.casa"); await A.wait_for_timeout(500)
-        await a.locator("#resolvia .switch input[aria-label='Manutenções']").check(); await A.wait_for_timeout(400)
-        await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").check(); await A.wait_for_timeout(400)
-        await wait_for(lambda: stored()["app"].get("mirror") == {"list": "todo.casa", "maint": True, "routine": True}, "settings saved")
+        # 1.59.0: a list for the maintenance and one for the routines (here the same)
+        labels = [t.strip() for t in await a.locator("#resolvia .mirror-pick .flabel").all_inner_texts()]
+        check(labels == ["Manutenções", "Rotina da casa"] and await a.locator("#resolvia .switch input[aria-label='Manutenções']").count() == 0, f"a list for each, no switches ({labels})")
+        await a.locator("#resolvia select[aria-label='Lista: Manutenções']").select_option("todo.casa"); await A.wait_for_timeout(500)
+        await a.locator("#resolvia select[aria-label='Lista: Rotina da casa']").select_option("todo.casa"); await A.wait_for_timeout(500)
+        await wait_for(lambda: stored()["app"].get("mirror") == {"maint_list": "todo.casa", "routine_list": "todo.casa"}, "settings saved")
         want = {"Trocar o filtro de água", "Limpar o ar-condicionado", "Dedetização", "Trocar a bateria do alarme", "Regar as plantas", "Lavar a louça", "Tirar o lixo", "Limpar a caixa de areia"}
         await wait_for(lambda: want <= {i["summary"] for i in mirrored("todo.casa")}, "each maintenance and routine became a task in the list")
         f = item("todo.casa", "Trocar o filtro de água")
@@ -118,11 +120,15 @@ async def main():
         # 6) routines off: their tasks leave the list
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Integrações"); await A.wait_for_timeout(400)
-        await a.locator("#resolvia .switch input[aria-label='Rotina da casa']").uncheck()
+        await a.locator("#resolvia select[aria-label='Lista: Rotina da casa']").select_option("")
         await wait_for(lambda: {i["summary"] for i in mirrored("todo.casa")} == {"Trocar o filtro de água", "Limpar o ar-condicionado", "Trocar a bateria do alarme"}, "routine tasks removed when switched off")
         # 7) another list: they move
-        await a.locator("#resolvia select[aria-label='Lista do ResolvIA']").select_option("todo.trabalho")
+        await a.locator("#resolvia select[aria-label='Lista: Manutenções']").select_option("todo.trabalho")
         await wait_for(lambda: not mirrored("todo.casa") and {i["summary"] for i in mirrored("todo.trabalho")} >= {"Trocar o filtro de água", "Limpar o ar-condicionado"}, "changing the list moves the tasks")
+        # 8) the routines in another list than the maintenance
+        await a.locator("#resolvia select[aria-label='Lista: Rotina da casa']").select_option("todo.casa")
+        await wait_for(lambda: {"Regar as plantas", "Lavar a louça"} <= {i["summary"] for i in mirrored("todo.casa")} and "Trocar o filtro de água" not in {i["summary"] for i in mirrored("todo.casa")} and "Regar as plantas" not in {i["summary"] for i in mirrored("todo.trabalho")}, "the routines in Casa, the maintenance in Trabalho")
+        await a.locator("#resolvia").screenshot(path=f"{SP}/shots/crm-duas-listas.png")
         check(not errs, f"no page errors {errs}")
         await b.close()
 try:
