@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.60.2
+
+- **Mais › Sobre**: a CorrerIA agora é descrita como o chat com todos os apps (pergunte e peça, também pelo WhatsApp).
+
 ## 1.60.1
 
 - **Mais › Sobre**: a **CorrerIA** (o contato no WhatsApp) entra na lista dos apps.
