@@ -1,5 +1,5 @@
 # CronologIA 1.51.0: Mais › Sobre, the last row of the menu. CorrerIA Code (desenvolvimento de softwares) and
-# why the name (a programmer with no time, so the AI runs it all), the six apps of the family, each with a line
+# why the name (a programmer with no time, so the AI runs it all), the seven apps of the family, each with a line
 # and its GitHub (this one marked with its version), and Meu GitHub. From 320 px to the computer, light and dark.
 import os, sys, asyncio, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -8,7 +8,7 @@ from mais_lib import open_more
 from playwright.async_api import async_playwright
 
 GH = "https://github.com/diegozapella63"
-APPS = [("CronologIA", "cronologia-ha"), ("ResolvIA", "resolvia-ha"), ("GerencIA", "gerencia-ha"), ("InventarIA", "inventario-ha"), ("EconomIA", "economia-ha"), ("MemorIA", "memoria-ha")]
+APPS = [("CronologIA", "cronologia-ha"), ("ResolvIA", "resolvia-ha"), ("GerencIA", "gerencia-ha"), ("InventarIA", "inventario-ha"), ("EconomIA", "economia-ha"), ("MemorIA", "memoria-ha"), ("CorrerIA", "correria-ha")]
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 VERSION = re.search(r'^version:\s*"?([\d.]+)', open(f"{ROOT}/cronologia/config.yaml").read(), re.M).group(1)
 st = Stack("crabout")
@@ -31,15 +31,15 @@ async def main():
             check("programador sem tempo" in why and "IA para rodar tudo isso aqui" in why, f"{tag}: why CorrerIA ({why[:60]}…)")
             rows = a.locator(".about-apps .ab-row")
             hrefs = [await rows.nth(i).get_attribute("href") for i in range(await rows.count())]
-            check(hrefs == [f"{GH}/{r}" for _, r in APPS], f"{tag}: the six apps, each to its GitHub ({hrefs})")
+            check(hrefs == [f"{GH}/{r}" for _, r in APPS], f"{tag}: the seven apps, each to its GitHub ({hrefs})")
             names = [" ".join(t.split()) for t in await rows.locator("b").all_inner_texts()]
             check([n.split(" Este app")[0] for n in names] == [n for n, _ in APPS], f"{tag}: the names ({names})")
             lines = await rows.locator(".mb > span").all_inner_texts()
-            check(len(lines) == 6 and all(0 < len(l) <= 55 for l in lines), f"{tag}: one short line each ({lines})")
+            check(len(lines) == 7 and all(0 < len(l) <= 55 for l in lines), f"{tag}: one short line each ({lines})")
             here = a.locator(".ab-row.here")
             check(await here.count() == 1 and f"Este app · v{VERSION}" in await here.inner_text() and await here.get_attribute("href") == f"{GH}/cronologia-ha", f"{tag}: this app marked, with v{VERSION}")
             targets = await a.locator(".about a").evaluate_all("(xs) => xs.map((x) => x.target + ' ' + x.rel)")
-            check(len(targets) == 7 and all(t == "_blank noopener" for t in targets), f"{tag}: links open outside ({targets})")
+            check(len(targets) == 8 and all(t == "_blank noopener" for t in targets), f"{tag}: links open outside ({targets})")
             gh = a.locator("a.ab-github")
             check(await gh.get_attribute("href") == GH and (await gh.inner_text()).strip() == "Meu GitHub", f"{tag}: Meu GitHub")
             over = await A.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")

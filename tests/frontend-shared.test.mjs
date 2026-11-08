@@ -347,8 +347,8 @@ describe("about: Mais › Sobre", async () => {
   const { aboutPage, aboutStyles, PRODUCTS, GITHUB } = await import("../frontend/src/about.js");
   const page = () => render(aboutPage({ app: "CronologIA", version: "1.51.0" })).html;
 
-  it("the six apps of the family, each with its repository, an icon and one short line", () => {
-    assert.deepEqual(PRODUCTS.map(([n]) => n), ["CronologIA", "ResolvIA", "GerencIA", "InventarIA", "EconomIA", "MemorIA"]);
+  it("the seven apps of the family (CorrerIA since 1.60.1), each with its repository, an icon and one short line", () => {
+    assert.deepEqual(PRODUCTS.map(([n]) => n), ["CronologIA", "ResolvIA", "GerencIA", "InventarIA", "EconomIA", "MemorIA", "CorrerIA"]);
     assert.equal(new Set(PRODUCTS.map(([, r]) => r)).size, PRODUCTS.length);
     for (const [name, repo, ic, line] of PRODUCTS) {
       assert.match(repo, /^[a-z]+-ha$/, name);
