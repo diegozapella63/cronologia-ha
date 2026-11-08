@@ -145,7 +145,7 @@ export function parseChatActions(raw, context) {
       out.push({ tipo: "feito", id: r.id, nome: r.nome });
     } else if (tipo.startsWith("tomei") || tipo.startsWith("remedio") || tipo.startsWith("tomado")) {
       const hora = isTime(parts[2]) ? parts[2] : null;
-      const open = (x) => x.estado !== "tomado";
+      const open = (x) => x.estado !== "tomado" && x.estado !== "pulado";
       const m = (hora && findRow(context.remedios, parts[1], (x) => open(x) && x.hora === hora)) || findRow(context.remedios, parts[1], open);
       if (!m || !once(`t|${m.id}`)) continue;
       out.push({ tipo: "tomei", id: m.id, nome: m.nome, hora: m.hora });

@@ -128,6 +128,33 @@ async def main():
         await a.locator(".cell[aria-label^='Ontem']").first.click(); await A.wait_for_timeout(1000)
         y = a.locator(".day-panel .ev-row", has_text="Arrumar a cama")
         check(await y.count() == 1 and await y.locator(".ev-done.skipped").count() == 1, "yesterday: the bed, pulada (the day it was due)")
+        # 1.58.0: Pular a dose of a medicine: out of the count of the day, the yellow mark; tapping it undoes
+        await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(800)
+        meds = a.locator(".panel.meds")
+        ring = lambda: meds.locator(".meds-head").inner_text()
+        before = await ring()
+        dose = meds.locator(".dose:not(.tomado)").first
+        name = (await dose.locator(".dose-tx b").inner_text()).strip()
+        await dose.locator(".dose-main").click(); await A.wait_for_timeout(500)
+        skip = sheet.locator(".btn.kind-skip", has_text="Pular")
+        check(await skip.count() == 1 and await sheet.locator(".btn.kind-act").count() == 1, "the dose's sheet: Tomei and Pular")
+        await A.screenshot(path=f"{data}/dose-sheet.png")
+        await skip.click(); await A.wait_for_timeout(1500)
+        toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
+        check("pulado" in toast and "Desfazer" in toast, f"toast: pulado ({toast!r})")
+        row = meds.locator(".dose.pulado")
+        check(await row.count() == 1 and name in await row.inner_text() and "pulado" in await row.inner_text(), f"the row: pulado ({(await row.inner_text()).strip()[:60] if await row.count() else ''})")
+        col = await row.locator(".dose-done.skipped").evaluate("(el) => getComputedStyle(el).color") if await row.count() else ""
+        check(col == YEL, f"the skip mark in yellow ({col})")
+        import re as _re
+        n0 = [int(x) for x in _re.search(r"(\d+)/(\d+)", before).groups()]
+        n1 = [int(x) for x in _re.search(r"(\d+)/(\d+)", await ring()).groups()]
+        check(n1 == [n0[0], n0[1] - 1], f"out of the count of the day ({n0} -> {n1})")
+        k = next((k for k, v in stored()["checks"].items() if v.get("kind") == "remedio" and v.get("skipped")), None)
+        check(k is not None, "stored as skipped")
+        await meds.screenshot(path=f"{data}/dose-skipped.png")
+        await row.locator(".dose-done").click(); await A.wait_for_timeout(1200)
+        check(await meds.locator(".dose.pulado").count() == 0 and k not in stored()["checks"], "tapping the mark undoes it")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()
 try:

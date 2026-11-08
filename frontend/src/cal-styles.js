@@ -1565,8 +1565,18 @@ export const calStyles = css`
     text-decoration-thickness: 1.5px;
     text-decoration-color: var(--rv-faint);
   }
-  .dose.tomado .dose-time {
+  .dose.tomado .dose-time,
+  .dose.pulado .dose-time {
     color: var(--rv-faint);
+  }
+  /* Pular: a dose skipped on purpose: gray, the yellow skip mark in place of the check */
+  .dose.pulado .dose-tx b {
+    color: var(--rv-muted);
+  }
+  .dose-done.skipped,
+  :host([dark]) .dose-done.skipped {
+    background: var(--rv-warn-soft);
+    color: var(--rv-warn);
   }
   .dose-btn {
     flex: none;

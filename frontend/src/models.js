@@ -245,12 +245,12 @@ export const ModelsMixin = (Base) =>
     }
 
     /** Pular: not done this time; it leaves the list (or goes to its next date), with no points. */
-    async _skip(it) {
+    async _skip(it, kind = "rotina") {
       try {
         const r = await this.api.skipCheck(it.key);
         this._haptic("light");
         const next = r && r.next ? dayLabel(fromYmd(r.next), new Date(this._now), { long: false, cap: false }) : "";
-        this._showToast(`${clip(it.summary, 24)}: pulada${next ? `, volta ${next}` : ""}`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, "rotina").catch(() => {}) });
+        this._showToast(`${clip(it.summary, 24)}: ${kind === "remedio" ? "pulado" : "pulada"}${next ? `, volta ${next}` : ""}`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, kind).catch(() => {}) });
       } catch (err) {
         this._showToast(`Não consegui: ${err.message}`);
       }
@@ -335,7 +335,9 @@ export const ModelsMixin = (Base) =>
     _renderMedsPanel() {
       const meds = this._ix().meds || [];
       if (!meds.length) return nothing;
-      const taken = meds.filter((m) => m.taken).length;
+      // Pular: a dose skipped on purpose leaves the count of the day (it stays on the list, to undo)
+      const live = meds.filter((m) => m.state !== "pulado");
+      const taken = live.filter((m) => m.taken).length;
       const late = meds.filter((m) => m.state === "atrasado");
       const groups = [];
       for (const m of meds) {
@@ -346,12 +348,12 @@ export const ModelsMixin = (Base) =>
         // the bell only when an alert goes to a phone of that person (Avisos on, the medicine with its alert)
         if (m.alert && m.phone) g.phone = true;
       }
-      const all = taken === meds.length;
+      const all = taken === live.length;
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
         <div class="meds-head">
           <span class="meds-ic">${icon("pill")}</span>
-          <div class="meds-tt"><div class="overline">Remédios de hoje</div><b>${all ? "Tudo tomado" : `${taken} de ${meds.length} ${meds.length === 1 ? "tomado" : "tomados"}`}</b></div>
-          ${this._ring(taken / meds.length, late.length ? "bad" : all ? "ok" : "acc", `${taken}/${meds.length}`)}
+          <div class="meds-tt"><div class="overline">Remédios de hoje</div><b>${all ? (taken ? "Tudo tomado" : "Doses puladas") : `${taken} de ${live.length} ${live.length === 1 ? "tomado" : "tomados"}`}</b></div>
+          ${this._ring(live.length ? taken / live.length : 1, late.length ? "bad" : all ? "ok" : "acc", `${taken}/${live.length}`)}
         </div>
         ${late.length
           ? html`<div class="meds-alert" role="alert">${icon("triangle-alert")}<span>${late.length === 1
@@ -360,7 +362,7 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${groups.map(
           (g) => html`${groups.length > 1 || g.who
-              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.taken).length} de ${g.list.length}</small>${g.phone ? html`<span class="who-bell" title="Aviso no celular de ${this._phoneOwner(g.who)}">${icon("bell-ring")}</span>` : nothing}</div>`
+              ? html`<div class="meds-who"><span class="avatar">${(this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(g.who)) ? icon("paw-print") : initial(g.who)}</span><b>${g.who || "Sem pessoa"}</b><small>${g.list.filter((m) => m.state === "tomado").length} de ${g.list.filter((m) => m.state !== "pulado").length}</small>${g.phone ? html`<span class="who-bell" title="Aviso no celular de ${this._phoneOwner(g.who)}">${icon("bell-ring")}</span>` : nothing}</div>`
               : nothing}
             ${repeat(g.list, (m) => m.key, (m) => this._renderDose(m))}`,
         )}
@@ -374,14 +376,14 @@ export const ModelsMixin = (Base) =>
 
     _renderDose(m) {
       const st = m.state;
-      const info = [m.dose ? `Dose: ${m.dose}` : "", st === "tomado" ? `tomou às ${hm(new Date(m.taken.at))}${m.taken.by && foldText(m.taken.by) !== foldText(m.who) ? ` · ${m.taken.by}` : ""}` : st === "atrasado" ? `atrasado ${lateLabel(m.late_min)}` : st === "agora" ? "hora de tomar" : ""].filter(Boolean).join(" · ");
+      const info = [m.dose ? `Dose: ${m.dose}` : "", st === "tomado" ? `tomou às ${hm(new Date(m.taken.at))}${m.taken.by && foldText(m.taken.by) !== foldText(m.who) ? ` · ${m.taken.by}` : ""}` : st === "pulado" ? "pulado" : st === "atrasado" ? `atrasado ${lateLabel(m.late_min)}` : st === "agora" ? "hora de tomar" : ""].filter(Boolean).join(" · ");
       return html`<div class="dose ${st}">
         <button class="dose-main" @click=${() => this._openIndexItem(m)}>
           <span class="dose-time">${m.time || "dia"}</span>
           <span class="dose-tx"><b>${m.summary}</b>${info ? html`<small>${info}</small>` : nothing}</span>
         </button>
-        ${st === "tomado"
-          ? html`<button class="dose-done" @click=${() => this._undoCheck(m, "remedio")} aria-label="Desmarcar ${m.summary}">${icon("check")}</button>`
+        ${st === "tomado" || st === "pulado"
+          ? html`<button class="dose-done ${st === "pulado" ? "skipped" : ""}" @click=${() => this._undoCheck(m, "remedio")} aria-label="Desmarcar ${m.summary}">${icon(st === "pulado" ? "skip-forward" : "check")}</button>`
           : html`<button class="dose-btn ${st}" aria-label="${this._doseVerb(m.who, true)}: ${m.summary}" @click=${() => this._check(m, "remedio")}>${this._doseVerb(m.who)}</button>`}
       </div>`;
     }
@@ -658,16 +660,16 @@ export const ModelsMixin = (Base) =>
       } else if (e.start < addDays(startOfDay(now), 2) || (k.kind === "rotina" && k.after && !e.rrule)) {
         // (a routine that comes back N days after done: also earlier, any day; it then counts from today)
         const it = { key: doneKey || e.key, summary: e.summary };
-        const skip = k.kind === "rotina" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it))}>${icon("skip-forward")}Pular</button>` : nothing;
+        const skip = k.kind === "rotina" || k.kind === "remedio" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it, k.kind))}>${icon("skip-forward")}Pular</button>` : nothing;
         action = chk && chk.skipped
-          ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>Pulada${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
+          ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
           : chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
           : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
             ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
             ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>${skip}`
-            : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${k.kind === "remedio" ? this._doseVerb(k.who, true) : ui.verb}</button>`;
+            : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${k.kind === "remedio" ? this._doseVerb(k.who, true) : ui.verb}</button>${skip}`;
       }
       return html`${facts.map(([ic, t]) => html`<div class="fact">${icon(ic)}<span>${t}</span></div>`)}
         ${k.notes ? html`<div class="fact notes">${icon("file-text")}<span>${k.notes}</span></div>` : nothing}

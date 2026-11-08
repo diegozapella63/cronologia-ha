@@ -386,6 +386,18 @@ describe("Home: Pular", () => {
     assert.equal(store.pointsByKey(keyOf(raw)), null);
     assert.equal(ha.sent.length, 0);
   });
+  it("1.58.0: a dose: skipped, its alert cleared from the phone", async () => {
+    const raw = dose(8, 0);
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    store.markSent(keyOf(raw), "on", ["mobile_app_pixel"]);
+    const out = await home.skip(keyOf(raw), "Diego");
+    assert.deepEqual(out, { skipped: true });
+    const c = store.data.checks[keyOf(raw)];
+    assert.equal(c.skipped, true);
+    assert.equal(c.kind, "remedio");
+    const clear = ha.sent.find((m) => m.service === "mobile_app_pixel");
+    assert.equal(clear && clear.service_data.message, "clear_notification");
+  });
   it("one that comes back after done goes to due + N (never before today); history untouched; Desfazer keeps the description", async () => {
     const raw = cama({ start: "2026-10-31", end: "2026-11-01" });
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
@@ -423,8 +435,8 @@ describe("Home: Pular", () => {
     await assert.rejects(ro.home.skip(keyOf(raw), "Diego"), { code: "not_supported" });
     assert.equal(keyOf(raw) in ro.store.data.checks, false, "not marked skipped");
   });
-  it("only routines can be skipped", async () => {
-    const raw = dose(9, 0);
+  it("only routines and doses can be skipped", async () => {
+    const raw = filtro();
     const { home } = setup({ events: { [CAL]: [raw] } });
     await assert.rejects(home.skip(keyOf(raw), "x"), { code: "not_found" });
     await assert.rejects(home.skip("nada", "x"), { code: "not_found" });

@@ -47,6 +47,13 @@ describe("buildIndex: today's doses", () => {
     assert.equal(by.DPrev.late_min, 0);
     assert.equal(by.Sertralina.taken, null);
   });
+  it("1.58.0: a dose skipped (Pular) is pulado, not late", () => {
+    const skipped = check(at(2026, 11, 2, 9, 5), { kind: "remedio", skipped: true });
+    const ix = index([d9], { checks: { [keyOf(d9)]: skipped } });
+    assert.equal(ix.meds[0].state, "pulado");
+    assert.deepEqual(ix.meds[0].taken, skipped);
+    assert.equal(ix.meds[0].late_min, 0);
+  });
   it("sorted by time, then name", () => {
     const twin = timed("Atenolol", at(2026, 11, 2, 9), 15, MED());
     const ix = index([d20, d9, twin, d8]);

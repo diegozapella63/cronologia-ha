@@ -257,7 +257,7 @@ export class Api {
     return this.conn.subscribeMessage(cb, { type: "cronologia/home/subscribe" });
   }
 
-  /** Pular: a routine not done this time -> {skipped, next?} */
+  /** Pular: a routine or a dose not done this time -> {skipped, next?} */
   skipCheck(key) {
     return this.call("cronologia/check/set", { key, done: true, kind: "rotina", skip: true });
   }

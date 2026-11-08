@@ -262,6 +262,14 @@ export class MockApi {
     this._pushHome();
   }
 
+  /** Pular: a routine or a dose not done this time (in the preview, the routine stays on its day). */
+  async skipCheck(key) {
+    this.score.entries = this.score.entries.filter((e) => e.key !== key);
+    this.checks[key] = { at: new Date().toISOString(), by: "Diego", kind: key.includes("calendar.remedios") ? "remedio" : "rotina", skipped: true };
+    this._pushHome();
+    return { skipped: true };
+  }
+
   async maintDone(cal, uid, who) {
     const ev = this.model.calendars[cal].events.find((e) => e.uid === uid);
     const raw = this.model.occurrences(cal, ev.start - 1, ev.end + 1).find((e) => e.uid === uid);
@@ -437,7 +445,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.57.3", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.58.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

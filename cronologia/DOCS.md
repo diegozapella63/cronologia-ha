@@ -128,7 +128,7 @@ Quando uma rotina não vai ser feita dessa vez, toque nela e escolha **Pular** (
 
 ### Remédios de hoje
 
-Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei** (para quem toma; para outra pessoa ou um pet, **Tomado**, e na tela do remédio **Ana tomou**). A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
+Fica no topo da tela Agora, separado por pessoa: horário, remédio, dose e o botão **Tomei** (para quem toma; para outra pessoa ou um pet, **Tomado**, e na tela do remédio **Ana tomou**). A dose da hora fica destacada; a que passou do tempo fica **vermelha, com o aviso no alto do card e na linha de status**. Tomada, ganha ✓, o horário e quem marcou; tocar no ✓ desfaz. Uma dose que não vai ser tomada pode ser pulada: **Pular**, na tela do remédio. A dose pulada não fica atrasada, não avisa e sai da conta do dia; fica na lista com a marca amarela, e tocar nela desfaz. A marcação vale para todos os aparelhos na hora. Quando **todos** os remédios do dia foram tomados ("Tudo tomado"), o card desce para o fim da tela Agora; se você acabou de marcar o último ali, ele espera você sair da Agora para descer, sem pular debaixo do dedo. Desmarcar uma dose traz o card de volta para o topo.
 
 ### Manutenção da casa
 
@@ -230,7 +230,7 @@ O nome, a data, as notas e os pontos continuam sendo do CronologIA: mude aqui, n
 
 O app cria no Home Assistant:
 
-- `sensor.cronologia_remedios_hoje`: quantas doses faltam hoje, com `tomados`, `total`, `atrasados`, `proximo` e `pendentes`;
+- `sensor.cronologia_remedios_hoje`: quantas doses faltam hoje, com `tomados`, `pulados`, `total`, `atrasados`, `proximo` e `pendentes`;
 - `binary_sensor.cronologia_remedio_atrasado`: ligado quando alguma dose passou do tempo (classe "problema");
 - `sensor.cronologia_manutencoes_vencidas`: quantas manutenções venceram, com `vencidas` e `proximas`;
 - `sensor.cronologia_placar` (com o placar ligado): quem está na frente, com `pontos` de cada um, `premio`, `periodo` e `termina`.

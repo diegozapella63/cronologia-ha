@@ -24,6 +24,7 @@ const ctx = () =>
         { id: "calendar.rem|m1|2026-11-03T08:00", nome: "Sertralina", hora: "08:00", quem: "Andressa", dose: "50 mg", estado: "agora" },
         { id: "calendar.rem|m2|2026-11-03T20:00", nome: "Sertralina", hora: "20:00", quem: "Andressa", estado: "depois" },
         { id: "calendar.rem|m3|2026-11-03T08:00", nome: "DPrev", hora: "08:00", estado: "tomado" },
+        { id: "calendar.rem|m4|2026-11-03T09:00", nome: "Ômega 3", hora: "09:00", estado: "pulado" },
       ],
       contas: [{ nome: "Luz", valor: 230.5, vence: "2026-11-02", atrasada: true }],
       manutencao: [{ nome: "Trocar filtro", vence: "2026-11-01", estado: "vencida" }],
@@ -134,6 +135,7 @@ describe("parseChatActions", () => {
     assert.deepEqual(parseChatActions(["tomei | sertralina | 20:00"], ctx()), [{ tipo: "tomei", id: "calendar.rem|m2|2026-11-03T20:00", nome: "Sertralina", hora: "20:00" }]);
     assert.deepEqual(parseChatActions(["tomei | Sertralina"], ctx())[0].id, "calendar.rem|m1|2026-11-03T08:00");
     assert.deepEqual(parseChatActions(["tomei | DPrev | 08:00"], ctx()), []);
+    assert.deepEqual(parseChatActions(["tomei | Ômega 3"], ctx()), [], "1.58.0: nor a skipped one");
   });
   it("repeated actions once, unknown kinds ignored, at most 10, a text with lines works too", () => {
     assert.equal(parseChatActions(["feito | Arrumar a cama", "feito | arrumar a cama", "apagar | tudo", "x"], ctx()).length, 1);

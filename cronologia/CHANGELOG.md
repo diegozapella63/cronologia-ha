@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.58.0
+
+- **Remédios**: **Pular** na tela do remédio, abaixo de **Tomei**, para uma dose que não vai ser tomada. A dose pulada não fica atrasada, não avisa no celular e sai da conta do dia ("3 de 4 tomados"); fica na lista com a marca amarela, e tocar nela desfaz.
+
 ## 1.57.3
 
 - **Calendário** depois das férias: a rotina que **volta N dias depois de feita** e a manutenção que venceram nos dias fora aparecem no dia da volta (antes sumiam do calendário).

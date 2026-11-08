@@ -386,7 +386,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
     if (k.kind === "remedio") {
       if (start < t0 || start >= t1) continue;
       const taken = checks[key] || null;
-      const state = taken ? "tomado" : now < start ? "depois" : now < start + lateMs ? "agora" : "atrasado";
+      const state = taken ? (taken.skipped ? "pulado" : "tomado") : now < start ? "depois" : now < start + lateMs ? "agora" : "atrasado";
       out.meds.push({ ...base, kind: "remedio", dose: k.dose, who: k.who, alert: k.alert && alertsOn, time: allDay ? "" : hmOf(start), taken, state, late_min: state === "atrasado" || state === "agora" ? Math.floor((now - start) / 60000) : 0, phone: !!reach(k.who) });
     } else if (k.kind === "rotina" && k.after && !raw.rrule) {
       // One event, always the next time: shown from its day on (late ones stay until done), and as done today after "Feito"

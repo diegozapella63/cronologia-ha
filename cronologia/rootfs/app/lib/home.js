@@ -670,10 +670,17 @@ export class Home {
 
   /**
    * Pular: this time of a routine is not done, and leaves the list (no points, nothing in its
-   * history). One that comes back N days after done goes to its next date (skipNext).
+   * history). One that comes back N days after done goes to its next date (skipNext). A dose of a
+   * medicine skipped (not taken on purpose): no alert, not late, out of the count of the day.
    */
   async skip(key, by) {
     const o = this.findOccurrence(key);
+    if (o && o.k.kind === "remedio") {
+      this.store.setCheck(key, { by, kind: "remedio", skipped: true });
+      this.clearAlert(key).catch(() => {});
+      this.changed();
+      return { skipped: true };
+    }
     if (!o || o.k.kind !== "rotina") throw coded("not_found", "Não achei essa rotina");
     if (o.k.after && !o.raw.rrule) return this.afterSkip(o, key, by);
     this.store.setCheck(key, { by, kind: "rotina", skipped: true });
@@ -1141,7 +1148,7 @@ export class Home {
     const sensors = {
       "sensor.cronologia_remedios_hoje": {
         state: pending.length,
-        attributes: { friendly_name: "CronologIA Remédios a tomar hoje", icon: "mdi:pill", unit_of_measurement: "doses", tomados: ix.meds.length - pending.length, total: ix.meds.length, atrasados: late.map(desc), proximo: next ? desc(next) : null, pendentes: pending.map(desc) },
+        attributes: { friendly_name: "CronologIA Remédios a tomar hoje", icon: "mdi:pill", unit_of_measurement: "doses", tomados: ix.meds.filter((m) => m.state === "tomado").length, pulados: ix.meds.filter((m) => m.state === "pulado").length, total: ix.meds.length, atrasados: late.map(desc), proximo: next ? desc(next) : null, pendentes: pending.map(desc) },
       },
       "binary_sensor.cronologia_remedio_atrasado": {
         state: late.length ? "on" : "off",

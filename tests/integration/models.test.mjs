@@ -148,10 +148,21 @@ describe("routines of the calendar", () => {
     assert.equal(ix.checks[r.key].skipped, true);
     assert.equal(ix.score.entries.some((e) => e.key === r.key), false);
   });
-  it("refuses a bad key and Pular of something that is not a routine", async () => {
+  it("refuses a bad key and Pular of something that is not a routine nor a dose", async () => {
     await assert.rejects(c.call("cronologia/check/set", { key: "", done: true }), { code: "invalid_format" });
-    const dose = h.latest.meds[0];
-    await assert.rejects(c.call("cronologia/check/set", { key: dose.key, skip: true }), { code: "not_found" });
+    const m = h.latest.maint[0];
+    await assert.rejects(c.call("cronologia/check/set", { key: m.key, skip: true }), { code: "not_found" });
+  });
+  it("1.58.0: Pular a dose: pulado, out of the doses to take; Desfazer brings it back", async () => {
+    const dose = h.latest.meds.find((m) => !m.taken);
+    const out = await c.call("cronologia/check/set", { key: dose.key, skip: true });
+    assert.deepEqual(out, { skipped: true });
+    let ix = await h.wait((x) => x.meds.find((y) => y.key === dose.key).state === "pulado", "pulado");
+    assert.equal(ix.checks[dose.key].skipped, true);
+    assert.equal(ix.checks[dose.key].kind, "remedio");
+    await c.call("cronologia/check/set", { key: dose.key, done: false, kind: "remedio" });
+    ix = await h.wait((x) => !x.meds.find((y) => y.key === dose.key).taken, "back to take");
+    assert.notEqual(ix.meds.find((y) => y.key === dose.key).state, "pulado");
   });
 });
 
