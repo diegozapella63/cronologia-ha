@@ -2402,7 +2402,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     let body;
     let status = null;
     if (v.config) {
-      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
+      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
       else if (tab === "placar") body = this._renderScoreSettings();
       else if (tab === "dados") body = this._renderDataPanel();
       else if (tab === "aparencia") body = this._renderAppearance();

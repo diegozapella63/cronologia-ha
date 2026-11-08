@@ -854,7 +854,8 @@ export const RewardsMixin = (Base) =>
       const self = !!l.by && !by;
       const n = Math.abs(l.points || 0);
       const pts = plural(n, "ponto", "pontos");
-      const via = l.via === "ResolvIA" ? " no ResolvIA" : l.via === "Automação" ? " por automação" : "";
+      // the CorrerIA's tools say who asked through them (pelo Claude, pelo WhatsApp)
+      const via = l.via === "ResolvIA" ? " no ResolvIA" : l.via === "Automação" ? " por automação" : ["Claude", "Gemini", "WhatsApp", "CorrerIA"].includes(l.via) ? ` pelo ${l.via}` : "";
       const t = l.title || "";
       const kindTag = l.kind === "extra" ? "Avulso: " : l.kind === "demerito" ? "Demérito: " : l.kind === "manutencao" ? "Manutenção: " : l.kind === "tarefa" ? "Tarefa do ResolvIA: " : "";
       switch (l.type) {

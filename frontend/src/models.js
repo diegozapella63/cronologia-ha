@@ -1381,6 +1381,31 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
+    /**
+     * Mais › Configurações › Integrações › CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda
+     * through the CorrerIA app (off by default; apart from Usar IA: the AI that thinks is theirs). On: the last use.
+     */
+    _renderCorreriaPanel() {
+      const on = this._app("correria_on", false) === true;
+      const u = on ? (this._ix().correria || {}).ultimo : null;
+      let used = "";
+      if (u && Number.isFinite(Date.parse(u.em))) {
+        const d = new Date(u.em);
+        const n = dayDiff(new Date(this._now || Date.now()), d);
+        used = `${u.cliente} usou ${n === 0 ? "hoje" : n === 1 ? "ontem" : `em ${dateShort(d, new Date(this._now || Date.now()))}`} às ${hm(d)}.`;
+      }
+      return html`<div class="panel" id="correria">
+        ${this._secHead("zap", "CorrerIA", "O CorrerIA junta os apps da casa no WhatsApp, no Claude e no Gemini.")}
+        <div class="row switch-row integ-switch">
+          <div class="grow"><div class="label">Usar com o CorrerIA</div><div class="hint" style="white-space:normal">${on ? "Ligado: pelo WhatsApp, o Claude e o Gemini leem e mudam a agenda." : "Desligado."}</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ correria_on: e.target.checked ? true : null })} aria-label="Usar com o CorrerIA" /><span class="track"></span></label>
+        </div>
+        ${on
+          ? html`<div class="ai-state ${used ? "ok" : "off"}"><span class="dot"></span><div>${used ? html`<b>${used}</b>` : html`<b>Nenhum uso ainda</b><span>Conecte no app CorrerIA.</span>`}</div></div>`
+          : nothing}
+      </div>`;
+    }
+
     _renderGerenciaPanel() {
       const on = this._app("gerencia_on", false) === true;
       const toggle = html`<div class="row switch-row integ-switch">

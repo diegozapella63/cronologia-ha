@@ -26,8 +26,10 @@ import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
 import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
+import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
+import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
 
-const VERSION = "1.59.0";
+const VERSION = "1.60.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -55,6 +57,8 @@ store.trimVersions(); // Versões anteriores: only the 3 newest (older installs 
 // Mais › Configurações › Integrações: the ResolvIA and the GerencIA are off until turned on there
 const resolviaOn = () => store.data.app.resolvia_on === true;
 const gerenciaOn = () => store.data.app.gerencia_on === true;
+// Mais › Configurações › Integrações › CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda (off by default)
+const correriaOn = () => store.data.app.correria_on === true;
 // dev only (tests written before 1.16.0): start with both on
 if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.resolvia_on == null && store.data.app.gerencia_on == null) store.setApp({ resolvia_on: true, gerencia_on: true });
 const ha = new HAClient(HA_URL, TOKEN, log);
@@ -80,6 +84,9 @@ const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: (
 // Levar para o ResolvIA: maintenance and routines as tasks in a to-do list
 const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed(), enabled: resolviaOn, scored: () => home.placarInfo().ativo });
 home.mirror = mirror;
+// CorrerIA: share/cronologia/correria.json and the key of /api/integracao/ferramentas; the screen shows the last use
+const correria = new Correria({ dataDir: DATA_DIR, shareDir: SHARE_DIR, port: PORT, version: VERSION, log, enabled: correriaOn, onUse: () => home.changed() });
+home.correria = () => correria.state();
 // Modo férias nos calendários que avisam no celular (Google…): the routines out of the days away, back on the day back
 const awayCal = new AwayCal({
   ha,
@@ -207,6 +214,45 @@ function cleanEvent(ev) {
   if (!out.summary || !out.start || !out.end) throw coded("invalid_format", "O evento precisa de título, início e fim");
   return out;
 }
+
+/** Novo › Evento (and the tools of the CorrerIA): a new event; a model one makes the app follow that calendar. */
+async function createEvent(entityId, ev) {
+  if (!isCal(entityId)) throw coded("invalid_format", "Não é um calendário");
+  const event = cleanEvent(ev);
+  const out = await ha.send({ type: "calendar/event/create", entity_id: entityId, event: toHAEvent(event) });
+  if (parseKind(event.description)) home.noteCalendar(entityId);
+  home.refreshCalendar(entityId);
+  return out;
+}
+
+/** Editar and Apagar (one day, this and the next ones, or the whole series of a repeating event). */
+async function changeEvent(type, entityId, uid, ev, { recurrence_id, recurrence_range } = {}) {
+  if (!isCal(entityId)) throw coded("invalid_format", "Não é um calendário");
+  if (typeof uid !== "string" || !uid) throw coded("invalid_format", "Evento sem identificador");
+  const out = { type, entity_id: entityId, uid };
+  if (typeof recurrence_id === "string" && recurrence_id) out.recurrence_id = recurrence_id;
+  if (recurrence_range === "THISANDFUTURE") out.recurrence_range = "THISANDFUTURE";
+  const event = type === "calendar/event/update" ? cleanEvent(ev) : null;
+  if (event) out.event = toHAEvent(event);
+  const res = await ha.send(out);
+  if (event && parseKind(event.description)) home.noteCalendar(entityId);
+  home.refreshCalendar(entityId);
+  return res;
+}
+
+// The tools of the CorrerIA (lib/ferramentas.js): the same functions as the screen's commands
+const ferramentas = new Ferramentas({
+  store,
+  home,
+  gerencia,
+  gerenciaOn,
+  calStates: () => calStates,
+  fetchEvents,
+  createEvent,
+  updateEvent: (cal, uid, ev, opts) => changeEvent("calendar/event/update", cal, uid, ev, opts),
+  deleteEvent: (cal, uid, opts) => changeEvent("calendar/event/delete", cal, uid, null, opts),
+  log,
+});
 
 const pushPrefs = () => {
   for (const w of prefWatchers) w.session.event(w.id, store.prefs);
@@ -475,6 +521,11 @@ class Session {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
         if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
+        // CorrerIA: on writes share/cronologia/correria.json, off removes it (and the key stops working)
+        if (msg.prefs && "correria_on" in msg.prefs) {
+          correria.publish();
+          home.changed();
+        }
         // Modo férias: Agora (and the sensors) change at once; the calendars that alert on the phone, too
         if (msg.prefs && "away" in msg.prefs) {
           home.rebuild();
@@ -531,29 +582,12 @@ class Session {
         return this.result(id);
       }
 
-      case "calendar/event/create": {
-        if (!isCal(msg.entity_id)) return this.error(id, "invalid_format", "Não é um calendário");
-        const event = cleanEvent(msg.event);
-        const out = await ha.send({ type, entity_id: msg.entity_id, event: toHAEvent(event) });
-        if (parseKind(event.description)) home.noteCalendar(msg.entity_id);
-        home.refreshCalendar(msg.entity_id);
-        return this.result(id, out);
-      }
+      case "calendar/event/create":
+        return this.result(id, await createEvent(msg.entity_id, msg.event));
 
       case "calendar/event/update":
-      case "calendar/event/delete": {
-        if (!isCal(msg.entity_id)) return this.error(id, "invalid_format", "Não é um calendário");
-        if (typeof msg.uid !== "string" || !msg.uid) return this.error(id, "invalid_format", "Evento sem identificador");
-        const out = { type, entity_id: msg.entity_id, uid: msg.uid };
-        if (typeof msg.recurrence_id === "string" && msg.recurrence_id) out.recurrence_id = msg.recurrence_id;
-        if (msg.recurrence_range === "THISANDFUTURE") out.recurrence_range = "THISANDFUTURE";
-        const event = type === "calendar/event/update" ? cleanEvent(msg.event) : null;
-        if (event) out.event = toHAEvent(event);
-        const res = await ha.send(out);
-        if (event && parseKind(event.description)) home.noteCalendar(msg.entity_id);
-        home.refreshCalendar(msg.entity_id);
-        return this.result(id, res);
-      }
+      case "calendar/event/delete":
+        return this.result(id, await changeEvent(type, msg.entity_id, msg.uid, msg.event, { recurrence_id: msg.recurrence_id, recurrence_range: msg.recurrence_range }));
 
       default:
         return this.error(id, "unknown_command", `Comando desconhecido: ${type}`);
@@ -754,7 +788,37 @@ async function handleExport(url, res) {
   }
 }
 
+/**
+ * GET /api/integracao/ferramentas -> {versao, instrucoes, ferramentas}; POST {nome, argumentos, pessoa, cliente} ->
+ * {texto} (400 {erro}: what is valid; 404: an unknown tool). The CorrerIA comes through the network of the apps (not
+ * through ingress), with the key of share/cronologia/correria.json; off or a wrong key: 401.
+ */
+async function handleTools(req, res) {
+  if (!correria.authorized(req.headers)) return sendJson(res, 401, { erro: "Chave inválida ou CorrerIA desligado no CronologIA." });
+  if (req.method === "GET") return sendJson(res, 200, { versao: VERSION, instrucoes: INSTRUCOES, ferramentas: listaFerramentas() });
+  if (req.method !== "POST") return sendJson(res, 405, { erro: "Use GET ou POST." });
+  let body;
+  try {
+    body = JSON.parse((await readRaw(req, 256 * 1024)).toString("utf8") || "{}");
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("JSON inválido");
+  } catch (err) {
+    return sendJson(res, err.code === "too_big" ? 413 : 400, { erro: err.code === "too_big" ? "Pedido grande demais." : "JSON inválido." });
+  }
+  const nome = String(body.nome || "");
+  try {
+    const out = await ferramentas.chamar(nome, body.argumentos, { pessoa: body.pessoa, cliente: body.cliente });
+    correria.used(body.cliente, nome);
+    return sendJson(res, 200, { texto: out.texto });
+  } catch (err) {
+    if (err.status === 400 || err.status === 404) return sendJson(res, err.status, { erro: err.message });
+    log.warn(`CorrerIA: ${nome} falhou: ${err.message}`);
+    return sendJson(res, 500, { erro: `Não deu certo: ${err.message}` });
+  }
+}
+
 const server = http.createServer((req, res) => {
+  // the CorrerIA reaches this app through the network of the apps, with its key (not through ingress)
+  if (req.url.split("?")[0] === FERRAMENTAS_ROTA) return handleTools(req, res);
   if (!allowed(req)) {
     res.writeHead(403).end("Forbidden");
     return;
@@ -840,6 +904,9 @@ function publishPresence() {
 }
 publishPresence();
 setInterval(publishPresence, 30 * 1000);
+// CorrerIA: the file of this start (the address may change after a restart); removed while off
+correria.publish();
+setInterval(() => correria.ensure(), 60 * 1000);
 // Modo férias: a routine made during the days away, a restart, the end of the vacation (every 30 min; first once
 // the events have been read)
 setTimeout(() => awayCal.sync(), 90 * 1000);

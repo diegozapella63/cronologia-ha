@@ -70,6 +70,7 @@ export class Home {
     this.sensorsAt = 0;
     this.timer = null;
     this.dirty = null;
+    this.correria = null; // () => {ultimo}: Mais › Configurações › Integrações › CorrerIA (the server sets it)
   }
 
   // ---------------------------------------------------------------- start
@@ -297,7 +298,7 @@ export class Home {
     for (const o of occs) if (o.k.kind === "remedio" && o.start >= t0 - DAY && o.start < t0 + 2 * DAY) this.byHash.set(hashOf(o.key), { key: o.key, summary: o.raw.summary, start: o.raw.start, k: o.k });
     const people = this.peopleInfo(out.names);
     delete out.names;
-    this.index = { ...out, people, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos && this.store.data.app.resolvia_on === true ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, test: this.lastTest };
+    this.index = { ...out, people, caregivers, tracked: [...this.tracked.keys()], gerencia: this.gerencia.state, score: this.scoreIndex(now), todos: this.todos && this.store.data.app.resolvia_on === true ? this.todos.index(now, this.store.data.app.todo_hidden || [], { undated: !!this.store.data.app.todo_undated, exclude: this.mirror ? this.mirror.uids() : null }) : { lists: [], items: [] }, mirror: this.mirror ? this.mirror.status() : null, correria: this.correria ? this.correria() : null, test: this.lastTest };
     const json = JSON.stringify({ ...this.index, at: null, meds: this.index.meds.map((m) => ({ ...m, late_min: Math.floor(m.late_min / 5) })) });
     if (json !== this.indexJson) {
       this.indexJson = json;

@@ -8,6 +8,7 @@ CronologIA é um app (add-on) do Home Assistant: agenda da família com modelos 
 | ResolvIA | `diegozapella63/resolvia-ha` | listas de tarefas (to-do do HA), pontos, repetição |
 | InventarIA | `diegozapella63/inventario-ha` | inventário da casa: cômodos e itens (equipamentos) |
 | GerencIA | `diegozapella63/gerencia-ha` | finanças: contas a pagar |
+| CorrerIA | `diegozapella63/correria-ha` | o contato no WhatsApp e o servidor MCP da casa (Claude e Gemini): usa as ferramentas daqui |
 
 O Home Assistant instala direto do GitHub (`repository.yaml` + `cronologia/config.yaml`), a partir da branch `main`. Por isso o JavaScript gerado da interface fica no repositório: o que está em `main` é o que os usuários recebem.
 
@@ -18,7 +19,7 @@ cronologia/config.yaml            versão e opções do app
 cronologia/CHANGELOG.md           o que mudou em cada versão (o HA mostra ao atualizar)
 cronologia/DOCS.md                manual do usuário (aba Documentação no HA)
 cronologia/rootfs/app/server.js   servidor (Node 22, sem dependências: só módulos do Node)
-cronologia/rootfs/app/lib/        regras: kinds.js (modelos e a tela Agora), home.js, store.js, mirror.js, todos.js...
+cronologia/rootfs/app/lib/        regras: kinds.js (modelos e a tela Agora), home.js, store.js, mirror.js, todos.js, ferramentas.js e correria.js (CorrerIA)...
 cronologia/rootfs/app/www/        interface já gerada (não editar à mão)
 frontend/src/                     código da interface (Lit, sem framework além disso)
 preview/cronologia-preview.html   prévia gerada pelo build, abre sem servidor
@@ -58,6 +59,7 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 - **Eventos**: `resolvia_comodo` (CronologIA define o cômodo/equipamento de uma tarefa: `{entity_id, tarefa, comodo?, equipamento?, origem}`, onde comodo e equipamento são um id ou uma lista de ids), `resolvia_esquecer` (a CronologIA assume tarefas do ResolvIA), `cronologia_pontos` (o ResolvIA soma, desfaz ou troca pontos no placar), `cronologia_feito` e `cronologia_demerito` (automações do HA marcam feito ou tiram pontos). Detalhes em `lib/home.js` e `lib/mirror.js`.
 - **InventarIA**: `share/inventario/integracao.json` (`url`, `ip_url`, `chave`) e as rotas `/api/integracao/comodos` e `/api/integracao/itens` com `Authorization: Bearer <chave>`. Quem lê é o ResolvIA; a CronologIA recebe cômodos e equipamentos pelo arquivo do ResolvIA.
 - **GerencIA**: `share/gerencia/integracao.json` e a API dele (contas a pagar; o Paguei daqui dá baixa lá), em `lib/gerencia.js`.
+- **CorrerIA** (o WhatsApp, e o Claude e o Gemini como servidor MCP): com **Mais › Configurações › Integrações › CorrerIA** ligado (`app.correria_on`; desligado por padrão, sem depender do Usar IA), este app grava `share/cronologia/correria.json` (`app: cronologia`, `nome`, `assunto`, `url`, `ip_url`, `chave`, `versao`, `ferramentas`, `gravado_em`; 600, atômico; a chave própria em `/data/correria.key`, 600) e responde em `GET /api/integracao/ferramentas` → `{versao, instrucoes, ferramentas: [{nome, titulo, descricao, entrada (JSON Schema), grava, apaga}]}` e `POST` `{nome, argumentos, pessoa, cliente}` → `{texto}` (400 `{erro}` dizendo o que vale; 404 ferramenta desconhecida; 401 desligado ou chave errada, comparada em tempo constante). A rota passa por fora do ingress (o resto continua só pelo ingress). As ferramentas ficam em `lib/ferramentas.js` (resumo, agenda, cadastros, placar, criar/editar/apagar compromisso, marcar feito, pular, dar pontos) e usam as mesmas funções da tela (`createEvent`/`changeEvent` do `server.js`, `home.check`, `skip`, `maintDone`, `extraPoints`, `demerit`); os ids são a chave da ocorrência (`calendar.x|uid|recurrence_id ou início`) e, nas contas do GerencIA, `gerencia|<id>`. `pessoa` vira o quem fez (Extrato com `via` = `cliente`); o último uso vai para a tela pelo índice da Agora (`correria.ultimo`). O contrato é o mesmo para todos os apps da família (ver o AGENTS.md do CorrerIA).
 
 ## Como o dono gosta (interface)
 

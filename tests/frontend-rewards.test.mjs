@@ -147,6 +147,12 @@ describe("rewards: the lines of the extrato", () => {
     assert.deepEqual(t({ type: "perdeu", who: "Caio", by: "Ana", kind: "demerito", points: -3 }), ["Ana tirou 3 pontos de Caio", "Demérito: Lavar louça"]);
     assert.deepEqual(t({ type: "perdeu", who: "Caio", via: "Automação", kind: "extra" }), ["Caio perdeu 5 pontos por automação", "Avulso: Lavar louça"]);
   });
+  it("through the CorrerIA (1.60.0): pelo Claude, pelo WhatsApp…", () => {
+    assert.deepEqual(t({ type: "ganhou", who: "Beto", by: "Ana", via: "WhatsApp" }), ["Beto ganhou 5 pontos, marcado por Ana pelo WhatsApp", "Lavar louça"]);
+    assert.deepEqual(t({ type: "perdeu", who: "Beto", by: "Ana", via: "Claude", kind: "demerito", points: -5 }), ["Ana tirou 5 pontos de Beto pelo Claude", "Demérito: Lavar louça"]);
+    assert.deepEqual(t({ type: "ganhou", who: "Ana", by: "Ana", via: "Gemini", kind: "extra" }), ["Ana ganhou 5 pontos pelo Gemini", "Avulso: Lavar louça"]);
+    assert.deepEqual(t({ type: "ganhou", who: "Ana", via: "Outro" }), ["Ana ganhou 5 pontos", "Lavar louça"], "an unknown source says nothing");
+  });
   it("tirou: a demérito cancelled gives back; points cancelled take away", () => {
     assert.deepEqual(t({ type: "tirou", who: "Beto", by: "Ana" }), ["Ana devolveu 5 pontos para Beto", "Demérito cancelado: Lavar louça"]);
     assert.deepEqual(t({ type: "tirou", who: "Beto" }), ["Beto recebeu 5 pontos de volta", "Demérito cancelado: Lavar louça"]);

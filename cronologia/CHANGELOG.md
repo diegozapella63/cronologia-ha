@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.60.0
+
+- **CorrerIA**: novo cartão em **Mais › Configurações › Integrações**. Com **Usar com o CorrerIA** ligado, a agenda pode ser lida e mudada pelo WhatsApp, pelo Claude e pelo Gemini, pelo app CorrerIA: o que tem hoje (compromissos, remédios, rotinas, contas, manutenção e placar), a agenda de um período, criar, mudar e apagar compromissos (também remédio, rotina, conta e manutenção), marcar como feito ou desfazer, pular e dar pontos. Vem desligado e não depende do **Usar IA**.
+- O cartão mostra quando foi usado pela última vez ("Claude usou hoje às 9:41"). Desligar corta o acesso na hora.
+- **Recompensas › Extrato**: o que foi marcado pelo CorrerIA diz por onde ("marcado por Ana pelo WhatsApp").
+
 ## 1.59.0
 
 - **Remédios de hoje**: a dose tomada (ou pulada) sai da lista. Quem já tomou tudo aparece numa linha só ("Luna tomou todos"), e **Mostrar tomados** abre as doses tomadas, para desfazer.

@@ -228,6 +228,25 @@ As **manutenções** e as **rotinas da casa** podem aparecer também como tarefa
 
 O nome, a data, as notas e os pontos continuam sendo do CronologIA: mude aqui, no evento, que a tarefa acompanha. No ResolvIA, a tarefa abre só para ver. **Excluir** a tarefa no ResolvIA tira da lista até a próxima data; escolher **Nenhuma** tira todas, e trocar de lista leva para a nova. Essas tarefas não se repetem no card **Tarefas com prazo** daqui, porque já estão nos cards de manutenção e de rotina. A lista precisa aceitar criar e editar tarefas (uma **Lista de tarefas local** do Home Assistant serve; as do Alexa, não).
 
+## CorrerIA
+
+O [CorrerIA](https://github.com/diegozapella63/correria-ha) junta os apps da casa no **WhatsApp**, no **Claude** e no **Gemini**: dá para perguntar o que tem hoje, criar um compromisso, marcar o remédio como tomado ou a rotina como feita, sem abrir o app.
+
+1. Aqui, ligue **Mais › Configurações › Integrações › CorrerIA › Usar com o CorrerIA** (vem desligado; não depende do **Usar IA**, porque quem pensa é a IA do CorrerIA, o Claude ou o Gemini).
+2. No app **CorrerIA**, conecte o WhatsApp, o Claude ou o Gemini (o passo a passo está na documentação dele). Ele acha o CronologIA sozinho.
+
+Pelo CorrerIA dá para:
+
+- ver o resumo de agora: os compromissos de hoje e de amanhã, os remédios de hoje, as rotinas da casa, as contas perto do vencimento (as do GerencIA também, com a integração ligada), a manutenção, o placar e as férias;
+- buscar na agenda de um período, ver os calendários, o que está cadastrado (remédios, rotinas, contas e manutenções) e o placar com o extrato;
+- criar um compromisso ou lembrete, ou um remédio, uma rotina da casa, uma conta a pagar ou uma manutenção, com as mesmas regras do **Novo** daqui (o calendário padrão, ou um com o nome do modelo);
+- mudar e apagar um evento (num que se repete: só este dia, este e os próximos ou a série toda);
+- marcar um remédio como tomado, uma rotina ou manutenção como feita ou uma conta como paga, desfazer, pular uma rotina ou um remédio e dar pontos avulsos ou um demérito.
+
+As mudanças aparecem na tela na hora, e quem ganha os pontos é quem fez (ou a pessoa que conectou). No **Extrato** do placar, o que veio pelo CorrerIA diz por onde ("pelo WhatsApp", "pelo Claude"). O cartão mostra quando foi usado pela última vez.
+
+Ligado, o CronologIA grava `share/cronologia/correria.json` com o endereço dele e uma chave própria (guardada em `/data/correria.key`); o CorrerIA usa essa chave. Desligar apaga o arquivo e a chave deixa de valer na hora. Nada de fotos, arquivos, backups ou configurações passa pelo CorrerIA.
+
 ## Sensores e automações
 
 O app cria no Home Assistant:
@@ -315,4 +334,4 @@ Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Ou
 
 ## Segurança
 
-Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, cria, atualiza e tira as tarefas das manutenções e rotinas na lista escolhida em **Levar para o ResolvIA** (só quando ligado, e só nessa lista), apaga da lista as tarefas que você trouxer em **Trazer uma lista** (avisando o ResolvIA pelo evento `resolvia_esquecer`), envia os avisos de remédio, publica os três sensores acima e o `sensor.cronologia_ia_hoje` (Uso da IA) e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa.
+Da tela para o Home Assistant, o app só repassa comandos de calendário (`calendar.*`): ler eventos, criar, editar e apagar. Por conta própria, o servidor do app faz só isto: lê as pessoas (`person.*`), os celulares (`notify.mobile_app_*`) e as listas de tarefas (`todo.*`), marca uma tarefa como feita ou não quando você toca em Concluir, cria, atualiza e tira as tarefas das manutenções e rotinas na lista escolhida em **Levar para o ResolvIA** (só quando ligado, e só nessa lista), apaga da lista as tarefas que você trouxer em **Trazer uma lista** (avisando o ResolvIA pelo evento `resolvia_esquecer`), envia os avisos de remédio, publica os três sensores acima e o `sensor.cronologia_ia_hoje` (Uso da IA) e escuta os eventos `mobile_app_notification_action` (botões dos avisos), `cronologia_feito`, `cronologia_demerito` e `cronologia_pontos` (do ResolvIA). Ele não lê nem controla nenhuma outra entidade da casa. Com o **CorrerIA** ligado, o app responde também na rede interna dos apps (`/api/integracao/ferramentas`), só com a chave de `share/cronologia/correria.json`, e faz por ali só o que a tela faz.
