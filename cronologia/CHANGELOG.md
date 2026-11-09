@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.61.2
+
+- **Agora › MemorIA**: com o MemorIA 1.14.0, o cartão diz até quando o trecho vale ("desde 18:00 até 22:00") e mostra as caixas marcadas no Agora do MemorIA. Passado o tempo do trecho, o cartão diz "nada agora" e mostra os próximos.
+
 ## 1.61.1
 
 - Os exemplos da tela usam nomes inventados.

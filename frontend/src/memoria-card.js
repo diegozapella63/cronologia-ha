@@ -17,14 +17,22 @@ const SHOWN_LINES = 6;
 /** Whether a text takes more than the lines shown folded (about 36 letters per line on a phone). */
 export const memoLong = (text) => String(text || "").split("\n").reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 36)), 0) > SHOWN_LINES;
 
-/** When the trecho of now changes: the start of the next one (today or tomorrow), as ms (Infinity: none). */
+/**
+ * When the trecho of now changes: the start of the next one (today or tomorrow) or, sooner, the end of the one of now
+ * (fim: its Fica no Agora in the MemorIA 1.14.0), as ms (Infinity: none).
+ */
 export function memoNextChange(trechos, now = new Date()) {
-  const next = (trechos || []).find((t) => !t.agora);
-  if (!next) return Infinity;
-  const [h, m] = next.inicio.split(":").map(Number);
-  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-  if (next.amanha || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
-  return at.getTime();
+  const when = (hhmm, tomorrow) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    if (tomorrow || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
+    return at.getTime();
+  };
+  const list = trechos || [];
+  const next = list.find((t) => !t.agora);
+  const cur = list.find((t) => t.agora);
+  const times = [...(next ? [when(next.inicio, next.amanha)] : []), ...(cur && cur.fim ? [when(cur.fim, false)] : [])];
+  return times.length ? Math.min(...times) : Infinity;
 }
 
 export const MemoriaMixin = (Base) =>
@@ -63,26 +71,28 @@ export const MemoriaMixin = (Base) =>
     _renderMemoriaPanel() {
       const m = this._memo;
       if (!this._memoriaOn() || !m || !m.ligado || m.erro || !(m.trechos || []).length) return nothing;
-      const [cur, ...next] = m.trechos;
+      // the MemorIA 1.14.0 may have nothing now (the time of the one before is over): then only the next ones
+      const cur = m.trechos[0].agora ? m.trechos[0] : null;
+      const next = cur ? m.trechos.slice(1) : m.trechos;
       // tapping opens the MemorIA (its address in Home Assistant), from the page around this one
       const go = (body, cls, style = "", label = "") =>
         m.painel
           ? html`<a class=${cls} style=${style} href=${m.painel} target="_top" aria-label=${label || nothing}>${body}</a>`
           : html`<div class=${cls} style=${style}>${body}</div>`;
-      const text = cur.texto || "";
+      const text = cur ? cur.texto || "" : "";
       const long = memoLong(text);
       const open = !!this._memoOpen && long;
       const lines = text.split("\n");
-      const since = `desde ${cur.ontem ? "ontem às " : ""}${cur.inicio}`;
-      return html`<div class="panel memo" id="memoria" style=${colorVars(this._memoColor(cur.cor), this._dark)}>
+      const since = cur ? `desde ${cur.ontem ? "ontem às " : ""}${cur.inicio}${cur.fim ? ` até ${cur.fim}` : ""}` : "nada agora";
+      return html`<div class="panel memo" id="memoria" style=${colorVars(this._memoColor((cur || next[0]).cor), this._dark)}>
         <div class="chores-head sec-head"><span class="sec-ic memo-ic">${icon("notebook-pen")}</span><span class="overline">MemorIA</span><small>${since}</small></div>
-        ${go(
+        ${cur ? go(
           html`<b class="memo-block"><span class="dot"></span><span>${cur.bloco}</span>${cur.outros ? html`<small>+${cur.outros}</small>` : nothing}</b>
             ${text.trim()
               ? html`<span class="memo-text ${open ? "open" : ""}">${lines.map((l, i) => html`<span class=${CHECK.test(l) ? (DONE.test(l) ? "ck done" : "ck") : ""}>${l}</span>${i < lines.length - 1 ? "\n" : ""}`)}</span>`
               : html`<span class="memo-text empty">Folha em branco.</span>`}`,
           "memo-now",
-        )}
+        ) : nothing}
         ${long ? html`<button class="text-btn memo-more" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._memoOpen = !open), this.requestUpdate())}>${open ? "Ver menos" : "Ver mais"}</button>` : nothing}
         ${next.length
           ? html`<div class="memo-next">
@@ -114,7 +124,7 @@ export const MemoriaMixin = (Base) =>
         const n = (m.trechos || []).length;
         state = html`<div class="ai-state ${tone}" id="memoria-estado"><span class="dot"></span><div>
           <b>${!m.encontrado ? "MemorIA não encontrado" : m.erro ? "Não consegui falar com o MemorIA" : `Conectado ao MemorIA ${m.versao || ""}`}</b>
-          <span>${!m.encontrado ? "Instale o MemorIA 1.13.0 ou mais novo no mesmo Home Assistant." : m.erro ? m.erro : n ? `Agora: ${m.trechos[0].bloco}, desde ${m.trechos[0].inicio}.` : "Nada com horário agora."}</span>
+          <span>${!m.encontrado ? "Instale o MemorIA 1.13.0 ou mais novo no mesmo Home Assistant." : m.erro ? m.erro : n && m.trechos[0].agora ? `Agora: ${m.trechos[0].bloco}, desde ${m.trechos[0].inicio}.` : n ? `Nada agora. Depois: ${m.trechos[0].bloco} às ${m.trechos[0].inicio}.` : "Nada com horário agora."}</span>
         </div></div>`;
       }
       return html`<div class="panel" id="memoria-config">

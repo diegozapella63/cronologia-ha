@@ -156,4 +156,12 @@ describe("nextChange", () => {
     assert.equal(nextChange([T("07:00", { agora: true }), T("12:00")], at(2026, 11, 8, 9)), at(2026, 11, 8, 12).getTime());
     assert.equal(nextChange([T("07:00", { agora: true })], now), Infinity);
   });
+  it("MemorIA 1.14.0: the end of the one of now (fim) comes first; fim only on the one of now", () => {
+    const now = at(2026, 11, 8, 20, 50);
+    assert.equal(nextChange([T("18:00", { agora: true, fim: "22:00" }), T("07:00", { amanha: true })], now), at(2026, 11, 8, 22).getTime());
+    assert.equal(nextChange([T("18:00", { agora: true, fim: "02:00" })], now), at(2026, 11, 9, 2).getTime(), "past midnight");
+    assert.equal(cleanTrecho(T("18:00", { agora: true, fim: "22:00" })).fim, "22:00");
+    assert.equal("fim" in cleanTrecho(T("18:00", { fim: "22:00" })), false);
+    assert.equal("fim" in cleanTrecho(T("18:00", { agora: true, fim: "amanhã" })), false);
+  });
 });

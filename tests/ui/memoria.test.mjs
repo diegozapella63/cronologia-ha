@@ -146,4 +146,18 @@ describe("helpers", () => {
     assert.equal(memoNextChange([T("07:00", { agora: true })], NOW), Infinity);
     assert.equal(memoNextChange(null, NOW), Infinity);
   });
+  it("MemorIA 1.14.0: until when (fim), and nothing now: only the next ones; it changes when the one of now ends", () => {
+    let view = new App({ memo: OK([T("18:00", { agora: true, fim: "22:00" }), T("07:00", { amanha: true })]) })._renderMemoriaPanel();
+    assert.match(text(view), /desde 18:00 até 22:00/);
+    assert.equal(memoNextChange([T("18:00", { agora: true, fim: "22:00" }), T("07:00", { amanha: true })], NOW), at(2026, 11, 8, 22).getTime(), "the end comes before the next");
+    const none = [T("07:00", { amanha: true, titulo: "Manhã" }), T("12:00", { amanha: true }), T("18:00", { amanha: true })];
+    view = new App({ memo: OK(none) })._renderMemoriaPanel();
+    const t = text(view);
+    assert.match(t, /nada agora/);
+    assert.doesNotMatch(t, /Ler 20 páginas/, "no text of a trecho that isn't now");
+    assert.equal((render(view).html.match(/class="memo-row"/g) || []).length, 3, "the three next ones as rows");
+    assert.equal(memoNextChange(none, NOW), at(2026, 11, 9, 7).getTime());
+    const st = new App({ memo: OK(none) })._renderMemoriaSettings();
+    assert.match(text(st), /Nada agora\. Depois: Diário às 07:00\./);
+  });
 });

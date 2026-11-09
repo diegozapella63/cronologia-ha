@@ -28,20 +28,26 @@ export function cleanTrecho(t) {
     outros: Number.isInteger(t.outros) && t.outros > 0 ? Math.min(t.outros, 99) : 0,
   };
   if (out.tipo === "periodo") out.periodo = str(t.periodo, 30).trim();
+  // MemorIA 1.14.0: until when the one of now holds (its Fica no Agora)
+  if (out.agora && HM.test(t.fim || "")) out.fim = t.fim;
   return out;
 }
 
 /** The MemorIA app in Home Assistant (/app/<slug>): anything else is not a link we open. */
 const cleanPainel = (p) => (typeof p === "string" && /^\/app\/[a-z0-9_]{1,64}$/.test(p) ? p : null);
 
-/** When the trecho of now changes: the start of the next one (today or tomorrow), as ms. */
+/** When the trecho of now changes: the start of the next one (today or tomorrow) or, sooner, the end of the one of now. */
 export function nextChange(trechos, now = new Date()) {
+  const when = (hhmm, tomorrow) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    if (tomorrow || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
+    return at.getTime();
+  };
   const next = trechos.find((t) => !t.agora);
-  if (!next) return Infinity;
-  const [h, m] = next.inicio.split(":").map(Number);
-  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-  if (next.amanha || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
-  return at.getTime();
+  const cur = trechos.find((t) => t.agora);
+  const times = [...(next ? [when(next.inicio, next.amanha)] : []), ...(cur && cur.fim ? [when(cur.fim, false)] : [])];
+  return times.length ? Math.min(...times) : Infinity;
 }
 
 export class Memoria {
