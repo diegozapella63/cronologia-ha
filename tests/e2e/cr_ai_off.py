@@ -56,8 +56,8 @@ async def main():
         check(heads["Férias"] == [], "Férias: its own screen, no heading repeating the title")
         check(heads["Dados"] == ["Exportar", "Backup na pasta share", "Importar", "Importar eventos (.ics)", "Versões anteriores", "Onde ficam os dados"], "Dados in sections")
         check(heads["Recompensas"][:1] == ["Recompensas"] and "Deméritos" in heads["Recompensas"], "Recompensas: settings and deméritos")
-        # 1.60.0: the CorrerIA with the apps of the family, before the AI
-        check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "CorrerIA", "Leitura por IA", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
+        # 1.60.0: the CorrerIA with the apps of the family, before the AI; 1.61.0: the MemorIA before it
+        check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "MemorIA", "CorrerIA", "Leitura por IA", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
         check(await a.locator(".mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
         check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Novo", "Semana"], "Aparência: Tema and Cor do app; Opções: Novo and Semana")
         # AI on by default: Novo shows the import strip
