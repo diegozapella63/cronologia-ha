@@ -18,10 +18,10 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crw-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{SP}/shots", exist_ok=True)
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
 procs = [subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media"), stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT)]
 time.sleep(0.6)
-env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", CRONOLOGIA_DEV_USER_ID="u-diego", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
+env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", CRONOLOGIA_DEV_USER_ID="u-davi", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
 procs.append(subprocess.Popen(["node", f"{REPO}/cronologia/rootfs/app/server.js"], env=env, stdout=open(f"{data}/app.log", "w"), stderr=subprocess.STDOUT))
 time.sleep(1.2)
 def stored(): return json.load(open(f"{data}/cronologia.json"))
@@ -54,7 +54,7 @@ async def main():
         row = a.locator(".panel.chores .chore", has_text="Arrumar a cama")
         await row.wait_for(timeout=8000)
 
-        # off (default): the event sheet has the single Feito; Diego gets the points without a question
+        # off (default): the event sheet has the single Feito; Davi gets the points without a question
         await row.locator(".chore-tx").click(); await A.wait_for_timeout(400)
         check(await sheet.locator(".kind-act").count() == 1 and await sheet.locator(".who-act").count() == 0, "off: the single Feito")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(300)
@@ -76,23 +76,23 @@ async def main():
         check([t.strip() for t in await qw.all_inner_texts()] == ["D", "A"], "card: D and A on the row")
         check("+10" in await row.locator("small").inner_text(), "the points move next to the text")
         await A.screenshot(path=f"{SP}/shots/crw-card.png")
-        await row.locator(".qw-btn[aria-label^='Andressa']").click(); await A.wait_for_timeout(300)
+        await row.locator(".qw-btn[aria-label^='Aurora']").click(); await A.wait_for_timeout(300)
         check(await a.locator(".sheet").count() == 0, "no sheet opens")
-        await wait_for(lambda: mine("Andressa") and not mine("Diego"), "points to Andressa")
+        await wait_for(lambda: mine("Aurora") and not mine("Davi"), "points to Aurora")
         await A.wait_for_timeout(500)
         await a.locator(".panel.chores .chore.done", has_text="Arrumar a cama").locator(".chk").click()
-        await wait_for(lambda: not mine("Andressa"), "unchecking takes them back")
+        await wait_for(lambda: not mine("Aurora"), "unchecking takes them back")
 
         # the event sheet: one button per person in place of Feito
         await A.wait_for_timeout(500)
         await a.locator(".panel.chores .chore", has_text="Arrumar a cama").locator(".chore-tx").click(); await A.wait_for_timeout(400)
         act = sheet.locator(".who-act")
         check(await act.count() == 1 and await sheet.locator(".kind-act").count() == 0, "sheet: Quem fez? buttons instead of Feito")
-        check([t.strip() for t in await act.locator(".who-btn b").all_inner_texts()] == ["Diego", "Andressa"] and "+10" in await act.inner_text(), "Diego and Andressa, with the points")
+        check([t.strip() for t in await act.locator(".who-btn b").all_inner_texts()] == ["Davi", "Aurora"] and "+10" in await act.inner_text(), "Davi and Aurora, with the points")
         await A.screenshot(path=f"{SP}/shots/crw-sheet.png")
-        await act.locator(".who-btn", has_text="Andressa").click()
-        await wait_for(lambda: mine("Andressa"), "one tap: done by Andressa")
-        check(stored()["checks"] and any(c.get("by") == "Andressa" for c in stored()["checks"].values()), "the check says Andressa")
+        await act.locator(".who-btn", has_text="Aurora").click()
+        await wait_for(lambda: mine("Aurora"), "one tap: done by Aurora")
+        check(stored()["checks"] and any(c.get("by") == "Aurora" for c in stored()["checks"].values()), "the check says Aurora")
         check(not errs, f"no page errors {errs}")
         await b.close()
 try:

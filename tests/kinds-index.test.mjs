@@ -14,16 +14,16 @@ const allDay = (summary, day, description, extra = {}) => ({ cal: CAL, raw: { ui
 /** A timed occurrence. */
 const timed = (summary, start, minutes, description, extra = {}) => ({ cal: extra.cal || CAL, raw: { uid: extra.uid || `u-${summary}`, summary, start: isoLocal(start), end: isoLocal(new Date(start.getTime() + minutes * 60000)), description, ...extra.raw } });
 const keyOf = (o) => occurrenceKey(o.cal, o.raw);
-const check = (atDate, extra = {}) => ({ at: atDate.toISOString(), by: "Diego", kind: "", ...extra });
+const check = (atDate, extra = {}) => ({ at: atDate.toISOString(), by: "Davi", kind: "", ...extra });
 const index = (occurrences, opts = {}) => buildIndex({ occurrences, now: NOW, ...opts });
 
-const MED = (who = "Andressa", extra = "") => `#remédio\nDose: 1 comprimido\nQuem toma: ${who}${extra}`;
+const MED = (who = "Aurora", extra = "") => `#remédio\nDose: 1 comprimido\nQuem toma: ${who}${extra}`;
 
 describe("buildIndex: today's doses", () => {
   const d9 = timed("Sertralina", at(2026, 11, 2, 9), 15, MED());
-  const d1345 = timed("Losartana", at(2026, 11, 2, 13, 45), 15, MED("Diego"));
-  const d1330 = timed("Vitamina D", at(2026, 11, 2, 13, 30), 15, MED("Diego"));
-  const d20 = timed("Ômega 3", at(2026, 11, 2, 20), 15, MED("Diego"));
+  const d1345 = timed("Losartana", at(2026, 11, 2, 13, 45), 15, MED("Davi"));
+  const d1330 = timed("Vitamina D", at(2026, 11, 2, 13, 30), 15, MED("Davi"));
+  const d20 = timed("Ômega 3", at(2026, 11, 2, 20), 15, MED("Davi"));
   const d8 = timed("DPrev", at(2026, 11, 2, 8), 15, MED());
   const yesterday = timed("Ontem", at(2026, 11, 1, 20), 15, MED());
   const tomorrow = timed("Amanhã", at(2026, 11, 3, 8), 15, MED());
@@ -77,10 +77,10 @@ describe("buildIndex: today's doses", () => {
   });
   it("fields: dose, who, time, alert (model and settings), whether a phone gets it (no device), key", () => {
     const off = timed("Gardenal", at(2026, 11, 2, 19), 15, MED("Mimi", "\nAviso no celular: não\nMeio comprimido"));
-    const ix = index([d9, off], { reach: (who) => who === "Andressa" });
+    const ix = index([d9, off], { reach: (who) => who === "Aurora" });
     const [a, b] = ix.meds;
     assert.equal(a.dose, "1 comprimido");
-    assert.equal(a.who, "Andressa");
+    assert.equal(a.who, "Aurora");
     assert.equal(a.time, "09:00");
     assert.equal(a.alert, true);
     assert.equal(a.phone, true);
@@ -100,8 +100,8 @@ describe("buildIndex: today's doses", () => {
     assert.equal(ix.meds[0].allDay, true);
   });
   it("names collects who takes / does, once each", () => {
-    const ix = index([d9, d8, d1345, allDay("Lixo", TODAY, "#rotina\nQuem faz: Diego"), allDay("Sem dono", TODAY, "#rotina")]);
-    assert.deepEqual(ix.names.sort(), ["Andressa", "Diego"]);
+    const ix = index([d9, d8, d1345, allDay("Lixo", TODAY, "#rotina\nQuem faz: Davi"), allDay("Sem dono", TODAY, "#rotina")]);
+    assert.deepEqual(ix.names.sort(), ["Aurora", "Davi"]);
   });
   it("plain events (no model) are left out entirely", () => {
     const ix = index([timed("Reunião", at(2026, 11, 2, 15), 60, "Pauta: orçamento")]);
@@ -116,13 +116,13 @@ describe("buildIndex: today's doses", () => {
 });
 
 describe("buildIndex: routines of the calendar (today and yesterday's not done)", () => {
-  const R = (who = "Diego", extra = "") => `#rotina\nQuem faz: ${who}\nPontos: 5${extra}`;
+  const R = (who = "Davi", extra = "") => `#rotina\nQuem faz: ${who}\nPontos: 5${extra}`;
   const today = allDay("Regar as plantas", TODAY, R());
-  const yest = allDay("Lavar a louça", "2026-11-01", R("Andressa"), { uid: "u-louca-1" });
+  const yest = allDay("Lavar a louça", "2026-11-01", R("Aurora"), { uid: "u-louca-1" });
   const yestDone = allDay("Varrer", "2026-11-01", R(), { uid: "u-varrer" });
   const twoDays = allDay("Antiga", "2026-10-31", R());
   const tomorrow = allDay("Amanhã", "2026-11-03", R());
-  const evening = timed("Tirar o lixo", at(2026, 11, 2, 19), 15, R("Andressa", "\nPeríodo: Noite"));
+  const evening = timed("Tirar o lixo", at(2026, 11, 2, 19), 15, R("Aurora", "\nPeríodo: Noite"));
   const morning = timed("Café", at(2026, 11, 2, 7), 15, R());
 
   it("today's and yesterday's open ones; not yesterday's done, nor older, nor tomorrow", () => {
@@ -144,7 +144,7 @@ describe("buildIndex: routines of the calendar (today and yesterday's not done)"
     const t = ix.routines.find((r) => r.summary === "Regar as plantas");
     assert.deepEqual(t.done, c);
     assert.equal(t.points, 5);
-    assert.equal(t.who, "Diego");
+    assert.equal(t.who, "Davi");
     assert.equal(t.time, "");
     const e = ix.routines.find((r) => r.summary === "Tirar o lixo");
     assert.equal(e.time, "19:00");
@@ -174,7 +174,7 @@ describe("buildIndex: routines of the calendar (today and yesterday's not done)"
 });
 
 describe("buildIndex: routines that come back N days after done", () => {
-  const AFTER = (extra = "") => `#rotina\nQuem faz: Diego\nPontos: 10\nVolta: 2 dias depois de feita\nFeito em: 30/10/2026${extra}`;
+  const AFTER = (extra = "") => `#rotina\nQuem faz: Davi\nPontos: 10\nVolta: 2 dias depois de feita\nFeito em: 30/10/2026${extra}`;
   const due = (day, extra) => allDay("Arrumar a cama", day, AFTER(), extra);
 
   it("due today: pending, not late, next = its date, history read", () => {
@@ -344,7 +344,7 @@ describe("buildIndex: bills", () => {
 });
 
 describe("buildIndex: maintenance", () => {
-  const M = (every = "6 meses", warn = 7, extra = "") => `#manutenção\nQuem faz: Diego\nA cada: ${every}\nAvisar: ${warn} dias antes\nPontos: 30\nCômodo: Cozinha\nEquipamento: Filtro${extra}`;
+  const M = (every = "6 meses", warn = 7, extra = "") => `#manutenção\nQuem faz: Davi\nA cada: ${every}\nAvisar: ${warn} dias antes\nPontos: 30\nCômodo: Cozinha\nEquipamento: Filtro${extra}`;
 
   it("one item per event with its cycle, state and fields", () => {
     const o = allDay("Trocar o filtro", "2026-11-07", M());
@@ -415,7 +415,7 @@ describe("buildIndex: catalog (Mais › Rotinas)", () => {
       o.raw.rrule = "FREQ=DAILY";
       occs.push(o);
     }
-    occs.push(allDay("Água das plantas", TODAY, "#rotina\nQuem faz: Diego\nPeríodo: Manhã", { uid: "agua" }));
+    occs.push(allDay("Água das plantas", TODAY, "#rotina\nQuem faz: Davi\nPeríodo: Manhã", { uid: "agua" }));
     occs.push(allDay("Conta de luz", "2026-11-05", "#conta\nValor: 231,40", { uid: "luz" }));
     occs.push(allDay("Filtro", "2027-03-01", "#manutenção\nA cada: 6 meses\nCômodo: Cozinha", { uid: "filtro" }));
     const ix = index(occs);
@@ -489,10 +489,10 @@ describe("buildIndex: checks and metadata", () => {
     assert.equal(m.start, o.raw.start);
   });
   it("the description built by the form is what the index reads", () => {
-    const d = buildDescription({ kind: "rotina", who: "Andressa", points: 7, period: "tarde", after: { n: 3, unit: "dias" }, history: ["2026-10-30"], notes: "" });
+    const d = buildDescription({ kind: "rotina", who: "Aurora", points: 7, period: "tarde", after: { n: 3, unit: "dias" }, history: ["2026-10-30"], notes: "" });
     const ix = index([allDay("Trocar a toalha", "2026-11-02", d)]);
     const r = ix.routines[0];
-    assert.equal(r.who, "Andressa");
+    assert.equal(r.who, "Aurora");
     assert.equal(r.points, 7);
     assert.equal(r.period, "tarde");
     assert.deepEqual(r.after, { n: 3, unit: "dias" });

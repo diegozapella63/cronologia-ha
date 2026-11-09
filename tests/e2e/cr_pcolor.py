@@ -17,9 +17,9 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crc-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{SP}/shots", exist_ok=True)
-# Andressa has a calendar of her own (lilás); Diego doesn't
-json.dump({"app": {"score": {"enabled": True, "participants": ["Andressa", "Diego"], "period": "semana"}},
-           "calendars": {"calendar.pessoal": {"name": "Pessoal (Andressa)", "color": "lilas"}}}, open(f"{data}/cronologia.json", "w"))
+# Aurora has a calendar of her own (lilás); Davi doesn't
+json.dump({"app": {"score": {"enabled": True, "participants": ["Aurora", "Davi"], "period": "semana"}},
+           "calendars": {"calendar.pessoal": {"name": "Pessoal (Aurora)", "color": "lilas"}}}, open(f"{data}/cronologia.json", "w"))
 procs = [subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media"), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)]
 time.sleep(0.6)
 env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
@@ -33,20 +33,20 @@ async def main():
         pg.on("pageerror", lambda e: errs.append(str(e)))
         await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
         a = pg.locator("cronologia-app")
-        check(json.load(open(f"{data}/cronologia.json"))["calendars"]["calendar.pessoal"]["name"] == "Pessoal (Andressa)", "Pessoal is named after Andressa")
+        check(json.load(open(f"{data}/cronologia.json"))["calendars"]["calendar.pessoal"]["name"] == "Pessoal (Aurora)", "Pessoal is named after Aurora")
         await a.locator(".tab", has_text="Recompensas").click(); await pg.wait_for_timeout(800)
         sty = lambda n: a.locator(".duel-side", has_text=n).get_attribute("style")
-        sa, sd = (await sty("Andressa")).lower(), (await sty("Diego")).lower()
-        print("Andressa:", sa[:40], "| Diego:", sd[:40])
-        check("--c:#b99bff" in sa, "Andressa: the lilás of her calendar")
-        check("--c:#b99bff" not in sd, "Diego: another color (no calendar of his)")
+        sa, sd = (await sty("Aurora")).lower(), (await sty("Davi")).lower()
+        print("Aurora:", sa[:40], "| Davi:", sd[:40])
+        check("--c:#b99bff" in sa, "Aurora: the lilás of her calendar")
+        check("--c:#b99bff" not in sd, "Davi: another color (no calendar of his)")
         await pg.screenshot(path=f"{SP}/shots/crc-placar.png")
-        # Diego gets a calendar of his own, laranja: his color follows
-        await pg.evaluate("() => document.querySelector('cronologia-app').api.setCalendarPrefs('calendar.trabalho', { name: 'Trabalho do Diego', color: 'laranja' })")
+        # Davi gets a calendar of his own, laranja: his color follows
+        await pg.evaluate("() => document.querySelector('cronologia-app').api.setCalendarPrefs('calendar.trabalho', { name: 'Trabalho do Davi', color: 'laranja' })")
         await pg.wait_for_timeout(800)
-        sd = (await sty("Diego")).lower()
+        sd = (await sty("Davi")).lower()
         orange = await pg.evaluate("() => null")
-        check("--c:#b99bff" in (await sty("Andressa")).lower() and "--c:#b99bff" not in sd and sd != sa, "Diego follows his calendar's color")
+        check("--c:#b99bff" in (await sty("Aurora")).lower() and "--c:#b99bff" not in sd and sd != sa, "Davi follows his calendar's color")
         check(not errs, f"no page errors {errs}")
         await b.close()
 try:

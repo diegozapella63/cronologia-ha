@@ -74,10 +74,10 @@ async def main():
         if datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).hour >= 1:
             check(await a.locator(".panel.meds.alert .meds-alert", has_text="Mounjaro").count() == 1, "late dose turns the card red with a warning")
             check("atrasado" in await a.locator(".brand-head .status").inner_text(), "status line warns about the late dose")
-        check(await a.locator(".meds-who", has_text="Andressa").count() == 1 and await a.locator(".meds-who", has_text="Mimi").count() == 1, "doses grouped by who takes them (people and pets)")
+        check(await a.locator(".meds-who", has_text="Aurora").count() == 1 and await a.locator(".meds-who", has_text="Mimi").count() == 1, "doses grouped by who takes them (people and pets)")
         check("Sem celular para Mimi" in await a.locator(".panel.meds .panel-foot").inner_text(), "warns when a person has no phone for the alerts")
         # phone alert for the late dose, then "Tomei" pressed on the phone
-        await wait_for(lambda: any("Mounjaro" in n.get("title", "") for n in get("http://127.0.0.1:8123/dev/notifications")), "late alert sent to Andressa's phone (auto-detected)", tries=120)
+        await wait_for(lambda: any("Mounjaro" in n.get("title", "") for n in get("http://127.0.0.1:8123/dev/notifications")), "late alert sent to Aurora's phone (auto-detected)", tries=120)
         n = next(n for n in get("http://127.0.0.1:8123/dev/notifications") if "Mounjaro" in n.get("title", ""))
         check(n["service"] == "mobile_app_galaxy_s23" and [x["title"] for x in n["data"]["actions"]] == ["Tomei", "Adiar 15 min"], f"alert has Tomei / Adiar buttons ({n['service']})")
         for el in (a, bb): await el.evaluate("(e) => { e._medsDoneOpen = true; e.requestUpdate(); }")  # 1.59.0: the taken doses are folded
@@ -105,7 +105,7 @@ async def main():
         # event sheet of a dose
         await a.locator(".dose", has_text="Sertralina").locator(".dose-main").click(); await A.wait_for_timeout(300)
         sheet = await a.locator(".sheet").inner_text()
-        check("Dose: 50 mg" in sheet and "Quem toma: Andressa" in sheet and "Aviso no celular de Andressa" in sheet and "Galaxy" not in sheet and "#remédio" not in sheet, "dose sheet shows dose, who and whose phone (no device, no raw tags)")
+        check("Dose: 50 mg" in sheet and "Quem toma: Aurora" in sheet and "Aviso no celular de Aurora" in sheet and "Galaxy" not in sheet and "#remédio" not in sheet, "dose sheet shows dose, who and whose phone (no device, no raw tags)")
         # edit the series through the template form
         await a.locator(".sheet .btn", has_text="Editar").click(); await A.wait_for_timeout(300)
         check(await a.locator(".sheet .flabel", has_text="Dose").count() == 1, "Editar opens the remédio form")
@@ -120,7 +120,7 @@ async def main():
         await a.locator(".sheet .model", has_text="Remédio").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet .ev-title-input").fill("Amoxicilina 500 mg")
         await a.locator(".sheet input[placeholder^='Ex.: 1 comprimido']").fill("1 cápsula")
-        await a.locator(".sheet .pick.person", has_text="Diego").click()
+        await a.locator(".sheet .pick.person", has_text="Davi").click()
         await a.locator(".sheet .pick", has_text="2x").click()
         await a.locator(".sheet .time-pill input").nth(1).fill("23:30")
         await a.locator(".sheet .seg-grid button", has_text="Dia sim, dia não").click()
@@ -130,7 +130,7 @@ async def main():
         await wait_for(lambda: fake_log(data).count("Amoxicilina") >= 2, "two events created, one per time")
         made = [l for l in fake_log(data).splitlines() if "Amoxicilina" in l and "event created" in l]
         until = (today + datetime.timedelta(days=9)).strftime("%Y%m%d")
-        check(all("FREQ=DAILY;INTERVAL=2;UNTIL=" in l for l in made) and all("#remédio\\nDose: 1 cápsula\\nQuem toma: Diego" in l for l in made), "rrule every other day with an end, and the model in the description")
+        check(all("FREQ=DAILY;INTERVAL=2;UNTIL=" in l for l in made) and all("#remédio\\nDose: 1 cápsula\\nQuem toma: Davi" in l for l in made), "rrule every other day with an end, and the model in the description")
         check(all(re.search(r"UNTIL=\d{8}T\d{6}Z", l) for l in made), f"UNTIL in UTC ({re.search(r'UNTIL=[^\"]*', made[0]).group(0)})")
         # 08:00 and 23:30: in the morning (before 08:00) both doses are still ahead today
         early = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%H:%M") < "08:00"
@@ -146,7 +146,7 @@ async def main():
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet .model", has_text="Rotina").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet .ev-title-input").fill("Varrer a varanda")
-        await a.locator(".sheet .pick.person", has_text="Andressa").click()
+        await a.locator(".sheet .pick.person", has_text="Aurora").click()
         await a.locator(".sheet .seg-grid button", has_text="Dias da semana").click()
         wd = (today.weekday() + 1) % 7  # JS: 0 = Sunday
         other = (wd + 3) % 7
@@ -193,7 +193,7 @@ async def main():
         check(await a.locator(".panel.bills .bill").count() == 5, "card shows 5 bills, late ones first")
         await a.locator(".panel.bills .add-line", has_text="Mais").click(); await A.wait_for_timeout(300)
         bills = await a.locator(".panel.bills").inner_text()
-        check("IPTU" in bills and "Fatura Nubank · Diego" in bills and "Internet" in bills, "Contas a pagar mixes GerencIA bills and #conta events")
+        check("IPTU" in bills and "Fatura Nubank · Davi" in bills and "Internet" in bills, "Contas a pagar mixes GerencIA bills and #conta events")
         await a.locator(".bill", has_text="IPTU").locator(".dose-btn").click()
         await wait_for(lambda: any(l["descricao"] == "IPTU" and l["pago"] for l in gdata(data)["lancamentos"]), "Paguei gives the GerencIA bill a payment")
         async def iptu_paid(): return await bb.locator(".bill.paid", has_text="IPTU").count() + (0 if "IPTU" in await bb.locator(".panel.bills").inner_text() else 1) >= 1
@@ -231,13 +231,13 @@ async def main():
         await open_more(a, "Avisos"); await A.wait_for_timeout(400)
         av = await a.locator("#avisos").inner_text()
         check("Mimi" in av and not re.search(r"Pixel|Galaxy|mobile_app|Automático", av), "the people, no devices (their phones are the ones tied to them in Home Assistant)")
-        await a.locator("#avisos .pick", has_text="Diego").click(); await A.wait_for_timeout(600)
+        await a.locator("#avisos .pick", has_text="Davi").click(); await A.wait_for_timeout(600)
         await a.locator("#avisos .pick", has_text="1 hora").click(); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
-        check(prefs.get("alerts") == {"meds": True, "late": 60, "caregivers": ["Diego"]}, f"alerts saved, Quem cuida by person ({prefs.get('alerts')})")
-        await a.locator("#avisos .person-row", has_text="Mimi").locator("select").select_option("Diego"); await A.wait_for_timeout(600)
+        check(prefs.get("alerts") == {"meds": True, "late": 60, "caregivers": ["Davi"]}, f"alerts saved, Quem cuida by person ({prefs.get('alerts')})")
+        await a.locator("#avisos .person-row", has_text="Mimi").locator("select").select_option("Davi"); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
-        check(prefs.get("people") == {"Mimi": {"care": "Diego"}}, f"the person who gets Mimi's alerts saved ({prefs.get('people')})")
+        check(prefs.get("people") == {"Mimi": {"care": "Davi"}}, f"the person who gets Mimi's alerts saved ({prefs.get('people')})")
         await a.locator("#avisos .person-row", has_text="Mimi").locator(".icon-btn[aria-label^='Testar']").click()
         await wait_for(lambda: any(x.get("data", {}).get("tag") == "cronologia-teste" and x["service"] == "mobile_app_pixel_8" for x in get("http://127.0.0.1:8123/dev/notifications")), "Testar sends a test alert")
         tn = [x for x in get("http://127.0.0.1:8123/dev/notifications") if x.get("data", {}).get("tag") == "cronologia-teste"][-1]
@@ -253,10 +253,10 @@ async def main():
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(400)
         foot = await a.locator(".panel.meds .panel-foot").inner_text()
         check("Sem celular" not in foot, f"no more missing-phone warning ({foot.strip()})")
-        # Mimi is a pet: no phone of hers; the hint names whose phone gets her alert (Diego's)
-        await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { care: 'Diego', pet: true } } })"); await A.wait_for_timeout(1200)
+        # Mimi is a pet: no phone of hers; the hint names whose phone gets her alert (Davi's)
+        await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { care: 'Davi', pet: true } } })"); await A.wait_for_timeout(1200)
         foot = (await a.locator(".panel.meds .panel-foot").inner_text()).strip()
-        check("Mimi" not in foot and "Diego" in foot and "Andressa" in foot, f"a pet: the hint names the owner of the phone, not the pet ({foot})")
+        check("Mimi" not in foot and "Davi" in foot and "Aurora" in foot, f"a pet: the hint names the owner of the phone, not the pet ({foot})")
         # GerencIA turned off: card falls back to calendar bills only
         req = urllib.request.Request("http://127.0.0.1:8191/api/state")
         st = json.loads(urllib.request.urlopen(req).read())

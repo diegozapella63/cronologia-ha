@@ -3146,7 +3146,7 @@ dialog.ss-wrap::backdrop{background:transparent}
       max-width: 880px;
       padding: 30px 40px 56px;
     }
-    /* the app name is on the sidebar: the header keeps "Olá, Diego" */
+    /* the app name is on the sidebar: the header keeps "Olá, Davi" */
     .eyebrow .brand,
     .eyebrow .sep {
       display: none;
@@ -8585,7 +8585,7 @@ ${s}`:e.join(`
         <b>Eventos para automações</b>
         <span class="ha-ev-lead">Para marcar de fora do app, numa automação, numa rotina da Alexa ou numa etiqueta NFC. Funcionam com os sensores ligados ou não.</span>
         <div class="sensor-list">
-          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code>${a?n` (e <code>quem: Diego</code>, se vale pontos)`:u}: a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
+          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code>${a?n` (e <code>quem: Davi</code>, se vale pontos)`:u}: a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
           ${a?n`<div class="sensor-row"><code>cronologia_demerito</code><span>com <code>nome</code> e <code>quem</code>: desconta esse demérito de quem foi.</span></div>`:u}
         </div>
       </div>

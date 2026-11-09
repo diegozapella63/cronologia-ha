@@ -2998,7 +2998,7 @@ export const extraStyles = css`
       max-width: 880px;
       padding: 30px 40px 56px;
     }
-    /* the app name is on the sidebar: the header keeps "Olá, Diego" */
+    /* the app name is on the sidebar: the header keeps "Olá, Davi" */
     .eyebrow .brand,
     .eyebrow .sep {
       display: none;

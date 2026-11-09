@@ -13,7 +13,7 @@ let c;
 before(async () => {
   stack = await startStack({
     // the app's saved data is read at start (as after a restart)
-    data: { app: { accent: "verde", score: { enabled: true, participants: ["Diego"], period: "semana" } }, calendars: { "calendar.casa": { name: "Nossa casa" } }, checks: { "calendar.casa|x|2026-01-01": { at: new Date().toISOString(), by: "Diego" } } },
+    data: { app: { accent: "verde", score: { enabled: true, participants: ["Davi"], period: "semana" } }, calendars: { "calendar.casa": { name: "Nossa casa" } }, checks: { "calendar.casa|x|2026-01-01": { at: new Date().toISOString(), by: "Davi" } } },
     fakeEnv: { FAKE_STT_TEXT: "Dentista quinta às 15 horas" },
   });
   c = await stack.client();

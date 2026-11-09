@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.61.1
+
+- Os exemplos da tela usam nomes inventados.
+
 ## 1.61.0
 
 - **MemorIA no Agora**: um card novo mostra a anotação do MemorIA que vale agora (o bloco, desde quando e o texto, com **Ver mais** quando é comprido) e, embaixo, os dois próximos horários (o de amanhã diz **amanhã**). As caixas marcadas aparecem riscadas. Tocar abre o MemorIA. Cada pessoa vê os blocos dela e os de todos.
@@ -30,7 +34,7 @@
 
 ## 1.59.0
 
-- **Remédios de hoje**: a dose tomada (ou pulada) sai da lista. Quem já tomou tudo aparece numa linha só ("Luna tomou todos"), e **Mostrar tomados** abre as doses tomadas, para desfazer.
+- **Remédios de hoje**: a dose tomada (ou pulada) sai da lista. Quem já tomou tudo aparece numa linha só ("Pipoca tomou todos"), e **Mostrar tomados** abre as doses tomadas, para desfazer.
 - **Férias no Google**: com o modo férias, as rotinas e manutenções que se repetem num calendário do Google (ou outro de fora do Home Assistant) saem dos dias de férias, e o Google Agenda não avisa nada nesses dias. A série para no dia antes das férias e volta igual a partir do dia da volta. A rotina que volta N dias depois de feita e a manutenção que vencem nas férias vão para o dia da volta.
 - Encerrar, cancelar ou mudar as datas das férias traz tudo de volta nos dias certos. O calendário do próprio Home Assistant não muda (ele não avisa no celular).
 - **Mais › Férias** diz quando as rotinas voltam no Google; em **Mais › Rotinas**, a rotina pausada continua numa linha só.
@@ -78,7 +82,7 @@
 ## 1.55.0
 
 - **Mais › Configurações**: a aba **Placar** agora se chama **Recompensas** e tem **Usar recompensas** no alto, como as outras opções (sai o **Desligar o placar** do fim). Desligado, não aparece mais nada, nem os **deméritos**; em Integrações somem o evento `cronologia_demerito` e o sensor do placar. Ligado de novo, volta com as mesmas pessoas.
-- Avisos e testes acham o celular de cada pessoa pelo aparelho do app Home Assistant ligado a ela, mesmo quando o rastreador tem outro nome (como "Celular Diego" sendo `goku_phone`). Um rastreador do roteador não conta como celular.
+- Avisos e testes acham o celular de cada pessoa pelo aparelho do app Home Assistant ligado a ela, mesmo quando o rastreador tem outro nome (como "Celular Davi" sendo `meu_celular`). Um rastreador do roteador não conta como celular.
 - O teste (o sininho em **Avisos** e o **Testar** do lembrete diário) vai para todos os aparelhos da pessoa; se um falhar, os outros recebem. O registro do app diz para onde foi.
 
 ## 1.54.0
@@ -152,7 +156,7 @@
 
 ## 1.48.0
 
-- **Lembrete diário do placar** em **Mais › Configurações › Placar**: uma vez por dia, na hora escolhida (Manhã, Tarde, Noite ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando, por exemplo "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias.".
+- **Lembrete diário do placar** em **Mais › Configurações › Placar**: uma vez por dia, na hora escolhida (Manhã, Tarde, Noite ou um horário exato), o celular de quem participa recebe os pontos e quem está ganhando, por exemplo "Davi na frente por 10 pontos: Davi 135 × Aurora 125. Fecha em 5 dias.".
   - **Testar** manda agora para o seu celular.
   - O lembrete não vai nas férias.
 - Tocar no lembrete ou no aviso de **Placar fechado** abre o app direto na aba **Recompensas**.
@@ -165,11 +169,11 @@
 ## 1.46.3
 
 - **Remédios de hoje**: a dose aparece como "Dose: 1" (antes ficava só o "1").
-- O aviso embaixo do card não chama o pet de dono de celular: diz de quem é o celular que recebe o aviso dele ("Avisa no celular de Andressa, Diego…").
+- O aviso embaixo do card não chama o pet de dono de celular: diz de quem é o celular que recebe o aviso dele ("Avisa no celular de Aurora, Davi…").
 
 ## 1.46.2
 
-- **Remédios**: o botão **Tomei** só aparece para quem toma o remédio. Para outra pessoa ou para um pet, a tela Agora mostra **Tomado** e a tela do remédio mostra **Andressa tomou**.
+- **Remédios**: o botão **Tomei** só aparece para quem toma o remédio. Para outra pessoa ou para um pet, a tela Agora mostra **Tomado** e a tela do remédio mostra **Aurora tomou**.
 
 ## 1.46.1
 
@@ -190,7 +194,7 @@
 
 ## 1.44.1
 
-- **Calendário**: no alto, o balão de Conversar e o microfone voltam para a direita, como nas outras telas, e "CronologIA · Olá, Diego" fica numa linha só.
+- **Calendário**: no alto, o balão de Conversar e o microfone voltam para a direita, como nas outras telas, e "CronologIA · Olá, Davi" fica numa linha só.
 
 ## 1.44.0
 
@@ -312,7 +316,7 @@
 ## 1.29.0
 
 - **Extrato mais curto**: mostra só as 5 mudanças mais novas. **Ver mais (N)** abre o resto e, aberto, **Ver menos** recolhe de volta para o começo do extrato.
-- **Pessoas e pets só em Mais › Avisos**: saiu o **Outra pessoa** do formulário (Quem toma / Quem faz). Em Mais › Avisos há **Adicionar pessoa ou pet**, com o celular que recebe os avisos; um pet ou criança pode usar o celular de quem cuida. Os celulares aparecem com o dono (**Celular de Andressa · Galaxy S23**). Quem foi adicionado ali tem o **×** para tirar, e continua na lista mesmo sem celular.
+- **Pessoas e pets só em Mais › Avisos**: saiu o **Outra pessoa** do formulário (Quem toma / Quem faz). Em Mais › Avisos há **Adicionar pessoa ou pet**, com o celular que recebe os avisos; um pet ou criança pode usar o celular de quem cuida. Os celulares aparecem com o dono (**Celular de Aurora · Galaxy S23**). Quem foi adicionado ali tem o **×** para tirar, e continua na lista mesmo sem celular.
 
 ## 1.28.2
 
@@ -417,7 +421,7 @@
 ## 1.20.1
 
 - **Recompensas › Para pontuar hoje** igual à tela inicial: com **Marcar por outras pessoas** ligado, as iniciais (**D**, **A**) à direita de cada rotina, manutenção e tarefa do ResolvIA; um toque marca por aquela pessoa.
-- O que já foi feito mostra **quem ganhou os pontos**: a inicial na cor da pessoa, ao lado dos pontos (também na tela inicial). Um "Foi Diego" troca a inicial.
+- O que já foi feito mostra **quem ganhou os pontos**: a inicial na cor da pessoa, ao lado dos pontos (também na tela inicial). Um "Foi Davi" troca a inicial.
 
 ## 1.20.0
 
@@ -430,12 +434,12 @@
 
 ## 1.19.1
 
-- **Recompensas**: o card **Pontos desta semana** saiu, porque o **Extrato** já mostra tudo. O **×** para tirar uma pontuação errada passou para o Extrato, e a retirada vira uma linha nova ("Diego tirou 10 pontos de Andressa"), com **Desfazer** no aviso.
+- **Recompensas**: o card **Pontos desta semana** saiu, porque o **Extrato** já mostra tudo. O **×** para tirar uma pontuação errada passou para o Extrato, e a retirada vira uma linha nova ("Davi tirou 10 pontos de Aurora"), com **Desfazer** no aviso.
 - O Extrato subiu: fica acima do Histórico.
 
 ## 1.19.0
 
-- **Recompensas › Extrato**, no fim da aba: tudo que mexe nos pontos, com quem fez. "Andressa ganhou 10 pontos, marcado por Diego", "Diego tirou 5 pontos de Andressa" (demérito), "Diego tirou os próprios 10 pontos" (o ×), "10 pontos passaram de Andressa para Diego", desmarcados, Desfazer, o que veio do ResolvIA ou de automações e o fechamento de cada período. Separado por dia, com **Ver mais**.
+- **Recompensas › Extrato**, no fim da aba: tudo que mexe nos pontos, com quem fez. "Aurora ganhou 10 pontos, marcado por Davi", "Davi tirou 5 pontos de Aurora" (demérito), "Davi tirou os próprios 10 pontos" (o ×), "10 pontos passaram de Aurora para Davi", desmarcados, Desfazer, o que veio do ResolvIA ou de automações e o fechamento de cada período. Separado por dia, com **Ver mais**.
 - O extrato começa com os pontos que já estavam no placar.
 
 ## 1.18.1
@@ -484,7 +488,7 @@
 
 ## 1.16.3
 
-- **Recompensas**: a cor de cada pessoa é a cor da agenda dela (a que tem o nome dela, como "Pessoal (Andressa)"). Quem não tem agenda própria fica com uma cor que ninguém usa.
+- **Recompensas**: a cor de cada pessoa é a cor da agenda dela (a que tem o nome dela, como "Pessoal (Aurora)"). Quem não tem agenda própria fica com uma cor que ninguém usa.
 - **Calendário**: os **remédios** sobem para junto dos eventos, na ordem do horário, porque têm hora para tomar. Rotinas, tarefas, manutenções e contas continuam embaixo.
 
 ## 1.16.2
@@ -493,7 +497,7 @@
 
 ## 1.16.1
 
-- **Criar tarefas nas listas dos outros** (Mais › Integrações › Tarefas do ResolvIA, desligado por padrão): o Novo › Tarefa oferece também as listas que são de outra pessoa da casa, com o aviso "Lista de Andressa". A tarefa continua aparecendo só para quem é a lista, e o próximo Novo › Tarefa volta a começar numa lista sua.
+- **Criar tarefas nas listas dos outros** (Mais › Integrações › Tarefas do ResolvIA, desligado por padrão): o Novo › Tarefa oferece também as listas que são de outra pessoa da casa, com o aviso "Lista de Aurora". A tarefa continua aparecendo só para quem é a lista, e o próximo Novo › Tarefa volta a começar numa lista sua.
 - **Marcar por outras pessoas** (opções do placar, desligado por padrão): as rotinas e manutenções da tela inicial mostram as iniciais de cada pessoa (D, A), e um toque marca como feito por ela, sem abrir outra tela. Na tela do evento, um botão por pessoa no lugar do Feito. Os pontos vão para quem você escolher.
 - **Novo › Evento**: Colar mensagem, Escolher fotos e Digitalizar com IA em quadros tracejados, no padrão do InventarIA e do ResolvIA.
 - **Repete** da rotina, do remédio e da manutenção em duas linhas no máximo, em vez de quatro.
@@ -554,7 +558,7 @@
 ## 1.10.0
 
 - **Levar para o ResolvIA** (Mais › Integrações › Tarefas do ResolvIA): escolha uma lista e ligue **Manutenções** e/ou **Rotina da casa**. Cada uma vira uma tarefa na lista, com a próxima data (a rotina, de hoje em diante, com o horário), os pontos e uma nota "do CronologIA".
-- Concluir a tarefa no ResolvIA vale como **Feito** aqui: a manutenção ganha a próxima data, a rotina fica marcada e quem concluiu ganha os pontos (com **Foi Andressa** e **Desfazer** vindos do ResolvIA 2.9.0). A tarefa volta logo em seguida com a data seguinte. Concluída sem nome (tela do Home Assistant, Alexa), conta como feita, sem pontos.
+- Concluir a tarefa no ResolvIA vale como **Feito** aqui: a manutenção ganha a próxima data, a rotina fica marcada e quem concluiu ganha os pontos (com **Foi Aurora** e **Desfazer** vindos do ResolvIA 2.9.0). A tarefa volta logo em seguida com a data seguinte. Concluída sem nome (tela do Home Assistant, Alexa), conta como feita, sem pontos.
 - Excluir a tarefa na lista vale até a próxima data; desligar a chave tira as tarefas, e trocar de lista leva para a nova. Elas não se repetem no card **Tarefas com prazo**.
 - O arquivo `share/cronologia/integracao.json` lista essas tarefas (pontos e tipo) para o ResolvIA.
 
@@ -572,7 +576,7 @@
 
 ## 1.8.0
 
-- **Prêmio por pessoa**: em Recompensas, **Definir** abre a escolha entre **O mesmo para todos** e **Um para cada pessoa** ("Se Diego vencer: jantar fora · Se Andressa vencer: massagem"). No fechamento, quem venceu ganha o seu; o aviso no celular e o histórico mostram o prêmio de quem venceu. O sensor do placar ganhou o atributo `premios`.
+- **Prêmio por pessoa**: em Recompensas, **Definir** abre a escolha entre **O mesmo para todos** e **Um para cada pessoa** ("Se Davi vencer: jantar fora · Se Aurora vencer: massagem"). No fechamento, quem venceu ganha o seu; o aviso no celular e o histórico mostram o prêmio de quem venceu. O sensor do placar ganhou o atributo `premios`.
 - Os **Ajustes do placar** foram para **Mais › Placar**. Na aba Recompensas fica um atalho no fim.
 - As seis abas do Mais cabem na tela do celular (em telas bem estreitas, a barra rola para o lado).
 
@@ -585,7 +589,7 @@
 
 ## 1.6.0
 
-- **Recompensas com as tarefas do ResolvIA**: as tarefas que valem pontos no ResolvIA 2.8.0 entram no mesmo placar. Concluir no ResolvIA dá os pontos para quem fez (evento `cronologia_pontos`), com **Foi Andressa** para trocar e **Desfazer**. Concluir no card **Tarefas com prazo** daqui também dá os pontos (pergunta **Quem fez?** quando não sabe), e as de hoje aparecem em **Para pontuar hoje**.
+- **Recompensas com as tarefas do ResolvIA**: as tarefas que valem pontos no ResolvIA 2.8.0 entram no mesmo placar. Concluir no ResolvIA dá os pontos para quem fez (evento `cronologia_pontos`), com **Foi Aurora** para trocar e **Desfazer**. Concluir no card **Tarefas com prazo** daqui também dá os pontos (pergunta **Quem fez?** quando não sabe), e as de hoje aparecem em **Para pontuar hoje**.
 - O CronologIA grava `share/cronologia/integracao.json` com o placar (ligado, quem participa, período e qual usuário do Home Assistant é cada pessoa), para o ResolvIA saber para quem vão os pontos.
 
 ## 1.5.2
@@ -618,7 +622,7 @@
 ## 1.2.0
 
 - Nova aba **Recompensas**, no lugar de Agendas (que foi para **Mais › Agendas**): o placar da casa.
-- **Pontos para quem fizer** nos modelos Rotina da casa e Manutenção. **Feito** dá os pontos para quem está usando o app (pelo usuário do Home Assistant); "Foi Andressa" passa os pontos para a outra pessoa, e o app pergunta **Quem fez?** quando não sabe.
+- **Pontos para quem fizer** nos modelos Rotina da casa e Manutenção. **Feito** dá os pontos para quem está usando o app (pelo usuário do Home Assistant); "Foi Aurora" passa os pontos para a outra pessoa, e o app pergunta **Quem fez?** quando não sabe.
 - Placar do período (semanal, quinzenal ou mensal) com quem está na frente, **prêmio do período** (e o do próximo), **histórico** com quem venceu e **Entregue**, e o resultado no celular quando o período fecha.
 - **Pontos avulsos** para o que não está na agenda e a lista **Para pontuar hoje**.
 - A tarefa da rotina que ficou de ontem ainda aparece para marcar.

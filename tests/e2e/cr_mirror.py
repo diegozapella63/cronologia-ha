@@ -18,7 +18,7 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crm-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
 env = dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media")
 fake = subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=env, stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT)
 time.sleep(0.6)
@@ -83,12 +83,12 @@ async def main():
         def esp(): return json.load(open(f"{data}/share/cronologia/integracao.json")).get("espelho", {}).get("todo.casa", {})
         await wait_for(lambda: esp().get(regar["uid"]) == {"pontos": 5, "tipo": "rotina"} and esp().get(f["uid"], {}).get("tipo") == "manutencao", "presence file lists them for the ResolvIA (points, type)", tries=200)
 
-        # 1) concluded in the ResolvIA by Diego
+        # 1) concluded in the ResolvIA by Davi
         todo("todo.casa", "update_item", {"item": regar["uid"], "status": "completed"})
-        fire("cronologia_pontos", {"acao": "somar", "chave": f"espelho|todo.casa|{regar['uid']}", "quem": "Diego", "pontos": 5, "titulo": "Regar as plantas"})
-        await wait_for(lambda: any(e["who"] == "Diego" and e["points"] == 5 and e["title"] == "Regar as plantas" for e in entries()), "done in the ResolvIA by Diego: +5 for Diego")
+        fire("cronologia_pontos", {"acao": "somar", "chave": f"espelho|todo.casa|{regar['uid']}", "quem": "Davi", "pontos": 5, "titulo": "Regar as plantas"})
+        await wait_for(lambda: any(e["who"] == "Davi" and e["points"] == 5 and e["title"] == "Regar as plantas" for e in entries()), "done in the ResolvIA by Davi: +5 for Davi")
         await wait_for(lambda: item("todo.casa", "Regar as plantas")["status"] == "needs_action" and item("todo.casa", "Regar as plantas")["due"] == (today + datetime.timedelta(days=1)).isoformat(), "the task comes back with tomorrow's date")
-        check(any(k.startswith("calendar.casa|") and v.get("by") == "Diego" for k, v in stored()["checks"].items()), "today's routine marked here")
+        check(any(k.startswith("calendar.casa|") and v.get("by") == "Davi" for k, v in stored()["checks"].items()), "today's routine marked here")
 
         # 2) maintenance concluded with no name (Alexa, HA screen): done, no points, next date
         ar = item("todo.casa", "Limpar o ar-condicionado")
@@ -101,10 +101,10 @@ async def main():
         louca = item("todo.casa", "Lavar a louça")
         todo("todo.casa", "update_item", {"item": louca["uid"], "status": "completed"})
         await wait_for(lambda: item("todo.casa", "Lavar a louça")["due"] == (today + datetime.timedelta(days=1)).isoformat(), "processed without a name after a few seconds")
-        fire("cronologia_pontos", {"acao": "somar", "chave": f"espelho|todo.casa|{louca['uid']}", "quem": "Andressa", "pontos": 10, "titulo": "Lavar a louça"})
-        await wait_for(lambda: any(e["who"] == "Andressa" and e["points"] == 10 and e["title"] == "Lavar a louça" for e in entries()), "late name still gets the points")
-        fire("cronologia_pontos", {"acao": "trocar", "chave": f"espelho|todo.casa|{louca['uid']}", "quem": "Diego"})
-        await wait_for(lambda: any(e["who"] == "Diego" and e["title"] == "Lavar a louça" for e in entries()), "Foi Diego moves them")
+        fire("cronologia_pontos", {"acao": "somar", "chave": f"espelho|todo.casa|{louca['uid']}", "quem": "Aurora", "pontos": 10, "titulo": "Lavar a louça"})
+        await wait_for(lambda: any(e["who"] == "Aurora" and e["points"] == 10 and e["title"] == "Lavar a louça" for e in entries()), "late name still gets the points")
+        fire("cronologia_pontos", {"acao": "trocar", "chave": f"espelho|todo.casa|{louca['uid']}", "quem": "Davi"})
+        await wait_for(lambda: any(e["who"] == "Davi" and e["title"] == "Lavar a louça" for e in entries()), "Foi Davi moves them")
 
         # 4) Desfazer in the ResolvIA
         fire("cronologia_pontos", {"acao": "desfazer", "chave": f"espelho|todo.casa|{louca['uid']}"})

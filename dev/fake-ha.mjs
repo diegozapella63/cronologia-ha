@@ -55,12 +55,12 @@ const todos = createTodos();
 const notifications = [];
 const restStates = new Map();
 const PERSONS = [
-  // Diego's phone, as in a real house: the tracker has its own id (goku_phone), the service of the app is named
+  // Davi's phone, as in a real house: the tracker has its own id (meu_celular), the service of the app is named
   // after the device (Pixel 8); and a tracker of the router, which is no phone
-  { entity_id: "person.diego", state: "home", attributes: { friendly_name: "Diego", user_id: "u-diego", device_trackers: ["device_tracker.goku_phone", "device_tracker.note_diego"] } },
-  { entity_id: "person.andressa", state: "home", attributes: { friendly_name: "Andressa", user_id: "u-andressa", device_trackers: ["device_tracker.galaxy_s23"] } },
+  { entity_id: "person.davi", state: "home", attributes: { friendly_name: "Davi", user_id: "u-davi", device_trackers: ["device_tracker.meu_celular", "device_tracker.note_davi"] } },
+  { entity_id: "person.aurora", state: "home", attributes: { friendly_name: "Aurora", user_id: "u-aurora", device_trackers: ["device_tracker.galaxy_s23"] } },
 ];
-const NOTIFY = ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "mobile_app_note_diego", "persistent_notification"];
+const NOTIFY = ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "mobile_app_note_davi", "persistent_notification"];
 
 function fire(eventType, data) {
   for (const c of conns) for (const [sid, sub] of c.subs) if (sub.type === "bus" && (!sub.event_type || sub.event_type === eventType)) c.event(sid, { event_type: eventType, data, origin: "LOCAL", time_fired: new Date().toISOString() });
@@ -220,14 +220,14 @@ class Conn {
         case "config/entity_registry/list_for_display":
           return ok({
             entity_categories: {},
-            entities: [...model.registry(), { ei: "light.sala", pl: "hue" }, { ei: "device_tracker.goku_phone", pl: "mobile_app", di: "dev_phone_diego" }, { ei: "device_tracker.note_diego", pl: "nmap_tracker", di: "dev_note_diego" }],
+            entities: [...model.registry(), { ei: "light.sala", pl: "hue" }, { ei: "device_tracker.meu_celular", pl: "mobile_app", di: "dev_phone_davi" }, { ei: "device_tracker.note_davi", pl: "nmap_tracker", di: "dev_note_davi" }],
           });
         case "config/device_registry/list":
           return ok([
             ...model.devices,
-            { id: "dev_phone_diego", name: "Pixel 8", name_by_user: "Celular Diego", identifiers: [["mobile_app", "a1b2c3"]] },
+            { id: "dev_phone_davi", name: "Pixel 8", name_by_user: "Celular Davi", identifiers: [["mobile_app", "a1b2c3"]] },
             // the router's tracker: no phone even with a mobile app named like it
-            { id: "dev_note_diego", name: "note_diego", name_by_user: null, identifiers: [["mac", "b0:25:aa:4e:5a:eb"]] },
+            { id: "dev_note_davi", name: "note_davi", name_by_user: null, identifiers: [["mac", "02:00:00:00:00:01"]] },
           ]);
         case "subscribe_events":
           this.subs.set(msg.id, !msg.event_type || msg.event_type === "state_changed" ? { type: "state" } : { type: "bus", event_type: msg.event_type });

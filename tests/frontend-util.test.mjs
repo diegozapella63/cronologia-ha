@@ -114,7 +114,7 @@ describe("util: dates", () => {
     assert.equal(U.durationLabel(90 * min), "1 h 30 min");
   });
   it("greeting by the hour, with the first name", () => {
-    assert.equal(U.greeting("Diego Zapella", at(2026, 11, 2, 5)), "Bom dia, Diego");
+    assert.equal(U.greeting("Davi Souza", at(2026, 11, 2, 5)), "Bom dia, Davi");
     assert.equal(U.greeting("", at(2026, 11, 2, 12)), "Boa tarde");
     assert.equal(U.greeting("Ana", at(2026, 11, 2, 18)), "Boa noite, Ana");
     assert.equal(U.greeting(null, at(2026, 11, 2, 3)), "Boa noite");

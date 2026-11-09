@@ -51,7 +51,7 @@ function dueLabel(due, now, paid) {
 
 /**
  * The button of a dose: "Tomei" only for whoever takes it (me, on their own app); for someone else or a pet,
- * "Tomado", and in the sheet (long) "Andressa tomou".
+ * "Tomado", and in the sheet (long) "Aurora tomou".
  */
 export function doseVerb(who, me, long = false) {
   if (who && me && foldText(who) === foldText(me)) return "Tomei";
@@ -82,7 +82,7 @@ export function afterSub(r, now) {
   return [when, r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
 }
 
-/** Second line of a routine in today's lists ("de manhã · Diego", "ficou de ontem", "feito por Ana"). */
+/** Second line of a routine in today's lists ("de manhã · Davi", "ficou de ontem", "feito por Ana"). */
 export function routineSub(r, now) {
   if (r.after) return afterSub(r, now);
   const per = periodInfo(r.period);

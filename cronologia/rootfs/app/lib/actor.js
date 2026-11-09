@@ -8,7 +8,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 const ctx = new AsyncLocalStorage();
 
-/** {by: "Diego", via: "ResolvIA" | "Automação" | ""} of the current action, or {}. */
+/** {by: "Davi", via: "ResolvIA" | "Automação" | ""} of the current action, or {}. */
 export const actor = () => ctx.getStore() || {};
 
 /** Runs fn as that actor. */

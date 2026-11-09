@@ -34,7 +34,7 @@ describe("models: KIND_UI", () => {
 describe("models: afterSub (a routine that comes back N days after done)", () => {
   const r = (extra = {}) => ({ after: { n: 2, unit: "dias" }, ...extra });
   it("to do today: the time or the part of the day, who, when it comes back", () => {
-    assert.equal(afterSub(r({ who: "Diego" }), NOW), "hoje · Diego · volta 2 dias depois");
+    assert.equal(afterSub(r({ who: "Davi" }), NOW), "hoje · Davi · volta 2 dias depois");
     assert.equal(afterSub(r({ time: "19:30" }), NOW), "19:30 · volta 2 dias depois");
     assert.equal(afterSub(r({ period: "noite" }), NOW), "à noite · volta 2 dias depois");
     assert.equal(afterSub(r({ after: { n: 1, unit: "semanas" } }), NOW), "hoje · volta 1 semana depois");
@@ -44,7 +44,7 @@ describe("models: afterSub (a routine that comes back N days after done)", () =>
     assert.equal(afterSub(r({ late: 3 }), NOW), "atrasada há 3 dias · volta 2 dias depois");
   });
   it("done: by whom (or skipped) and the next day", () => {
-    assert.equal(afterSub(r({ done: { by: "Andressa" }, next: "2026-11-04" }), NOW), "feito por Andressa · volta quarta, 4 de nov");
+    assert.equal(afterSub(r({ done: { by: "Aurora" }, next: "2026-11-04" }), NOW), "feito por Aurora · volta quarta, 4 de nov");
     assert.equal(afterSub(r({ done: { by: "" }, next: "2026-11-03" }), NOW), "feito por alguém · volta amanhã");
     assert.equal(afterSub(r({ done: { skipped: true } }), NOW), "pulada · volta em 2 dias");
   });
@@ -52,18 +52,18 @@ describe("models: afterSub (a routine that comes back N days after done)", () =>
 
 describe("models: routineSub (today's lists)", () => {
   it("who and when; nothing known says hoje", () => {
-    assert.equal(routineSub({ who: "Diego", time: "08:00" }, NOW), "08:00 · Diego");
+    assert.equal(routineSub({ who: "Davi", time: "08:00" }, NOW), "08:00 · Davi");
     assert.equal(routineSub({ period: "manha", who: "Ana" }, NOW), "de manhã · Ana");
     assert.equal(routineSub({}, NOW), "hoje");
   });
   it("left from yesterday; done (by someone or skipped) hides the part of the day", () => {
     assert.equal(routineSub({ yesterday: true, who: "Ana" }, NOW), "ficou de ontem · Ana");
-    assert.equal(routineSub({ period: "tarde", done: { by: "Diego" } }, NOW), "feito por Diego");
+    assert.equal(routineSub({ period: "tarde", done: { by: "Davi" } }, NOW), "feito por Davi");
     assert.equal(routineSub({ done: {} }, NOW), "feito");
     assert.equal(routineSub({ done: { skipped: true }, who: "Ana" }, NOW), "pulada");
   });
   it("one that comes back after done uses afterSub", () => {
-    assert.equal(routineSub({ after: { n: 3, unit: "dias" }, who: "Diego" }, NOW), "hoje · Diego · volta 3 dias depois");
+    assert.equal(routineSub({ after: { n: 3, unit: "dias" }, who: "Davi" }, NOW), "hoje · Davi · volta 3 dias depois");
   });
 });
 

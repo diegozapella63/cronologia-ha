@@ -30,7 +30,7 @@ import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
 import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
 
-const VERSION = "1.61.0";
+const VERSION = "1.61.1";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";

@@ -17,15 +17,15 @@ p0, p1 = monday - datetime.timedelta(days=7), monday
 t0 = monday - datetime.timedelta(days=14)
 noon = lambda d: f"{d.isoformat()}T12:00:00-03:00"
 data = {
-    "app": {"week_start": 1, "score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}},
+    "app": {"week_start": 1, "score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}},
     "score": {
         "current": {"key": p0.isoformat(), "start": p0.isoformat(), "end": p1.isoformat()},
         "entries": [
-            {"key": "extra|carro", "at": noon(p0 + datetime.timedelta(days=1)), "who": "Diego", "points": 30, "title": "Lavou o carro", "kind": "extra"},
-            {"key": "extra|faxina", "at": noon(p0 + datetime.timedelta(days=2)), "who": "Andressa", "points": 10, "title": "Faxina", "kind": "extra"},
+            {"key": "extra|carro", "at": noon(p0 + datetime.timedelta(days=1)), "who": "Davi", "points": 30, "title": "Lavou o carro", "kind": "extra"},
+            {"key": "extra|faxina", "at": noon(p0 + datetime.timedelta(days=2)), "who": "Aurora", "points": 10, "title": "Faxina", "kind": "extra"},
         ],
-        "prizes": {p0.isoformat(): {"Diego": "Jantar fora", "Andressa": "Massagem"}},
-        "history": [{"key": t0.isoformat(), "start": t0.isoformat(), "end": p0.isoformat(), "totals": {"Diego": 20, "Andressa": 20}, "winner": None, "reward": "Cinema", "delivered": False}],
+        "prizes": {p0.isoformat(): {"Davi": "Jantar fora", "Aurora": "Massagem"}},
+        "history": [{"key": t0.isoformat(), "start": t0.isoformat(), "end": p0.isoformat(), "totals": {"Davi": 20, "Aurora": 20}, "winner": None, "reward": "Cinema", "delivered": False}],
     },
 }
 st = Stack("crpz", data=data)
@@ -46,23 +46,23 @@ async def main():
         # the week that ended closed when the app started: the result on top
         card = a.locator(".result-card")
         # until the server closes it (its first round, a few seconds after starting), the card shows the tie before it
-        async def closed(): return "Diego venceu" in await card.inner_text()
+        async def closed(): return "Davi venceu" in await card.inner_text()
         await wait_for(closed, "the week that ended is closed", tries=60)
         ct = " ".join((await card.inner_text()).split())
-        check(f"semana passada · {LAST}" in ct.lower() and "Diego venceu 30 × 10" in ct and "Prêmio: Jantar fora" in ct, f"result card: who won, the score and the winner's own prize ({ct})")
+        check(f"semana passada · {LAST}" in ct.lower() and "Davi venceu 30 × 10" in ct and "Prêmio: Jantar fora" in ct, f"result card: who won, the score and the winner's own prize ({ct})")
         check(await card.locator(".dose-btn", has_text="Entregue").count() == 1, "with Entregue")
         await card.screenshot(path=f"{SP}/shots/crpz-result.png")
         await wait_for(lambda: len([n for n in st.notifications() if n.get("title") == "🏆 Placar fechado"]) == 2, "the result sent to the phones")
         told = [n for n in st.notifications() if n.get("title") == "🏆 Placar fechado"]
-        check(sorted(n["service"] for n in told) == ["mobile_app_galaxy_s23", "mobile_app_pixel_8"] and told[0]["message"] == "Diego venceu: 30 × 10. Prêmio: Jantar fora.", f"the players' phones told ({[n['message'] for n in told]})")
+        check(sorted(n["service"] for n in told) == ["mobile_app_galaxy_s23", "mobile_app_pixel_8"] and told[0]["message"] == "Davi venceu: 30 × 10. Prêmio: Jantar fora.", f"the players' phones told ({[n['message'] for n in told]})")
         hist = a.locator(".panel.history .hist-row")
         check(await hist.count() == 2, "Histórico: the new period on top of the old one")
         h0 = " ".join((await hist.nth(0).inner_text()).split())
         h1 = " ".join((await hist.nth(1).inner_text()).split())
-        check(h0 == f"D Diego venceu · 30 × 10 {LAST} · Jantar fora" and h1.startswith("= Empate · 20 × 20"), f"each with who won and the score ({h0} | {h1})")
+        check(h0 == f"D Davi venceu · 30 × 10 {LAST} · Jantar fora" and h1.startswith("= Empate · 20 × 20"), f"each with who won and the score ({h0} | {h1})")
         gift = hist.nth(0).locator(".hist-gift")
         check(await gift.get_attribute("aria-pressed") == "false" and await gift.get_attribute("aria-label") == "Marcar prêmio como entregue" and await hist.nth(1).locator(".hist-gift").count() == 0, "a gift to mark it given (none on a tie)")
-        check("Diego 1" in await a.locator(".panel.history .panel-head, .panel.history").first.inner_text(), "the wins counted in the head")
+        check("Davi 1" in await a.locator(".panel.history .panel-head, .panel.history").first.inner_text(), "the wins counted in the head")
 
         # Entregue: the card leaves, the Histórico shows it given; tapping the gift again undoes it
         await card.locator(".dose-btn", has_text="Entregue").click()
@@ -78,7 +78,7 @@ async def main():
         # a closed period's Extrato, only to read
         await hist.nth(0).locator(".hist-open").click(); await A.wait_for_timeout(900)
         sx = await sheet.inner_text()
-        check(f"Extrato · {LAST}" in sx and "Diego venceu" in sx and "Diego 30 × Andressa 10 · Jantar fora" in sx, f"its result ({sx[:80]!r})")
+        check(f"Extrato · {LAST}" in sx and "Davi venceu" in sx and "Davi 30 × Aurora 10 · Jantar fora" in sx, f"its result ({sx[:80]!r})")
         check("Lavou o carro" in sx and "Faxina" in sx and await sheet.locator(".ext-row .icon-btn").count() == 0, "its lines, without the × (closed)")
         await A.screenshot(path=f"{SP}/shots/crpz-period.png")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(300)
@@ -100,13 +100,13 @@ async def main():
         await sheet.locator(".seg button", has_text="Um para cada pessoa").click(); await A.wait_for_timeout(200)
         fields = sheet.locator("input[type=text]")
         labels = [l.strip() for l in await sheet.locator(".flabel").all_inner_texts()]
-        check(labels == ["Se Diego vencer", "Se Andressa vencer"] and [await fields.nth(i).input_value() for i in range(2)] == ["Pizza", "Pizza"], f"one field per person, starting from the shared one ({labels})")
+        check(labels == ["Se Davi vencer", "Se Aurora vencer"] and [await fields.nth(i).input_value() for i in range(2)] == ["Pizza", "Pizza"], f"one field per person, starting from the shared one ({labels})")
         check("Empate: ninguém leva." in await sheet.inner_text(), "it says a tie gives nothing")
         await fields.nth(1).fill("Cinema")
         await sheet.locator(".btn.primary", has_text="Salvar").click()
-        await wait_for(lambda: st.stored()["score"]["prizes"].get(cur) == {"Diego": "Pizza", "Andressa": "Cinema"} and cur not in st.stored()["score"]["rewards"], "one for each saved (the shared one gone)")
+        await wait_for(lambda: st.stored()["score"]["prizes"].get(cur) == {"Davi": "Pizza", "Aurora": "Cinema"} and cur not in st.stored()["score"]["rewards"], "one for each saved (the shared one gone)")
         pp = " ".join((await prize.inner_text()).split())
-        check("prêmios desta semana" in pp.lower() and "Se Diego vencer Pizza" in pp and "Se Andressa vencer Cinema" in pp and "Prêmios salvos" in await toast(), f"the card shows each person's ({pp[:90]})")
+        check("prêmios desta semana" in pp.lower() and "Se Davi vencer Pizza" in pp and "Se Aurora vencer Cinema" in pp and "Prêmios salvos" in await toast(), f"the card shows each person's ({pp[:90]})")
         await A.screenshot(path=f"{SP}/shots/crpz-each.png")
         await prize.locator(".prize-head .text-btn", has_text="Mudar").click(); await A.wait_for_timeout(400)
         check(await sheet.locator(".seg button.on").inner_text() == "Um para cada pessoa", "Mudar opens on one for each")
@@ -120,7 +120,7 @@ async def main():
         await sheet.locator(".btn.primary", has_text="Salvar").click()
         await wait_for(lambda: cur not in st.stored()["score"]["rewards"], "an empty prize removes it")
         check("Prêmio tirado" in await toast() and "Ainda sem prêmio" in await prize.inner_text(), "Prêmio tirado; the card is empty again")
-        # the next week's, only for Diego
+        # the next week's, only for Davi
         check("Prêmio da próxima semana ainda livre" in await prize.locator(".prize-next").inner_text(), "the next week's is free")
         await prize.locator(".prize-next .text-btn", has_text="Definir").click(); await A.wait_for_timeout(400)
         check(await sheet.locator("h3").first.inner_text() == "Prêmio da próxima semana", "the sheet of the next week")
@@ -128,9 +128,9 @@ async def main():
         await sheet.locator("input[type=text]").nth(0).fill("Churrasco")
         await sheet.locator(".btn.primary", has_text="Salvar").click()
         nxt = (monday + datetime.timedelta(days=7)).isoformat()
-        await wait_for(lambda: st.stored()["score"]["prizes"].get(nxt) == {"Diego": "Churrasco"}, "only Diego's saved")
+        await wait_for(lambda: st.stored()["score"]["prizes"].get(nxt) == {"Davi": "Churrasco"}, "only Davi's saved")
         nx = " ".join((await prize.locator(".prize-next > span").inner_text()).split())
-        check(nx == "Próxima semana: Diego: Churrasco · Andressa: livre", f"the next one: Diego's and Andressa's free ({nx})")
+        check(nx == "Próxima semana: Davi: Churrasco · Aurora: livre", f"the next one: Davi's and Aurora's free ({nx})")
 
         # Mais › Placar: the period length; Opções: the week start
         async def placar():

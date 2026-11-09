@@ -5,7 +5,7 @@
 //
 //   #remédio
 //   Dose: 1 comprimido
-//   Quem toma: Andressa
+//   Quem toma: Aurora
 //   Tomar em jejum            <- anything after the fields is a note
 //
 // Shared by the server (lib/) and the UI (bundled from frontend/src).

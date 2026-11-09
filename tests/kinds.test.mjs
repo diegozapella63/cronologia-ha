@@ -247,8 +247,8 @@ describe("parseKind", () => {
     assert.equal(parseKind("#remédio da manhã").kind, "remedio");
   });
   it("remédio: dose, who, alert and notes", () => {
-    const k = parseKind("#remédio\nDose: 1 comprimido\nQuem toma: Andressa\nTomar em jejum\nDepois do café");
-    assert.deepEqual(k, { kind: "remedio", notes: "Tomar em jejum\nDepois do café", dose: "1 comprimido", who: "Andressa", alert: true });
+    const k = parseKind("#remédio\nDose: 1 comprimido\nQuem toma: Aurora\nTomar em jejum\nDepois do café");
+    assert.deepEqual(k, { kind: "remedio", notes: "Tomar em jejum\nDepois do café", dose: "1 comprimido", who: "Aurora", alert: true });
   });
   it("remédio: the alert is on unless it says não / desligado / off", () => {
     assert.equal(parseKind("#remédio\nAviso no celular: não").alert, false);
@@ -266,15 +266,15 @@ describe("parseKind", () => {
     assert.equal(k.dose, "1/4");
   });
   it("stops at the first line that is not a known field: the rest is the note", () => {
-    const k = parseKind("#remédio\nDose: 1\nObservação: tomar com água\nQuem toma: Diego");
+    const k = parseKind("#remédio\nDose: 1\nObservação: tomar com água\nQuem toma: Davi");
     assert.equal(k.dose, "1");
     assert.equal(k.who, "", "a field after an unknown line belongs to the note");
-    assert.equal(k.notes, "Observação: tomar com água\nQuem toma: Diego");
+    assert.equal(k.notes, "Observação: tomar com água\nQuem toma: Davi");
   });
   it("a blank line also ends the fields", () => {
-    const k = parseKind("#remédio\nDose: 1\n\nQuem toma: Diego");
+    const k = parseKind("#remédio\nDose: 1\n\nQuem toma: Davi");
     assert.equal(k.who, "");
-    assert.equal(k.notes, "Quem toma: Diego");
+    assert.equal(k.notes, "Quem toma: Davi");
   });
   it("a link in the note is not taken for a field", () => {
     const k = parseKind("#conta\nValor: 10,00\nhttps://banco.example/boleto");
@@ -282,15 +282,15 @@ describe("parseKind", () => {
     assert.equal(k.notes, "https://banco.example/boleto");
   });
   it("a value can contain ':' and \\r\\n line ends are fine", () => {
-    const k = parseKind("#remédio\r\nDose: 1 às 8:00\r\nQuem toma: Diego\r\n");
+    const k = parseKind("#remédio\r\nDose: 1 às 8:00\r\nQuem toma: Davi\r\n");
     assert.equal(k.dose, "1 às 8:00");
-    assert.equal(k.who, "Diego");
+    assert.equal(k.who, "Davi");
     assert.equal(k.notes, "");
   });
   it("a field of another model ends the fields", () => {
-    const k = parseKind("#conta\nValor: 50\nQuem faz: Diego");
+    const k = parseKind("#conta\nValor: 50\nQuem faz: Davi");
     assert.equal(k.value, 50);
-    assert.equal(k.notes, "Quem faz: Diego");
+    assert.equal(k.notes, "Quem faz: Davi");
   });
   it("conta: value", () => {
     assert.deepEqual(parseKind("#conta\nValor: R$ 231,40\nCelesc"), { kind: "conta", notes: "Celesc", value: 231.4 });
@@ -298,10 +298,10 @@ describe("parseKind", () => {
     assert.equal(parseKind("#conta\nValor: a combinar").value, null);
   });
   it("rotina: who, points (capped), period", () => {
-    const k = parseKind("#rotina\nQuem faz: Andressa\nPontos: 10 pontos\nPeríodo: Manhã\nO caminhão passa às 20h");
-    assert.deepEqual(k, { kind: "rotina", notes: "O caminhão passa às 20h", who: "Andressa", points: 10, period: "manha", after: null, rooms: [], equips: [], room: "", equip: "" });
+    const k = parseKind("#rotina\nQuem faz: Aurora\nPontos: 10 pontos\nPeríodo: Manhã\nO caminhão passa às 20h");
+    assert.deepEqual(k, { kind: "rotina", notes: "O caminhão passa às 20h", who: "Aurora", points: 10, period: "manha", after: null, rooms: [], equips: [], room: "", equip: "" });
     // the room (1.49): like the maintenance
-    const r = parseKind("#rotina\nQuem faz: Diego\nCômodo: Quarto\nArrumar com o lençol novo");
+    const r = parseKind("#rotina\nQuem faz: Davi\nCômodo: Quarto\nArrumar com o lençol novo");
     assert.deepEqual([r.rooms, r.room, r.notes], [["Quarto"], "Quarto", "Arrumar com o lençol novo"]);
     assert.equal(parseKind("#rotina\nPontos: 5000").points, 1000);
     assert.equal(parseKind("#rotina\nPontos: muitos").points, 0);
@@ -311,7 +311,7 @@ describe("parseKind", () => {
     assert.equal(parseKind("#rotina").period, "");
   });
   it("rotina that comes back N days after done: interval and history (newest first, as written)", () => {
-    const k = parseKind("#rotina\nQuem faz: Diego\nVolta: 2 dias depois de feita\nFeito em: 01/11/2026, 28/10/2026, 5/9/2026");
+    const k = parseKind("#rotina\nQuem faz: Davi\nVolta: 2 dias depois de feita\nFeito em: 01/11/2026, 28/10/2026, 5/9/2026");
     assert.deepEqual(k.after, { n: 2, unit: "dias" });
     assert.deepEqual(k.history, ["2026-11-01", "2026-10-28", "2026-09-05"]);
   });
@@ -324,11 +324,11 @@ describe("parseKind", () => {
     assert.equal(parseKind("#rotina\nVolta: quando der").after, null);
   });
   it("manutenção: every field", () => {
-    const k = parseKind("#manutenção\nQuem faz: Diego\nA cada: 3 meses\nAvisar: 10 dias antes\nFeito em: 02/08/2026\nPontos: 40\nCômodo: Sala\nEquipamento: Ar-condicionado\nLimpar o filtro");
+    const k = parseKind("#manutenção\nQuem faz: Davi\nA cada: 3 meses\nAvisar: 10 dias antes\nFeito em: 02/08/2026\nPontos: 40\nCômodo: Sala\nEquipamento: Ar-condicionado\nLimpar o filtro");
     assert.deepEqual(k, {
       kind: "manutencao",
       notes: "Limpar o filtro",
-      who: "Diego",
+      who: "Davi",
       every: { n: 3, unit: "meses" },
       warn: 10,
       history: ["2026-08-02"],
@@ -369,7 +369,7 @@ describe("parseKind", () => {
 
 describe("buildDescription (inverse of parseKind)", () => {
   it("remédio: fields in order, alert only when off, notes at the end", () => {
-    assert.equal(buildDescription({ kind: "remedio", dose: "1 comprimido", who: "Andressa", alert: true, notes: "Em jejum" }), "#remédio\nDose: 1 comprimido\nQuem toma: Andressa\nEm jejum");
+    assert.equal(buildDescription({ kind: "remedio", dose: "1 comprimido", who: "Aurora", alert: true, notes: "Em jejum" }), "#remédio\nDose: 1 comprimido\nQuem toma: Aurora\nEm jejum");
     assert.equal(buildDescription({ kind: "remedio", dose: "", who: "Mimi", alert: false }), "#remédio\nQuem toma: Mimi\nAviso no celular: não");
   });
   it("conta: the value in reais", () => {
@@ -377,10 +377,10 @@ describe("buildDescription (inverse of parseKind)", () => {
     assert.equal(buildDescription({ kind: "conta", value: null, notes: "boleto" }), "#conta\nboleto");
   });
   it("rotina: points only when > 0, period label, Volta and history only with after", () => {
-    assert.equal(buildDescription({ kind: "rotina", who: "Diego", points: 0, period: "" }), "#rotina\nQuem faz: Diego");
+    assert.equal(buildDescription({ kind: "rotina", who: "Davi", points: 0, period: "" }), "#rotina\nQuem faz: Davi");
     assert.equal(buildDescription({ kind: "rotina", who: "", points: 5, period: "noite" }), "#rotina\nPontos: 5\nPeríodo: Noite");
     assert.equal(buildDescription({ kind: "rotina", period: "bogus" }), "#rotina");
-    assert.equal(buildDescription({ kind: "rotina", who: "Diego", rooms: ["Quarto"] }), "#rotina\nQuem faz: Diego\nCômodo: Quarto", "the room, like the maintenance");
+    assert.equal(buildDescription({ kind: "rotina", who: "Davi", rooms: ["Quarto"] }), "#rotina\nQuem faz: Davi\nCômodo: Quarto", "the room, like the maintenance");
     assert.equal(
       buildDescription({ kind: "rotina", after: { n: 2, unit: "dias" }, history: ["2026-11-01", "2026-10-28"] }),
       "#rotina\nVolta: 2 dias depois de feita\nFeito em: 01/11/2026, 28/10/2026",
@@ -390,8 +390,8 @@ describe("buildDescription (inverse of parseKind)", () => {
   });
   it("manutenção: interval, warn (singular), history, points, room, equipment", () => {
     assert.equal(
-      buildDescription({ kind: "manutencao", who: "Diego", every: { n: 1, unit: "anos" }, warn: 1, history: ["2026-11-02"], points: 30, room: "Cozinha", equip: "Fogão", notes: "Chamar o técnico" }),
-      "#manutenção\nQuem faz: Diego\nA cada: 1 ano\nAvisar: 1 dia antes\nFeito em: 02/11/2026\nPontos: 30\nCômodo: Cozinha\nEquipamento: Fogão\nChamar o técnico",
+      buildDescription({ kind: "manutencao", who: "Davi", every: { n: 1, unit: "anos" }, warn: 1, history: ["2026-11-02"], points: 30, room: "Cozinha", equip: "Fogão", notes: "Chamar o técnico" }),
+      "#manutenção\nQuem faz: Davi\nA cada: 1 ano\nAvisar: 1 dia antes\nFeito em: 02/11/2026\nPontos: 30\nCômodo: Cozinha\nEquipamento: Fogão\nChamar o técnico",
     );
   });
   it("manutenção: several equipments and rooms, with the labels in the plural", () => {
@@ -419,16 +419,16 @@ describe("buildDescription (inverse of parseKind)", () => {
 
   // Round trips: whatever the form saves, every screen reads back the same.
   const trips = [
-    { kind: "remedio", dose: "50 mg · 1 comprimido", who: "Andressa", alert: true, notes: "Depois do café da manhã" },
+    { kind: "remedio", dose: "50 mg · 1 comprimido", who: "Aurora", alert: true, notes: "Depois do café da manhã" },
     { kind: "remedio", dose: "1/4 de comprimido", who: "Mimi", alert: false, notes: "" },
     { kind: "remedio", dose: "", who: "", alert: true, notes: "Só se tiver dor\nMáximo 3 por dia" },
     { kind: "conta", value: 1234.56, notes: "Celesc · débito automático desligado" },
     { kind: "conta", value: null, notes: "" },
-    { kind: "rotina", who: "Diego", points: 15, period: "", after: null, notes: "" },
-    { kind: "rotina", who: "Andressa", points: 10, period: "noite", after: null, notes: "O caminhão passa às 20h" },
+    { kind: "rotina", who: "Davi", points: 15, period: "", after: null, notes: "" },
+    { kind: "rotina", who: "Aurora", points: 10, period: "noite", after: null, notes: "O caminhão passa às 20h" },
     { kind: "rotina", who: "", points: 0, period: "manha", after: { n: 2, unit: "dias" }, history: ["2026-11-01", "2026-10-30"], notes: "" },
-    { kind: "rotina", who: "Diego", points: 5, period: "tarde", after: { n: 3, unit: "semanas" }, history: [], notes: "Trocar a roupa de cama" },
-    { kind: "manutencao", who: "Diego", every: { n: 6, unit: "meses" }, warn: 7, history: ["2026-05-07"], points: 30, room: "Cozinha", equip: "Filtro de água", notes: "Refil modelo X" },
+    { kind: "rotina", who: "Davi", points: 5, period: "tarde", after: { n: 3, unit: "semanas" }, history: [], notes: "Trocar a roupa de cama" },
+    { kind: "manutencao", who: "Davi", every: { n: 6, unit: "meses" }, warn: 7, history: ["2026-05-07"], points: 30, room: "Cozinha", equip: "Filtro de água", notes: "Refil modelo X" },
     { kind: "manutencao", who: "", every: { n: 1, unit: "anos" }, warn: 30, history: [], points: 0, room: "", equip: "", notes: "" },
     { kind: "manutencao", who: "", every: { n: 15, unit: "dias" }, warn: 0, history: ["2026-10-01", "2026-09-16"], points: 0, room: "Área de serviço", equip: "", notes: "" },
     { kind: "manutencao", who: "Ana", every: { n: 3, unit: "meses" }, warn: 7, history: [], points: 10, room: "Quarto", equip: "Ar-condicionado", rooms: ["Quarto", "Sala"], equips: ["Ar-condicionado", "TV"], notes: "Os dois" },
@@ -490,7 +490,7 @@ describe("maintStatus", () => {
 });
 
 describe("maintDone", () => {
-  const k = { kind: "manutencao", who: "Diego", every: { n: 6, unit: "meses" }, warn: 7, history: ["2026-05-07"], points: 30, room: "Cozinha", equip: "Filtro", notes: "Refil" };
+  const k = { kind: "manutencao", who: "Davi", every: { n: 6, unit: "meses" }, warn: 7, history: ["2026-05-07"], points: 30, room: "Cozinha", equip: "Filtro", notes: "Refil" };
   const today = at(2026, 11, 2, 16, 45);
 
   it("all-day: the event moves to today + interval, today first in the history", () => {
@@ -541,7 +541,7 @@ describe("maintDone", () => {
     assert.equal(h[7], "2026-04-01");
   });
   it("works for a routine that comes back N days after done (every = after)", () => {
-    const r = { kind: "rotina", who: "Diego", points: 5, period: "manha", after: { n: 2, unit: "dias" }, history: ["2026-10-30"], notes: "" };
+    const r = { kind: "rotina", who: "Davi", points: 5, period: "manha", after: { n: 2, unit: "dias" }, history: ["2026-10-30"], notes: "" };
     const ev = maintDone({ summary: "Arrumar a cama", start: "2026-11-01", end: "2026-11-02", description: buildDescription(r) }, { ...r, every: r.after }, today);
     assert.equal(ev.start, "2026-11-04");
     const back = parseKind(ev.description);

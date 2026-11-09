@@ -36,7 +36,7 @@ async def main():
         check(await who.locator(".pick", has_text="Outra pessoa").count() == 0 and await sheet.locator(".who-input").count() == 0, "no Outra pessoa in the form")
         check("Mais › Avisos" in await who.inner_text(), "says where to add someone")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
-        # Mais › Avisos: add someone, then who gets their alerts: Andressa
+        # Mais › Avisos: add someone, then who gets their alerts: Aurora
         await a.evaluate("(el) => el._go('/mais/avisos')"); await pg.wait_for_timeout(600)
         av = a.locator("#avisos")
         addb = av.locator(".add-line", has_text="Adicionar pessoa ou pet")
@@ -53,16 +53,16 @@ async def main():
         row = av.locator(".person-row", has_text="Thor")
         check(await row.count() == 1 and "Só no CronologIA" in await row.inner_text(), "Thor in the list")
         opts = [o.strip() for o in await row.locator("select option").all_inner_texts()]
-        check(opts == ["No celular de quem cuida", "No celular de Andressa", "No celular de Diego"], f"who gets his alerts: Quem cuida or a person ({opts})")
-        await row.locator("select").select_option("Andressa"); await pg.wait_for_timeout(600)
-        check((prefs().get("people") or {}).get("Thor") == {"care": "Andressa"}, f"on the phone of Andressa ({prefs().get('people')})")
-        check(await row.locator("select").evaluate("(s) => s.value") == "Andressa", "his alerts: Andressa")
+        check(opts == ["No celular de quem cuida", "No celular de Aurora", "No celular de Davi"], f"who gets his alerts: Quem cuida or a person ({opts})")
+        await row.locator("select").select_option("Aurora"); await pg.wait_for_timeout(600)
+        check((prefs().get("people") or {}).get("Thor") == {"care": "Aurora"}, f"on the phone of Aurora ({prefs().get('people')})")
+        check(await row.locator("select").evaluate("(s) => s.value") == "Aurora", "his alerts: Aurora")
         check(await row.locator(".icon-btn[aria-label^='Testar']").count() == 1 and await row.locator(".icon-btn[aria-label='Tirar Thor']").count() == 1, "Testar and Tirar")
-        check(await av.locator(".person-row:has(b:text-is('Andressa'))").count() == 1 and await av.locator(".person-row:has(b:text-is('Andressa'))").locator(".icon-btn[aria-label^='Tirar']").count() == 0, "a person of Home Assistant cannot be taken out")
+        check(await av.locator(".person-row:has(b:text-is('Aurora'))").count() == 1 and await av.locator(".person-row:has(b:text-is('Aurora'))").locator(".icon-btn[aria-label^='Tirar']").count() == 0, "a person of Home Assistant cannot be taken out")
         await pg.screenshot(path=f"{SP}/shots/crp-list.png")
         # a name already there
         await addb.click(); await pg.wait_for_timeout(200)
-        await av.locator(".person-add input").fill("andressa")
+        await av.locator(".person-add input").fill("aurora")
         await av.locator(".person-add .btn.primary").click(); await pg.wait_for_timeout(400)
         check("já está na lista" in await a.locator(".toast").inner_text(), "the same name twice: says it")
         await av.locator(".person-add .btn", has_text="Cancelar").click(); await pg.wait_for_timeout(200)
@@ -95,7 +95,7 @@ async def main():
         mel = av.locator(".person-row:has(b:text-is('Mel'))")
         check("Pet" in await mel.inner_text() and await mel.locator(".avatar svg").count() == 1, "the row says Pet, with a paw")
         check(await mel.locator(".pet-btn").get_attribute("aria-pressed") == "true", "the paw button on")
-        check(await av.locator(".person-row:has(b:text-is('Andressa')) .pet-btn").count() == 0, "a person of Home Assistant cannot be a pet")
+        check(await av.locator(".person-row:has(b:text-is('Aurora')) .pet-btn").count() == 0, "a person of Home Assistant cannot be a pet")
         await pg.screenshot(path=f"{SP}/shots/crp-pet.png")
         # Quem faz: no pets; Quem toma: the pet too
         await a.evaluate("(el) => el._openKindForm({ kind: 'rotina' })"); await pg.wait_for_timeout(500)
@@ -108,10 +108,10 @@ async def main():
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
         # someone already in the placar turns out to be a pet: leaves it
         await a.evaluate("(el) => el._saveAppPrefs({ people: { ...(el._app('people', null) || {}), Bob: {} } })"); await pg.wait_for_timeout(500)
-        await a.evaluate("(el) => el._scorePrefs({ enabled: true, manual: true, participants: ['Andressa', 'Diego', 'Bob'] })"); await pg.wait_for_timeout(500)
+        await a.evaluate("(el) => el._scorePrefs({ enabled: true, manual: true, participants: ['Aurora', 'Davi', 'Bob'] })"); await pg.wait_for_timeout(500)
         await av.locator(".person-row:has(b:text-is('Bob')) .pet-btn").click(); await pg.wait_for_timeout(800)
         app = prefs()
-        check(app["people"]["Bob"].get("pet") is True and app["score"]["participants"] == ["Andressa", "Diego"], f"Bob marked as pet: out of the placar ({app['score']['participants']})")
+        check(app["people"]["Bob"].get("pet") is True and app["score"]["participants"] == ["Aurora", "Davi"], f"Bob marked as pet: out of the placar ({app['score']['participants']})")
         await a.evaluate("(el) => el._go('/mais/placar')"); await pg.wait_for_timeout(600)
         sc = await a.locator("#placar").inner_text() if await a.locator("#placar").count() else ""
         check("Bob" not in sc and "Mel" not in sc, "Ajustes do placar: no pets to choose")

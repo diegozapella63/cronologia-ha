@@ -19,7 +19,7 @@ DOCS = os.path.join(ROOT, "docs")
 NOW = datetime.datetime(2026, 11, 4, 16, 40, tzinfo=ZoneInfo("America/Sao_Paulo"))
 # the order matters: the long names first
 NAMES = [
-    ("Diego Zapella", "Beto Lima"), ("Andressa", "Ana"), ("Diego", "Beto"), ("Mimi", "Mel"),
+    ("Davi Souza", "Beto Lima"), ("Aurora", "Ana"), ("Davi", "Beto"), ("Mimi", "Mel"),
     ("Mounjaro 2,5 mg", "Insulina"), ("DPrev 10.000 UI", "Vitamina D 2.000 UI"), ("DPrev", "Vitamina D"),
     ("Sertralina", "Vitamina C"), ("Gardenal", "Probiótico"), ("Nubank", "Banco Lua"), ("Ita\\xFA", "Banco Sol"),
     ("Daily do time", "Reunião do time"),

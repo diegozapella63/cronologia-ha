@@ -12,7 +12,7 @@ st = Stack("crrec")
 UNTIL = D(6).replace("-", "")
 st.create(P, {"summary": "Aula de piano", "dtstart": T(1, 18), "dtend": T(1, 19), "rrule": f"FREQ=DAILY;UNTIL={UNTIL}"})
 st.create(P, {"summary": "Natação", "dtstart": T(1, 7), "dtend": T(1, 8), "rrule": "FREQ=DAILY;COUNT=6"})
-st.create(P, {"summary": "Jantar com amigos", "dtstart": T(1, 20), "dtend": T(1, 22), "location": "Restaurante Lume", "description": "Reserva no nome do Diego"})
+st.create(P, {"summary": "Jantar com amigos", "dtstart": T(1, 20), "dtend": T(1, 22), "location": "Restaurante Lume", "description": "Reserva no nome do Davi"})
 def evs(name): return st.events(P, T(-1, 0), T(20, 0), name)
 def days(name): return [e["start"][:10] for e in evs(name)]
 
@@ -116,7 +116,7 @@ async def main():
         await a.locator(".toast button", has_text="Desfazer").click()
         await wait_for(lambda: len(evs("Jantar com amigos")) == 1, "Desfazer: back")
         back = evs("Jantar com amigos")[0]
-        check((back["start"], back["end"], back.get("location"), back.get("description")) == (old["start"], old["end"], "Restaurante Lume", "Reserva no nome do Diego") and back["uid"] != old["uid"], "the same day, time, place and notes (a new event)")
+        check((back["start"], back["end"], back.get("location"), back.get("description")) == (old["start"], old["end"], "Restaurante Lume", "Reserva no nome do Davi") and back["uid"] != old["uid"], "the same day, time, place and notes (a new event)")
         async def again(): return await rows("Jantar com amigos").count() == 1
         await wait_for(again, "and in the Lista again")
         check(not errs, f"no page errors {errs}")

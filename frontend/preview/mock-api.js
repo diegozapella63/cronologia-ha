@@ -10,7 +10,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: { resolvia_on: true, gerencia_on: true, memoria_on: true, todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true, manual: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
+    this.prefs = { calendars: {}, app: { resolvia_on: true, gerencia_on: true, memoria_on: true, todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Aurora", "Davi"], period: "semana", anchor: null, notify: true, manual: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
@@ -26,7 +26,7 @@ export class MockApi {
     const d0 = new Date();
     d0.setHours(0, 0, 0, 0);
     for (const raw of this.model.occurrences("calendar.remedios", d0.getTime(), d0.getTime() + 86400000)) {
-      if (/DPrev|Sertralina/.test(raw.summary)) this.checks[occurrenceKey("calendar.remedios", raw)] = { at: new Date(Date.parse(raw.start) + 7 * 60000).toISOString(), by: "Andressa", kind: "remedio" };
+      if (/DPrev|Sertralina/.test(raw.summary)) this.checks[occurrenceKey("calendar.remedios", raw)] = { at: new Date(Date.parse(raw.start) + 7 * 60000).toISOString(), by: "Aurora", kind: "remedio" };
     }
     // Recompensas: this week so far, and the weeks before
     const at = (dOff, h, m = 0) => {
@@ -41,19 +41,19 @@ export class MockApi {
     const E = (dOff, h, who, points, title, kind = "rotina") => ({ key: `demo|${dOff}|${h}|${title}`, at: at(Math.max(-back, dOff), h, 12), who, points, title, kind });
     this.score = {
       entries: [
-        E(0, 8, "Andressa", 10, "Lavar a louça"),
-        E(0, 7, "Diego", 5, "Regar as plantas"),
-        E(-1, 21, "Andressa", 10, "Lavar a louça"),
-        E(-1, 19, "Andressa", 10, "Tirar o lixo"),
-        E(-1, 18, "Diego", 20, "Montou a estante", "extra"),
-        E(-1, 7, "Diego", 5, "Regar as plantas"),
-        E(-2, 22, "Diego", 10, "Lavar a louça"),
-        E(-2, 9, "Diego", 15, "Limpar a caixa de areia"),
-        E(-3, 20, "Andressa", 10, "Lavar a louça"),
-        E(-3, 19, "Andressa", 10, "Tirar o lixo"),
-        E(-3, 10, "Andressa", 30, "Faxina do banheiro", "extra"),
-        E(-4, 21, "Diego", 10, "Lavar a louça"),
-        { ...E(-1, 8, "Diego", -5, "Toalha molhada na cama", "demerito"), key: "demerito|toalha01|demo1" },
+        E(0, 8, "Aurora", 10, "Lavar a louça"),
+        E(0, 7, "Davi", 5, "Regar as plantas"),
+        E(-1, 21, "Aurora", 10, "Lavar a louça"),
+        E(-1, 19, "Aurora", 10, "Tirar o lixo"),
+        E(-1, 18, "Davi", 20, "Montou a estante", "extra"),
+        E(-1, 7, "Davi", 5, "Regar as plantas"),
+        E(-2, 22, "Davi", 10, "Lavar a louça"),
+        E(-2, 9, "Davi", 15, "Limpar a caixa de areia"),
+        E(-3, 20, "Aurora", 10, "Lavar a louça"),
+        E(-3, 19, "Aurora", 10, "Tirar o lixo"),
+        E(-3, 10, "Aurora", 30, "Faxina do banheiro", "extra"),
+        E(-4, 21, "Davi", 10, "Lavar a louça"),
+        { ...E(-1, 8, "Davi", -5, "Toalha molhada na cama", "demerito"), key: "demerito|toalha01|demo1" },
       ].filter((e) => Date.parse(e.at) <= Date.now()),
       history: [],
       rewards: {},
@@ -67,25 +67,25 @@ export class MockApi {
       return { key: f(s0), start: f(s0), end: f(e0) };
     };
     this.score.history = [
-      { ...prevWeek(1), totals: { Andressa: 145, Diego: 120 }, winner: "Andressa", reward: "Escolher o restaurante de domingo", delivered: false },
-      { ...prevWeek(2), totals: { Diego: 110, Andressa: 95 }, winner: "Diego", reward: "Massagem de 20 minutos", delivered: true },
-      { ...prevWeek(3), totals: { Andressa: 100, Diego: 100 }, winner: null, reward: "Cinema", delivered: false },
+      { ...prevWeek(1), totals: { Aurora: 145, Davi: 120 }, winner: "Aurora", reward: "Escolher o restaurante de domingo", delivered: false },
+      { ...prevWeek(2), totals: { Davi: 110, Aurora: 95 }, winner: "Davi", reward: "Massagem de 20 minutos", delivered: true },
+      { ...prevWeek(3), totals: { Aurora: 100, Davi: 100 }, winner: null, reward: "Cinema", delivered: false },
     ];
     this.score.rewards[cur.key] = "Quem ganhar escolhe a série da semana";
     // Extrato: the points above, plus a few changes (marked by someone else, taken off, passed on)
-    const seq = [...this.score.entries].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((e) => ({ at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", key: e.key, who: e.who, points: e.points, title: e.title, kind: e.kind, ...(e.kind === "demerito" ? { by: "Andressa" } : e.title === "Tirar o lixo" ? { by: "Diego" } : {}) }));
+    const seq = [...this.score.entries].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((e) => ({ at: e.at, type: e.points < 0 ? "perdeu" : "ganhou", key: e.key, who: e.who, points: e.points, title: e.title, kind: e.kind, ...(e.kind === "demerito" ? { by: "Aurora" } : e.title === "Tirar o lixo" ? { by: "Davi" } : {}) }));
     const h1 = this.score.history[0];
     seq.unshift({ at: new Date(`${h1.end}T00:00:05`).toISOString(), type: "fechou", period: { start: h1.start, end: h1.end }, totals: h1.totals, winner: h1.winner, reward: h1.reward, points: 0 });
     const later = (iso, min) => new Date(Date.parse(iso) + min * 60000).toISOString();
-    const wash = seq.find((l) => l.title === "Lavar a louça" && l.who === "Diego");
-    if (wash) seq.push({ at: later(wash.at, 40), type: "trocou", key: wash.key, from: "Diego", who: "Andressa", points: 10, title: "Lavar a louça", by: "Diego" }, { at: later(wash.at, 42), type: "trocou", key: wash.key, from: "Andressa", who: "Diego", points: 10, title: "Lavar a louça", by: "Diego" });
+    const wash = seq.find((l) => l.title === "Lavar a louça" && l.who === "Davi");
+    if (wash) seq.push({ at: later(wash.at, 40), type: "trocou", key: wash.key, from: "Davi", who: "Aurora", points: 10, title: "Lavar a louça", by: "Davi" }, { at: later(wash.at, 42), type: "trocou", key: wash.key, from: "Aurora", who: "Davi", points: 10, title: "Lavar a louça", by: "Davi" });
     const plants = seq.find((l) => l.title === "Regar as plantas");
-    if (plants) seq.push({ at: later(plants.at, 90), type: "tirou", key: plants.key, who: "Diego", points: -5, title: "Regar as plantas", by: "Andressa" }, { at: later(plants.at, 91), type: "voltou", key: plants.key, who: "Diego", points: 5, title: "Regar as plantas", by: "Andressa" });
+    if (plants) seq.push({ at: later(plants.at, 90), type: "tirou", key: plants.key, who: "Davi", points: -5, title: "Regar as plantas", by: "Aurora" }, { at: later(plants.at, 91), type: "voltou", key: plants.key, who: "Davi", points: 5, title: "Regar as plantas", by: "Aurora" });
     this.score.log = seq.filter((l) => Date.parse(l.at) <= Date.now()).sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).map((l, i) => ({ id: i + 1, ...l }));
     // yesterday's chores were done (so only today's are open)
     for (const raw of this.model.occurrences("calendar.casa", d0.getTime() - 86400000, d0.getTime())) {
       const k = parseKind(raw.description);
-      if (k && k.kind === "rotina" && Date.parse(raw.start) < d0.getTime()) this.checks[occurrenceKey("calendar.casa", raw)] = { at: new Date(d0.getTime() - 3 * 3600000).toISOString(), by: k.who || "Andressa", kind: "rotina" };
+      if (k && k.kind === "rotina" && Date.parse(raw.start) < d0.getTime()) this.checks[occurrenceKey("calendar.casa", raw)] = { at: new Date(d0.getTime() - 3 * 3600000).toISOString(), by: k.who || "Aurora", kind: "rotina" };
     }
     const day = (n) => {
       const d = new Date(d0);
@@ -102,10 +102,10 @@ export class MockApi {
         { id: "c-saude", nome: "Saúde" },
       ],
       contas: [
-        { id: "f:k-nu|1", tipo: "fatura", descricao: "Fatura Nubank · Diego", valor: 1843.27, vencimento: day(-1), pago: false, atrasada: true, itens: 23, categoria: "", conta: "Nubank · Diego" },
-        { id: "v:r-plano:1", tipo: "fixo", descricao: "Plano de saúde", valor: 689.9, vencimento: day(0), pago: true, atrasada: false, categoria: "Saúde", conta: "Itaú · Diego" },
-        { id: "v:r-aluguel:1", tipo: "fixo", descricao: "Aluguel", valor: 2100, vencimento: day(2), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Diego" },
-        { id: "v:r-condominio:1", tipo: "fixo", descricao: "Condomínio", valor: 650, vencimento: day(6), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Diego" },
+        { id: "f:k-nu|1", tipo: "fatura", descricao: "Fatura Nubank · Davi", valor: 1843.27, vencimento: day(-1), pago: false, atrasada: true, itens: 23, categoria: "", conta: "Nubank · Davi" },
+        { id: "v:r-plano:1", tipo: "fixo", descricao: "Plano de saúde", valor: 689.9, vencimento: day(0), pago: true, atrasada: false, categoria: "Saúde", conta: "Itaú · Davi" },
+        { id: "v:r-aluguel:1", tipo: "fixo", descricao: "Aluguel", valor: 2100, vencimento: day(2), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Davi" },
+        { id: "v:r-condominio:1", tipo: "fixo", descricao: "Condomínio", valor: 650, vencimento: day(6), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Davi" },
         { id: "l-iptu", tipo: "conta", descricao: "IPTU 9/10", valor: 187.4, vencimento: day(15), pago: false, atrasada: false, categoria: "Moradia", conta: "" },
       ],
     };
@@ -117,11 +117,11 @@ export class MockApi {
     const occurrences = [];
     for (const cal of this.model.ids()) for (const raw of this.model.occurrences(cal, now - 200 * 86400000, now + 800 * 86400000)) if (parseKind(raw.description)) occurrences.push({ cal, raw });
     // the people of Home Assistant with a phone tied to them; one without a phone: the person chosen for it
-    const phoned = ["Andressa", "Diego"];
+    const phoned = ["Aurora", "Davi"];
     const careOf = (n) => (this.prefs.app.people || {})[n]?.care || "";
     const reach = (n) => phoned.includes(n) || phoned.includes(careOf(n));
     const ix = buildIndex({ occurrences, checks: this.checks, late: (this.prefs.app.alerts || {}).late || 30, features: (cal) => this.model.calendars[cal].features, reach, now });
-    const names = new Set(["Andressa", "Diego", ...ix.names, ...Object.keys(this.prefs.app.people || {})]);
+    const names = new Set(["Aurora", "Davi", ...ix.names, ...Object.keys(this.prefs.app.people || {})]);
     delete ix.names;
     return {
       ...ix,
@@ -192,7 +192,7 @@ export class MockApi {
 
   _log(rec) {
     const id = (this.score.log.at(-1) || { id: 0 }).id + 1;
-    this.score.log.push({ id, at: new Date().toISOString(), by: "Diego", ...rec });
+    this.score.log.push({ id, at: new Date().toISOString(), by: "Davi", ...rec });
   }
 
   async scoreLog(before, limit = 40, from = "", to = "") {
@@ -255,7 +255,7 @@ export class MockApi {
   async setCheck(key, done, kind, who) {
     this.score.entries = this.score.entries.filter((e) => e.key !== key);
     if (done) {
-      this.checks[key] = { at: new Date().toISOString(), by: who || "Diego", kind };
+      this.checks[key] = { at: new Date().toISOString(), by: who || "Davi", kind };
       const p = this._pointsOf(key);
       if (p.points > 0 && who) this.score.entries.push({ key, at: new Date().toISOString(), who, points: p.points, title: p.title, kind: p.kind });
     } else delete this.checks[key];
@@ -265,7 +265,7 @@ export class MockApi {
   /** Pular: a routine or a dose not done this time (in the preview, the routine stays on its day). */
   async skipCheck(key) {
     this.score.entries = this.score.entries.filter((e) => e.key !== key);
-    this.checks[key] = { at: new Date().toISOString(), by: "Diego", kind: key.includes("calendar.remedios") ? "remedio" : "rotina", skipped: true };
+    this.checks[key] = { at: new Date().toISOString(), by: "Davi", kind: key.includes("calendar.remedios") ? "remedio" : "rotina", skipped: true };
     this._pushHome();
     return { skipped: true };
   }
@@ -466,7 +466,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.61.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.61.1", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

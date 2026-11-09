@@ -20,7 +20,7 @@ before(async () => {
   await h.wait((x) => x.tracked.length >= 2 && x.meds.length >= 5 && x.maint.length >= 4, "the fake calendars in the index");
   await c.call("cronologia/prefs/set_app", {
     prefs: {
-      score: { enabled: true, participants: ["Diego", "Andressa"], period: "semana" },
+      score: { enabled: true, participants: ["Davi", "Aurora"], period: "semana" },
       people: { Mimi: { pet: true } },
       demerits: [{ id: "toalha", title: "Toalha molhada na cama", points: 5 }],
     },
@@ -40,7 +40,7 @@ describe("the Agora index from the fake calendars", () => {
     const ix = h.latest;
     const by = Object.fromEntries(ix.meds.map((m) => [m.summary, m]));
     assert.deepEqual(Object.keys(by).sort(), ["DPrev 10.000 UI", "Gardenal", "Mounjaro 2,5 mg", "Sertralina", "Ômega 3"].sort());
-    assert.equal(by.Sertralina.who, "Andressa");
+    assert.equal(by.Sertralina.who, "Aurora");
     assert.equal(by.Sertralina.phone, true);
     assert.equal(by["Ômega 3"].phone, true);
     assert.equal(by.Gardenal.who, "Mimi");
@@ -80,8 +80,8 @@ describe("the Agora index from the fake calendars", () => {
   it("people: HA persons with a phone tied to them, the pet without; no devices (1.54.0)", () => {
     const ix = h.latest;
     const p = Object.fromEntries(ix.people.map((x) => [x.name, x]));
-    assert.deepEqual([p.Diego.person, p.Diego.phone, p.Diego.pet], ["person.diego", true, false]);
-    assert.deepEqual([p.Andressa.phone, p.Andressa.reach], [true, true]);
+    assert.deepEqual([p.Davi.person, p.Davi.phone, p.Davi.pet], ["person.davi", true, false]);
+    assert.deepEqual([p.Aurora.phone, p.Aurora.reach], [true, true]);
     assert.deepEqual([p.Mimi.person, p.Mimi.pet, p.Mimi.phone, p.Mimi.reach], [null, true, false, false]);
     assert.equal("targets" in ix, false);
     assert.doesNotMatch(JSON.stringify(ix.people), /mobile_app/);
@@ -95,20 +95,20 @@ describe("the Agora index from the fake calendars", () => {
 describe("creating each model in a calendar that had none", () => {
   const P = "calendar.pessoal";
   it("the calendar is followed from then on (and remembered), each model in its place", async () => {
-    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Losartana", start: `${day(0)}T23:30:00-03:00`, end: `${day(0)}T23:45:00-03:00`, description: "#remédio\nDose: 50 mg\nQuem toma: Diego\nAviso no celular: não", rrule: "FREQ=DAILY" } });
+    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Losartana", start: `${day(0)}T23:30:00-03:00`, end: `${day(0)}T23:45:00-03:00`, description: "#remédio\nDose: 50 mg\nQuem toma: Davi\nAviso no celular: não", rrule: "FREQ=DAILY" } });
     await c.call("calendar/event/create", { entity_id: P, event: { summary: "Condomínio", start: day(4), end: day(5), description: "#conta\nValor: R$ 1.234,56\nBoleto no e-mail" } });
-    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Revisar o extintor", start: day(10), end: day(11), description: "#manutenção\nQuem faz: Diego\nA cada: 1 ano\nAvisar: 15 dias antes\nPontos: 20\nCômodo: Garagem\nEquipamento: Extintor" } });
-    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Regar a horta", start: day(0), end: day(1), description: "#rotina\nQuem faz: Andressa\nPontos: 3\nPeríodo: Tarde" } });
+    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Revisar o extintor", start: day(10), end: day(11), description: "#manutenção\nQuem faz: Davi\nA cada: 1 ano\nAvisar: 15 dias antes\nPontos: 20\nCômodo: Garagem\nEquipamento: Extintor" } });
+    await c.call("calendar/event/create", { entity_id: P, event: { summary: "Regar a horta", start: day(0), end: day(1), description: "#rotina\nQuem faz: Aurora\nPontos: 3\nPeríodo: Tarde" } });
     const ix = await h.wait((x) => x.tracked.includes(P) && x.meds.some((m) => m.summary === "Losartana") && x.bills.some((b) => b.summary === "Condomínio") && x.maint.some((m) => m.summary === "Revisar o extintor") && routine(x, "Regar a horta"), "the four new models");
     const med = ix.meds.find((m) => m.summary === "Losartana");
-    assert.deepEqual([med.dose, med.who, med.alert, med.time, med.cal], ["50 mg", "Diego", false, "23:30", P]);
+    assert.deepEqual([med.dose, med.who, med.alert, med.time, med.cal], ["50 mg", "Davi", false, "23:30", P]);
     const bill = ix.bills.find((b) => b.summary === "Condomínio");
     assert.deepEqual([bill.value, bill.due, bill.notes], [1234.56, day(4), "Boleto no e-mail"]);
     const m = ix.maint.find((x) => x.summary === "Revisar o extintor");
     assert.deepEqual([m.state, m.days, m.warn, m.room, m.equip, m.points], ["perto", 10, 15, "Garagem", "Extintor", 20]);
     assert.deepEqual(m.every, { n: 1, unit: "anos" });
     const r = routine(ix, "Regar a horta");
-    assert.deepEqual([r.who, r.points, r.period], ["Andressa", 3, "tarde"]);
+    assert.deepEqual([r.who, r.points, r.period], ["Aurora", 3, "tarde"]);
     const saved = await waitFor(() => JSON.parse(fs.readFileSync(path.join(stack.dirs.data, "cronologia.json"), "utf8")).kind_cals.includes(P), { what: "the calendar remembered in /data" });
     assert.ok(saved);
     // a plain event does not make a calendar followed
@@ -121,23 +121,23 @@ describe("creating each model in a calendar that had none", () => {
 describe("routines of the calendar", () => {
   it("Feito gives the points to who did it; Desfazer takes them back", async () => {
     const r = routine(h.latest, "Regar as plantas", (x) => !x.yesterday);
-    const before = points(h.latest, "Diego");
+    const before = points(h.latest, "Davi");
     await c.call("cronologia/check/set", { key: r.key, done: true, kind: "rotina" });
     let ix = await h.wait((x) => routine(x, "Regar as plantas", (y) => y.key === r.key).done, "Regar done");
-    assert.equal(routine(ix, "Regar as plantas", (y) => y.key === r.key).done.by, "Diego", "the person of the Home Assistant user");
-    assert.equal(points(ix, "Diego"), before + 5);
+    assert.equal(routine(ix, "Regar as plantas", (y) => y.key === r.key).done.by, "Davi", "the person of the Home Assistant user");
+    assert.equal(points(ix, "Davi"), before + 5);
     await c.call("cronologia/check/set", { key: r.key, done: false, kind: "rotina" });
     ix = await h.wait((x) => !routine(x, "Regar as plantas", (y) => y.key === r.key).done, "Regar undone");
-    assert.equal(points(ix, "Diego"), before);
+    assert.equal(points(ix, "Davi"), before);
   });
   it("done by someone else (Quem fez?) and then given to another person", async () => {
     const r = routine(h.latest, "Lavar a louça", (x) => !x.yesterday);
-    await c.call("cronologia/check/set", { key: r.key, done: true, kind: "rotina", who: "andressa" });
+    await c.call("cronologia/check/set", { key: r.key, done: true, kind: "rotina", who: "aurora" });
     let ix = await h.wait((x) => x.score.entries.some((e) => e.key === r.key), "the points");
-    assert.equal(ix.score.entries.find((e) => e.key === r.key).who, "Andressa");
-    await c.call("cronologia/score/reassign", { key: r.key, who: "Diego" });
-    ix = await h.wait((x) => x.score.entries.find((e) => e.key === r.key).who === "Diego", "reassigned");
-    assert.equal(routine(ix, "Lavar a louça", (y) => y.key === r.key).done.by, "Diego");
+    assert.equal(ix.score.entries.find((e) => e.key === r.key).who, "Aurora");
+    await c.call("cronologia/score/reassign", { key: r.key, who: "Davi" });
+    ix = await h.wait((x) => x.score.entries.find((e) => e.key === r.key).who === "Davi", "reassigned");
+    assert.equal(routine(ix, "Lavar a louça", (y) => y.key === r.key).done.by, "Davi");
     await assert.rejects(c.call("cronologia/score/reassign", { key: r.key, who: "Visita" }), { code: "invalid_format" });
   });
   it("Pular yesterday's: it leaves the list, no points", async () => {
@@ -169,7 +169,7 @@ describe("routines of the calendar", () => {
 describe("a routine that comes back N days after done", () => {
   let uid;
   it("created with the form's description: it is today's, to do", async () => {
-    await c.call("calendar/event/create", { entity_id: CASA, event: { summary: "Trocar a toalha", start: day(0), end: day(1), description: "#rotina\nQuem faz: Andressa\nPontos: 7\nPeríodo: Manhã\nVolta: 2 dias depois de feita" } });
+    await c.call("calendar/event/create", { entity_id: CASA, event: { summary: "Trocar a toalha", start: day(0), end: day(1), description: "#rotina\nQuem faz: Aurora\nPontos: 7\nPeríodo: Manhã\nVolta: 2 dias depois de feita" } });
     const ix = await h.wait((x) => routine(x, "Trocar a toalha"), "the new routine");
     const r = routine(ix, "Trocar a toalha");
     uid = r.uid;
@@ -178,8 +178,8 @@ describe("a routine that comes back N days after done", () => {
   });
   it("Feito moves the event to today + 2 with today in Feito em; the list shows it done", async () => {
     const r = routine(h.latest, "Trocar a toalha");
-    const before = points(h.latest, "Andressa");
-    await c.call("cronologia/check/set", { key: r.key, done: true, kind: "rotina", who: "Andressa" });
+    const before = points(h.latest, "Aurora");
+    await c.call("cronologia/check/set", { key: r.key, done: true, kind: "rotina", who: "Aurora" });
     const raw = await waitFor(async () => {
       const e = await rawOf(CASA, uid);
       return e && e.start === day(2) && e;
@@ -192,11 +192,11 @@ describe("a routine that comes back N days after done", () => {
     assert.equal(done.key, r.key, "the key of the check, for Desfazer");
     assert.equal(done.next, day(2));
     assert.equal(done.done.moved.day, day(0));
-    assert.equal(points(ix, "Andressa"), before + 7);
+    assert.equal(points(ix, "Aurora"), before + 7);
   });
   it("Desfazer brings it back to today without today in its history and takes the points", async () => {
     const r = routine(h.latest, "Trocar a toalha");
-    const before = points(h.latest, "Andressa");
+    const before = points(h.latest, "Aurora");
     await c.call("cronologia/check/set", { key: r.key, done: false, kind: "rotina" });
     const raw = await waitFor(async () => {
       const e = await rawOf(CASA, uid);
@@ -205,7 +205,7 @@ describe("a routine that comes back N days after done", () => {
     assert.deepEqual(parseKind(raw.description).history, [], "no Feito em left");
     assert.doesNotMatch(raw.description, /Feito em/);
     const ix = await h.wait((x) => routine(x, "Trocar a toalha", (y) => !y.done), "pending again");
-    assert.equal(points(ix, "Andressa"), before - 7);
+    assert.equal(points(ix, "Aurora"), before - 7);
   });
   it("Pular of yesterday's (1 day): it comes to today and stays to do", async () => {
     await c.call("calendar/event/create", { entity_id: CASA, event: { summary: "Arrumar a cama", start: day(-1), end: day(0), description: "#rotina\nVolta: 1 dia depois de feita\nFeito em: " } });
@@ -224,7 +224,7 @@ describe("a routine that comes back N days after done", () => {
 describe("maintenance", () => {
   it("Feito moves it to today + interval with today in its history; points to who did it; Desfazer", async () => {
     const m = h.latest.maint.find((x) => x.summary === "Trocar o filtro de água");
-    const before = points(h.latest, "Diego");
+    const before = points(h.latest, "Davi");
     const out = await c.call("cronologia/maint/done", { entity_id: CASA, uid: m.uid });
     assert.equal(out.moved, true);
     assert.equal(out.undo, true);
@@ -238,10 +238,10 @@ describe("maintenance", () => {
     assert.equal(parseKind(raw.description).history[0], day(0));
     let ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due === out.next, "the new due date");
     assert.equal(ix.maint.find((y) => y.uid === m.uid).state, "ok");
-    assert.equal(points(ix, "Diego"), before + 30);
+    assert.equal(points(ix, "Davi"), before + 30);
     await c.call("cronologia/maint/undo", { entity_id: CASA, uid: m.uid });
     ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due === day(5), "back to its date");
-    assert.equal(points(ix, "Diego"), before);
+    assert.equal(points(ix, "Davi"), before);
     await assert.rejects(c.call("cronologia/maint/undo", { entity_id: CASA, uid: m.uid }), { code: "not_found" });
   });
   it("errors: a bad id, a missing event, not a maintenance", async () => {
@@ -252,13 +252,13 @@ describe("maintenance", () => {
   });
   it("cronologia_feito from an automation (NFC tag): done, the points to quem", async () => {
     const m = h.latest.maint.find((x) => x.summary === "Limpar o ar-condicionado");
-    const before = points(h.latest, "Andressa");
-    await stack.fire("cronologia_feito", { nome: "limpar o AR-CONDICIONADO", quem: "Andressa" });
+    const before = points(h.latest, "Aurora");
+    await stack.fire("cronologia_feito", { nome: "limpar o AR-CONDICIONADO", quem: "Aurora" });
     const ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).state !== "vencida", "the automation's maintenance done");
-    assert.equal(points(ix, "Andressa"), before + 40);
+    assert.equal(points(ix, "Aurora"), before + 40);
     const line = ix.score.log.find((l) => l.title === "Limpar o ar-condicionado");
     assert.equal(line.via, "Automação");
-    assert.equal(line.by, "Andressa");
+    assert.equal(line.by, "Aurora");
   });
 });
 
@@ -276,7 +276,7 @@ describe("doses and bills", () => {
     const m = h.latest.meds.find((x) => x.summary === "DPrev 10.000 UI");
     await stack.fire("mobile_app_notification_action", { action: `CRONOLOGIA_TOMEI_${hashOf(m.key)}` });
     const ix = await h.wait((x) => x.meds.find((y) => y.key === m.key).state === "tomado", "taken by the phone");
-    assert.equal(ix.meds.find((y) => y.key === m.key).taken.by, "Andressa (celular)");
+    assert.equal(ix.meds.find((y) => y.key === m.key).taken.by, "Aurora (celular)");
   });
   it("paying a bill", async () => {
     const b = h.latest.bills.find((x) => x.summary === "Internet");
@@ -285,13 +285,13 @@ describe("doses and bills", () => {
     assert.equal(ix.bills.find((y) => y.key === b.key).overdue, false);
   });
   it("the test alert reaches the phone of the person and its button comes back", async () => {
-    assert.deepEqual(await c.call("cronologia/notify/test", { person: "Diego" }), { sent: 1 });
+    assert.deepEqual(await c.call("cronologia/notify/test", { person: "Davi" }), { sent: 1 });
     let n = await stack.notifications();
     const test = n.find((x) => x.title === "💊 Teste do CronologIA");
     assert.equal(test.service, "mobile_app_pixel_8");
     await stack.fire("mobile_app_notification_action", { action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
     const ix = await h.wait((x) => x.test, "the test button");
-    assert.deepEqual([ix.test.person, ix.test.action], ["Diego", "tomei"]);
+    assert.deepEqual([ix.test.person, ix.test.action], ["Davi", "tomei"]);
     n = await waitFor(async () => (await stack.notifications()).find((x) => x.title === "✅ Funcionou"), { what: "the confirmation" });
     assert.equal(n.service, "mobile_app_pixel_8");
     await assert.rejects(c.call("cronologia/notify/test", { person: "Mimi" }), { code: "no_phone" });
@@ -301,9 +301,9 @@ describe("doses and bills", () => {
 
 describe("the placar", () => {
   it("extra points, a demerit, removing and restoring, the Extrato", async () => {
-    await c.call("cronologia/score/extra", { who: "Andressa", points: 12, title: "Lavou o carro" });
-    await c.call("cronologia/score/demerit", { demerit: "toalha", who: "Diego" });
-    await stack.fire("cronologia_demerito", { nome: "Toalha molhada na cama", quem: "Andressa" });
+    await c.call("cronologia/score/extra", { who: "Aurora", points: 12, title: "Lavou o carro" });
+    await c.call("cronologia/score/demerit", { demerit: "toalha", who: "Davi" });
+    await stack.fire("cronologia_demerito", { nome: "Toalha molhada na cama", quem: "Aurora" });
     let ix = await h.wait((x) => x.score.entries.filter((e) => e.kind === "demerito").length === 2, "two demerits");
     const extra = ix.score.entries.find((e) => e.title === "Lavou o carro");
     assert.equal(extra.points, 12);
@@ -317,17 +317,17 @@ describe("the placar", () => {
       log.slice(0, 2).map((l) => l.type),
       ["voltou", "tirou"],
     );
-    assert.equal(log.find((l) => l.type === "tirou").by, "Diego", "the person of the app user");
+    assert.equal(log.find((l) => l.type === "tirou").by, "Davi", "the person of the app user");
     await assert.rejects(c.call("cronologia/score/extra", { who: "Visita", points: 5, title: "x" }), { code: "invalid_format" });
-    await assert.rejects(c.call("cronologia/score/demerit", { demerit: "nada", who: "Diego" }), { code: "not_found" });
+    await assert.rejects(c.call("cronologia/score/demerit", { demerit: "nada", who: "Davi" }), { code: "not_found" });
   });
   it("prizes of this period and the next; the leader", async () => {
     const cur = h.latest.score.current.key;
     const next = h.latest.score.next.key;
-    await c.call("cronologia/score/prizes", { period: cur, shared: "Pizza", per: { Andressa: "Massagem" } });
+    await c.call("cronologia/score/prizes", { period: cur, shared: "Pizza", per: { Aurora: "Massagem" } });
     await c.call("cronologia/score/reward", { period: next, text: "Cinema" });
     const ix = await h.wait((x) => x.score.current.reward === "Pizza" && x.score.next.reward === "Cinema", "the prizes");
-    assert.deepEqual(ix.score.current.prizes, { Andressa: "Massagem" });
+    assert.deepEqual(ix.score.current.prizes, { Aurora: "Massagem" });
     const rows = ix.score.rows;
     assert.equal(ix.score.leader, rows[0].points > rows[1].points ? rows[0].name : null);
     await assert.rejects(c.call("cronologia/score/delivered", { period: cur, delivered: true }), { code: "invalid_format" });
@@ -339,8 +339,8 @@ describe("the placar", () => {
       return x.placar.ativo && x;
     }, { what: "share/cronologia/integracao.json" });
     assert.equal(j.app, "CronologIA");
-    assert.deepEqual(j.placar.participantes, ["Diego", "Andressa"]);
-    assert.deepEqual(j.placar.usuarios, { "u-diego": "Diego", "u-andressa": "Andressa" });
+    assert.deepEqual(j.placar.participantes, ["Davi", "Aurora"]);
+    assert.deepEqual(j.placar.usuarios, { "u-davi": "Davi", "u-aurora": "Aurora" });
     assert.equal(j.resolvia, true);
   });
 });
@@ -363,7 +363,7 @@ describe("sensors in Home Assistant", () => {
     const maint = await sensor("sensor.cronologia_manutencoes_vencidas");
     assert.equal(Number(maint.state), maint.attributes.vencidas.length);
     const placar = await sensor("sensor.cronologia_placar");
-    assert.ok(placar.attributes.pontos && "Diego" in placar.attributes.pontos);
+    assert.ok(placar.attributes.pontos && "Davi" in placar.attributes.pontos);
     await c.call("cronologia/prefs/set_app", { prefs: { sensors_on: false } });
     for (const id of ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"]) {
       await waitFor(async () => (await stack.state(id)).status === 404, { what: `${id} removed` });

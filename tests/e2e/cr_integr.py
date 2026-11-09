@@ -20,7 +20,7 @@ def check(c, label):
 data = f"{SP}/cri-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{data}/gdata"); os.makedirs(f"{SP}/shots", exist_ok=True)
 # an install from before 1.16.0: scoreboard on, Levar para o ResolvIA set up
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}, "mirror": {"list": "todo.casa", "maint": True, "routine": False}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}, "mirror": {"list": "todo.casa", "maint": True, "routine": False}}}, open(f"{data}/cronologia.json", "w"))
 subprocess.run(["python3", f"{FIX}/gerencia_dados.py", f"{data}/gdata/gerencia.json"], check=True)
 procs = []
 genv = dict(os.environ, TZ="America/Sao_Paulo", GERENCIA_DEV="1", GERENCIA_PORTA="8191", GERENCIA_DATA=f"{data}/gdata", GERENCIA_SHARE=f"{data}/share/gerencia", GERENCIA_URL_INTERNA="http://127.0.0.1:8191", GERENCIA_HA_API="http://127.0.0.1:1/api")
@@ -66,7 +66,7 @@ async def main():
         check(r == "resolvia_off", f"server refuses tasks ({r})")
         r = await A.evaluate(CALL, ["cronologia/contas/pagar", {"conta": "x"}])
         check(r == "gerencia_off", f"server refuses bills ({r})")
-        fire("cronologia_pontos", {"acao": "somar", "chave": f"resolvia|todo.casa|u1|{today}", "quem": "Diego", "pontos": 10, "titulo": "Lavar o carro", "origem": "ResolvIA"})
+        fire("cronologia_pontos", {"acao": "somar", "chave": f"resolvia|todo.casa|u1|{today}", "quem": "Davi", "pontos": 10, "titulo": "Lavar o carro", "origem": "ResolvIA"})
         await A.wait_for_timeout(800)
         check(not entries(), "points from the ResolvIA don't count while off")
 
@@ -89,7 +89,7 @@ async def main():
         check("LEVAR PARA O RESOLVIA" in rt.upper() and "Mostrar no calendário" in rt, "on: Levar and the options are back")
         await wait_for(lambda: presence().get("resolvia") is True, "share file: on")
         await wait_for(lambda: len(mirrored("todo.casa")) >= 2, "on: Levar para o ResolvIA writes the maintenance tasks")
-        fire("cronologia_pontos", {"acao": "somar", "chave": f"resolvia|todo.casa|u1|{today}", "quem": "Diego", "pontos": 10, "titulo": "Lavar o carro", "origem": "ResolvIA"})
+        fire("cronologia_pontos", {"acao": "somar", "chave": f"resolvia|todo.casa|u1|{today}", "quem": "Davi", "pontos": 10, "titulo": "Lavar o carro", "origem": "ResolvIA"})
         await wait_for(lambda: any(e.get("title") == "Lavar o carro" for e in entries()), "on: points from the ResolvIA count")
         # GerencIA on
         await sw_g.check(); await A.wait_for_timeout(300)

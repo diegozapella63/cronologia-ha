@@ -10,13 +10,13 @@ from mais_lib import open_more
 SPT = datetime.timezone(datetime.timedelta(hours=-3))
 now = datetime.datetime.now(SPT)
 data = {
-    "app": {"week_start": 1, "score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}},
+    "app": {"week_start": 1, "score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}},
     "score": {"entries": [
-        {"key": "extra|carro", "at": now.isoformat(), "who": "Diego", "points": 30, "title": "Lavou o carro", "kind": "extra"},
-        {"key": "extra|faxina", "at": now.isoformat(), "who": "Andressa", "points": 20, "title": "Faxina", "kind": "extra"},
+        {"key": "extra|carro", "at": now.isoformat(), "who": "Davi", "points": 30, "title": "Lavou o carro", "kind": "extra"},
+        {"key": "extra|faxina", "at": now.isoformat(), "who": "Aurora", "points": 20, "title": "Faxina", "kind": "extra"},
     ]},
 }
-st = Stack("crrm", data=data, app_env={"CRONOLOGIA_DEV_USER_ID": "u-diego"})
+st = Stack("crrm", data=data, app_env={"CRONOLOGIA_DEV_USER_ID": "u-davi"})
 
 async def main():
     async with async_playwright() as p:
@@ -35,19 +35,19 @@ async def main():
         await fld.locator(".seg button", has_text="Manhã").click(); await A.wait_for_timeout(700)
         check(st.stored()["app"]["score"].get("remind") == "09:00" and await fld.locator("input.remind-time").input_value() == "09:00", "Manhã: 09:00")
         hint = await fld.locator(".field-hint").inner_text()
-        check("Vai para o celular de Diego e Andressa." in hint, f"whose phones ({hint})")
+        check("Vai para o celular de Davi e Aurora." in hint, f"whose phones ({hint})")
         await fld.screenshot(path=f"{SP}/shots/crrm-field.png")
         bx = [await fld.locator(sel).bounding_box() for sel in ("input.remind-time", ".remind-test")]
         check(abs(bx[0]["height"] - bx[1]["height"]) < 1 and abs(bx[0]["y"] - bx[1]["y"]) < 1, f"the time and Testar side by side, the same height ({[round(x['height']) for x in bx]})")
-        # Testar no meu celular (Diego's)
+        # Testar no meu celular (Davi's)
         await fld.locator(".remind-test").click()
         await wait_for(lambda: any(n.get("data", {}).get("tag") == "cronologia-placar-teste" for n in st.notifications()), "Testar sends it now")
         t = [n for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-teste"][-1]
-        check(t["service"] == "mobile_app_pixel_8" and t["title"] == "🏆 Placar" and t["message"].startswith("Diego na frente por 10 pontos: Diego 30 × Andressa 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
+        check(t["service"] == "mobile_app_pixel_8" and t["title"] == "🏆 Placar" and t["message"].startswith("Davi na frente por 10 pontos: Davi 30 × Aurora 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
         # 1.54.0: the app says it by the person, never the device
         toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
         check("Lembrete enviado para o seu celular." in toast and "Pixel" not in toast, f"the toast, no device ({toast!r})")
-        check("Pixel" not in await fld.inner_text() and "Vai para o celular de Diego e Andressa." in await fld.inner_text(), "who gets it: the players by name")
+        check("Pixel" not in await fld.inner_text() and "Vai para o celular de Davi e Aurora." in await fld.inner_text(), "who gets it: the players by name")
         # the exact time: this minute; the server sends it to both within a round (20 s)
         hm = datetime.datetime.now(SPT).strftime("%H:%M")
         await fld.locator("input.remind-time").fill(hm); await fld.locator("input.remind-time").dispatch_event("change"); await A.wait_for_timeout(700)

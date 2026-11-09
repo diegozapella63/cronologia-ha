@@ -18,7 +18,7 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crfu-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
 env = dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media")
 fake = subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=env, stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT)
 time.sleep(0.6)
@@ -46,7 +46,7 @@ async def wait_for(fn, label, tries=48):
         await asyncio.sleep(0.25)
     check(False, label)
 
-async def tap_done(A, a, loc, who="Diego"):
+async def tap_done(A, a, loc, who="Davi"):
     await loc.click()
     await A.wait_for_timeout(400)
     if await a.locator(".sheet .who-btn").count():
@@ -66,7 +66,7 @@ async def main():
         A.on("pageerror", lambda e: errs.append(str(e)))
         await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
         a = A.locator("cronologia-app"); sheet = a.locator(".sheet")
-        await A.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, manual: true, participants: ['Andressa', 'Diego'] })")
+        await A.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, manual: true, participants: ['Aurora', 'Davi'] })")
         await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ who_pick: true })")
         await A.wait_for_timeout(800)
         # a routine that comes back 2 days after done, due tomorrow; another one due in 5 days
@@ -106,10 +106,10 @@ async def main():
         check("amanhã" in sub and "+10" in sub and "volta 2 dias depois" in sub, f"when, points, and when it comes back ({sub})")
         check("Fez antes do dia" in await panel.locator(".future-note").inner_text(), "says it can be marked before the day")
         await A.screenshot(path=f"{SP}/shots/crfu-open.png", full_page=True)
-        # done today by Diego: moves to today + 2 (not tomorrow + 2), +10 now
+        # done today by Davi: moves to today + 2 (not tomorrow + 2), +10 now
         await rows.filter(has_text="Limpar o banheiro").locator(".qw-btn", has_text="D").click()
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(2), "done earlier: comes back 2 days from today")
-        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Diego" and e["points"] == 10 for e in entries()), "+10 for Diego now")
+        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Davi" and e["points"] == 10 for e in entries()), "+10 for Davi now")
         await A.wait_for_timeout(600)
         names = [t.split("\n")[0] for t in await panel.locator(".chore.future .chore-tx b").all_inner_texts()]
         check("Limpar o banheiro" not in names, f"it leaves Próximas rotinas ({names})")
@@ -117,11 +117,11 @@ async def main():
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Rotinas"); await A.wait_for_timeout(600)
         await a.locator("#cat-rotina .cat-row", has_text="Lavar o carro").click(); await A.wait_for_timeout(600)
-        who = sheet.locator(".who-btn", has_text="Andressa")
+        who = sheet.locator(".who-btn", has_text="Aurora")
         check(await who.count() == 1, "the event window of a routine 5 days ahead: who did it, to mark it now")
         await who.click()
         await wait_for(lambda: events("Lavar o carro")[0]["start"] == D(7), "comes back 7 days from today")
-        await wait_for(lambda: any(e["title"] == "Lavar o carro" and e["who"] == "Andressa" and e["points"] == 20 for e in entries()), "+20 for Andressa")
+        await wait_for(lambda: any(e["title"] == "Lavar o carro" and e["who"] == "Aurora" and e["points"] == 20 for e in entries()), "+20 for Aurora")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()
 try: asyncio.run(main())

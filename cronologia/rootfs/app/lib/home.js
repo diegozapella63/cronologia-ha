@@ -350,7 +350,7 @@ export class Home {
     }
   }
 
-  /** "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 5 dias." */
+  /** "Davi na frente por 10 pontos: Davi 135 × Aurora 125. Fecha em 5 dias." */
   scoreReminderText(now = new Date()) {
     const s = this.scoreIndex(now.getTime());
     // the most points first; a tie keeps the order of the participants
@@ -723,7 +723,7 @@ export class Home {
     return st.participants.find((p) => foldText(p) === foldText(name) || foldText(p).split(" ")[0] === foldText(name).split(" ")[0]) || "";
   }
 
-  /** Gives a point entry to someone else ("Foi a Andressa"). */
+  /** Gives a point entry to someone else ("Foi a Aurora"). */
   reassign(key, who) {
     const person = this.participant(who);
     if (!person) throw coded("invalid_format", "Essa pessoa não está no placar");
@@ -762,7 +762,7 @@ export class Home {
     return { key, who: person, points: -d.points };
   }
 
-  /** cronologia_demerito {nome: "Toalha molhada na cama", quem: "Diego"} from an automation, Alexa routine or NFC tag. */
+  /** cronologia_demerito {nome: "Toalha molhada na cama", quem: "Davi"} from an automation, Alexa routine or NFC tag. */
   onDemerit(data) {
     const name = foldText((data && (data.nome || data.demerito)) || "");
     const d = name && (this.store.data.app.demerits || []).find((x) => foldText(x.title) === name);

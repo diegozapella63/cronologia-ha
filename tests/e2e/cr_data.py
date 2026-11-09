@@ -70,7 +70,7 @@ async def main():
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(400)
         await a.locator(".btn", has_text="Pontos avulsos").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet #ex-title").fill("Lavou o carro")
-        await a.locator(".sheet .pick.person", has_text="Diego").click()
+        await a.locator(".sheet .pick.person", has_text="Davi").click()
         await a.locator(".sheet .btn.primary").click()
         await wait_for(lambda: len(stored(data)["score"]["entries"]) == 1, "points saved")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)

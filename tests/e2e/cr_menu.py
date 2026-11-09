@@ -16,7 +16,7 @@ MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "
 
 async def main():
     # Recompensas on: the menu has all its rows (off, Rotinas goes to the bar: cr_rewards)
-    st = Stack("crmenu", data={"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}})
+    st = Stack("crmenu", data={"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}})
     try:
         async with async_playwright() as p:
             b = await p.chromium.launch()

@@ -29,7 +29,7 @@ async def main():
         await pg.goto("http://127.0.0.1:8099/"); await pg.wait_for_timeout(1500)
         a = pg.locator("cronologia-app"); sheet = a.locator(".sheet")
         # a scoreboard with participants and a demerit
-        await pg.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, participants: ['Andressa', 'Diego'] })")
+        await pg.evaluate("() => document.querySelector('cronologia-app')._scorePrefs({ enabled: true, participants: ['Aurora', 'Davi'] })")
         await pg.wait_for_timeout(800)
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(300)
         await open_more(a, "Recompensas"); await pg.wait_for_timeout(600)

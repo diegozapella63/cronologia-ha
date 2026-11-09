@@ -112,7 +112,7 @@ async def main():
         await day_titles(0)
         # Recompensas: Para pontuar hoje says the routines are paused (not "nothing with points"); the deméritos too
         ws = """(msg) => new Promise((res) => { const ws = new WebSocket(location.origin.replace('http','ws') + '/ws'); ws.onopen = () => ws.send(JSON.stringify({id: 1, ...msg})); ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.type === 'result') { ws.close(); res(m); } }; })"""
-        await pg.evaluate(ws, {"type": "cronologia/prefs/set_app", "prefs": {"score": {"enabled": True, "participants": ["Andressa", "Diego"], "period": "semana", "manual": True}, "demerits": [{"id": "toalha01", "title": "Toalha molhada na cama", "points": 5}]}})
+        await pg.evaluate(ws, {"type": "cronologia/prefs/set_app", "prefs": {"score": {"enabled": True, "participants": ["Aurora", "Davi"], "period": "semana", "manual": True}, "demerits": [{"id": "toalha01", "title": "Toalha molhada na cama", "points": 5}]}})
         await pg.wait_for_timeout(1200)
         await a.locator(".tab", has_text="Recompensas").click(); await pg.wait_for_timeout(900)
         today_p = a.locator(".score-today")
@@ -121,7 +121,7 @@ async def main():
         dm = a.locator("#demeritos")
         check(await dm.count() == 1 and "Pausados nas férias." in await dm.inner_text() and await dm.locator(".dm-btn").count() == 0, "Recompensas › Deméritos: paused, nothing to tap")
         check(await today_p.locator(".score-actions .btn").count() == 0, "1.57.2: Tarefa com pontos and Pontos avulsos hidden on vacation")
-        r = await pg.evaluate(ws, {"type": "cronologia/score/demerit", "demerit": "toalha01", "who": "Diego"})
+        r = await pg.evaluate(ws, {"type": "cronologia/score/demerit", "demerit": "toalha01", "who": "Davi"})
         check(r.get("success") is False and (r.get("error") or {}).get("code") == "away", f"and the server refuses a demérito on vacation ({r.get('error')})")
         await pg.screenshot(path=f"{SP}/shots/cra-rewards.png", full_page=True)
         # 1.56.3: Mais › Rotinas: a routine or maintenance is paused on vacation, not late

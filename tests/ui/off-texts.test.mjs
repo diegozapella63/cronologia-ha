@@ -15,16 +15,16 @@ import { TasksMixin } from "../../frontend/src/tasks.js";
 
 const NOW = at(2026, 11, 6, 10);
 // the people of Home Assistant, each with a phone tied to them or not (1.54.0: no device names on the screens)
-const DIEGO = { name: "Diego", person: "person.diego", pet: false, phone: true, care: null, reach: true };
+const DAVI = { name: "Davi", person: "person.davi", pet: false, phone: true, care: null, reach: true };
 const ANA = { name: "Ana", person: "person.ana", pet: false, phone: true, care: null, reach: true };
-const SCORE = { enabled: true, participants: ["Diego", "Ana"], entries: [], rows: [] };
+const SCORE = { enabled: true, participants: ["Davi", "Ana"], entries: [], rows: [] };
 
 class App extends hostOf(ModelsMixin, RewardsMixin, TasksMixin) {
   constructor({ home = {}, app = {} } = {}) {
     super(fakeApi());
-    this._home = { meds: [], routines: [], bills: [], maint: [], checks: {}, people: [ANA, DIEGO], caregivers: [], gerencia: { ligado: false, contas: [] }, score: null, ...home };
+    this._home = { meds: [], routines: [], bills: [], maint: [], checks: {}, people: [ANA, DAVI], caregivers: [], gerencia: { ligado: false, contas: [] }, score: null, ...home };
     this._app_ = { ...app };
-    this._user = { person: "Diego" };
+    this._user = { person: "Davi" };
     this._now = NOW.getTime();
     this._dark = false;
   }
@@ -42,7 +42,7 @@ class App extends hostOf(ModelsMixin, RewardsMixin, TasksMixin) {
   }
 }
 
-const dose = (over = {}) => ({ key: `d|${over.who || "Diego"}|${over.summary || "Losartana"}`, summary: "Losartana", who: "Diego", dose: "50 mg", time: "20:00", taken: null, state: "depois", late_min: 0, alert: true, phone: true, cal: "calendar.saude", uid: "u1", ...over });
+const dose = (over = {}) => ({ key: `d|${over.who || "Davi"}|${over.summary || "Losartana"}`, summary: "Losartana", who: "Davi", dose: "50 mg", time: "20:00", taken: null, state: "depois", late_min: 0, alert: true, phone: true, cal: "calendar.saude", uid: "u1", ...over });
 /** An event of a model, ten days ahead (no Feito button). */
 const modelEvent = (kind) => ({ key: `ev|${kind.kind}`, cal: "calendar.casa", uid: `u-${kind.kind}`, rid: null, rrule: null, summary: "Teste", start: at(2026, 11, 16), end: at(2026, 11, 17), allDay: true, kind });
 
@@ -57,7 +57,7 @@ describe("Agora › Remédios de hoje: the bell and the line at the bottom", () 
   it("on: the bell of whoever gets the alert", () => {
     const view = new App({ home: { meds: [dose()] } })._renderMedsPanel();
     assert.match(render(view).html, /who-bell/);
-    assert.match(text(view), /Avisa no celular de Diego/);
+    assert.match(text(view), /Avisa no celular de Davi/);
   });
   it("today's medicines all without their alert: no bell, no phone to choose", () => {
     const view = new App({ home: { meds: [dose({ alert: false })] } })._renderMedsPanel();
@@ -67,19 +67,19 @@ describe("Agora › Remédios de hoje: the bell and the line at the bottom", () 
   });
   it("Quem cuida only when it gets something: the late alerts, or the ones of someone without a phone", () => {
     const care = { caregivers: ["Ana"] };
-    assert.match(text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 30 } } })._renderMedsPanel()), /Avisa no celular de Diego e de quem cuida/);
+    assert.match(text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 30 } } })._renderMedsPanel()), /Avisa no celular de Davi e de quem cuida/);
     const noLate = text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 0 } } })._renderMedsPanel());
-    assert.match(noLate, /Avisa no celular de Diego/);
+    assert.match(noLate, /Avisa no celular de Davi/);
     assert.doesNotMatch(noLate, /quem cuida/, "Avisar de novo: Não, and everyone has a phone: nothing goes to quem cuida");
     const mimi = dose({ who: "Mimi", summary: "Gardenal", phone: false });
-    assert.match(text(new App({ home: { meds: [dose(), mimi] }, app: { alerts: { ...care, late: 0 } } })._renderMedsPanel()), /Avisa no celular de Diego e de quem cuida/, "Mimi has no phone: hers go to quem cuida");
+    assert.match(text(new App({ home: { meds: [dose(), mimi] }, app: { alerts: { ...care, late: 0 } } })._renderMedsPanel()), /Avisa no celular de Davi e de quem cuida/, "Mimi has no phone: hers go to quem cuida");
   });
 });
 
 describe("the sheet of a medicine, a routine and a maintenance", () => {
-  const med = modelEvent({ kind: "remedio", who: "Diego", dose: "50 mg", alert: true });
+  const med = modelEvent({ kind: "remedio", who: "Davi", dose: "50 mg", alert: true });
   it("remédio: the person whose phone gets it (never a device); with Avisar no celular off, no phone", () => {
-    assert.match(text(new App()._renderKindFacts(med)), /Aviso no celular de Diego/);
+    assert.match(text(new App()._renderKindFacts(med)), /Aviso no celular de Davi/);
     const off = text(new App({ app: { alerts: { meds: false } } })._renderKindFacts(med));
     assert.match(off, /Avisos no celular desligados/);
     assert.doesNotMatch(off, /Aviso no celular de/);
@@ -96,16 +96,16 @@ describe("the sheet of a medicine, a routine and a maintenance", () => {
 });
 
 describe("Novo › Remédio: Aviso no celular", () => {
-  const form = { mode: "add", kind: "remedio", title: "Losartana", dose: "", who: "Diego", times: ["08:00"], freq: "diario", byday: [5], interval: 3, date: "2026-11-06", dur: "sempre", until: "2026-12-06", days: 7, alert: true, notes: "" };
+  const form = { mode: "add", kind: "remedio", title: "Losartana", dose: "", who: "Davi", times: ["08:00"], freq: "diario", byday: [5], interval: 3, date: "2026-11-06", dur: "sempre", until: "2026-12-06", days: 7, alert: true, notes: "" };
   const formText = (app) => {
     app._form = { ...form };
     return text(app._renderKindForm());
   };
   it("on time and again when late, unless Avisar de novo is Não", () => {
-    assert.match(formText(new App()), /Na hora e de novo se atrasar, no celular de Diego\./);
-    assert.match(formText(new App({ app: { alerts: { late: 60 } } })), /Na hora e de novo se atrasar, no celular de Diego\./);
+    assert.match(formText(new App()), /Na hora e de novo se atrasar, no celular de Davi\./);
+    assert.match(formText(new App({ app: { alerts: { late: 60 } } })), /Na hora e de novo se atrasar, no celular de Davi\./);
     const once = formText(new App({ app: { alerts: { late: 0 } } }));
-    assert.match(once, /Na hora, no celular de Diego\./);
+    assert.match(once, /Na hora, no celular de Davi\./);
     assert.doesNotMatch(once, /de novo/);
   });
   it("Avisar no celular off in Mais › Avisos: no alert to turn on here", () => {
@@ -126,11 +126,11 @@ describe("Mais › Avisos › Quem cuida", () => {
 });
 
 describe("Placar › Lembrete diário: who gets it (the people, never a device)", () => {
-  const s = { remind: "20:00", participants: ["Diego", "Beto"] };
+  const s = { remind: "20:00", participants: ["Davi", "Beto"] };
   it("the people with a phone, and who has none; no phone to choose in Avisos", () => {
     for (const app of [new App(), new App({ app: { alerts: { meds: false } } })]) {
       const t = text(app._renderScoreRemind(s));
-      assert.match(t, /Vai para o celular de Diego\. Sem celular para Beto\./);
+      assert.match(t, /Vai para o celular de Davi\. Sem celular para Beto\./);
       assert.doesNotMatch(t, /escolha em Avisos/);
     }
   });
@@ -143,7 +143,7 @@ describe("Placar › Lembrete diário: who gets it (the people, never a device)"
 describe("Mais › Avisos: the people, never a device (1.54.0)", () => {
   const MIMI = { name: "Mimi", person: null, pet: true, phone: false, care: "Ana", reach: true };
   const LIA = { name: "Lia", person: "person.lia", pet: false, phone: false, care: null, reach: false };
-  const panel = (home = {}, app = {}) => new App({ home: { people: [ANA, DIEGO, LIA, MIMI], ...home }, app })._renderAlertsPanel();
+  const panel = (home = {}, app = {}) => new App({ home: { people: [ANA, DAVI, LIA, MIMI], ...home }, app })._renderAlertsPanel();
   it("each person by name; one without a phone: who gets theirs (Quem cuida or a person with a phone)", () => {
     const view = panel();
     const t = text(view);
@@ -153,7 +153,7 @@ describe("Mais › Avisos: the people, never a device (1.54.0)", () => {
     const h = render(view).html;
     assert.match(h, /aria-label="Quem recebe os avisos de Lia"/);
     assert.match(h, /aria-label="Quem recebe os avisos de Mimi"/);
-    assert.doesNotMatch(h, /aria-label="Quem recebe os avisos de (Ana|Diego)"/, "a person with a phone: nothing to choose");
+    assert.doesNotMatch(h, /aria-label="Quem recebe os avisos de (Ana|Davi)"/, "a person with a phone: nothing to choose");
     assert.match(t, /No celular de quem cuida/);
     assert.match(t, /No celular de Ana/);
     assert.match(h, /aria-label="Testar aviso para Mimi"/, "the pet: tested on the phone of Ana");
@@ -161,7 +161,7 @@ describe("Mais › Avisos: the people, never a device (1.54.0)", () => {
   });
   it("Quem cuida: the people with a phone", () => {
     const t = text(panel({}, { alerts: { caregivers: ["Ana"] } }));
-    assert.match(t, /Quem cuida\s*Ana\s*Diego/);
+    assert.match(t, /Quem cuida\s*Ana\s*Davi/);
   });
   it("nobody with a phone: says so; no choice, no Quem cuida", () => {
     const t = text(panel({ people: [LIA, { ...MIMI, care: null, reach: false }] }));
@@ -177,7 +177,7 @@ describe("Mais › Avisos: the people, never a device (1.54.0)", () => {
 describe("Agora › Remédios de hoje: a pet goes by the person chosen for it", () => {
   it("the line names the person whose phone gets it; nothing reaches a phone: choose Quem cuida", () => {
     const mimi = dose({ who: "Mimi", summary: "Gardenal", phone: true });
-    const people = [ANA, DIEGO, { name: "Mimi", person: null, pet: true, phone: false, care: "Ana", reach: true }];
+    const people = [ANA, DAVI, { name: "Mimi", person: null, pet: true, phone: false, care: "Ana", reach: true }];
     assert.match(text(new App({ home: { meds: [mimi], people } })._renderMedsPanel()), /Avisa no celular de Ana/);
     const lone = dose({ who: "Lia", phone: false });
     const view = new App({ home: { meds: [lone], people: [ANA] } })._renderMedsPanel();

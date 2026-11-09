@@ -168,11 +168,11 @@ export function createCalendars() {
       platform: "local_calendar",
       features: 7,
       events: [
-        dose("DPrev 10.000 UI", -240, "FREQ=DAILY", "1 cápsula", "Andressa", -40),
-        dose("Sertralina", -240, "FREQ=DAILY", "50 mg · 1 comprimido", "Andressa", -40, "Depois do café da manhã"),
-        dose("Mounjaro 2,5 mg", -50, `FREQ=WEEKLY;BYDAY=${WD_CODE[today().getDay()]}`, "1 caneta", "Andressa", -21, "Aplicar na barriga, alternando o lado"),
+        dose("DPrev 10.000 UI", -240, "FREQ=DAILY", "1 cápsula", "Aurora", -40),
+        dose("Sertralina", -240, "FREQ=DAILY", "50 mg · 1 comprimido", "Aurora", -40, "Depois do café da manhã"),
+        dose("Mounjaro 2,5 mg", -50, `FREQ=WEEKLY;BYDAY=${WD_CODE[today().getDay()]}`, "1 caneta", "Aurora", -21, "Aplicar na barriga, alternando o lado"),
         dose("Gardenal", -5, "FREQ=DAILY", "1/4 de comprimido", "Mimi", -60),
-        dose("Ômega 3", 120, "FREQ=DAILY;INTERVAL=2", "2 cápsulas", "Diego", -20),
+        dose("Ômega 3", 120, "FREQ=DAILY;INTERVAL=2", "2 cápsulas", "Davi", -20),
       ],
     },
     "calendar.casa": {
@@ -180,14 +180,14 @@ export function createCalendars() {
       platform: "local_calendar",
       features: 7,
       events: [
-        allDay("Regar as plantas", -10, 1, { rrule: "FREQ=DAILY", description: "#rotina\nQuem faz: Diego\nPontos: 5" }),
-        mk("Tirar o lixo", at(-14, 19), at(-14, 19, 15), { rrule: `FREQ=WEEKLY;BYDAY=${[0, 2, 4].map((k) => WD_CODE[(today().getDay() + k) % 7]).join(",")}`, description: "#rotina\nQuem faz: Andressa\nPontos: 10\nO caminhão passa às 20h" }),
-        allDay("Limpar a caixa de areia", -9, 1, { rrule: "FREQ=DAILY;INTERVAL=3", description: "#rotina\nQuem faz: Diego\nPontos: 15" }),
+        allDay("Regar as plantas", -10, 1, { rrule: "FREQ=DAILY", description: "#rotina\nQuem faz: Davi\nPontos: 5" }),
+        mk("Tirar o lixo", at(-14, 19), at(-14, 19, 15), { rrule: `FREQ=WEEKLY;BYDAY=${[0, 2, 4].map((k) => WD_CODE[(today().getDay() + k) % 7]).join(",")}`, description: "#rotina\nQuem faz: Aurora\nPontos: 10\nO caminhão passa às 20h" }),
+        allDay("Limpar a caixa de areia", -9, 1, { rrule: "FREQ=DAILY;INTERVAL=3", description: "#rotina\nQuem faz: Davi\nPontos: 15" }),
         allDay("Lavar a louça", -20, 1, { rrule: "FREQ=DAILY", description: "#rotina\nPontos: 10" }),
         allDay("Conta de luz", 3, 1, { rrule: "FREQ=MONTHLY", description: "#conta\nValor: R$ 231,40\nCelesc · débito automático desligado" }),
         allDay("Internet", -2, 1, { description: "#conta\nValor: R$ 119,90" }),
-        allDay("Trocar o filtro de água", 5, 1, { description: maint("Diego", "6 meses", 7, [monthsAgo(6, 5)], 30) }),
-        allDay("Limpar o ar-condicionado", -4, 1, { description: maint("Diego", "3 meses", 10, [monthsAgo(3, -4)], 40) }),
+        allDay("Trocar o filtro de água", 5, 1, { description: maint("Davi", "6 meses", 7, [monthsAgo(6, 5)], 30) }),
+        allDay("Limpar o ar-condicionado", -4, 1, { description: maint("Davi", "3 meses", 10, [monthsAgo(3, -4)], 40) }),
         allDay("Dedetização", 40, 1, { description: maint("", "6 meses", 15, [monthsAgo(6, 40)]) }),
         allDay("Trocar a bateria do alarme", 200, 1, { description: maint("", "1 ano", 30, []) }),
       ],
@@ -218,7 +218,7 @@ export function createCalendars() {
       events: [allDay("Primal Slideee Deluxe (Stove) Giveaway", 0), allDay("Agent A: A puzzle in disguise", 0, 3), allDay("Bad Cheese", -1, 2), allDay("The Green Light (itch.io)", 0, 2), mk("Last Room (IndieGala) Giveaway", at(0, 8, 58), at(1, 0))],
     },
   };
-  const devices = [{ id: "dev_ms365", name: "Diego (Outlook)", name_by_user: null }];
+  const devices = [{ id: "dev_ms365", name: "Davi (Outlook)", name_by_user: null }];
 
   const fmt = (ev, ms) => (ev.allDay ? ymd(new Date(ms)) : isoLocal(ms));
 

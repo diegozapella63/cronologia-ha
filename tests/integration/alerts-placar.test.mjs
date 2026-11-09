@@ -35,18 +35,18 @@ before(async () => {
     data: {
       app: {
         week_start: 1,
-        // as saved before 1.54.0: Quem cuida by phone (the phone of Diego), a pet with a phone picked for it
+        // as saved before 1.54.0: Quem cuida by phone (the phone of Davi), a pet with a phone picked for it
         alerts: { late: 30, caregivers: ["mobile_app_pixel_8"] },
         people: { Mimi: { notify: "mobile_app_pixel_8", pet: true } },
-        score: { enabled: true, participants: ["Diego", "Andressa"], period: "semana" },
+        score: { enabled: true, participants: ["Davi", "Aurora"], period: "semana" },
       },
       score: {
         current: prev,
         entries: [
-          { key: "extra|a", at: noonOf(shift(prev.start, 1)), who: "Diego", points: 30, title: "Lavou o carro", kind: "extra" },
-          { key: "extra|b", at: noonOf(shift(prev.start, 2)), who: "Andressa", points: 10, title: "Faxina", kind: "extra" },
+          { key: "extra|a", at: noonOf(shift(prev.start, 1)), who: "Davi", points: 30, title: "Lavou o carro", kind: "extra" },
+          { key: "extra|b", at: noonOf(shift(prev.start, 2)), who: "Aurora", points: 10, title: "Faxina", kind: "extra" },
         ],
-        prizes: { [prev.key]: { Diego: "Jantar fora", Andressa: "Massagem" } },
+        prizes: { [prev.key]: { Davi: "Jantar fora", Aurora: "Massagem" } },
         rewards: { [monday]: "Cinema" },
       },
     },
@@ -74,7 +74,7 @@ describe("the placar: a period that ended closes when the server starts", () => 
   it("the result goes to the history: the winner, the totals, the winner's own prize", async () => {
     const ix = await h.wait((x) => x.score.history.length === 1, "the period closed", 15000);
     const [last] = ix.score.history;
-    assert.deepEqual({ key: last.key, winner: last.winner, totals: last.totals, reward: last.reward, delivered: last.delivered }, { key: prev.key, winner: "Diego", totals: { Diego: 30, Andressa: 10 }, reward: "Jantar fora", delivered: false });
+    assert.deepEqual({ key: last.key, winner: last.winner, totals: last.totals, reward: last.reward, delivered: last.delivered }, { key: prev.key, winner: "Davi", totals: { Davi: 30, Aurora: 10 }, reward: "Jantar fora", delivered: false });
     assert.equal(ix.score.current.start, monday, "the current week starts on Monday (week_start 1)");
     assert.deepEqual(ix.score.rows.map((r) => r.points), [0, 0], "the new period starts at zero");
     assert.equal(ix.score.current.reward, "Cinema");
@@ -85,10 +85,10 @@ describe("the placar: a period that ended closes when the server starts", () => 
       return n.length === 2 && n;
     }, { what: "the result on the phones" });
     assert.deepEqual(told.map((n) => n.service).sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
-    assert.equal(told[0].message, "Diego venceu: 30 × 10. Prêmio: Jantar fora. Prêmio agora: Cinema.");
+    assert.equal(told[0].message, "Davi venceu: 30 × 10. Prêmio: Jantar fora. Prêmio agora: Cinema.");
   });
   it("the close is logged (fechou), and the closed period's Extrato keeps its own lines only", async () => {
-    await storedWhen((s) => s.score.log.some((l) => l.type === "fechou" && l.winner === "Diego" && l.reward === "Jantar fora"), "fechou in the log");
+    await storedWhen((s) => s.score.log.some((l) => l.type === "fechou" && l.winner === "Davi" && l.reward === "Jantar fora"), "fechou in the log");
     const log = await c.call("cronologia/score/log", { before: 0, limit: 10, from: prev.start, to: prev.end });
     assert.ok(log.every((l) => l.type !== "fechou"));
   });
@@ -104,25 +104,27 @@ describe("the placar: a period that ended closes when the server starts", () => 
     await c.call("cronologia/score/reward", { period: monday, text: "  " });
     await h.wait((x) => x.score.current.reward === "", "no prize");
     await storedWhen((s) => !(monday in s.score.rewards), "the prize gone from the file");
-    await c.call("cronologia/score/prizes", { period: monday, shared: "", per: { Diego: "Pizza", Andressa: "" } });
-    const ix = await h.wait((x) => x.score.current.prizes.Diego === "Pizza", "Diego's prize");
-    assert.deepEqual(ix.score.current.prizes, { Diego: "Pizza" }, "an empty one is not kept");
+    await c.call("cronologia/score/prizes", { period: monday, shared: "", per: { Davi: "Pizza", Aurora: "" } });
+    const ix = await h.wait((x) => x.score.current.prizes.Davi === "Pizza", "Davi's prize");
+    assert.deepEqual(ix.score.current.prizes, { Davi: "Pizza" }, "an empty one is not kept");
   });
   it("changing the period length starts counting from the period of now, without closing one", async () => {
-    await c.call("cronologia/score/extra", { who: "Andressa", points: 5, title: "Regou" });
-    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Diego", "Andressa"], period: "mes" } } });
+    await c.call("cronologia/score/extra", { who: "Aurora", points: 5, title: "Regou" });
+    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Davi", "Aurora"], period: "mes" } } });
     let ix = await h.wait((x) => x.score.period === "mes", "monthly");
     assert.equal(ix.score.current.start, `${day(0).slice(0, 8)}01`);
     assert.equal(ix.score.history.length, 1, "no period closed");
-    assert.equal(ix.score.rows.find((r) => r.name === "Andressa").points, 5, "the points kept");
-    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Diego", "Andressa"], period: "quinzena" } } });
+    // the month counts the 10 of Faxina, from last week, when last week is already in this month
+    const kept = 5 + (shift(prev.start, 2) >= ix.score.current.start ? 10 : 0);
+    assert.equal(ix.score.rows.find((r) => r.name === "Aurora").points, kept, "the points kept");
+    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Davi", "Aurora"], period: "quinzena" } } });
     ix = await h.wait((x) => x.score.period === "quinzena", "every two weeks");
     const days = (Date.parse(ix.score.current.end) - Date.parse(ix.score.current.start)) / 86400000;
     assert.equal(days, 14);
     assert.equal(new Date(`${ix.score.current.start}T12:00:00`).getDay(), 1, "starts on the week start (Monday)");
   });
   it("the week starting on Sunday (Mais › Opções) moves the weekly close to Sunday", async () => {
-    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Diego", "Andressa"], period: "semana" }, week_start: 0 } });
+    await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Davi", "Aurora"], period: "semana" }, week_start: 0 } });
     const ix = await h.wait((x) => x.score.period === "semana" && new Date(`${x.score.current.start}T12:00:00`).getDay() === 0, "the week from Sunday");
     assert.equal(ix.score.current.end, shift(ix.score.current.start, 7));
     assert.equal(ix.score.history.length, 1, "still no period closed");
@@ -133,13 +135,13 @@ describe("the placar: a period that ended closes when the server starts", () => 
 describe("phone alerts of the doses (the server's own timer)", () => {
   const med = (name) => h.latest.meds.find((m) => m.summary === name);
   it("the phones picked before 1.54.0 became the people whose phones they are", async () => {
-    const s = await storedWhen((x) => x.app.alerts.caregivers[0] === "Diego", "Quem cuida migrated");
-    assert.deepEqual(s.app.alerts.caregivers, ["Diego"]);
-    assert.deepEqual(s.app.people, { Mimi: { pet: true, care: "Diego" } });
+    const s = await storedWhen((x) => x.app.alerts.caregivers[0] === "Davi", "Quem cuida migrated");
+    assert.deepEqual(s.app.alerts.caregivers, ["Davi"]);
+    assert.deepEqual(s.app.people, { Mimi: { pet: true, care: "Davi" } });
   });
   it("the pet's dose goes to the person chosen for it (it has no phone)", { skip: lateNight && "near midnight the fake doses move" }, async () => {
     const g = med("Gardenal");
-    assert.equal(g.phone, true, "on the phone of Diego");
+    assert.equal(g.phone, true, "on the phone of Davi");
     const sent = await waitFor(async () => {
       const n = await notes((x) => /Gardenal/.test(x.title || ""));
       return n.length && n;
@@ -157,7 +159,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
       return n.length === 2 && n;
     }, { what: "the late alert", timeout: 15000 });
     assert.deepEqual(late.map((n) => n.service).sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
-    assert.match(late[0].message, /^Andressa ainda não tomou o das \d\d:\d\d \(\d+ min\)\. Dose: 1 caneta\.$/);
+    assert.match(late[0].message, /^Aurora ainda não tomou o das \d\d:\d\d \(\d+ min\)\. Dose: 1 caneta\.$/);
     const s = await storedWhen((x) => x.sent[m.key] && x.sent[m.key].late, "the late alert saved");
     assert.deepEqual(s.sent[m.key].targets.sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
   });
@@ -183,7 +185,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
     assert.deepEqual(cleared.map((n) => n.service), ["mobile_app_pixel_8"]);
   });
   it("the test alert's Adiar comes back too: confirmed on the phone and on the screens", async () => {
-    await c.call("cronologia/notify/test", { person: "Andressa" });
+    await c.call("cronologia/notify/test", { person: "Aurora" });
     const [test] = await notes((x) => x.title === "💊 Teste do CronologIA" && x.service === "mobile_app_galaxy_s23");
     assert.deepEqual(
       test.data.actions.map((a) => a.title),
@@ -191,7 +193,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
     );
     await stack.fire("mobile_app_notification_action", { action: test.data.actions[1].action });
     const ix = await h.wait((x) => x.test && x.test.action === "adiar", "the Adiar of the test");
-    assert.equal(ix.test.person, "Andressa");
+    assert.equal(ix.test.person, "Aurora");
     const ok = await waitFor(async () => {
       const n = await notes((x) => x.title === "✅ Funcionou" && x.service === "mobile_app_galaxy_s23");
       return n.length && n[0];

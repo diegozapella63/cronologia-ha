@@ -18,7 +18,7 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/cra-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
 env = dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media")
 fake = subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=env, stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT)
 time.sleep(0.6)
@@ -46,7 +46,7 @@ async def wait_for(fn, label, tries=48):
         await asyncio.sleep(0.25)
     check(False, label)
 
-async def tap_done(A, a, loc, who="Diego"):
+async def tap_done(A, a, loc, who="Davi"):
     await loc.click()
     await A.wait_for_timeout(400)
     if await a.locator(".sheet .who-btn").count():
@@ -81,28 +81,28 @@ async def main():
         await row.wait_for(timeout=8000)
         sub = await row.locator("small").inner_text()
         check("volta 2 dias depois" in sub, f"Rotina da casa shows it today ({sub})")
-        # 2) done here: moves to today + 2, points to Diego
+        # 2) done here: moves to today + 2, points to Davi
         await tap_done(A, a, row.locator(".chk"))
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(2), "Feito moves it to 2 days from now")
         ev = events("Limpar o banheiro")[0]
         check(f"Feito em: {BR(0)}" in ev["description"] and len(events("Limpar o banheiro")) == 1, "today in its history, still one event")
-        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Diego" and e["points"] == 10 for e in entries()), "+10 for Diego")
-        async def shown_done(): return "feito por Diego" in await a.locator(".panel.chores .chore.done", has_text="Limpar o banheiro").inner_text()
+        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Davi" and e["points"] == 10 for e in entries()), "+10 for Davi")
+        async def shown_done(): return "feito por Davi" in await a.locator(".panel.chores .chore.done", has_text="Limpar o banheiro").inner_text()
         await wait_for(shown_done, "stays in today's list as done, saying when it comes back")
         sub = await a.locator(".panel.chores .chore.done", has_text="Limpar o banheiro").locator("small").inner_text()
         check("volta" in sub, f"done line ({sub})")
-        # 3) Foi Andressa (toast) moves the points; unchecking in the card brings it back to today, points off
-        await a.locator(".toast button", has_text="Foi Andressa").click()
-        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Andressa" for e in entries()) and not any(e["title"] == "Limpar o banheiro" and e["who"] == "Diego" for e in entries()), "Foi Andressa moves the points")
+        # 3) Foi Aurora (toast) moves the points; unchecking in the card brings it back to today, points off
+        await a.locator(".toast button", has_text="Foi Aurora").click()
+        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Aurora" for e in entries()) and not any(e["title"] == "Limpar o banheiro" and e["who"] == "Davi" for e in entries()), "Foi Aurora moves the points")
         await A.wait_for_timeout(500)
         await a.locator(".panel.chores .chore.done", has_text="Limpar o banheiro").locator(".chk").click()
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(0) and BR(0) not in events("Limpar o banheiro")[0]["description"], "unchecking brings it back to today, out of the history")
         await wait_for(lambda: not any(e["title"] == "Limpar o banheiro" for e in entries()), "and takes the points back")
         # 4) done from the event sheet, then Desfazer there
         await a.locator(".panel.chores .chore", has_text="Limpar o banheiro").locator(".chore-tx").click(); await A.wait_for_timeout(400)
-        await tap_done(A, a, a.locator(".sheet .kind-act"), "Andressa")
+        await tap_done(A, a, a.locator(".sheet .kind-act"), "Aurora")
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(2), "Feito in the event sheet moves it too")
-        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Andressa" for e in entries()), "points to who was picked")
+        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Aurora" for e in entries()), "points to who was picked")
         await A.wait_for_timeout(500)
         await a.locator(".panel.chores .chore.done", has_text="Limpar o banheiro").locator(".chk").click()
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(0), "and unchecking undoes it")
@@ -126,9 +126,9 @@ async def main():
         check(anytime and anytime[0] == "Trocar a areia", f"late ones first, among those for any time ({anytime[:3]})")
         await A.screenshot(path=f"{SP}/shots/cra-card.png")
         # 6) NFC / automation with quem
-        post("/dev/fire", {"event_type": "cronologia_feito", "data": {"nome": "Trocar a areia", "quem": "Andressa"}})
+        post("/dev/fire", {"event_type": "cronologia_feito", "data": {"nome": "Trocar a areia", "quem": "Aurora"}})
         await wait_for(lambda: events("Trocar a areia")[0]["start"] == D(3), "cronologia_feito moves a late one to today + 3")
-        await wait_for(lambda: any(e["title"] == "Trocar a areia" and e["who"] == "Andressa" for e in entries()), "and Andressa gets the points")
+        await wait_for(lambda: any(e["title"] == "Trocar a areia" and e["who"] == "Aurora" for e in entries()), "and Aurora gets the points")
         # 7) event sheet and edit
         await a.locator(".panel.chores .chore", has_text="Limpar o banheiro").locator(".chore-tx").click(); await A.wait_for_timeout(400)
         sheet = await a.locator(".sheet").inner_text()
@@ -148,10 +148,10 @@ async def main():
         await wait_for(lambda: item("Limpar o banheiro") and item("Limpar o banheiro")["due"] == D(0), "in the ResolvIA list with today's date")
         it = item("Limpar o banheiro")
         post("/dev/todo", {"entity_id": "todo.casa", "service": "update_item", "data": {"item": it["uid"], "status": "completed"}})
-        post("/dev/fire", {"event_type": "cronologia_pontos", "data": {"acao": "somar", "chave": f"espelho|todo.casa|{it['uid']}", "quem": "Diego", "pontos": 10, "titulo": "Limpar o banheiro"}})
+        post("/dev/fire", {"event_type": "cronologia_pontos", "data": {"acao": "somar", "chave": f"espelho|todo.casa|{it['uid']}", "quem": "Davi", "pontos": 10, "titulo": "Limpar o banheiro"}})
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(4), "concluded in the ResolvIA: here it moves to today + 4", tries=80)
         await wait_for(lambda: item("Limpar o banheiro")["due"] == D(4) and item("Limpar o banheiro")["status"] == "needs_action", "and comes back to the list with that date", tries=80)
-        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Diego" for e in entries()), "Diego gets the points")
+        await wait_for(lambda: any(e["title"] == "Limpar o banheiro" and e["who"] == "Davi" for e in entries()), "Davi gets the points")
         post("/dev/fire", {"event_type": "cronologia_pontos", "data": {"acao": "desfazer", "chave": f"espelho|todo.casa|{it['uid']}"}})
         await wait_for(lambda: events("Limpar o banheiro")[0]["start"] == D(0), "Desfazer in the ResolvIA moves it back", tries=80)
         check(not errs, f"no page errors {errs}")

@@ -172,7 +172,7 @@ describe("Store: app settings", () => {
     assert.deepEqual(set({ todo_hidden: "todo.casa" }), {});
   });
   it("todo_owner: list -> person name", () => {
-    assert.deepEqual(set({ todo_owner: { "todo.tarefas_dessa": "  Andressa ", "todo.x": "", "light.y": "Diego" } }).todo_owner, { "todo.tarefas_dessa": "Andressa" });
+    assert.deepEqual(set({ todo_owner: { "todo.tarefas_aurora": "  Aurora ", "todo.x": "", "light.y": "Davi" } }).todo_owner, { "todo.tarefas_aurora": "Aurora" });
     assert.deepEqual(set({ todo_owner: null }), {});
   });
   it("mirror: the list of the maintenance and the one of the routines (1.59.0; the old shape becomes the new one)", () => {
@@ -184,20 +184,20 @@ describe("Store: app settings", () => {
     assert.deepEqual(set({ mirror: null }), {});
   });
   it("people: pets, the person who gets the alerts of one without a phone, names trimmed; a phone of before 1.54.0 kept until migrated", () => {
-    const people = set({ people: { " Andressa ": { notify: "mobile_app_galaxy_s23" }, Mimi: { care: " Andressa ", pet: true }, Diego: { notify: "notify.x", care: 3 }, "": {}, Rex: { pet: "yes" } } }).people;
+    const people = set({ people: { " Aurora ": { notify: "mobile_app_galaxy_s23" }, Mimi: { care: " Aurora ", pet: true }, Davi: { notify: "notify.x", care: 3 }, "": {}, Rex: { pet: "yes" } } }).people;
     assert.deepEqual(people, {
-      Andressa: { notify: "mobile_app_galaxy_s23" },
-      Mimi: { care: "Andressa", pet: true },
-      Diego: {},
+      Aurora: { notify: "mobile_app_galaxy_s23" },
+      Mimi: { care: "Aurora", pet: true },
+      Davi: {},
       Rex: {},
     });
     assert.deepEqual(set({ people: {} }), {});
   });
   it("score: participants, period, anchor, notify (on by default), manual", () => {
-    const sc = set({ score: { enabled: 1, participants: [" Diego ", "Andressa", "Diego", "", ...Array.from({ length: 12 }, (_, i) => `P${i}`)], period: "quinzena", anchor: "2026-10-26", manual: 1 } }).score;
+    const sc = set({ score: { enabled: 1, participants: [" Davi ", "Aurora", "Davi", "", ...Array.from({ length: 12 }, (_, i) => `P${i}`)], period: "quinzena", anchor: "2026-10-26", manual: 1 } }).score;
     assert.equal(sc.enabled, true);
     assert.equal(sc.participants.length, 10);
-    assert.deepEqual(sc.participants.slice(0, 3), ["Diego", "Andressa", "P0"]);
+    assert.deepEqual(sc.participants.slice(0, 3), ["Davi", "Aurora", "P0"]);
     assert.equal(sc.period, "quinzena");
     assert.equal(sc.anchor, "2026-10-26");
     assert.equal(sc.notify, true);
@@ -242,10 +242,10 @@ describe("Store: app settings", () => {
 describe("Store: checks, alerts sent, calendars with models", () => {
   it("setCheck keeps at/by/kind, Pular (skipped) and where a routine was (moved)", () => {
     const s = fresh();
-    s.setCheck("k1", { by: "Diego", kind: "rotina", skipped: true, moved: { cal: "calendar.casa", uid: "u1", start: "2026-11-02", end: "2026-11-03", day: "2026-11-02", summary: "Cama", recreated: true, extra: "x" } });
+    s.setCheck("k1", { by: "Davi", kind: "rotina", skipped: true, moved: { cal: "calendar.casa", uid: "u1", start: "2026-11-02", end: "2026-11-03", day: "2026-11-02", summary: "Cama", recreated: true, extra: "x" } });
     assert.deepEqual(s.data.checks.k1, {
       at: new Date(NOW).toISOString(),
-      by: "Diego",
+      by: "Davi",
       kind: "rotina",
       skipped: true,
       moved: { cal: "calendar.casa", uid: "u1", start: "2026-11-02", end: "2026-11-03", day: "2026-11-02", summary: "Cama", recreated: true },
@@ -287,7 +287,7 @@ describe("Store: checks, alerts sent, calendars with models", () => {
 });
 
 describe("Store: points and the Extrato", () => {
-  const entry = (extra = {}) => ({ key: "k1", who: "Diego", points: 10, title: "Regar", kind: "rotina", ...extra });
+  const entry = (extra = {}) => ({ key: "k1", who: "Davi", points: 10, title: "Regar", kind: "rotina", ...extra });
   const types = (s) => s.data.score.log.map((l) => l.type);
 
   it("new points: ganhou (or perdeu when negative), with an increasing id", () => {
@@ -307,13 +307,13 @@ describe("Store: points and the Extrato", () => {
     const s = fresh();
     s.addPoints(entry());
     s.addPoints(entry());
-    s.addPoints(entry({ who: "Andressa" }));
-    s.addPoints(entry({ who: "Andressa", points: 15 }));
+    s.addPoints(entry({ who: "Aurora" }));
+    s.addPoints(entry({ who: "Aurora", points: 15 }));
     assert.deepEqual(types(s), ["ganhou", "trocou", "ajuste"]);
-    assert.equal(s.data.score.log[1].from, "Diego");
+    assert.equal(s.data.score.log[1].from, "Davi");
     assert.equal(s.data.score.log[2].points, 5, "ajuste logs the difference");
     assert.equal(s.data.score.entries.length, 1);
-    assert.equal(s.pointsByKey("k1").who, "Andressa");
+    assert.equal(s.pointsByKey("k1").who, "Aurora");
   });
   it("points are rounded and kept within ±1000; texts are cut", () => {
     const s = fresh();
@@ -347,9 +347,9 @@ describe("Store: points and the Extrato", () => {
   });
   it("each line says who did it (asActor) and through what", () => {
     const s = fresh();
-    asActor({ by: "Andressa", via: "ResolvIA" }, () => s.addPoints(entry()));
+    asActor({ by: "Aurora", via: "ResolvIA" }, () => s.addPoints(entry()));
     s.addPoints(entry({ key: "k2" }));
-    assert.equal(s.data.score.log[0].by, "Andressa");
+    assert.equal(s.data.score.log[0].by, "Aurora");
     assert.equal(s.data.score.log[0].via, "ResolvIA");
     assert.equal("by" in s.data.score.log[1], false);
     assert.equal("via" in s.data.score.log[1], false);
@@ -391,21 +391,21 @@ describe("Store: points and the Extrato", () => {
 describe("Store: prizes, periods", () => {
   it("setPrizes: shared and per person; prizeOf picks the winner's own, else the shared one", () => {
     const s = fresh();
-    s.setPrizes("2026-11-02", " Pizza ", { Diego: "Jantar fora", Andressa: " Massagem ", "": "x", Ninguem: "" });
+    s.setPrizes("2026-11-02", " Pizza ", { Davi: "Jantar fora", Aurora: " Massagem ", "": "x", Ninguem: "" });
     assert.equal(s.data.score.rewards["2026-11-02"], "Pizza");
-    assert.deepEqual(s.data.score.prizes["2026-11-02"], { Diego: "Jantar fora", Andressa: "Massagem" });
-    assert.equal(s.prizeOf("2026-11-02", "Diego"), "Jantar fora");
+    assert.deepEqual(s.data.score.prizes["2026-11-02"], { Davi: "Jantar fora", Aurora: "Massagem" });
+    assert.equal(s.prizeOf("2026-11-02", "Davi"), "Jantar fora");
     assert.equal(s.prizeOf("2026-11-02", "Outro"), "Pizza");
     assert.equal(s.prizeOf("2026-11-02", ""), "Pizza");
-    assert.equal(s.prizeOf("2026-11-09", "Diego"), "");
+    assert.equal(s.prizeOf("2026-11-09", "Davi"), "");
     s.setPrizes("2026-11-02", "", {});
     assert.equal("2026-11-02" in s.data.score.rewards, false);
     assert.equal("2026-11-02" in s.data.score.prizes, false);
   });
   it("setPrizes updates the reward of a closed period (the winner's own)", () => {
     const s = fresh();
-    s.closePeriod({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: { Diego: 30 }, winner: "Diego", reward: "" }, { key: "2026-11-02", start: "2026-11-02", end: "2026-11-09" });
-    s.setPrizes("2026-10-26", "Pizza", { Diego: "Cinema" });
+    s.closePeriod({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: { Davi: 30 }, winner: "Davi", reward: "" }, { key: "2026-11-02", start: "2026-11-02", end: "2026-11-09" });
+    s.setPrizes("2026-10-26", "Pizza", { Davi: "Cinema" });
     assert.equal(s.data.score.history[0].reward, "Cinema");
     s.setPrizes("2026-10-26", "Pizza", {});
     assert.equal(s.data.score.history[0].reward, "Pizza");
@@ -458,8 +458,8 @@ describe("Store: pruning old data", () => {
       sent: { fresh: { on: iso(NOW - DAY), targets: [] }, stale: { on: iso(NOW - 4 * DAY), targets: [] }, snoozed: { on: iso(NOW - 5 * DAY), snooze_until: iso(NOW - 2 * DAY) }, none: { targets: [] } },
       score: {
         entries: [
-          { key: "a", at: iso(NOW - 399 * DAY), who: "Diego", points: 1 },
-          { key: "b", at: iso(NOW - 401 * DAY), who: "Diego", points: 1 },
+          { key: "a", at: iso(NOW - 399 * DAY), who: "Davi", points: 1 },
+          { key: "b", at: iso(NOW - 401 * DAY), who: "Davi", points: 1 },
         ],
         log: [
           { id: 1, type: "ganhou", at: iso(NOW - 401 * DAY), key: "b" },
@@ -467,7 +467,7 @@ describe("Store: pruning old data", () => {
         ],
         log_seq: 2,
         rewards: { "2024-10-01": "velho", "2025-12-01": "novo" },
-        prizes: { "2024-10-01": { Diego: "x" }, "2025-12-01": { Diego: "y" } },
+        prizes: { "2024-10-01": { Davi: "x" }, "2025-12-01": { Davi: "y" } },
       },
     });
     const s = fresh();
@@ -495,10 +495,10 @@ describe("Store: reading a saved file (normalize)", () => {
       kind_cals: ["calendar.casa", "todo.x", 5],
       checks: [],
       score: {
-        entries: [{ key: "a", at: new Date(NOW).toISOString(), who: "Diego", points: 5 }, { key: "", at: "x", who: "D" }, { key: "c", at: new Date(NOW).toISOString(), who: 5 }],
+        entries: [{ key: "a", at: new Date(NOW).toISOString(), who: "Davi", points: 5 }, { key: "", at: "x", who: "D" }, { key: "c", at: new Date(NOW).toISOString(), who: 5 }],
         history: [{ key: "2026-10-26" }, { key: "bad" }],
         current: { key: "2026-11-02", start: "2026-11-02", end: "2026-11-09" },
-        prizes: { "2026-11-02": { Diego: "  Jantar ", Andressa: "", Num: 5 }, bad: { Diego: "x" }, "2026-11-09": {} },
+        prizes: { "2026-11-02": { Davi: "  Jantar ", Aurora: "", Num: 5 }, bad: { Davi: "x" }, "2026-11-09": {} },
         log: [],
       },
     });
@@ -517,17 +517,17 @@ describe("Store: reading a saved file (normalize)", () => {
       ["2026-10-26"],
     );
     assert.equal(s.data.score.current.key, "2026-11-02");
-    assert.deepEqual(s.data.score.prizes, { "2026-11-02": { Diego: "Jantar" } });
+    assert.deepEqual(s.data.score.prizes, { "2026-11-02": { Davi: "Jantar" } });
   });
   it("before the Extrato (no log): it starts with the points already on the placar, oldest first", () => {
     const iso = (h) => new Date(NOW - h * 3600000).toISOString();
-    writeRaw({ score: { entries: [{ key: "b", at: iso(1), who: "Diego", points: -3, title: "Toalha" }, { key: "a", at: iso(5), who: "Andressa", points: 10, title: "Lixo", kind: "rotina" }] } });
+    writeRaw({ score: { entries: [{ key: "b", at: iso(1), who: "Davi", points: -3, title: "Toalha" }, { key: "a", at: iso(5), who: "Aurora", points: 10, title: "Lixo", kind: "rotina" }] } });
     const s = fresh();
     assert.deepEqual(
       s.data.score.log.map((l) => [l.id, l.type, l.key, l.who, l.points]),
       [
-        [1, "ganhou", "a", "Andressa", 10],
-        [2, "perdeu", "b", "Diego", -3],
+        [1, "ganhou", "a", "Aurora", 10],
+        [2, "perdeu", "b", "Davi", -3],
       ],
     );
     assert.equal(s.data.score.log_seq, 2);
@@ -537,10 +537,10 @@ describe("Store: reading a saved file (normalize)", () => {
     const t2 = new Date(NOW - 3600000 + 2000).toISOString();
     writeRaw({
       score: {
-        entries: [{ key: "rot|1", at: t, who: "Diego", points: 5, title: "Regar" }],
+        entries: [{ key: "rot|1", at: t, who: "Davi", points: 5, title: "Regar" }],
         log: [
-          { id: 7, type: "ganhou", at: t2, who: "Diego", title: "Regar", points: 5 },
-          { id: 8, type: "ganhou", at: t2, who: "Andressa", title: "Regar", points: 5 },
+          { id: 7, type: "ganhou", at: t2, who: "Davi", title: "Regar", points: 5 },
+          { id: 8, type: "ganhou", at: t2, who: "Aurora", title: "Regar", points: 5 },
           { id: 9, type: "fechou", at: t2, points: 0 },
           { id: "x", type: "ganhou", at: t2 },
           { id: 10, type: "inventado", at: t2 },

@@ -38,7 +38,7 @@ before(async () => {
   stack = await startStack({ share: { "resolvia/integracao.json": resolviaFile() } });
   c = await stack.client();
   h = await stack.home(c);
-  await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Diego", "Andressa"] } } });
+  await c.call("cronologia/prefs/set_app", { prefs: { score: { enabled: true, participants: ["Davi", "Aurora"] } } });
   await h.wait((x) => x.score.enabled && x.todos.lists.length === 4 && x.maint.length >= 4, "the lists and the placar");
 });
 after(async () => {
@@ -119,7 +119,7 @@ describe("Novo › Tarefa", () => {
 describe("points of the ResolvIA tasks", () => {
   it("marking a task done here gives its ResolvIA points to the person (same key as the ResolvIA)", async () => {
     const out = await c.call("cronologia/todo/set", { entity_id: "todo.casa", uid: "todo-1", done: true });
-    assert.deepEqual(out, { key: `resolvia|todo.casa|todo-1|${day(0)}`, who: "Diego", points: 15 });
+    assert.deepEqual(out, { key: `resolvia|todo.casa|todo-1|${day(0)}`, who: "Davi", points: 15 });
     assert.equal((await stack.todoItems("todo.casa")).find((i) => i.uid === "todo-1").status, "completed");
     await h.wait((x) => entry(x, out.key), "the points");
     await c.call("cronologia/todo/set", { entity_id: "todo.casa", uid: "todo-1", done: false });
@@ -129,13 +129,13 @@ describe("points of the ResolvIA tasks", () => {
   });
   it("cronologia_pontos from the ResolvIA: somar, trocar, desfazer", async () => {
     const key = `resolvia|todo.trabalho|todo-7|${day(0)}`;
-    await stack.fire("cronologia_pontos", { acao: "somar", chave: key, quem: "andressa", pontos: 8, titulo: "Revisar contrato" });
+    await stack.fire("cronologia_pontos", { acao: "somar", chave: key, quem: "aurora", pontos: 8, titulo: "Revisar contrato" });
     let ix = await h.wait((x) => entry(x, key), "somar");
-    assert.deepEqual([entry(ix, key).who, entry(ix, key).points, entry(ix, key).kind], ["Andressa", 8, "tarefa"]);
+    assert.deepEqual([entry(ix, key).who, entry(ix, key).points, entry(ix, key).kind], ["Aurora", 8, "tarefa"]);
     const line = ix.score.log.find((l) => l.key === key);
     assert.equal(line.via, "ResolvIA");
-    await stack.fire("cronologia_pontos", { acao: "trocar", chave: key, quem: "Diego" });
-    ix = await h.wait((x) => entry(x, key) && entry(x, key).who === "Diego", "trocar");
+    await stack.fire("cronologia_pontos", { acao: "trocar", chave: key, quem: "Davi" });
+    ix = await h.wait((x) => entry(x, key) && entry(x, key).who === "Davi", "trocar");
     await stack.fire("cronologia_pontos", { acao: "desfazer", chave: key });
     await h.wait((x) => !entry(x, key), "desfazer");
   });
@@ -168,12 +168,12 @@ describe("Levar para o ResolvIA", () => {
     const filtro = (await marked()).find((t) => t.summary === "Trocar o filtro de água");
     const m = h.latest.maint.find((x) => x.summary === "Trocar o filtro de água");
     await stack.todoChange(LIST, "update_item", { item: filtro.uid, status: "completed" });
-    await stack.fire("cronologia_pontos", { acao: "somar", chave: `espelho|${LIST}|${filtro.uid}`, quem: "Andressa" });
+    await stack.fire("cronologia_pontos", { acao: "somar", chave: `espelho|${LIST}|${filtro.uid}`, quem: "Aurora" });
     const ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due !== day(5), "the maintenance done", 15000);
     const moved = ix.maint.find((y) => y.uid === m.uid);
     assert.equal(moved.history[0], day(0));
-    const pts = await h.wait((x) => x.score.entries.some((e) => e.kind === "manutencao" && e.who === "Andressa"), "her points");
-    assert.equal(pts.score.entries.find((e) => e.kind === "manutencao" && e.who === "Andressa").points, 30);
+    const pts = await h.wait((x) => x.score.entries.some((e) => e.kind === "manutencao" && e.who === "Aurora"), "her points");
+    assert.equal(pts.score.entries.find((e) => e.kind === "manutencao" && e.who === "Aurora").points, 30);
     const back = await waitFor(async () => {
       const t = (await stack.todoItems(LIST)).find((i) => i.uid === filtro.uid);
       return t && t.status === "needs_action" && t.due === moved.due && t;
@@ -214,7 +214,7 @@ describe("integration turned off", () => {
     await assert.rejects(c.call("cronologia/todo/set", { entity_id: "todo.casa", uid: "todo-1", done: true }), { code: "resolvia_off" });
     await assert.rejects(c.call("cronologia/todo/bring_preview", { entity_id: "todo.casa" }), { code: "resolvia_off" });
     const key = `resolvia|todo.casa|todo-2|${day(0)}`;
-    await stack.fire("cronologia_pontos", { chave: key, quem: "Diego", pontos: 5 });
+    await stack.fire("cronologia_pontos", { chave: key, quem: "Davi", pontos: 5 });
     await new Promise((r) => setTimeout(r, 300));
     assert.equal(entry(h.latest, key), undefined);
     const j = JSON.parse(fs.readFileSync(path.join(stack.dirs.share, "cronologia", "integracao.json"), "utf8"));

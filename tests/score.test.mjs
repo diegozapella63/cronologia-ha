@@ -11,11 +11,11 @@ describe("scoreSettings", () => {
     assert.deepEqual(scoreSettings(), { enabled: false, participants: [], period: "semana", anchor: null, notify: true, manual: false, remind: null, weekStart: 1 });
   });
   it("reads the app prefs; the week starts on Sunday only with week_start 0", () => {
-    const s = scoreSettings({ week_start: 0, score: { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30" } });
-    assert.deepEqual(s, { enabled: true, participants: ["Diego"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30", weekStart: 0 });
+    const s = scoreSettings({ week_start: 0, score: { enabled: true, participants: ["Davi"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30" } });
+    assert.deepEqual(s, { enabled: true, participants: ["Davi"], period: "mes", anchor: "2026-01-05", notify: false, manual: true, remind: "09:30", weekStart: 0 });
     assert.equal(scoreSettings({ score: { remind: "9h" } }).remind, null, "the reminder only with a real time");
     assert.equal(scoreSettings({ score: { period: "ano" } }).period, "semana");
-    assert.equal(scoreSettings({ score: { participants: "Diego" } }).participants.length, 0);
+    assert.equal(scoreSettings({ score: { participants: "Davi" } }).participants.length, 0);
   });
   it("PERIODS has the three lengths", () => {
     assert.deepEqual(Object.keys(PERIODS), ["semana", "quinzena", "mes"]);
@@ -95,18 +95,18 @@ describe("tally", () => {
   const e = (who, points, when) => ({ who, points, at: when.toISOString(), key: Math.random().toString(36) });
   it("sums the points of each participant inside [start, end), most points first", () => {
     const entries = [
-      e("Diego", 10, at(2026, 11, 2, 0, 0)),
-      e("diego", 5, at(2026, 11, 3)), // case and accents do not matter
-      e("Andressa", 20, at(2026, 11, 4)),
-      e("ANDRÉSSA", -5, at(2026, 11, 5)), // a demerit
-      e("Diego", 100, at(2026, 11, 9, 0, 0)), // next period
-      e("Diego", 100, at(2026, 11, 1, 23, 59)), // previous period
+      e("Davi", 10, at(2026, 11, 2, 0, 0)),
+      e("davi", 5, at(2026, 11, 3)), // case and accents do not matter
+      e("Aurora", 20, at(2026, 11, 4)),
+      e("AURÓRA", -5, at(2026, 11, 5)), // a demerit
+      e("Davi", 100, at(2026, 11, 9, 0, 0)), // next period
+      e("Davi", 100, at(2026, 11, 1, 23, 59)), // previous period
       e("Visita", 50, at(2026, 11, 4)), // not a participant
     ];
-    const rows = tally(entries, ["Diego", "Andréssa"], "2026-11-02", "2026-11-09");
+    const rows = tally(entries, ["Davi", "Auróra"], "2026-11-02", "2026-11-09");
     assert.deepEqual(rows, [
-      { name: "Andréssa", points: 15, count: 1, demerits: 1 },
-      { name: "Diego", points: 15, count: 2, demerits: 0 },
+      { name: "Auróra", points: 15, count: 1, demerits: 1 },
+      { name: "Davi", points: 15, count: 2, demerits: 0 },
     ]);
   });
   it("ties are by name; participants without points are listed with 0", () => {

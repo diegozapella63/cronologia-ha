@@ -29,7 +29,7 @@ async def main():
         hint = lambda name: a.locator(".cal-row", has_text=name).locator(".hint").inner_text()
         got = {n: await hint(n) for n in ["Pessoal", "Nextcloud", "Família", "Outlook da empresa", "Trabalho", "Feriados Brasil", "Giveaways"]}
         check(got["Pessoal"] == "cria e edita" and got["Nextcloud"] == "cria eventos" and got["Família"] == "cria eventos" and got["Outlook da empresa"] == "só leitura" and got["Trabalho"].endswith("cria e edita") and got["Feriados Brasil"] == "só leitura" and got["Giveaways"] == "só leitura", f"what each allows ({got})")
-        check("Diego (Outlook)" in got["Trabalho"], "the Outlook calendar says whose account it is")
+        check("Davi (Outlook)" in got["Trabalho"], "the Outlook calendar says whose account it is")
         opts = [o.strip() for o in await a.locator("#novos-eventos select option").all_inner_texts()]
         check(sorted(opts) == sorted(["Nextcloud", "Casa", "Pessoal", "Remédios", "Família", "Trabalho"]), f"Calendário padrão: only those that create ({opts})")
         await A.screenshot(path=f"{SP}/shots/crcap-calendars.png", full_page=True)

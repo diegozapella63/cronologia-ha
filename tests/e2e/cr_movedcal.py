@@ -17,7 +17,7 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crmv-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share")
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}}, open(f"{data}/cronologia.json", "w"))
 env = dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media")
 fake = subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=env, stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT)
 time.sleep(0.6)
@@ -45,7 +45,7 @@ async def wait_for(fn, label, tries=48):
         await asyncio.sleep(0.25)
     check(False, label)
 
-async def tap_done(A, a, loc, who="Diego"):
+async def tap_done(A, a, loc, who="Davi"):
     await loc.click()
     await A.wait_for_timeout(400)
     if await a.locator(".sheet .who-btn").count():
@@ -131,7 +131,7 @@ async def main():
             row = bb.locator(".sheet .chore.done", has_text="Limpar o banheiro")
             check(await row.count() == 1 and await row.locator("button.chk").count() == 0, "a day later: still done on the day it was done (just shown)")
             await row.locator(".chore-tx").click(); await B.wait_for_timeout(300)
-            check("feita ontem por Diego" in await bb.locator(".toast").inner_text(), "tapping it says when and who")
+            check("feita ontem por Davi" in await bb.locator(".toast").inner_text(), "tapping it says when and who")
         else:
             check(False, f"Ontem in the week ({labels})")
         check(not errs, f"no page errors {errs}")

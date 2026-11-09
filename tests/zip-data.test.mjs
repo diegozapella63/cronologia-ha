@@ -183,14 +183,14 @@ describe("data: CSV exports", () => {
       pointsCSV({
         score: {
           entries: [
-            { at: at(2026, 11, 2, 10).toISOString(), who: "Diego", points: 10, title: "Regar", kind: "rotina" },
-            { at: at(2026, 11, 1, 9, 5).toISOString(), who: "Andressa", points: -5, title: "Toalha", kind: "demerito" },
-            { at: at(2026, 11, 2, 11).toISOString(), who: "Diego", points: 3, title: "Outro", kind: "novo" },
+            { at: at(2026, 11, 2, 10).toISOString(), who: "Davi", points: 10, title: "Regar", kind: "rotina" },
+            { at: at(2026, 11, 1, 9, 5).toISOString(), who: "Aurora", points: -5, title: "Toalha", kind: "demerito" },
+            { at: at(2026, 11, 2, 11).toISOString(), who: "Davi", points: 3, title: "Outro", kind: "novo" },
           ],
         },
       }),
     );
-    assert.deepEqual(csv.split("\r\n").slice(0, 4), ["Quando;Quem;Pontos;O que;Tipo", "01/11/2026 09:05;Andressa;-5;Toalha;demérito", "02/11/2026 10:00;Diego;10;Regar;rotina", "02/11/2026 11:00;Diego;3;Outro;novo"]);
+    assert.deepEqual(csv.split("\r\n").slice(0, 4), ["Quando;Quem;Pontos;O que;Tipo", "01/11/2026 09:05;Aurora;-5;Toalha;demérito", "02/11/2026 10:00;Davi;10;Regar;rotina", "02/11/2026 11:00;Davi;3;Outro;novo"]);
     assert.equal(strip(pointsCSV({})), "Quando;Quem;Pontos;O que;Tipo\r\n");
   });
 });
@@ -339,7 +339,7 @@ describe("data: automatic versions", () => {
     mock.timers.enable({ apis: ["setTimeout", "Date"], now: at(2026, 11, 2, 14, 5, 9).getTime() });
     const s = new Store(newDir(), makeLog());
     s.setApp({ accent: "azul" });
-    s.addPoints({ key: "k", who: "Diego", points: 3, title: "x" });
+    s.addPoints({ key: "k", who: "Davi", points: 3, title: "x" });
     s.flush();
     s.version("antes-de-restaurar", true);
     mock.timers.tick(60000);
@@ -373,10 +373,10 @@ describe("round trip: store -> backup ZIP -> import -> store", () => {
   });
   it("brings back settings, people, pets, checks, points and the Extrato; keeps the receiver's alerts sent", () => {
     src.setCalendar("calendar.casa", { name: "Casa", color: "laranja", hidden: true });
-    src.setApp({ accent: "rosa", week_start: 0, people: { Andressa: { notify: "mobile_app_galaxy_s23" }, Mimi: { notify: null, pet: true } }, score: { enabled: true, participants: ["Diego", "Andressa"], period: "mes" }, demerits: [{ id: "toalha", title: "Toalha", points: 5 }], alerts: { late: 45, caregivers: ["mobile_app_pixel_8"] } });
-    src.setCheck("calendar.casa|u1|2026-11-02", { by: "Diego", kind: "rotina", skipped: true });
-    src.addPoints({ key: "k1", who: "Diego", points: 10, title: "Regar", kind: "rotina" });
-    src.setPrizes("2026-11-01", "Pizza", { Diego: "Cinema" });
+    src.setApp({ accent: "rosa", week_start: 0, people: { Aurora: { notify: "mobile_app_galaxy_s23" }, Mimi: { notify: null, pet: true } }, score: { enabled: true, participants: ["Davi", "Aurora"], period: "mes" }, demerits: [{ id: "toalha", title: "Toalha", points: 5 }], alerts: { late: 45, caregivers: ["mobile_app_pixel_8"] } });
+    src.setCheck("calendar.casa|u1|2026-11-02", { by: "Davi", kind: "rotina", skipped: true });
+    src.addPoints({ key: "k1", who: "Davi", points: 10, title: "Regar", kind: "rotina" });
+    src.setPrizes("2026-11-01", "Pizza", { Davi: "Cinema" });
     src.addKindCalendar("calendar.casa");
     dst.markSent("dose", "on", ["mobile_app_x"]);
     const zip = backupZip(appData(src, "1.37.1"), [{ entity_id: "calendar.casa", name: "Casa", events: [] }], "1.37.1", "um ano");

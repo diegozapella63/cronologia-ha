@@ -16,10 +16,10 @@ def check(c, label):
     if c: n_ok += 1
     else: failed.append(label)
 data = f"{SP}/crts-data"; shutil.rmtree(data, ignore_errors=True); os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{SP}/shots", exist_ok=True)
-json.dump({"app": {"score": {"enabled": True, "participants": ["Diego", "Andressa"], "period": "semana", "manual": True}, "who_pick": True}}, open(f"{data}/cronologia.json", "w"))
+json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana", "manual": True}, "who_pick": True}}, open(f"{data}/cronologia.json", "w"))
 procs = [subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media"), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)]
 time.sleep(0.6)
-env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", CRONOLOGIA_DEV_USER_ID="u-diego", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
+env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", CRONOLOGIA_DEV_USER_ID="u-davi", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
 procs.append(subprocess.Popen(["node", f"{REPO}/cronologia/rootfs/app/server.js"], env=env, stdout=open(f"{data}/app.log", "w"), stderr=subprocess.STDOUT)); time.sleep(1.3)
 def stored(): return json.load(open(f"{data}/cronologia.json"))
 def bed(): return [e for e in (stored().get("score") or {}).get("entries", []) if e["title"] == "Arrumar a cama"]
@@ -53,20 +53,20 @@ async def main():
         if await mrow.count():
             check(await mrow.locator(".qw-btn").count() == 2 and await mrow.locator(".btn-pts").count() == 0, "maintenance: the initials too")
         await row.scroll_into_view_if_needed(); await A.screenshot(path=f"{SP}/shots/crts-open.png")
-        await row.locator(".qw-btn[aria-label^='Andressa']").click()
-        await wait_for(lambda: bed() and bed()[0]["who"] == "Andressa", "one tap: Andressa gets the points")
+        await row.locator(".qw-btn[aria-label^='Aurora']").click()
+        await wait_for(lambda: bed() and bed()[0]["who"] == "Aurora", "one tap: Aurora gets the points")
         await A.wait_for_timeout(500)
         check(await today.locator(".chore", has_text="Arrumar a cama").count() == 0, "done: it leaves Para pontuar hoje (only what still gives points)")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)
         won = a.locator("#casa .chore.done", has_text="Arrumar a cama").locator(".won")
         check(await won.count() == 1 and (await won.inner_text()).replace("\n", "").replace(" ", "") == "A+10", f"done: A and +10 ({(await won.inner_text())!r})")
-        check("Andressa" in (await won.get_attribute("aria-label")), "says who got them")
+        check("Aurora" in (await won.get_attribute("aria-label")), "says who got them")
         await A.screenshot(path=f"{SP}/shots/crts-done.png")
-        # Foi Diego: the initial follows
-        btn = a.locator(".toast button", has_text="Foi Diego")
+        # Foi Davi: the initial follows
+        btn = a.locator(".toast button", has_text="Foi Davi")
         if await btn.count():
             await btn.click()
-            await wait_for(lambda: bed() and bed()[0]["who"] == "Diego", "Foi Diego passes them")
+            await wait_for(lambda: bed() and bed()[0]["who"] == "Davi", "Foi Davi passes them")
             await A.wait_for_timeout(500)
             check((await won.inner_text()).replace("\n", "").replace(" ", "") == "D+10", "the initial follows (D)")
         # without Marcar por outras pessoas: the plain points, as before

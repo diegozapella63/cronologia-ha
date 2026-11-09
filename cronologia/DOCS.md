@@ -142,7 +142,7 @@ Com os cômodos e equipamentos do InventarIA ligados no ResolvIA, a manutenção
 
 ## Recompensas
 
-Um placar para quem faz mais em casa (por exemplo, você × a Dessa), na aba **Recompensas**.
+Um placar para quem faz mais em casa (por exemplo, você × a Aurora), na aba **Recompensas**.
 
 - **Pontos nas tarefas**: os modelos **Rotina da casa** e **Manutenção** têm o campo **Pontos para quem fizer** (5, 10, 20, 30, 50 ou outro valor). A frequência é a de sempre: todo dia, dia sim, dia não, a cada 3 dias, dias da semana… No evento fica `Pontos: 10`.
 - **Cores**: cada pessoa aparece na cor da agenda dela (a agenda que tem o nome dela, como "Pessoal (Ana)"; mude a cor em **Mais › Calendários**). Quem não tem agenda própria fica com uma cor livre.

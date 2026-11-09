@@ -78,7 +78,7 @@ function cleanApp(raw) {
   if ("todo_create_any" in raw) out.todo_create_any = raw.todo_create_any ? true : null;
   // Mais › Placar › Marcar por outras pessoas: Feito asks who did it
   if ("who_pick" in raw) out.who_pick = raw.who_pick ? true : null;
-  // Tarefas do ResolvIA: whose each list is ({"todo.tarefas_dessa": "Andressa"}); a list with an owner only shows to them
+  // Tarefas do ResolvIA: whose each list is ({"todo.tarefas_aurora": "Aurora"}); a list with an owner only shows to them
   if ("todo_owner" in raw) {
     const owners = {};
     for (const [id, name] of Object.entries(raw.todo_owner && typeof raw.todo_owner === "object" ? raw.todo_owner : {}).slice(0, 100)) {
@@ -107,7 +107,7 @@ function cleanApp(raw) {
     out.mirror = m.maint_list || m.routine_list ? m : null;
   }
   if ("people" in raw) {
-    // {"Mimi": {pet: true, care: "Andressa"}}: the people and pets added in Mais › Avisos; care: the person who
+    // {"Mimi": {pet: true, care: "Aurora"}}: the people and pets added in Mais › Avisos; care: the person who
     // gets the alerts of one without a phone (none: Quem cuida). notify: a phone picked before 1.54.0, until
     // Home Assistant says whose it is (Home.migratePhones)
     const people = {};
@@ -213,7 +213,7 @@ function normalize(raw, strict = false) {
     entries: Array.isArray(sc.entries) ? sc.entries.filter((e) => e && e.key && Number.isFinite(Date.parse(e.at)) && typeof e.who === "string") : [],
     history: Array.isArray(sc.history) ? sc.history.filter((h) => h && YMD_RE.test(h.key || "")) : [],
     rewards: obj(sc.rewards),
-    // a prize for each person: {period key: {"Diego": "Jantar fora", "Andressa": "Massagem"}}
+    // a prize for each person: {period key: {"Davi": "Jantar fora", "Aurora": "Massagem"}}
     prizes: Object.fromEntries(
       Object.entries(obj(sc.prizes))
         .filter(([k, v]) => YMD_RE.test(k) && v && typeof v === "object")

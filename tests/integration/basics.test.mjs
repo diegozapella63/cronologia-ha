@@ -51,13 +51,13 @@ describe("bootstrap and basics", () => {
   it("bootstrap: version, the person of the HA user, time zone, calendars, registry, AI", async () => {
     const b = await c.call("cronologia/bootstrap");
     assert.match(b.version, /^\d+\.\d+\.\d+$/);
-    assert.equal(b.user.id, "u-diego");
-    assert.equal(b.user.person, "Diego");
+    assert.equal(b.user.id, "u-davi");
+    assert.equal(b.user.person, "Davi");
     assert.equal(b.time_zone, "America/Sao_Paulo");
     assert.deepEqual(Object.keys(b.states).sort(), ["calendar.casa", "calendar.feriados", "calendar.giveaways", "calendar.pessoal", "calendar.remedios", "calendar.trabalho"]);
     assert.equal(b.states["calendar.casa"].attributes.supported_features, 7);
     assert.equal(b.entities["calendar.trabalho"].platform, "ms365_calendar");
-    assert.equal(b.devices.dev_ms365.name, "Diego (Outlook)");
+    assert.equal(b.devices.dev_ms365.name, "Davi (Outlook)");
     assert.equal(b.ai.ready, true);
     assert.equal(b.ai.using.id, "ai_task.google_ai_task");
     assert.deepEqual(b.prefs.app, { resolvia_on: true, gerencia_on: true });

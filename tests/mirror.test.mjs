@@ -87,7 +87,7 @@ describe("Mirror: settings and what should be in the list", () => {
     assert.deepEqual(setup({ mirror: { maint_list: "todo.manutencao", routine_list: "bad" } }).m.settings(), { maint_list: "todo.manutencao", routine_list: null });
   });
   it("desired: one per maintenance (all-day, at its due) and per routine series", () => {
-    const daily = (day) => occ("Regar", day, { who: "Diego", points: 5, notes: "Só as da varanda" }, { uid: "regar", raw: { rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") } });
+    const daily = (day) => occ("Regar", day, { who: "Davi", points: 5, notes: "Só as da varanda" }, { uid: "regar", raw: { rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") } });
     const { m } = setup({
       maint: [maintItem(), maintItem({ uid: null }), maintItem({ uid: "x", due: "" })],
       occurrences: [daily("2026-11-01"), daily("2026-11-02"), daily("2026-11-03"), occ("Lixo", at(2026, 11, 4, 19), { points: 10 }, { uid: "lixo" })],
@@ -390,8 +390,8 @@ describe("Mirror: concluded in the list", () => {
     const s = setup({ mirror: { list: LIST, maint: false, routine: true }, occurrences: [o] });
     linked(s, o);
     await s.m.sync();
-    await s.m.onPoints("somar", LIST, "t1", "Andressa");
-    assert.deepEqual(s.home.calls, [["check", o.key, true, "ResolvIA", "rotina", "Andressa"]]);
+    await s.m.onPoints("somar", LIST, "t1", "Aurora");
+    assert.deepEqual(s.home.calls, [["check", o.key, true, "ResolvIA", "rotina", "Aurora"]]);
     assert.equal(s.m.pending.size, 0);
     mock.timers.tick(5000);
     await flushPromises();
@@ -404,19 +404,19 @@ describe("Mirror: concluded in the list", () => {
     linked(s, o);
     s.todos.items.set(LIST, [{ uid: "t1", summary: "Arrumar a cama", status: "needs_action", due: "2026-11-02" }]);
     await s.m.sync();
-    await s.m.onPoints("somar", LIST, "t1", "Diego");
+    await s.m.onPoints("somar", LIST, "t1", "Davi");
     assert.equal(s.home.calls.length, 0);
     s.todos.items.set(LIST, [{ uid: "t1", summary: "Arrumar a cama", status: "completed", due: "2026-11-02" }]);
     await s.m.sync();
     await flushPromises();
-    assert.deepEqual(s.home.calls, [["check", o.key, true, "ResolvIA", "rotina", "Diego"]]);
+    assert.deepEqual(s.home.calls, [["check", o.key, true, "ResolvIA", "rotina", "Davi"]]);
   });
   it("a hint older than a minute is ignored", async () => {
     mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
     const o = routine();
     const s = setup({ mirror: { list: LIST, maint: false, routine: true }, occurrences: [o] });
     linked(s, o);
-    s.m.hints.set(`${LIST}|t1`, { who: "Diego", at: NOW - 61000 });
+    s.m.hints.set(`${LIST}|t1`, { who: "Davi", at: NOW - 61000 });
     await s.m.sync();
     assert.equal(s.m.pending.has(rsrc), true);
   });
@@ -429,9 +429,9 @@ describe("Mirror: concluded in the list", () => {
     mock.timers.tick(3000);
     await flushPromises();
     mock.timers.tick(60000);
-    await s.m.onPoints("somar", LIST, "t1", "Andressa");
-    assert.deepEqual(s.home.calls.at(-1), ["check", o.key, true, "ResolvIA", "rotina", "Andressa"]);
-    assert.equal(s.store.data.mirror[rsrc].lastDone.who, "Andressa");
+    await s.m.onPoints("somar", LIST, "t1", "Aurora");
+    assert.deepEqual(s.home.calls.at(-1), ["check", o.key, true, "ResolvIA", "rotina", "Aurora"]);
+    assert.equal(s.store.data.mirror[rsrc].lastDone.who, "Aurora");
   });
   it("Desfazer in the ResolvIA: before processing cancels; after, unchecks here", async () => {
     mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
@@ -470,15 +470,15 @@ describe("Mirror: concluded in the list", () => {
     s.store.data.mirror[src] = { list: LIST, uid: "t1", tag: tagOf(src), type: "manutencao", cal: "calendar.casa", evUid: "filtro", written: { occKey: maintItem().key, summary: "Trocar o filtro", points: 30 } };
     s.todos.items.set(LIST, [{ uid: "t1", summary: "Trocar o filtro", status: "completed", due: "2026-11-07" }]);
     await s.m.sync();
-    await s.m.onPoints("somar", LIST, "t1", "Diego");
-    assert.deepEqual(s.home.calls, [["maintDone", "calendar.casa", "filtro", "ResolvIA", "Diego"]]);
+    await s.m.onPoints("somar", LIST, "t1", "Davi");
+    assert.deepEqual(s.home.calls, [["maintDone", "calendar.casa", "filtro", "ResolvIA", "Davi"]]);
     const ld = s.store.data.mirror[src].lastDone;
     assert.equal(ld.pointsKey, `maint|calendar.casa|filtro|${new Date(NOW).toISOString().slice(0, 10)}`);
     // Foi outra pessoa (trocar): the points go to her
     s.store.pointsByKey = () => ({ key: ld.pointsKey });
-    await s.m.onPoints("trocar", LIST, "t1", "Andressa");
-    assert.deepEqual(s.home.calls.at(-1), ["reassign", ld.pointsKey, "Andressa"]);
-    assert.equal(ld.who, "Andressa");
+    await s.m.onPoints("trocar", LIST, "t1", "Aurora");
+    assert.deepEqual(s.home.calls.at(-1), ["reassign", ld.pointsKey, "Aurora"]);
+    assert.equal(ld.who, "Aurora");
     // and Desfazer brings the maintenance back
     await s.m.onPoints("desfazer", LIST, "t1", "");
     assert.deepEqual(s.home.calls.at(-1), ["maintUndo", "calendar.casa", "filtro"]);
@@ -490,7 +490,7 @@ describe("Mirror: concluded in the list", () => {
     s.store.data.mirror[src] = { list: LIST, uid: "t1", tag: tagOf(src), type: "manutencao", cal: "calendar.casa", evUid: "filtro", written: { occKey: maintItem().key, summary: "Trocar o filtro", points: 30 } };
     s.todos.items.set(LIST, [{ uid: "t1", summary: "Trocar o filtro", status: "completed", due: "2026-11-07" }]);
     await s.m.sync();
-    await s.m.onPoints("somar", LIST, "t1", "Diego");
+    await s.m.onPoints("somar", LIST, "t1", "Davi");
     s.home.maintUndo = async () => {
       throw new Error("Esse calendário não deixa mudar eventos");
     };
@@ -523,9 +523,9 @@ describe("Mirror: concluded in the list", () => {
     s.store.data.mirror[src] = { list: LIST, uid: "t1", tag: tagOf(src), type: "manutencao", cal: "calendar.casa", evUid: "filtro", written: { occKey: maintItem().key, summary: "Trocar o filtro", points: 30 } };
     s.todos.items.set(LIST, [{ uid: "t1", summary: "Trocar o filtro", status: "completed", due: "2026-11-07" }]);
     await s.m.sync();
-    await s.m.onPoints("somar", LIST, "t1", "Diego");
+    await s.m.onPoints("somar", LIST, "t1", "Davi");
     assert.equal(s.store.data.mirror[src].lastDone.failed, "calendário fora");
-    await s.m.onPoints("somar", LIST, "t1", "Diego");
+    await s.m.onPoints("somar", LIST, "t1", "Davi");
     assert.equal(s.home.calls.length, 0);
   });
   it("after it was done here, a still-concluded task is brought back with the next date", async () => {
@@ -543,7 +543,7 @@ describe("Mirror: concluded in the list", () => {
   it("onPoints for a task that is not the mirror's only keeps a hint for somar", async () => {
     mock.timers.enable({ apis: ["Date"], now: NOW });
     const s = setup();
-    await s.m.onPoints("somar", LIST, "zz", "Diego");
+    await s.m.onPoints("somar", LIST, "zz", "Davi");
     await s.m.onPoints("desfazer", LIST, "yy", "");
     assert.deepEqual([...s.m.hints.keys()], [`${LIST}|zz`]);
   });

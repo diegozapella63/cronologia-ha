@@ -77,7 +77,7 @@ async def main():
         box = await a.locator(".mic-top:not(.chat-top):visible").bounding_box()
         check(box and box["x"] + box["width"] > 360 and box["y"] < 120, f"Calendário: the microphone at the top right, like on the other screens ({box})")
         eb = await a.locator(".cal-page .head-row .eyebrow").bounding_box()
-        check(eb and eb["height"] < 40, f"Calendário: CronologIA · Olá, Diego in one line ({eb and eb['height']})")
+        check(eb and eb["height"] < 40, f"Calendário: CronologIA · Olá, Davi in one line ({eb and eb['height']})")
         # Buscar on Agora
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)
         hs = a.locator("form.home-search input")

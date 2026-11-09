@@ -39,12 +39,12 @@ function fakeHA() {
   return ha;
 }
 
-const SCORE = { enabled: true, participants: ["Diego", "Andressa"], period: "semana" };
+const SCORE = { enabled: true, participants: ["Davi", "Aurora"], period: "semana" };
 // the players and their phones, as Home Assistant has them (the apps look at the person, never at a device)
 const PLAYERS = {
   persons: [
-    { id: "person.diego", name: "Diego", user_id: "u-diego", trackers: ["device_tracker.pixel_8"] },
-    { id: "person.andressa", name: "Andressa", user_id: "u-andressa", trackers: ["device_tracker.galaxy_s23"] },
+    { id: "person.davi", name: "Davi", user_id: "u-davi", trackers: ["device_tracker.pixel_8"] },
+    { id: "person.aurora", name: "Aurora", user_id: "u-aurora", trackers: ["device_tracker.galaxy_s23"] },
   ],
   targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"],
 };
@@ -68,35 +68,35 @@ const notifications = (ha) => ha.sent.filter((m) => m.type === "call_service" &&
 
 // ------------------------------------------------------------------ events
 
-const AFTER = "#rotina\nQuem faz: Diego\nPontos: 10\nVolta: 2 dias depois de feita\nFeito em: 30/10/2026\nDobrar o edredom";
+const AFTER = "#rotina\nQuem faz: Davi\nPontos: 10\nVolta: 2 dias depois de feita\nFeito em: 30/10/2026\nDobrar o edredom";
 const cama = (extra = {}) => ({ uid: "cama", summary: "Arrumar a cama", start: "2026-11-02", end: "2026-11-03", description: AFTER, ...extra });
-const lixo = (day = "2026-11-02") => ({ uid: "lixo", summary: "Tirar o lixo", start: day, end: day.replace(/\d+$/, (d) => String(+d + 1).padStart(2, "0")), description: "#rotina\nQuem faz: Andressa\nPontos: 5", rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") });
-const MAINT = "#manutenção\nQuem faz: Diego\nA cada: 6 meses\nAvisar: 7 dias antes\nFeito em: 07/05/2026\nPontos: 30\nCômodo: Cozinha";
+const lixo = (day = "2026-11-02") => ({ uid: "lixo", summary: "Tirar o lixo", start: day, end: day.replace(/\d+$/, (d) => String(+d + 1).padStart(2, "0")), description: "#rotina\nQuem faz: Aurora\nPontos: 5", rrule: "FREQ=DAILY", recurrence_id: day.replace(/-/g, "") });
+const MAINT = "#manutenção\nQuem faz: Davi\nA cada: 6 meses\nAvisar: 7 dias antes\nFeito em: 07/05/2026\nPontos: 30\nCômodo: Cozinha";
 const filtro = (extra = {}) => ({ uid: "filtro", summary: "Trocar o filtro", start: "2026-11-07", end: "2026-11-08", description: MAINT, location: "Cozinha", ...extra });
 const dose = (h, m, extra = {}) => {
   const s = at(2026, 11, 2, h, m);
   const iso = (d) => `2026-11-02T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:00-03:00`;
-  return { uid: `dose-${h}${m}`, summary: "Sertralina", start: iso(s), end: iso(new Date(s.getTime() + 15 * 60000)), description: "#remédio\nDose: 1 comprimido\nQuem toma: Andressa", ...extra };
+  return { uid: `dose-${h}${m}`, summary: "Sertralina", start: iso(s), end: iso(new Date(s.getTime() + 15 * 60000)), description: "#remédio\nDose: 1 comprimido\nQuem toma: Aurora", ...extra };
 };
 const keyOf = (raw, cal = CAL) => occurrenceKey(cal, raw);
 
 describe("Home: people", () => {
   const persons = [
-    { id: "person.diego", name: "Diego Zapella", user_id: "u-diego", trackers: ["device_tracker.pixel_8"] },
-    { id: "person.andressa", name: "Andressa", user_id: "u-andressa", trackers: ["device_tracker.galaxy_s23", "device_tracker.tablet"] },
+    { id: "person.davi", name: "Davi Souza", user_id: "u-davi", trackers: ["device_tracker.pixel_8"] },
+    { id: "person.aurora", name: "Aurora", user_id: "u-aurora", trackers: ["device_tracker.galaxy_s23", "device_tracker.tablet"] },
   ];
   it("personOfUser: by Home Assistant user, else by first name, else the first word given", () => {
     const { home } = setup({ persons });
-    assert.equal(home.personOfUser("u-andressa", "whatever"), "Andressa");
-    assert.equal(home.personOfUser("u-x", "diego silva"), "Diego Zapella");
+    assert.equal(home.personOfUser("u-aurora", "whatever"), "Aurora");
+    assert.equal(home.personOfUser("u-x", "davi silva"), "Davi Souza");
     assert.equal(home.personOfUser("", "  Maria   Clara "), "Maria");
     assert.equal(home.personOfUser("", ""), "");
   });
   // 1.54.0: the app looks at the person, never at a device
   it("phonesOf: the phones tied to the person in Home Assistant (all of them, first name enough); none: the person chosen for them", () => {
-    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "mobile_app_tablet"], app: { people: { Mimi: { pet: true, care: "Andressa" }, Vó: {}, Lia: { care: "Mimi" } } } });
-    assert.deepEqual(home.phonesOf("Andressa"), ["mobile_app_galaxy_s23", "mobile_app_tablet"]);
-    assert.deepEqual(home.phonesOf("diego"), ["mobile_app_pixel_8"], "first name of the person entity");
+    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23", "mobile_app_tablet"], app: { people: { Mimi: { pet: true, care: "Aurora" }, Vó: {}, Lia: { care: "Mimi" } } } });
+    assert.deepEqual(home.phonesOf("Aurora"), ["mobile_app_galaxy_s23", "mobile_app_tablet"]);
+    assert.deepEqual(home.phonesOf("davi"), ["mobile_app_pixel_8"], "first name of the person entity");
     assert.deepEqual(home.phonesOf("mimi"), ["mobile_app_galaxy_s23", "mobile_app_tablet"], "a pet: on the phones of the person chosen for it");
     assert.deepEqual(home.phonesOf("Vó"), [], "none chosen: Quem cuida");
     assert.deepEqual(home.phonesOf("Lia"), [], "the one chosen has no phone either");
@@ -104,22 +104,22 @@ describe("Home: people", () => {
   });
   it("a tracker without a mobile app gives no phone", () => {
     const { home } = setup({ persons, targets: [] });
-    assert.deepEqual(home.phonesOf("Diego"), []);
+    assert.deepEqual(home.phonesOf("Davi"), []);
   });
   it("Quem cuida: people; their phones (a phone of before 1.54.0 not yet migrated counts for nothing)", () => {
-    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], app: { alerts: { caregivers: ["Diego Zapella", "Zeca", "mobile_app_galaxy_s23"] } } });
-    assert.deepEqual(home.settings().caregivers, ["Diego Zapella", "Zeca"]);
+    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], app: { alerts: { caregivers: ["Davi Souza", "Zeca", "mobile_app_galaxy_s23"] } } });
+    assert.deepEqual(home.settings().caregivers, ["Davi Souza", "Zeca"]);
     assert.deepEqual(home.carePhones(), ["mobile_app_pixel_8"]);
   });
   it("isPet and peopleInfo: HA persons, people of the app, names of the models; whether a phone gets their alerts, no devices", () => {
-    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], app: { people: { Mimi: { pet: true, care: "Andressa" }, Vó: {} } } });
+    const { home } = setup({ persons, targets: ["mobile_app_pixel_8", "mobile_app_galaxy_s23"], app: { people: { Mimi: { pet: true, care: "Aurora" }, Vó: {} } } });
     assert.equal(home.isPet("mimi"), true);
-    assert.equal(home.isPet("Diego"), false);
-    const info = home.peopleInfo(["Andressa", "Zeca", ""]);
+    assert.equal(home.isPet("Davi"), false);
+    const info = home.peopleInfo(["Aurora", "Zeca", ""]);
     assert.deepEqual(info, [
-      { name: "Andressa", person: "person.andressa", pet: false, phone: true, care: null, reach: true },
-      { name: "Diego Zapella", person: "person.diego", pet: false, phone: true, care: null, reach: true },
-      { name: "Mimi", person: null, pet: true, phone: false, care: "Andressa", reach: true },
+      { name: "Aurora", person: "person.aurora", pet: false, phone: true, care: null, reach: true },
+      { name: "Davi Souza", person: "person.davi", pet: false, phone: true, care: null, reach: true },
+      { name: "Mimi", person: null, pet: true, phone: false, care: "Aurora", reach: true },
       { name: "Vó", person: null, pet: false, phone: false, care: null, reach: false },
       { name: "Zeca", person: null, pet: false, phone: false, care: null, reach: false },
     ]);
@@ -137,24 +137,24 @@ describe("Home: people", () => {
     assert.deepEqual([...home.targets], ["mobile_app_ana"]);
     assert.deepEqual(home.phonesOf("Ana"), ["mobile_app_ana"]);
   });
-  it("loadPeople: the phone named after the device of the app, not after the tracker (device_tracker.goku_phone is the Pixel 8); the router's tracker is no phone", async () => {
+  it("loadPeople: the phone named after the device of the app, not after the tracker (device_tracker.meu_celular is the Pixel 8); the router's tracker is no phone", async () => {
     const { home, ha } = setup();
     ha.reply = (m) =>
       m.type === "get_states"
-        ? [{ entity_id: "person.diego", attributes: { friendly_name: "Diego", device_trackers: ["device_tracker.goku_phone", "device_tracker.note_diego"] } }]
+        ? [{ entity_id: "person.davi", attributes: { friendly_name: "Davi", device_trackers: ["device_tracker.meu_celular", "device_tracker.note_davi"] } }]
         : m.type === "get_services"
-          ? { notify: { mobile_app_pixel_8: {}, mobile_app_note_diego: {} } }
+          ? { notify: { mobile_app_pixel_8: {}, mobile_app_note_davi: {} } }
           : m.type === "config/device_registry/list"
             ? [
-                { id: "d1", name: "Pixel 8", name_by_user: "Celular Diego", identifiers: [["mobile_app", "x"]] },
-                { id: "d2", name: "note_diego", identifiers: [["mac", "b0"]] },
+                { id: "d1", name: "Pixel 8", name_by_user: "Celular Davi", identifiers: [["mobile_app", "x"]] },
+                { id: "d2", name: "note_davi", identifiers: [["mac", "b0"]] },
               ]
-            : { entities: [{ ei: "device_tracker.goku_phone", di: "d1" }, { ei: "device_tracker.note_diego", di: "d2" }] };
+            : { entities: [{ ei: "device_tracker.meu_celular", di: "d1" }, { ei: "device_tracker.note_davi", di: "d2" }] };
     await home.loadPeople();
-    assert.deepEqual(home.phonesOf("Diego"), ["mobile_app_pixel_8"]);
+    assert.deepEqual(home.phonesOf("Davi"), ["mobile_app_pixel_8"]);
   });
   it("a test goes to every phone of the person: one that fails does not stop the others; fails only when none got it", async () => {
-    const persons = [{ id: "person.diego", name: "Diego", trackers: ["device_tracker.relogio", "device_tracker.pixel_8"] }];
+    const persons = [{ id: "person.davi", name: "Davi", trackers: ["device_tracker.relogio", "device_tracker.pixel_8"] }];
     const { home, ha } = setup({ persons, targets: ["mobile_app_relogio", "mobile_app_pixel_8"] });
     const failing = new Set(["mobile_app_relogio"]);
     const send = ha.send;
@@ -162,17 +162,17 @@ describe("Home: people", () => {
       if (m.domain === "notify" && failing.has(m.service)) throw new Error("offline");
       return send(m);
     };
-    assert.deepEqual(await home.testAlert("Diego"), { sent: 1 });
-    assert.deepEqual(await home.testScoreReminder("Diego"), { sent: 1 });
+    assert.deepEqual(await home.testAlert("Davi"), { sent: 1 });
+    assert.deepEqual(await home.testScoreReminder("Davi"), { sent: 1 });
     assert.deepEqual(ha.sent.filter((m) => m.domain === "notify").map((m) => m.service), ["mobile_app_pixel_8", "mobile_app_pixel_8"]);
     failing.add("mobile_app_pixel_8");
-    await assert.rejects(home.testAlert("Diego"), /offline/);
+    await assert.rejects(home.testAlert("Davi"), /offline/);
   });
   it("the phones picked before 1.54.0 become the people whose phones they are, once, with the people of Home Assistant known", async () => {
     const { home, ha, store } = setup({
       app: {
-        alerts: { meds: true, late: 30, caregivers: ["mobile_app_galaxy_s23", "mobile_app_sumiu", "Diego"] },
-        people: { Mimi: { notify: "mobile_app_galaxy_s23", pet: true }, Vó: { notify: "mobile_app_sumiu" }, Andressa: { notify: "mobile_app_tablet" }, Lia: { care: "Diego" } },
+        alerts: { meds: true, late: 30, caregivers: ["mobile_app_galaxy_s23", "mobile_app_sumiu", "Davi"] },
+        people: { Mimi: { notify: "mobile_app_galaxy_s23", pet: true }, Vó: { notify: "mobile_app_sumiu" }, Aurora: { notify: "mobile_app_tablet" }, Lia: { care: "Davi" } },
       },
     });
     let pushed = 0;
@@ -182,26 +182,26 @@ describe("Home: people", () => {
     ha.reply = (m) =>
       m.type === "get_states"
         ? [
-            { entity_id: "person.diego", attributes: { friendly_name: "Diego", device_trackers: ["device_tracker.pixel_8"] } },
-            { entity_id: "person.andressa", attributes: { friendly_name: "Andressa", device_trackers: ["device_tracker.galaxy_s23", "device_tracker.tablet"] } },
+            { entity_id: "person.davi", attributes: { friendly_name: "Davi", device_trackers: ["device_tracker.pixel_8"] } },
+            { entity_id: "person.aurora", attributes: { friendly_name: "Aurora", device_trackers: ["device_tracker.galaxy_s23", "device_tracker.tablet"] } },
           ]
         : { notify: { mobile_app_pixel_8: {}, mobile_app_galaxy_s23: {}, mobile_app_tablet: {} } };
     await home.loadPeople();
     assert.equal(pushed, 1, "the screens get the new prefs");
-    assert.deepEqual(store.data.app.alerts.caregivers, ["Andressa", "Diego"], "a phone of nobody is dropped");
-    assert.deepEqual(store.data.app.people, { Mimi: { pet: true, care: "Andressa" }, Vó: {}, Andressa: {}, Lia: { care: "Diego" } }, "her own phone: nothing to choose");
+    assert.deepEqual(store.data.app.alerts.caregivers, ["Aurora", "Davi"], "a phone of nobody is dropped");
+    assert.deepEqual(store.data.app.people, { Mimi: { pet: true, care: "Aurora" }, Vó: {}, Aurora: {}, Lia: { care: "Davi" } }, "her own phone: nothing to choose");
     await home.loadPeople();
     assert.equal(pushed, 1, "once");
   });
   it("participant: only with the placar on; by name or first name, accents ignored", () => {
-    const { home, store } = setup({ app: { score: { enabled: true, participants: ["Diego Zapella", "Andréssa"] } } });
-    assert.equal(home.participant("andressa"), "Andréssa");
-    assert.equal(home.participant("Diego"), "Diego Zapella");
-    assert.equal(home.participant("Diego Silva"), "Diego Zapella", "the first name is enough");
+    const { home, store } = setup({ app: { score: { enabled: true, participants: ["Davi Souza", "Auróra"] } } });
+    assert.equal(home.participant("aurora"), "Auróra");
+    assert.equal(home.participant("Davi"), "Davi Souza");
+    assert.equal(home.participant("Davi Silva"), "Davi Souza", "the first name is enough");
     assert.equal(home.participant("Zeca"), "");
     assert.equal(home.participant(""), "");
-    store.setApp({ score: { enabled: false, participants: ["Diego Zapella"] } });
-    assert.equal(home.participant("Diego"), "");
+    store.setApp({ score: { enabled: false, participants: ["Davi Souza"] } });
+    assert.equal(home.participant("Davi"), "");
   });
 });
 
@@ -209,14 +209,14 @@ describe("Home: Feito / Desfazer of a calendar routine", () => {
   it("done by a participant: the check and the points go to them", () => {
     const raw = lixo();
     const { home, store, changes } = setup({ events: { [CAL]: [raw] } });
-    home.check(keyOf(raw), true, "Diego (app)", "rotina", "andressa");
-    assert.equal(store.data.checks[keyOf(raw)].by, "Andressa");
+    home.check(keyOf(raw), true, "Davi (app)", "rotina", "aurora");
+    assert.equal(store.data.checks[keyOf(raw)].by, "Aurora");
     assert.equal(store.data.checks[keyOf(raw)].kind, "rotina");
     const e = store.pointsByKey(keyOf(raw));
-    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Andressa", points: 5, title: "Tirar o lixo", kind: "rotina" });
+    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Aurora", points: 5, title: "Tirar o lixo", kind: "rotina" });
     mock.timers.tick(120);
     assert.equal(changes.length, 1, "the screens get the new index");
-    assert.deepEqual(changes[0].routines[0].done.by, "Andressa");
+    assert.deepEqual(changes[0].routines[0].done.by, "Aurora");
   });
   it("done by someone who is not on the placar: done, no points", () => {
     const raw = lixo();
@@ -228,7 +228,7 @@ describe("Home: Feito / Desfazer of a calendar routine", () => {
   it("Desfazer removes the check and the points", () => {
     const raw = lixo();
     const { home, store } = setup({ events: { [CAL]: [raw] } });
-    home.check(keyOf(raw), true, "x", "rotina", "Diego");
+    home.check(keyOf(raw), true, "x", "rotina", "Davi");
     home.check(keyOf(raw), false, "x", "rotina");
     assert.equal(keyOf(raw) in store.data.checks, false);
     assert.equal(store.pointsByKey(keyOf(raw)), null);
@@ -241,7 +241,7 @@ describe("Home: Feito / Desfazer of a calendar routine", () => {
     const raw = dose(9, 0);
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
     store.markSent(keyOf(raw), "on", ["mobile_app_a", "mobile_app_b"]);
-    home.check(keyOf(raw), true, "Andressa", "remedio");
+    home.check(keyOf(raw), true, "Aurora", "remedio");
     await flushPromises();
     assert.deepEqual(
       notifications(ha).map((n) => [n.service, n.service_data]),
@@ -258,7 +258,7 @@ describe("Home: routines that come back N days after done", () => {
     const raw = cama();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
     const key = keyOf(raw);
-    const out = await home.check(key, true, "Diego (app)", "rotina", "Diego");
+    const out = await home.check(key, true, "Davi (app)", "rotina", "Davi");
     assert.deepEqual(out, { moved: true, next: "2026-11-04" });
     const [upd] = sentOf(ha, "calendar/event/update");
     assert.equal(upd.entity_id, CAL);
@@ -271,16 +271,16 @@ describe("Home: routines that come back N days after done", () => {
     assert.equal(k.notes, "Dobrar o edredom");
     const c = store.data.checks[key];
     assert.deepEqual(c.moved, { cal: CAL, uid: "cama", start: "2026-11-02", end: "2026-11-03", day: "2026-11-02", summary: "Arrumar a cama" });
-    assert.equal(c.by, "Diego");
+    assert.equal(c.by, "Davi");
     assert.equal(store.pointsByKey(key).points, 10);
   });
   it("Feito again the same day (the moved event marked from the calendar) does nothing", async () => {
     const raw = cama();
     const { home, ha } = setup({ events: { [CAL]: [raw] } });
-    await home.check(keyOf(raw), true, "x", "rotina", "Diego");
+    await home.check(keyOf(raw), true, "x", "rotina", "Davi");
     const moved = { ...raw, start: "2026-11-04", end: "2026-11-05" };
     home.tracked.get(CAL).events = [moved];
-    const out = await home.check(keyOf(moved), true, "x", "rotina", "Diego");
+    const out = await home.check(keyOf(moved), true, "x", "rotina", "Davi");
     assert.deepEqual(out, { moved: false });
     assert.equal(sentOf(ha, "calendar/event/update").length, 1);
   });
@@ -288,7 +288,7 @@ describe("Home: routines that come back N days after done", () => {
     const raw = cama();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
     const key = keyOf(raw);
-    await home.check(key, true, "x", "rotina", "Diego");
+    await home.check(key, true, "x", "rotina", "Davi");
     const upd = sentOf(ha, "calendar/event/update")[0].event;
     home.tracked.get(CAL).events = [{ ...raw, start: upd.dtstart, end: upd.dtend, description: upd.description }];
     const out = await home.check(key, false, "x", "rotina");
@@ -307,19 +307,19 @@ describe("Home: routines that come back N days after done", () => {
     const key = keyOf(raw);
     await home.check(key, true, "App", "rotina", "");
     assert.equal(store.pointsByKey(key), null, "nobody said who: no points yet");
-    home.check(key, true, "App", "rotina", "Andressa");
-    assert.equal(store.data.checks[key].by, "Andressa");
-    assert.equal(store.pointsByKey(key).who, "Andressa");
+    home.check(key, true, "App", "rotina", "Aurora");
+    assert.equal(store.data.checks[key].by, "Aurora");
+    assert.equal(store.pointsByKey(key).who, "Aurora");
     assert.equal(store.pointsByKey(key).points, 10);
-    home.check(key, true, "App", "rotina", "Diego");
-    assert.equal(store.pointsByKey(key).who, "Diego");
+    home.check(key, true, "App", "rotina", "Davi");
+    assert.equal(store.pointsByKey(key).who, "Davi");
     assert.equal(store.data.score.log.at(-1).type, "trocou");
     assert.equal(sentOf(ha, "calendar/event/update").length, 1, "the event is not moved again");
   });
   it("a calendar that can't change events (Google): the old one deleted, a new one created", async () => {
     const raw = cama();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] }, features: 3 });
-    await home.check(keyOf(raw), true, "x", "rotina", "Diego");
+    await home.check(keyOf(raw), true, "x", "rotina", "Davi");
     assert.deepEqual(
       ha.sent.map((m) => m.type),
       ["calendar/event/delete", "calendar/event/create"],
@@ -331,7 +331,7 @@ describe("Home: routines that come back N days after done", () => {
     const raw = cama();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] }, features: 3 });
     const key = keyOf(raw);
-    await home.check(key, true, "x", "rotina", "Diego");
+    await home.check(key, true, "x", "rotina", "Davi");
     const created = ha.sent[1].event;
     home.tracked.get(CAL).events = [{ uid: "novo-uid", summary: raw.summary, start: created.dtstart, end: created.dtend, description: created.description }];
     ha.sent.length = 0;
@@ -349,7 +349,7 @@ describe("Home: routines that come back N days after done", () => {
     const raw = cama();
     const twin = { uid: "twin", summary: raw.summary, start: "2026-11-04", end: "2026-11-05", description: AFTER };
     const a = setup({ events: { [CAL]: [raw, twin] }, features: 3 });
-    await a.home.check(keyOf(raw), true, "x", "rotina", "Diego");
+    await a.home.check(keyOf(raw), true, "x", "rotina", "Davi");
     assert.deepEqual(
       a.ha.sent.map((m) => m.type),
       ["calendar/event/delete"],
@@ -357,7 +357,7 @@ describe("Home: routines that come back N days after done", () => {
     const b = setup({ events: { [CAL]: [raw] }, features: 3 });
     let creates = 0;
     b.ha.fail = (m) => m.type === "calendar/event/create" && ++creates === 1;
-    await assert.rejects(b.home.check(keyOf(raw), true, "x", "rotina", "Diego"));
+    await assert.rejects(b.home.check(keyOf(raw), true, "x", "rotina", "Davi"));
     assert.deepEqual(
       b.ha.sent.map((m) => [m.type, m.event ? m.event.dtstart : m.uid]),
       [
@@ -371,7 +371,7 @@ describe("Home: routines that come back N days after done", () => {
   it("a read-only calendar refuses", async () => {
     const raw = cama();
     const { home } = setup({ events: { [CAL]: [raw] }, features: 1 });
-    await assert.rejects(home.check(keyOf(raw), true, "x", "rotina", "Diego"), { code: "not_supported" });
+    await assert.rejects(home.check(keyOf(raw), true, "x", "rotina", "Davi"), { code: "not_supported" });
   });
 });
 
@@ -379,8 +379,8 @@ describe("Home: Pular", () => {
   it("a calendar routine: skipped, no points, nothing else", async () => {
     const raw = lixo();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
-    home.check(keyOf(raw), true, "x", "rotina", "Andressa");
-    const out = await home.skip(keyOf(raw), "Diego");
+    home.check(keyOf(raw), true, "x", "rotina", "Aurora");
+    const out = await home.skip(keyOf(raw), "Davi");
     assert.deepEqual(out, { skipped: true });
     assert.equal(store.data.checks[keyOf(raw)].skipped, true);
     assert.equal(store.pointsByKey(keyOf(raw)), null);
@@ -390,7 +390,7 @@ describe("Home: Pular", () => {
     const raw = dose(8, 0);
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
     store.markSent(keyOf(raw), "on", ["mobile_app_pixel"]);
-    const out = await home.skip(keyOf(raw), "Diego");
+    const out = await home.skip(keyOf(raw), "Davi");
     assert.deepEqual(out, { skipped: true });
     const c = store.data.checks[keyOf(raw)];
     assert.equal(c.skipped, true);
@@ -402,7 +402,7 @@ describe("Home: Pular", () => {
     const raw = cama({ start: "2026-10-31", end: "2026-11-01" });
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
     const key = keyOf(raw);
-    const out = await home.skip(key, "Diego");
+    const out = await home.skip(key, "Davi");
     assert.deepEqual(out, { skipped: true, moved: true, next: "2026-11-02" });
     const upd = sentOf(ha, "calendar/event/update")[0];
     assert.equal(upd.event.dtstart, "2026-11-02");
@@ -421,7 +421,7 @@ describe("Home: Pular", () => {
   it("Pular on a calendar that can't change events (Google): recreated on the next date; a read-only one refuses", async () => {
     const raw = cama({ start: "2026-10-31", end: "2026-11-01" });
     const g = setup({ events: { [CAL]: [raw] }, features: 3 });
-    const out = await g.home.skip(keyOf(raw), "Diego");
+    const out = await g.home.skip(keyOf(raw), "Davi");
     assert.deepEqual(out, { skipped: true, moved: true, next: "2026-11-02" });
     assert.deepEqual(
       g.ha.sent.map((m) => [m.type, m.uid || m.event.dtstart]),
@@ -432,7 +432,7 @@ describe("Home: Pular", () => {
     );
     assert.equal(g.store.data.checks[keyOf(raw)].moved.recreated, true);
     const ro = setup({ events: { [CAL]: [raw] }, features: 1 });
-    await assert.rejects(ro.home.skip(keyOf(raw), "Diego"), { code: "not_supported" });
+    await assert.rejects(ro.home.skip(keyOf(raw), "Davi"), { code: "not_supported" });
     assert.equal(keyOf(raw) in ro.store.data.checks, false, "not marked skipped");
   });
   it("only routines and doses can be skipped", async () => {
@@ -447,7 +447,7 @@ describe("Home: maintenance", () => {
   it("done: moves to today + interval, keeps the location, points by the day, undo possible", async () => {
     const raw = filtro();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
-    const out = await home.maintDone(CAL, "filtro", "App", "Diego");
+    const out = await home.maintDone(CAL, "filtro", "App", "Davi");
     const day = new Date(NOW).toISOString().slice(0, 10);
     assert.deepEqual(out, { moved: true, next: "2027-05-02", undo: true, key: `maint|${CAL}|filtro|${day}` });
     const [upd] = sentOf(ha, "calendar/event/update");
@@ -466,7 +466,7 @@ describe("Home: maintenance", () => {
   });
   it("undo is only possible for 30 minutes", async () => {
     const { home } = setup({ events: { [CAL]: [filtro()] } });
-    await home.maintDone(CAL, "filtro", "App", "Diego");
+    await home.maintDone(CAL, "filtro", "App", "Davi");
     mock.timers.tick(30 * 60000 + 1);
     await assert.rejects(home.maintUndo(CAL, "filtro"), { code: "not_found" });
   });
@@ -479,7 +479,7 @@ describe("Home: maintenance", () => {
   it("a repeating maintenance is marked done (not moved)", async () => {
     const raw = filtro({ rrule: "FREQ=MONTHLY", recurrence_id: "20261107" });
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
-    const out = await home.maintDone(CAL, "filtro", "App", "Diego");
+    const out = await home.maintDone(CAL, "filtro", "App", "Davi");
     assert.deepEqual(out, { moved: false, key: keyOf(raw) });
     assert.equal(store.data.checks[keyOf(raw)].kind, "manutencao");
     assert.equal(store.pointsByKey(keyOf(raw)).points, 30);
@@ -493,7 +493,7 @@ describe("Home: maintenance", () => {
   });
   it("Google-like calendar: recreated, no undo", async () => {
     const { home, ha } = setup({ events: { [CAL]: [filtro()] }, features: 3 });
-    const out = await home.maintDone(CAL, "filtro", "App", "Diego");
+    const out = await home.maintDone(CAL, "filtro", "App", "Davi");
     assert.equal(out.undo, false);
     assert.deepEqual(
       ha.sent.map((m) => m.type),
@@ -504,14 +504,14 @@ describe("Home: maintenance", () => {
     "points of a maintenance done on two different days are two entries (late evening, then next morning)",
     async () => {
       mock.timers.setTime(at(2026, 11, 2, 22, 0).getTime());
-      const daily = "#manutenção\nQuem faz: Diego\nA cada: 1 dia\nPontos: 5";
+      const daily = "#manutenção\nQuem faz: Davi\nA cada: 1 dia\nPontos: 5";
       const raw = { uid: "agua", summary: "Trocar a água do pet", start: "2026-11-02", end: "2026-11-03", description: daily };
       const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
-      await home.maintDone(CAL, "agua", "App", "Diego");
+      await home.maintDone(CAL, "agua", "App", "Davi");
       const upd = sentOf(ha, "calendar/event/update")[0].event;
       home.tracked.get(CAL).events = [{ ...raw, start: upd.dtstart, end: upd.dtend, description: upd.description }];
       mock.timers.setTime(at(2026, 11, 3, 9, 0).getTime());
-      await home.maintDone(CAL, "agua", "App", "Diego");
+      await home.maintDone(CAL, "agua", "App", "Davi");
       assert.equal(store.data.score.entries.length, 2);
       assert.equal(store.data.score.entries.reduce((s, e) => s + e.points, 0), 10);
     },
@@ -521,8 +521,8 @@ describe("Home: maintenance", () => {
 describe("Home: index and phone alerts of doses", () => {
   // the phones are the ones tied to each person in Home Assistant (1.54.0: never a device picked here)
   const persons = [
-    { id: "person.andressa", name: "Andressa", user_id: "u-andressa", trackers: ["device_tracker.galaxy_s23"] },
-    { id: "person.diego", name: "Diego", user_id: "u-diego", trackers: ["device_tracker.pixel_8"] },
+    { id: "person.aurora", name: "Aurora", user_id: "u-aurora", trackers: ["device_tracker.galaxy_s23"] },
+    { id: "person.davi", name: "Davi", user_id: "u-davi", trackers: ["device_tracker.pixel_8"] },
   ];
   const house = { persons, targets: ["mobile_app_galaxy_s23", "mobile_app_pixel_8"] };
   it("rebuild builds the Agora index (doses, routines, maintenance, score) and tells the screens only on a change", () => {
@@ -542,7 +542,7 @@ describe("Home: index and phone alerts of doses", () => {
     assert.deepEqual(ix.tracked, [CAL]);
     assert.equal(ix.score.enabled, true);
     assert.deepEqual(ix.todos, { lists: [], items: [] });
-    assert.ok(ix.people.some((p) => p.name === "Andressa"));
+    assert.ok(ix.people.some((p) => p.name === "Aurora"));
     assert.equal("names" in ix, false);
     home.rebuild();
     assert.equal(changes.length, 1, "nothing changed");
@@ -552,7 +552,7 @@ describe("Home: index and phone alerts of doses", () => {
   });
   it("sends the alert at the time to the person's phone, then the late one to her and the caregivers", async () => {
     const raw = dose(14, 0);
-    const { home, store, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { score: SCORE, alerts: { late: 30, caregivers: ["Diego"] } } });
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { score: SCORE, alerts: { late: 30, caregivers: ["Davi"] } } });
     const key = keyOf(raw);
     home.rebuild();
     await home.sendAlerts();
@@ -560,7 +560,7 @@ describe("Home: index and phone alerts of doses", () => {
     assert.equal(n.length, 1);
     assert.equal(n[0].service, "mobile_app_galaxy_s23");
     assert.equal(n[0].service_data.title, "💊 Sertralina");
-    assert.equal(n[0].service_data.message, "Andressa · 1 comprimido · 14:00");
+    assert.equal(n[0].service_data.message, "Aurora · 1 comprimido · 14:00");
     assert.deepEqual(n[0].service_data.data.actions, [
       { action: `CRONOLOGIA_TOMEI_${hashOf(key)}`, title: "Tomei" },
       { action: `CRONOLOGIA_ADIAR_${hashOf(key)}`, title: "Adiar 15 min" },
@@ -582,7 +582,7 @@ describe("Home: index and phone alerts of doses", () => {
       ["mobile_app_galaxy_s23", "mobile_app_pixel_8"],
     );
     assert.equal(n[1].service_data.title, "⚠️ Sertralina atrasado");
-    assert.equal(n[1].service_data.message, "Andressa ainda não tomou o das 14:00 (30 min). Dose: 1 comprimido.");
+    assert.equal(n[1].service_data.message, "Aurora ainda não tomou o das 14:00 (30 min). Dose: 1 comprimido.");
     assert.deepEqual(store.data.sent[key].targets.sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
     // and never again
     mock.timers.tick(60 * 60000);
@@ -591,7 +591,7 @@ describe("Home: index and phone alerts of doses", () => {
     assert.equal(notifications(ha).length, 3);
   });
   it("without the person's phone the caregivers get it; no phone at all: marked, nothing sent", async () => {
-    const a = setup({ events: { [CAL]: [dose(14, 0)] }, persons: [persons[1]], targets: house.targets, app: { alerts: { caregivers: ["Diego"] } } });
+    const a = setup({ events: { [CAL]: [dose(14, 0)] }, persons: [persons[1]], targets: house.targets, app: { alerts: { caregivers: ["Davi"] } } });
     a.home.rebuild();
     await a.home.sendAlerts();
     assert.deepEqual(
@@ -605,10 +605,10 @@ describe("Home: index and phone alerts of doses", () => {
     assert.ok(b.store.data.sent[keyOf(dose(14, 0))].on);
   });
   it("no alerts: taken doses, alert off in the model, alerts off in Mais › Avisos, disconnected", async () => {
-    const off = dose(14, 0, { uid: "off", description: "#remédio\nQuem toma: Andressa\nAviso no celular: não" });
+    const off = dose(14, 0, { uid: "off", description: "#remédio\nQuem toma: Aurora\nAviso no celular: não" });
     const taken = dose(14, 0, { uid: "taken" });
     const a = setup({ events: { [CAL]: [off, taken] }, ...house, app: {} });
-    a.store.setCheck(keyOf(taken), { by: "Andressa" });
+    a.store.setCheck(keyOf(taken), { by: "Aurora" });
     a.home.rebuild();
     await a.home.sendAlerts();
     assert.equal(notifications(a.ha).length, 0);
@@ -651,13 +651,13 @@ describe("Home: index and phone alerts of doses", () => {
     assert.ok(store.data.sent[key].snoozed);
     assert.equal("snooze_until" in store.data.sent[key], false);
     home.onAction({ action: `CRONOLOGIA_TOMEI_${hashOf(key)}` });
-    assert.equal(store.data.checks[key].by, "Andressa (celular)");
+    assert.equal(store.data.checks[key].by, "Aurora (celular)");
     assert.equal(store.data.checks[key].kind, "remedio");
   });
   for (const late of [15, 60]) {
     it(`Avisar de novo ${late} min: the late alert after exactly ${late} minutes, to her and the caregivers`, async () => {
       const raw = dose(14, 0);
-      const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late, caregivers: ["Diego"] } } });
+      const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late, caregivers: ["Davi"] } } });
       home.rebuild();
       await home.sendAlerts();
       mock.timers.tick((late - 1) * 60000);
@@ -677,7 +677,7 @@ describe("Home: index and phone alerts of doses", () => {
   }
   it("a dose more than 3 hours past its late alert time gets no alert (an old one, e.g. after a restart)", async () => {
     const raw = dose(9, 0);
-    const { home, ha, store } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late: 30, caregivers: ["Diego"] } } });
+    const { home, ha, store } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late: 30, caregivers: ["Davi"] } } });
     home.rebuild();
     await home.sendAlerts();
     assert.equal(notifications(ha).length, 0, "14:00: five hours after 09:00");
@@ -686,7 +686,7 @@ describe("Home: index and phone alerts of doses", () => {
   it("Adiar for someone without a phone: the alert comes back to the caregivers", async () => {
     const raw = dose(14, 0, { description: "#remédio\nDose: 1/4\nQuem toma: Mimi" });
     const key = keyOf(raw);
-    const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { people: { Mimi: { pet: true } }, alerts: { late: 0, caregivers: ["Diego", "Andressa"] } } });
+    const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { people: { Mimi: { pet: true } }, alerts: { late: 0, caregivers: ["Davi", "Aurora"] } } });
     home.rebuild();
     await home.sendAlerts();
     assert.deepEqual(
@@ -709,7 +709,7 @@ describe("Home: index and phone alerts of doses", () => {
   });
   it("a pet with the person chosen for it: on that person's phone at the time; late, also Quem cuida", async () => {
     const raw = dose(14, 0, { description: "#remédio\nDose: 1/4\nQuem toma: Mimi" });
-    const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { people: { Mimi: { pet: true, care: "Andressa" } }, alerts: { late: 30, caregivers: ["Diego"] } } });
+    const { home, ha } = setup({ events: { [CAL]: [raw] }, ...house, app: { people: { Mimi: { pet: true, care: "Aurora" } }, alerts: { late: 30, caregivers: ["Davi"] } } });
     home.rebuild();
     assert.equal(home.index.meds[0].phone, true);
     await home.sendAlerts();
@@ -721,7 +721,7 @@ describe("Home: index and phone alerts of doses", () => {
   });
   it("a phone that fails does not stop the others; the alert counts as sent", async () => {
     const raw = dose(14, 0);
-    const { home, ha, store, log } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late: 30, caregivers: ["Diego"] } } });
+    const { home, ha, store, log } = setup({ events: { [CAL]: [raw] }, ...house, app: { alerts: { late: 30, caregivers: ["Davi"] } } });
     ha.fail = (m) => m.service === "mobile_app_galaxy_s23";
     home.rebuild();
     await home.sendAlerts();
@@ -755,14 +755,14 @@ describe("Home: index and phone alerts of doses", () => {
   });
   it("the test alert round trip: buttons come back and the phone gets a confirmation", async () => {
     const { home, ha } = setup(house);
-    assert.deepEqual(await home.testAlert("Diego"), { sent: 1 });
+    assert.deepEqual(await home.testAlert("Davi"), { sent: 1 });
     assert.equal(ha.sent[0].service, "mobile_app_pixel_8");
     assert.deepEqual(
       ha.sent[0].service_data.data.actions.map((a) => a.action),
       ["CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8", "CRONOLOGIA_TESTE_ADIAR_mobile_app_pixel_8"],
     );
     await home.onAction({ action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
-    assert.deepEqual(home.lastTest, { person: "Diego", action: "tomei", at: NOW }, "said by the person, not the device");
+    assert.deepEqual(home.lastTest, { person: "Davi", action: "tomei", at: NOW }, "said by the person, not the device");
     assert.equal(ha.sent[1].service_data.title, "✅ Funcionou");
     await assert.rejects(home.testAlert("Zeca"), { code: "no_phone" });
     await assert.rejects(home.testAlert("mobile_app_pixel_8"), { code: "no_phone" }, "a device is not a person");
@@ -773,27 +773,27 @@ describe("Home: points from the ResolvIA and automations", () => {
   const key = "resolvia|todo.casa|t1|2026-11-02";
   it("ignored while the ResolvIA integration is off", () => {
     const { home, store } = setup();
-    home.onPoints({ chave: key, quem: "Diego", pontos: 10 });
+    home.onPoints({ chave: key, quem: "Davi", pontos: 10 });
     assert.equal(store.data.score.entries.length, 0);
   });
   it("somar, a repeated somar, trocar and desfazer", () => {
     const { home, store } = setup({ app: { score: SCORE, resolvia_on: true } });
-    home.onPoints({ chave: key, quem: "diego", pontos: 10, titulo: "  Passar pano " });
-    home.onPoints({ chave: key, quem: "Andressa", pontos: 50 });
+    home.onPoints({ chave: key, quem: "davi", pontos: 10, titulo: "  Passar pano " });
+    home.onPoints({ chave: key, quem: "Aurora", pontos: 50 });
     let e = store.pointsByKey(key);
-    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Diego", points: 10, title: "Passar pano", kind: "tarefa" });
-    home.onPoints({ acao: "trocar", chave: key, quem: "Andressa" });
-    assert.equal(store.pointsByKey(key).who, "Andressa");
+    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Davi", points: 10, title: "Passar pano", kind: "tarefa" });
+    home.onPoints({ acao: "trocar", chave: key, quem: "Aurora" });
+    assert.equal(store.pointsByKey(key).who, "Aurora");
     home.onPoints({ acao: "desfazer", chave: key });
     assert.equal(store.pointsByKey(key), null);
   });
   it("refuses bad keys, people off the placar and points out of range", () => {
     const { home, store, log } = setup({ app: { score: SCORE, resolvia_on: true } });
-    home.onPoints({ chave: "resolvia|todo.casa|t1", quem: "Diego", pontos: 10 });
+    home.onPoints({ chave: "resolvia|todo.casa|t1", quem: "Davi", pontos: 10 });
     home.onPoints({ chave: key, quem: "Visita", pontos: 10 });
-    home.onPoints({ chave: key, quem: "Diego", pontos: 0 });
-    home.onPoints({ chave: key, quem: "Diego", pontos: 1001 });
-    home.onPoints({ chave: key, quem: "Diego" });
+    home.onPoints({ chave: key, quem: "Davi", pontos: 0 });
+    home.onPoints({ chave: key, quem: "Davi", pontos: 1001 });
+    home.onPoints({ chave: key, quem: "Davi" });
     assert.equal(store.data.score.entries.length, 0);
     assert.equal(log.lines.filter((l) => l[0] === "warn").length, 2);
   });
@@ -801,46 +801,46 @@ describe("Home: points from the ResolvIA and automations", () => {
     const { home } = setup({ app: { score: SCORE, resolvia_on: true } });
     const calls = [];
     home.mirror = { onPoints: async (...a) => calls.push(a) };
-    home.onPoints({ chave: "espelho|todo.casa|t9", quem: "andressa" });
+    home.onPoints({ chave: "espelho|todo.casa|t9", quem: "aurora" });
     home.onPoints({ acao: "desfazer", chave: "espelho|todo.casa|t9" });
     home.onPoints({ chave: "espelho|todo.casa|t9", quem: "Visita" });
     assert.deepEqual(calls, [
-      ["somar", "todo.casa", "t9", "Andressa"],
+      ["somar", "todo.casa", "t9", "Aurora"],
       ["desfazer", "todo.casa", "t9", ""],
     ]);
   });
   it("the Extrato says it came from the ResolvIA and who", () => {
     const { home, store } = setup({ app: { score: SCORE, resolvia_on: true } });
-    asActor({ by: "Diego", via: "ResolvIA" }, () => home.onPoints({ chave: key, quem: "Diego", pontos: 10 }));
+    asActor({ by: "Davi", via: "ResolvIA" }, () => home.onPoints({ chave: key, quem: "Davi", pontos: 10 }));
     assert.equal(store.data.score.log[0].via, "ResolvIA");
-    assert.equal(store.data.score.log[0].by, "Diego");
+    assert.equal(store.data.score.log[0].by, "Davi");
   });
   it("todoPoints: a task marked here uses the same key as the ResolvIA (local day)", () => {
     const { home, store } = setup();
-    const out = home.todoPoints("todo.casa", "t1", "Passar pano", 15, true, "Andressa");
-    assert.deepEqual(out, { key, who: "Andressa", points: 15 });
-    assert.equal(home.todoPoints("todo.casa", "t1", "Passar pano", 15, true, "Andressa"), null, "once a day");
-    assert.equal(home.todoPoints("todo.casa", "t2", "x", 0, true, "Andressa"), null);
+    const out = home.todoPoints("todo.casa", "t1", "Passar pano", 15, true, "Aurora");
+    assert.deepEqual(out, { key, who: "Aurora", points: 15 });
+    assert.equal(home.todoPoints("todo.casa", "t1", "Passar pano", 15, true, "Aurora"), null, "once a day");
+    assert.equal(home.todoPoints("todo.casa", "t2", "x", 0, true, "Aurora"), null);
     assert.equal(home.todoPoints("todo.casa", "t2", "x", 5, true, "Visita"), null);
-    home.todoPoints("todo.casa", "t1", "Passar pano", 15, false, "Andressa");
+    home.todoPoints("todo.casa", "t1", "Passar pano", 15, false, "Aurora");
     assert.equal(store.pointsByKey(key), null);
   });
   it("cronologia_feito: a maintenance by its name is done", async () => {
     const { home, ha } = setup({ events: { [CAL]: [filtro()] } });
-    await home.onFeito({ nome: "trocar o FILTRO", quem: "Diego" });
+    await home.onFeito({ nome: "trocar o FILTRO", quem: "Davi" });
     assert.equal(sentOf(ha, "calendar/event/update")[0].uid, "filtro");
   });
   it("cronologia_feito: the open one of today closest to now, the person's own first", () => {
-    const morning = { uid: "m", summary: "Regar", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:30:00-03:00", description: "#rotina\nQuem faz: Diego" };
-    const afternoon = { uid: "a", summary: "Regar", start: "2026-11-02T15:00:00-03:00", end: "2026-11-02T15:30:00-03:00", description: "#rotina\nQuem faz: Diego" };
-    const hers = { uid: "h", summary: "Regar", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:30:00-03:00", description: "#rotina\nQuem faz: Andressa" };
-    const tomorrow = { uid: "t", summary: "Regar", start: "2026-11-03T14:00:00-03:00", end: "2026-11-03T14:30:00-03:00", description: "#rotina\nQuem faz: Diego" };
+    const morning = { uid: "m", summary: "Regar", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:30:00-03:00", description: "#rotina\nQuem faz: Davi" };
+    const afternoon = { uid: "a", summary: "Regar", start: "2026-11-02T15:00:00-03:00", end: "2026-11-02T15:30:00-03:00", description: "#rotina\nQuem faz: Davi" };
+    const hers = { uid: "h", summary: "Regar", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:30:00-03:00", description: "#rotina\nQuem faz: Aurora" };
+    const tomorrow = { uid: "t", summary: "Regar", start: "2026-11-03T14:00:00-03:00", end: "2026-11-03T14:30:00-03:00", description: "#rotina\nQuem faz: Davi" };
     const { home, store } = setup({ events: { [CAL]: [morning, afternoon, hers, tomorrow] } });
     home.onFeito({ nome: "Regar" });
     assert.deepEqual(Object.keys(store.data.checks), [keyOf(afternoon)]);
-    home.onFeito({ nome: "Regar", quem: "Andressa" });
+    home.onFeito({ nome: "Regar", quem: "Aurora" });
     assert.ok(keyOf(hers) in store.data.checks);
-    assert.equal(store.data.checks[keyOf(hers)].by, "Andressa");
+    assert.equal(store.data.checks[keyOf(hers)].by, "Aurora");
     home.onFeito({ nome: "Regar" });
     assert.ok(keyOf(morning) in store.data.checks);
     home.onFeito({ nome: "Regar" });
@@ -858,43 +858,43 @@ describe("Home: points from the ResolvIA and automations", () => {
 describe("Home: extra points, demerits, removing and restoring", () => {
   it("extraPoints validates who, points and what", () => {
     const { home, store } = setup();
-    home.extraPoints("diego", "12", " Lavou o carro ");
+    home.extraPoints("davi", "12", " Lavou o carro ");
     const e = store.data.score.entries[0];
-    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Diego", points: 12, title: "Lavou o carro", kind: "extra" });
+    assert.deepEqual({ who: e.who, points: e.points, title: e.title, kind: e.kind }, { who: "Davi", points: 12, title: "Lavou o carro", kind: "extra" });
     assert.match(e.key, /^extra\|/);
     assert.throws(() => home.extraPoints("Visita", 5, "x"), { code: "invalid_format" });
-    assert.throws(() => home.extraPoints("Diego", 0, "x"), { code: "invalid_format" });
-    assert.throws(() => home.extraPoints("Diego", 1001, "x"), { code: "invalid_format" });
-    assert.throws(() => home.extraPoints("Diego", 5, "  "), { code: "invalid_format" });
+    assert.throws(() => home.extraPoints("Davi", 0, "x"), { code: "invalid_format" });
+    assert.throws(() => home.extraPoints("Davi", 1001, "x"), { code: "invalid_format" });
+    assert.throws(() => home.extraPoints("Davi", 5, "  "), { code: "invalid_format" });
   });
   it("demerit from the list, by id or by its name (cronologia_demerito)", () => {
     const { home, store, log } = setup({ app: { score: SCORE, demerits: [{ id: "toalha", title: "Toalha molhada na cama", points: 5 }] } });
-    const out = home.demerit("toalha", "Andressa");
+    const out = home.demerit("toalha", "Aurora");
     assert.equal(out.points, -5);
     assert.equal(store.pointsByKey(out.key).kind, "demerito");
-    home.onDemerit({ nome: "toalha molhada na CAMA", quem: "diego" });
-    assert.equal(store.data.score.entries.filter((e) => e.who === "Diego")[0].points, -5);
+    home.onDemerit({ nome: "toalha molhada na CAMA", quem: "davi" });
+    assert.equal(store.data.score.entries.filter((e) => e.who === "Davi")[0].points, -5);
     home.onDemerit({ nome: "Outro" });
     home.onDemerit({ nome: "Toalha molhada na cama", quem: "Visita" });
     assert.equal(store.data.score.entries.length, 2);
     assert.equal(log.lines.filter((l) => l[0] === "warn").length, 2);
-    assert.throws(() => home.demerit("nada", "Diego"), { code: "not_found" });
+    assert.throws(() => home.demerit("nada", "Davi"), { code: "not_found" });
   });
   it("on vacation (Modo férias) the deméritos are paused: from the app and from an automation", () => {
     const { home, store, log } = setup({ app: { score: SCORE, demerits: [{ id: "toalha", title: "Toalha molhada na cama", points: 5 }], away: { from: "2026-11-01", to: "2026-11-05" } } });
-    assert.throws(() => home.demerit("toalha", "Andressa"), { code: "away", message: /De férias/ });
-    home.onDemerit({ nome: "Toalha molhada na cama", quem: "Diego" });
+    assert.throws(() => home.demerit("toalha", "Aurora"), { code: "away", message: /De férias/ });
+    home.onDemerit({ nome: "Toalha molhada na cama", quem: "Davi" });
     assert.equal(store.data.score.entries.length, 0);
     assert.match(log.lines.at(-1)[1], /De férias/);
-    assert.throws(() => home.extraPoints("Diego", 10, "Lavou o carro"), { code: "away" }, "no points by hand either");
+    assert.throws(() => home.extraPoints("Davi", 10, "Lavou o carro"), { code: "away" }, "no points by hand either");
     // after the vacation, again
     store.setApp({ away: { from: "2026-10-20", to: "2026-11-01" } });
-    assert.equal(home.demerit("toalha", "Andressa").points, -5);
-    home.extraPoints("Diego", 10, "Lavou o carro");
+    assert.equal(home.demerit("toalha", "Aurora").points, -5);
+    home.extraPoints("Davi", 10, "Lavou o carro");
   });
   it("removePoints keeps the entry 10 minutes for Desfazer (with its date)", () => {
     const { home, store } = setup();
-    home.extraPoints("Diego", 7, "Ajudou");
+    home.extraPoints("Davi", 7, "Ajudou");
     const e = store.data.score.entries[0];
     home.removePoints(e.key);
     assert.equal(store.pointsByKey(e.key), null);
@@ -912,10 +912,10 @@ describe("Home: extra points, demerits, removing and restoring", () => {
   it("reassign moves the points and the check to another participant", () => {
     const raw = lixo();
     const { home, store } = setup({ events: { [CAL]: [raw] } });
-    home.check(keyOf(raw), true, "x", "rotina", "Diego");
-    home.reassign(keyOf(raw), "andressa");
-    assert.equal(store.pointsByKey(keyOf(raw)).who, "Andressa");
-    assert.equal(store.data.checks[keyOf(raw)].by, "Andressa");
+    home.check(keyOf(raw), true, "x", "rotina", "Davi");
+    home.reassign(keyOf(raw), "aurora");
+    assert.equal(store.pointsByKey(keyOf(raw)).who, "Aurora");
+    assert.equal(store.data.checks[keyOf(raw)].by, "Aurora");
     assert.throws(() => home.reassign(keyOf(raw), "Visita"), { code: "invalid_format" });
   });
 });
@@ -933,14 +933,14 @@ describe("Home: the placar", () => {
   it("a new week closes the last one: winner, the winner's own prize, phones told", async () => {
     const { home, store, ha } = setup({ app, ...PLAYERS });
     store.setCurrentPeriod({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02" });
-    put(store, "Diego", 30, at(2026, 10, 28));
-    put(store, "Andressa", 10, at(2026, 10, 29));
-    put(store, "Andressa", 100, at(2026, 11, 2, 9)); // this week already
-    store.setPrizes("2026-10-26", "Pizza", { Diego: "Cinema" });
-    store.setPrizes("2026-11-02", "Sorvete", { Andressa: "Massagem" });
+    put(store, "Davi", 30, at(2026, 10, 28));
+    put(store, "Aurora", 10, at(2026, 10, 29));
+    put(store, "Aurora", 100, at(2026, 11, 2, 9)); // this week already
+    store.setPrizes("2026-10-26", "Pizza", { Davi: "Cinema" });
+    store.setPrizes("2026-11-02", "Sorvete", { Aurora: "Massagem" });
     await home.rollover();
     const h = store.data.score.history[0];
-    assert.deepEqual(h, { key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: { Diego: 30, Andressa: 10 }, winner: "Diego", reward: "Cinema", delivered: false });
+    assert.deepEqual(h, { key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: { Davi: 30, Aurora: 10 }, winner: "Davi", reward: "Cinema", delivered: false });
     assert.equal(store.data.score.current.key, "2026-11-02");
     const n = notifications(ha);
     assert.deepEqual(
@@ -948,15 +948,15 @@ describe("Home: the placar", () => {
       ["mobile_app_pixel_8", "mobile_app_galaxy_s23"],
     );
     assert.equal(n[0].service_data.title, "🏆 Placar fechado");
-    assert.equal(n[0].service_data.message, "Diego venceu: 30 × 10. Prêmio: Cinema. Prêmio agora: Diego: Sorvete · Andressa: Massagem.");
+    assert.equal(n[0].service_data.message, "Davi venceu: 30 × 10. Prêmio: Cinema. Prêmio agora: Davi: Sorvete · Aurora: Massagem.");
     await home.rollover();
     assert.equal(store.data.score.history.length, 1, "closed once");
   });
   it("a tie and a week nobody scored", async () => {
     const a = setup({ app, ...PLAYERS });
     a.store.setCurrentPeriod({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02" });
-    put(a.store, "Diego", 10, at(2026, 10, 28));
-    put(a.store, "Andressa", 10, at(2026, 10, 29));
+    put(a.store, "Davi", 10, at(2026, 10, 28));
+    put(a.store, "Aurora", 10, at(2026, 10, 29));
     await a.home.rollover();
     assert.equal(a.store.data.score.history[0].winner, null);
     assert.equal(notifications(a.ha)[0].service_data.message, "Empate: 10 × 10.");
@@ -973,9 +973,9 @@ describe("Home: the placar", () => {
   });
   it("scoreIndex: this period's rows, leader, entries, Extrato and the next period's prize", () => {
     const { home, store } = setup({ app, ...PLAYERS });
-    put(store, "Diego", 5, at(2026, 11, 2, 9));
-    put(store, "Andressa", 8, at(2026, 11, 2, 10));
-    put(store, "Andressa", 50, at(2026, 10, 30));
+    put(store, "Davi", 5, at(2026, 11, 2, 9));
+    put(store, "Aurora", 8, at(2026, 11, 2, 10));
+    put(store, "Aurora", 50, at(2026, 10, 30));
     store.setPrizes("2026-11-09", "Praia", {});
     const s = home.scoreIndex(NOW);
     assert.equal(s.current.key, "2026-11-02");
@@ -984,13 +984,13 @@ describe("Home: the placar", () => {
     assert.deepEqual(
       s.rows.map((r) => [r.name, r.points]),
       [
-        ["Andressa", 8],
-        ["Diego", 5],
+        ["Aurora", 8],
+        ["Davi", 5],
       ],
     );
-    assert.equal(s.leader, "Andressa");
+    assert.equal(s.leader, "Aurora");
     assert.equal(s.entries.length, 2);
-    assert.equal(s.entries[0].who, "Andressa", "newest first");
+    assert.equal(s.entries[0].who, "Aurora", "newest first");
     assert.equal(s.log_count, 3, "the Extrato is by when the change happened (all three today)");
   });
   it("resetPeriod sets the current period from the settings", () => {
@@ -999,14 +999,14 @@ describe("Home: the placar", () => {
     assert.deepEqual(store.data.score.current, { key: "2026-11-01", start: "2026-11-01", end: "2026-12-01" });
   });
   it("placarInfo: on, who plays and which HA user is which player", () => {
-    const { home } = setup({ app, persons: [{ id: "person.diego", name: "Diego", user_id: "u-diego", trackers: [] }, { id: "person.zeca", name: "Zeca", user_id: "u-zeca", trackers: [] }] });
-    assert.deepEqual(home.placarInfo(), { ativo: true, periodo: "semana", participantes: ["Diego", "Andressa"], usuarios: { "u-diego": "Diego" } });
+    const { home } = setup({ app, persons: [{ id: "person.davi", name: "Davi", user_id: "u-davi", trackers: [] }, { id: "person.zeca", name: "Zeca", user_id: "u-zeca", trackers: [] }] });
+    assert.deepEqual(home.placarInfo(), { ativo: true, periodo: "semana", participantes: ["Davi", "Aurora"], usuarios: { "u-davi": "Davi" } });
     const off = setup({ app: {} });
     assert.deepEqual(off.home.placarInfo(), { ativo: false, periodo: "semana", participantes: [], usuarios: {} });
   });
   it("scoreLog: from/to as days, limits", () => {
     const { home, store } = setup();
-    for (let i = 0; i < 5; i++) home.extraPoints("Diego", 1, `x${i}`);
+    for (let i = 0; i < 5; i++) home.extraPoints("Davi", 1, `x${i}`);
     assert.equal(home.scoreLog(0, 2).length, 2);
     assert.equal(home.scoreLog(0, 500).length, 5);
     assert.equal(home.scoreLog(0, 40, "2026-11-03", "2026-11-10").length, 0);
@@ -1183,11 +1183,11 @@ describe("Home: occurrences and lookups", () => {
   });
   it("lateMaintPoints: points of a maintenance done from the ResolvIA when the name came late", () => {
     const { home, store } = setup({ events: { [CAL]: [filtro()] } });
-    home.lateMaintPoints("maint|k", CAL, "filtro", "", "Diego");
+    home.lateMaintPoints("maint|k", CAL, "filtro", "", "Davi");
     assert.equal(store.pointsByKey("maint|k").points, 30);
     assert.equal(store.pointsByKey("maint|k").title, "Trocar o filtro");
-    home.lateMaintPoints("maint|k", CAL, "filtro", "", "Andressa");
-    assert.equal(store.pointsByKey("maint|k").who, "Diego", "only once");
+    home.lateMaintPoints("maint|k", CAL, "filtro", "", "Aurora");
+    assert.equal(store.pointsByKey("maint|k").who, "Davi", "only once");
     home.lateMaintPoints("maint|z", CAL, "filtro", "", "Visita");
     assert.equal(store.pointsByKey("maint|z"), null);
   });
@@ -1204,15 +1204,15 @@ describe("Home: the daily reminder of the placar", () => {
 
   it("once a day at the time, to everyone who plays; tapping it opens Recompensas (same tag/group/channel)", async () => {
     const { home, store, ha } = setup({ app: app(), ...PLAYERS });
-    put(store, "Diego", 135);
-    put(store, "Andressa", 125);
+    put(store, "Davi", 135);
+    put(store, "Aurora", 125);
     await home.scoreReminder(at(2026, 11, 2, 19, 59));
     assert.equal(notifications(ha).length, 0, "not before the time");
     await home.scoreReminder(at(2026, 11, 2, 20, 0));
     const n = notifications(ha);
     assert.deepEqual(n.map((x) => x.service), ["mobile_app_pixel_8", "mobile_app_galaxy_s23"]);
     assert.equal(n[0].service_data.title, "🏆 Placar");
-    assert.equal(n[0].service_data.message, "Diego na frente por 10 pontos: Diego 135 × Andressa 125. Fecha em 7 dias.");
+    assert.equal(n[0].service_data.message, "Davi na frente por 10 pontos: Davi 135 × Aurora 125. Fecha em 7 dias.");
     assert.deepEqual([n[0].service_data.data.tag, n[0].service_data.data.group, n[0].service_data.data.channel], ["cronologia-placar-lembrete", "cronologia-placar", "Placar"]);
     await home.scoreReminder(at(2026, 11, 2, 20, 30));
     assert.equal(notifications(ha).length, 2, "once a day");
@@ -1237,18 +1237,18 @@ describe("Home: the daily reminder of the placar", () => {
   it("the words: a tie, nobody yet, one player, closing today", () => {
     const a = setup({ app: app(), ...PLAYERS });
     assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Ninguém pontuou ainda. Fecha em 7 dias.");
-    put(a.store, "Diego", 10);
-    put(a.store, "Andressa", 10);
-    assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Empate: Diego 10 × Andressa 10. Fecha em 7 dias.");
-    put(a.store, "Andressa", 1);
-    assert.equal(a.home.scoreReminderText(at(2026, 11, 8, 20)).message, "Andressa na frente por 1 ponto: Andressa 11 × Diego 10. Fecha hoje à meia-noite.");
-    const b = setup({ app: app({ participants: ["Diego"] }), ...PLAYERS });
-    put(b.store, "Diego", 5);
-    assert.equal(b.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Diego: 5 pontos. Fecha em 7 dias.");
+    put(a.store, "Davi", 10);
+    put(a.store, "Aurora", 10);
+    assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Empate: Davi 10 × Aurora 10. Fecha em 7 dias.");
+    put(a.store, "Aurora", 1);
+    assert.equal(a.home.scoreReminderText(at(2026, 11, 8, 20)).message, "Aurora na frente por 1 ponto: Aurora 11 × Davi 10. Fecha hoje à meia-noite.");
+    const b = setup({ app: app({ participants: ["Davi"] }), ...PLAYERS });
+    put(b.store, "Davi", 5);
+    assert.equal(b.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Davi: 5 pontos. Fecha em 7 dias.");
   });
   it("Testar: now, on the phones of the one using the app; a person without a phone: why", async () => {
     const { home, ha } = setup({ app: app(), ...PLAYERS });
-    await home.testScoreReminder("Diego");
+    await home.testScoreReminder("Davi");
     const n = notifications(ha);
     assert.deepEqual([n.length, n[0].service, n[0].service_data.data.tag], [1, "mobile_app_pixel_8", "cronologia-placar-teste"]);
     await assert.rejects(home.testScoreReminder("Zeca"), { code: "no_phone" });

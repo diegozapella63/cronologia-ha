@@ -2597,7 +2597,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <b>Eventos para automações</b>
         <span class="ha-ev-lead">Para marcar de fora do app, numa automação, numa rotina da Alexa ou numa etiqueta NFC. Funcionam com os sensores ligados ou não.</span>
         <div class="sensor-list">
-          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code>${score ? html` (e <code>quem: Diego</code>, se vale pontos)` : nothing}: a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
+          <div class="sensor-row"><code>cronologia_feito</code><span>com <code>nome: Filtro de água</code>${score ? html` (e <code>quem: Davi</code>, se vale pontos)` : nothing}: a manutenção, a rotina ou o remédio de hoje com esse nome fica feito.</span></div>
           ${score ? html`<div class="sensor-row"><code>cronologia_demerito</code><span>com <code>nome</code> e <code>quem</code>: desconta esse demérito de quem foi.</span></div>` : nothing}
         </div>
       </div>

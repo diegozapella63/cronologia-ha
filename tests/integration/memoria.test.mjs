@@ -24,7 +24,7 @@ before(async () => {
       return res.end(JSON.stringify({ erro: "Chave inválida." }));
     }
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ versao: "1.13.0", pessoa: "Diego", trechos: [T("18:00", { agora: true }), T("07:00", { amanha: true }), T("12:00", { amanha: true, bloco: "Cozinha" })] }));
+    res.end(JSON.stringify({ versao: "1.13.0", pessoa: "Davi", trechos: [T("18:00", { agora: true }), T("07:00", { amanha: true }), T("12:00", { amanha: true, bloco: "Cozinha" })] }));
   });
   await new Promise((r) => fake.listen(port, "127.0.0.1", r));
   const info = { app: "memoria", nome: "MemorIA", url: `http://127.0.0.1:${port}`, ip_url: null, chave: "segredo", versao: "1.13.0", agora: "/api/integracao/agora", painel: "/app/a1b2c3d4_memoria" };
@@ -50,7 +50,7 @@ describe("MemorIA", () => {
     assert.equal(out.painel, "/app/a1b2c3d4_memoria");
     assert.deepEqual(out.trechos.map((t) => [t.inicio, t.agora, t.amanha, t.bloco]), [["18:00", true, false, "Diário"], ["07:00", false, true, "Diário"], ["12:00", false, true, "Cozinha"]]);
     assert.equal(asked.length, 1);
-    assert.equal(asked[0].url, "/api/integracao/agora?usuario=u-diego&pessoa=Diego");
+    assert.equal(asked[0].url, "/api/integracao/agora?usuario=u-davi&pessoa=Davi");
     assert.equal(asked[0].auth, "Bearer segredo");
     assert.equal(asked[0].app, "CronologIA");
     await c.call("cronologia/memoria/agora", {});

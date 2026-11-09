@@ -16,19 +16,19 @@ const ctx = () =>
       ],
       rotinas: [
         { id: "calendar.casa|r1|2026-11-03", nome: "Arrumar a cama", periodo: "Manhã", pontos: 5 },
-        { id: "calendar.casa|r2|2026-11-03", nome: "Dar janta cachorros", periodo: "Noite", quem: "Diego" },
+        { id: "calendar.casa|r2|2026-11-03", nome: "Dar janta cachorros", periodo: "Noite", quem: "Davi" },
         { id: "calendar.casa|r3|2026-11-03", nome: "Passar aspirador", feito: true },
         { id: "calendar.casa|r4|2026-11-02", nome: "Regar as plantas", atrasada: true },
       ],
       remedios: [
-        { id: "calendar.rem|m1|2026-11-03T08:00", nome: "Sertralina", hora: "08:00", quem: "Andressa", dose: "50 mg", estado: "agora" },
-        { id: "calendar.rem|m2|2026-11-03T20:00", nome: "Sertralina", hora: "20:00", quem: "Andressa", estado: "depois" },
+        { id: "calendar.rem|m1|2026-11-03T08:00", nome: "Sertralina", hora: "08:00", quem: "Aurora", dose: "50 mg", estado: "agora" },
+        { id: "calendar.rem|m2|2026-11-03T20:00", nome: "Sertralina", hora: "20:00", quem: "Aurora", estado: "depois" },
         { id: "calendar.rem|m3|2026-11-03T08:00", nome: "DPrev", hora: "08:00", estado: "tomado" },
         { id: "calendar.rem|m4|2026-11-03T09:00", nome: "Ômega 3", hora: "09:00", estado: "pulado" },
       ],
       contas: [{ nome: "Luz", valor: 230.5, vence: "2026-11-02", atrasada: true }],
       manutencao: [{ nome: "Trocar filtro", vence: "2026-11-01", estado: "vencida" }],
-      placar: [{ pessoa: "Diego", pontos: 40 }, { pessoa: "Andressa", pontos: 55 }],
+      placar: [{ pessoa: "Davi", pontos: 40 }, { pessoa: "Aurora", pontos: 55 }],
       tarefas: [{ nome: "Pagar IPVA", lista: "Casa", prazo: "2026-11-04" }],
     },
   }).context;
@@ -92,10 +92,10 @@ describe("chatInstructions", () => {
     assert.match(ins, /Arrumar a cama \(Manhã\), 5 pontos: a fazer/);
     assert.match(ins, /Passar aspirador: feita/);
     assert.match(ins, /Regar as plantas: atrasada/);
-    assert.match(ins, /Sertralina \(50 mg\) às 08:00, Andressa: agora/);
+    assert.match(ins, /Sertralina \(50 mg\) às 08:00, Aurora: agora/);
     assert.match(ins, /Luz, R\$ 230,50, vence 2026-11-02 \(atrasada\)/);
     assert.match(ins, /Trocar filtro, próxima 2026-11-01 \(vencida\)/);
-    assert.match(ins, /Andressa: 55 pontos/);
+    assert.match(ins, /Aurora: 55 pontos/);
     assert.match(ins, /Pagar IPVA \[Casa\], prazo 2026-11-04/);
   });
   it("the conversation so far, the last one being the person's", () => {

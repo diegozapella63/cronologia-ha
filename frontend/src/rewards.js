@@ -58,7 +58,7 @@ export const RewardsMixin = (Base) =>
 
     /**
      * The color of a person: the color of their calendar when one calendar has their name
-     * ("Pessoal (Andressa)", "Agenda do Diego"); the others get the next free color.
+     * ("Pessoal (Aurora)", "Agenda do Davi"); the others get the next free color.
      */
     _pColor(name) {
       const key = foldText(name || "");
@@ -115,7 +115,7 @@ export const RewardsMixin = (Base) =>
     }
 
     /** The initials buttons (A, D) of a routine or maintenance row: `go(person)` marks it done by them. */
-    /** Who got the points of this item (the placar's entry, so a "Foi Andressa" shows); else who marked it. */
+    /** Who got the points of this item (the placar's entry, so a "Foi Aurora" shows); else who marked it. */
     _pointsWho(key, fallback = "") {
       const s = this._score();
       const e = s && (s.entries || []).find((x) => x.key === key);
@@ -846,7 +846,7 @@ export const RewardsMixin = (Base) =>
         </div>`;
     }
 
-    /** One line: "Diego tirou 10 pontos de Andressa", "Andressa ganhou 10 pontos, marcado por Diego". */
+    /** One line: "Davi tirou 10 pontos de Aurora", "Aurora ganhou 10 pontos, marcado por Davi". */
     _extText(l) {
       const same = (a, b) => foldText(a || "").split(" ")[0] === foldText(b || "").split(" ")[0];
       const who = l.who || "";
