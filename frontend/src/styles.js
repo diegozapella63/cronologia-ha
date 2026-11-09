@@ -914,8 +914,34 @@ export const styles = css`
     background: color-mix(in srgb, var(--rv-muted) 14%, transparent);
     color: var(--rv-text-2);
   }
+  /* a grid of tags of the same width (1.60.3): side by side and aligned; a long name ends in "…" */
   .place-tags {
-    margin: 5px 0 2px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5em), 1fr));
+    gap: 6px;
+    margin: 6px 0 2px;
+    font-size: 12px;
+  }
+  .place-tags .tag {
+    min-width: 0;
+  }
+  /* one tag alone (an equipment with +N, Todos os cômodos): the whole line, its own width */
+  .place-tags .tag:only-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .place-tags .tag .i,
+  .place-tags .more {
+    flex: none;
+  }
+  .place-tags .tt {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .place-tags .more {
+    margin-left: auto;
   }
   .lnk {
     display: inline-flex;

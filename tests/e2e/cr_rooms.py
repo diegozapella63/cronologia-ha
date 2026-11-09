@@ -98,8 +98,8 @@ async def main():
         check(m and m.get("equips") == ["Fogão", "Carro"] and m.get("rooms") == ["Cozinha", "Garagem"] and m.get("room") == "Cozinha" and m.get("equip") == "Fogão", f"saved with both equipments and their rooms ({m and (m.get('rooms'), m.get('equips'))})")
         await a.evaluate("(el) => el._openSheet('maint', {})"); await pg.wait_for_timeout(400)
         row = sheet.locator(".maint", has_text="Limpar o filtro do exaustor")
-        tags = [t.strip() for t in await row.locator(".place-tags .tag").all_inner_texts()]
-        check(tags == ["Fogão", "+1"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, only the first one and +1 under the line, no rooms ({tags})")
+        tags = [" ".join(t.split()) for t in await row.locator(".place-tags .tag").all_inner_texts()]
+        check(tags == ["Fogão +1"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, only the first one with +1 in the same tag (1.60.3), no rooms ({tags})")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
         facts = [t.strip() for t in await sheet.locator(".fact").all_inner_texts()]
         check("Todos os cômodos" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms (both: the whole house of the test), then one line per equipment ({facts})")
@@ -169,6 +169,9 @@ async def main():
         crow = a.locator(".cat-row", has_text="Limpar o filtro do exaustor")
         tags = [t.strip() for t in await crow.locator(".place-tags .tag").all_inner_texts()]
         check(tags == ["Cozinha", "Fogão"] and "Fogão" not in await crow.locator(".hint").inner_text(), f"Mais › Rotinas: the room and the equipment as tags ({tags})")
+        boxes = [await t.bounding_box() for t in await crow.locator(".place-tags .tag").all()]
+        check(len(boxes) == 2 and abs(boxes[0]["width"] - boxes[1]["width"]) < 1 and abs(boxes[0]["y"] - boxes[1]["y"]) < 1 and abs(boxes[0]["height"] - boxes[1]["height"]) < 1,
+              f"1.60.3: the tags side by side, the same size ({[(round(b['x']), round(b['y']), round(b['width'])) for b in boxes]})")
         rtags = [t.strip() for t in await a.locator(".cat-row", has_text="Arrumar a cama").locator(".place-tags .tag").all_inner_texts()]
         check(rtags == ["Garagem"], f"Mais › Rotinas: a routine with its room ({rtags})")
         vtags = [t.strip() for t in await a.locator(".cat-row", has_text="Varrer o chão").locator(".place-tags .tag").all_inner_texts()]

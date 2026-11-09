@@ -398,4 +398,15 @@ describe("place-tags: every room of the house is one tag", async () => {
     assert.equal(txt(placeTags(house, ["Fogão", "Carro"], house)), "Fogão +1", "several equipments: no rooms");
     assert.equal(txt(placeTags(house, [])), "Cozinha Garagem Sala", "without the list of the house: the names");
   });
+
+  it("1.60.3: one tag per name, the whole name (the grid cuts it with …), +N inside the equipment's tag", () => {
+    const h = render(placeTags(["Banheiro de visitas", "Sala de jantar"], [], house)).html;
+    assert.equal((h.match(/class="tag room"/g) || []).length, 2);
+    assert.match(h, /title="Banheiro de visitas"/);
+    assert.match(h, /<span class="tt">Banheiro de visitas<\/span>/, "not cut in the text: the CSS ends it in …");
+    const e = render(placeTags([], ["Ar-condicionado Samsung WindFree", "Fogão", "Carro"], house)).html;
+    assert.equal((e.match(/class="tag room"/g) || []).length, 1, "several equipments: one tag");
+    assert.match(e, /title="Ar-condicionado Samsung WindFree, Fogão, Carro"/);
+    assert.match(e, /<b class="more">\+2<\/b>/);
+  });
 });

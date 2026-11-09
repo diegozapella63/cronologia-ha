@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.60.3
+
+- **Cômodos e equipamentos** embaixo de uma rotina, manutenção ou tarefa: as etiquetas ficam numa grade, todas do mesmo tamanho e alinhadas, duas por linha no celular. Um nome comprido termina em "…"; inteiro, ele aparece ao abrir o item.
+- Vários equipamentos: o primeiro e o **+N** na mesma etiqueta, sem uma linha só para o "+2".
+
 ## 1.60.2
 
 - **Mais › Sobre**: a CorrerIA agora é descrita como o chat com todos os apps (pergunte e peça, também pelo WhatsApp).
