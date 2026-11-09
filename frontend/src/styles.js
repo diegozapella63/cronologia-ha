@@ -925,23 +925,19 @@ export const styles = css`
   .place-tags .tag {
     min-width: 0;
   }
-  /* one tag alone (an equipment with +N, Todos os cômodos): the whole line, its own width */
+  /* one tag alone (Vários equipamentos, Todos os cômodos, a long name): the whole line, its own width */
   .place-tags .tag:only-child {
     grid-column: 1 / -1;
     justify-self: start;
     max-width: 100%;
   }
-  .place-tags .tag .i,
-  .place-tags .more {
+  .place-tags .tag .i {
     flex: none;
   }
   .place-tags .tt {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .place-tags .more {
-    margin-left: auto;
   }
   .lnk {
     display: inline-flex;

@@ -394,19 +394,21 @@ describe("place-tags: every room of the house is one tag", async () => {
   it("placeTags: one tag for the whole house (with the equipment), the rooms otherwise", () => {
     assert.equal(txt(placeTags(house, [], house)), "Todos os cômodos");
     assert.equal(txt(placeTags(house, ["Fogão"], house)), "Todos os cômodos Fogão");
-    assert.equal(txt(placeTags(["Cozinha", "Sala"], [], house)), "Cozinha Sala");
-    assert.equal(txt(placeTags(house, ["Fogão", "Carro"], house)), "Fogão +1", "several equipments: no rooms");
-    assert.equal(txt(placeTags(house, [])), "Cozinha Garagem Sala", "without the list of the house: the names");
+    assert.equal(txt(placeTags(["Cozinha", "Sala"], [], house)), "Vários cômodos", "1.60.4: more than one room, one tag");
+    assert.equal(txt(placeTags(["Cozinha"], ["Fogão"], house)), "Cozinha Fogão", "one room and one equipment: their names");
+    assert.equal(txt(placeTags(house, ["Fogão", "Carro"], house)), "Vários equipamentos", "several equipments: one tag, no rooms");
+    assert.equal(txt(placeTags(house, [])), "Vários cômodos", "without the list of the house: Vários cômodos");
   });
 
-  it("1.60.3: one tag per name, the whole name (the grid cuts it with …), +N inside the equipment's tag", () => {
-    const h = render(placeTags(["Banheiro de visitas", "Sala de jantar"], [], house)).html;
+  it("1.60.3: the whole name (the grid ends it in …); 1.60.4: Vários with the names in the title", () => {
+    const h = render(placeTags(["Banheiro de visitas"], ["Ar-condicionado Samsung WindFree"], house)).html;
     assert.equal((h.match(/class="tag room"/g) || []).length, 2);
-    assert.match(h, /title="Banheiro de visitas"/);
     assert.match(h, /<span class="tt">Banheiro de visitas<\/span>/, "not cut in the text: the CSS ends it in …");
-    const e = render(placeTags([], ["Ar-condicionado Samsung WindFree", "Fogão", "Carro"], house)).html;
+    assert.match(h, /<span class="tt">Ar-condicionado Samsung WindFree<\/span>/);
+    const r = render(placeTags(["Cozinha", "Sala"], ["Fogão"], house)).html;
+    assert.match(r, /title="Cozinha, Sala"/);
+    const e = render(placeTags([], ["Ar-condicionado", "Fogão", "Carro"], house)).html;
     assert.equal((e.match(/class="tag room"/g) || []).length, 1, "several equipments: one tag");
-    assert.match(e, /title="Ar-condicionado Samsung WindFree, Fogão, Carro"/);
-    assert.match(e, /<b class="more">\+2<\/b>/);
+    assert.match(e, /title="Ar-condicionado, Fogão, Carro"/);
   });
 });

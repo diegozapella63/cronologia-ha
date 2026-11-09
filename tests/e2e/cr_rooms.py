@@ -99,7 +99,7 @@ async def main():
         await a.evaluate("(el) => el._openSheet('maint', {})"); await pg.wait_for_timeout(400)
         row = sheet.locator(".maint", has_text="Limpar o filtro do exaustor")
         tags = [" ".join(t.split()) for t in await row.locator(".place-tags .tag").all_inner_texts()]
-        check(tags == ["Fogão +1"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, only the first one with +1 in the same tag (1.60.3), no rooms ({tags})")
+        check(tags == ["Vários equipamentos"] and "Fogão" not in await row.locator("small").inner_text(), f"Manutenção da casa: several equipments, one tag, Vários equipamentos (1.60.4), no rooms ({tags})")
         await row.locator(".maint-main").click(); await pg.wait_for_timeout(500)
         facts = [t.strip() for t in await sheet.locator(".fact").all_inner_texts()]
         check("Todos os cômodos" in facts and "Fogão" in facts and "Carro" in facts, f"its sheet: the rooms (both: the whole house of the test), then one line per equipment ({facts})")

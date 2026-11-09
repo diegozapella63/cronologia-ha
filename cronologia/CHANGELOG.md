@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.60.4
+
+- **Cômodos e equipamentos**: com mais de um, uma etiqueta só, **Vários cômodos** ou **Vários equipamentos**, em vez de uma etiqueta para cada. Quais são, abrindo o item. Um só continua com o nome, e todos, **Todos os cômodos**.
+
 ## 1.60.3
 
 - **Cômodos e equipamentos** embaixo de uma rotina, manutenção ou tarefa: as etiquetas ficam numa grade, todas do mesmo tamanho e alinhadas, duas por linha no celular. Um nome comprido termina em "…"; inteiro, ele aparece ao abrir o item.
