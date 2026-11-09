@@ -30,7 +30,7 @@ import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
 import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
 
-const VERSION = "1.61.2";
+const VERSION = "1.62.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -381,10 +381,13 @@ class Session {
         return this.result(id, await gerencia.act("nova", body));
       }
 
-      // Agora › MemorIA: the trechos of now and the next two, of the person of this screen (Configurações: fresh)
+      // Agora › MemorIA: the sheet of now (and the next times), of the person of this screen, at the clock of their
+      // phone (hora, dia: like the Agora of the MemorIA, also in another time zone); Configurações: fresh
       case "cronologia/memoria/agora": {
         const usuario = this.user.id && /^[A-Za-z0-9_-]{1,80}$/.test(this.user.id) ? this.user.id : "";
-        return this.result(id, await memoria.agora({ usuario, pessoa: home.personOfUser(this.user.id, this.user.name) || "" }, { fresh: !!msg.fresh }));
+        const hora = typeof msg.hora === "string" ? msg.hora : "";
+        const dia = typeof msg.dia === "string" ? msg.dia : "";
+        return this.result(id, await memoria.agora({ usuario, pessoa: home.personOfUser(this.user.id, this.user.name) || "", hora, dia }, { fresh: !!msg.fresh }));
       }
 
       case "cronologia/score/reassign":

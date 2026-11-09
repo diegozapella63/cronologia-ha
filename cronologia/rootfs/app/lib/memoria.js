@@ -1,14 +1,18 @@
-// Os trechos do MemorIA (o app de anotações da mesma família) no Agora: o que vale agora e os dois próximos
-// horários, de quem está olhando. O MemorIA deixa em /share/memoria/integracao.json o endereço dele na rede
-// interna dos apps, uma chave e o endereço dele no Home Assistant (painel); aqui só lemos esse arquivo e
-// chamamos GET /api/integracao/agora?usuario=&pessoa= (o MemorIA acha a pessoa pelo usuário do Home Assistant).
+// Os trechos do MemorIA (o app de anotações da mesma família) no Agora: o que vale agora (o cartão mostra só essa
+// folha; os próximos dizem quando perguntar de novo), de quem está olhando. O MemorIA deixa em
+// /share/memoria/integracao.json o endereço dele na rede interna dos apps, uma chave e o endereço dele no Home
+// Assistant (painel); aqui só lemos esse arquivo e chamamos GET /api/integracao/agora?usuario=&pessoa=&hora=&dia=
+// (o MemorIA acha a pessoa pelo usuário do Home Assistant; hora e dia são o relógio do celular de quem olha, 1.62.0,
+// para mostrar o mesmo que o Agora do MemorIA mesmo em outro fuso).
 import fs from "node:fs";
 import path from "node:path";
 
 const coded = (code, message) => Object.assign(new Error(message), { code });
 const str = (v, max) => (typeof v === "string" ? v : "").slice(0, max);
 const TIPOS = new Set(["trecho", "periodo", "horario"]);
+const PAPEIS = new Set(["pautado", "quadriculado", "pontilhado", "liso"]);
 const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** One trecho of the answer, only the known fields, with sizes and types checked (it is another app's data). */
 export function cleanTrecho(t) {
@@ -25,6 +29,9 @@ export function cleanTrecho(t) {
     titulo: str(t.titulo, 160).trim(),
     texto: str(t.texto, 1500),
     tipo: TIPOS.has(t.tipo) ? t.tipo : "trecho",
+    // MemorIA 1.15.1: the paper of the block and Letra de mão, to draw the sheet the same way
+    papel: PAPEIS.has(t.papel) ? t.papel : "pautado",
+    letra: t.letra === "normal" ? "normal" : "mao",
     outros: Number.isInteger(t.outros) && t.outros > 0 ? Math.min(t.outros, 99) : 0,
   };
   if (out.tipo === "periodo") out.periodo = str(t.periodo, 30).trim();
@@ -96,14 +103,16 @@ export class Memoria {
    * The trechos of now for the person of a screen: {ligado, encontrado, erro, versao, painel, pessoa, trechos}.
    * Off or not installed: nothing is asked. A person's answer is kept until the next start time (at most ttl).
    */
-  async agora({ usuario = "", pessoa = "" } = {}, { fresh = false } = {}) {
+  async agora({ usuario = "", pessoa = "", hora = "", dia = "" } = {}, { fresh = false } = {}) {
     if (!this.enabled()) return { ligado: false, encontrado: !!this.info(), erro: null, trechos: [] };
     const info = this.info();
     if (!info) {
       this.cache.clear();
       return { ligado: true, encontrado: false, erro: null, trechos: [] };
     }
-    const key = `${usuario}|${pessoa}`;
+    // the clock of the phone (hora, dia): one answer per minute of it; without it, the server's (until the next change)
+    const clock = HM.test(hora) && DIA.test(dia) ? `${dia} ${hora}` : "";
+    const key = `${usuario}|${pessoa}|${clock}`;
     const hit = this.cache.get(key);
     if (!fresh && hit && Date.now() < hit.until) return hit.out;
     if (this.busy.has(key)) return this.busy.get(key);
@@ -111,6 +120,7 @@ export class Memoria {
       const q = new URLSearchParams();
       if (usuario) q.set("usuario", usuario);
       if (pessoa) q.set("pessoa", pessoa);
+      if (clock) (q.set("hora", hora), q.set("dia", dia));
       const route = /^\/api\/integracao\/[a-z]+$/.test(info.agora || "") ? info.agora : "/api/integracao/agora";
       let out;
       try {
@@ -124,7 +134,8 @@ export class Memoria {
         if (this.lastLog !== err.message) this.log.warn(`MemorIA: ${err.message}`);
         this.lastLog = err.message;
       }
-      this.cache.set(key, { until: Math.min(Date.now() + this.ttl, nextChange(out.trechos)), out });
+      for (const [k, v] of this.cache) if (Date.now() >= v.until) this.cache.delete(k);
+      this.cache.set(key, { until: clock ? Date.now() + this.ttl : Math.min(Date.now() + this.ttl, nextChange(out.trechos)), out });
       return out;
     })().finally(() => this.busy.delete(key));
     this.busy.set(key, run);

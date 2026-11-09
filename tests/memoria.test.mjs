@@ -94,6 +94,20 @@ describe("Memoria", () => {
     await m.agora({ usuario: "u1" });
     assert.equal(f.mock.callCount(), 5, "forget (the switch): asks again");
   });
+  it("1.62.0: the clock of the phone (hora, dia) goes along, one answer per minute of it; a wrong one is not sent", async () => {
+    writeInfo(INFO);
+    const f = mock.method(globalThis, "fetch", async () => reply(200, ANSWER));
+    const m = new Memoria({ shareDir: share, log: makeLog(), enabled: () => true });
+    await m.agora({ usuario: "u-ana", pessoa: "Ana", hora: "12:09", dia: "2026-11-09" });
+    assert.equal(f.mock.calls[0].arguments[0], "http://a1b2c3d4-memoria:8099/api/integracao/agora?usuario=u-ana&pessoa=Ana&hora=12%3A09&dia=2026-11-09");
+    await m.agora({ usuario: "u-ana", pessoa: "Ana", hora: "12:09", dia: "2026-11-09" });
+    assert.equal(f.mock.callCount(), 1, "the same minute: from the cache");
+    await m.agora({ usuario: "u-ana", pessoa: "Ana", hora: "12:10", dia: "2026-11-09" });
+    assert.equal(f.mock.callCount(), 2, "another minute of the phone: asks again");
+    await m.agora({ usuario: "u-ana", pessoa: "Ana", hora: "25:00", dia: "2026-11-09" });
+    await m.agora({ usuario: "u-ana", pessoa: "Ana", hora: "12:10", dia: "amanhã" });
+    assert.ok(f.mock.calls.slice(2).every((c) => !/hora=|dia=/.test(c.arguments[0])), "a wrong clock: the MemorIA uses its own");
+  });
   it("two screens of the same person at once: one request", async () => {
     writeInfo(INFO);
     let release;
@@ -146,6 +160,13 @@ describe("cleanTrecho", () => {
     assert.equal(cleanTrecho(null), null);
     assert.equal(cleanTrecho(T("18:00", { tipo: "periodo", periodo: "Noite" })).periodo, "Noite");
     assert.equal("periodo" in cleanTrecho(T("18:00")), false);
+  });
+  it("MemorIA 1.15.1: the paper of the block and the letters (an old MemorIA or something odd: lined paper, by hand)", () => {
+    assert.deepEqual([cleanTrecho(T("18:00")).papel, cleanTrecho(T("18:00")).letra], ["pautado", "mao"]);
+    const t = cleanTrecho(T("18:00", { papel: "quadriculado", letra: "normal" }));
+    assert.deepEqual([t.papel, t.letra], ["quadriculado", "normal"]);
+    assert.equal(cleanTrecho(T("18:00", { papel: "<b>", letra: "x" })).papel, "pautado");
+    assert.equal(cleanTrecho(T("18:00", { letra: "x" })).letra, "mao");
   });
 });
 

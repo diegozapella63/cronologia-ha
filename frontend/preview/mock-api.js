@@ -373,7 +373,7 @@ export class MockApi {
       { inicio: "07:00", bloco: "Diário", cor: "lilas", titulo: "Manhã", texto: "Manhã\n☑ Café com pouco açúcar\n☐ Regar as plantas\n☐ Separar a roupa da academia" },
       { inicio: "12:00", bloco: "Cozinha", cor: "laranja", titulo: "Almoço da semana", texto: "Almoço da semana\nSegunda: arroz, feijão e legumes\nTerça: macarrão ao sugo\nQuarta: peixe assado" },
       { inicio: "18:00", bloco: "Diário", cor: "lilas", titulo: "Noite", texto: "Noite\n☐ Ler 20 páginas do livro\n☐ Preparar a lancheira de amanhã\n☑ Conferir a agenda da semana\n☐ Tirar o lixo reciclável\nLembrar: a reunião da escola é quinta às 19h. Levar o caderno de recados e a autorização assinada.\nComprar pão integral e frutas para o café." },
-    ].map((t) => ({ ...t, bloco_id: t.bloco.toLowerCase(), folha_id: `f-${t.inicio}`, tipo: "trecho", outros: 0 }));
+    ].map((t) => ({ ...t, bloco_id: t.bloco.toLowerCase(), folha_id: `f-${t.inicio}`, tipo: "trecho", outros: 0, papel: t.bloco === "Cozinha" ? "quadriculado" : "pautado", letra: "mao" }));
     const d = new Date();
     const min = d.getHours() * 60 + d.getMinutes();
     const at = (t) => Number(t.inicio.slice(0, 2)) * 60 + Number(t.inicio.slice(3));
@@ -383,7 +383,7 @@ export class MockApi {
       const t = sheets[(i + k) % sheets.length];
       return { ...t, agora: k === 0, ontem: k === 0 && at(t) > min, amanha: k > 0 && at(t) <= min };
     });
-    return { ligado: true, encontrado: true, erro: null, versao: "1.13.0", painel: null, pessoa: "Ana", trechos };
+    return { ligado: true, encontrado: true, erro: null, versao: "1.15.1", painel: null, pessoa: "Ana", trechos };
   }
 
   async aiUsage() {
@@ -466,7 +466,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.61.2", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.62.0", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

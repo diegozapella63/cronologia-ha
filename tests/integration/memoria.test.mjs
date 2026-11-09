@@ -57,6 +57,8 @@ describe("MemorIA", () => {
     assert.equal(asked.length, 1, "the same person within the minute: from the cache");
     await c.call("cronologia/memoria/agora", { fresh: true });
     assert.equal(asked.length, 2, "Configurações asks fresh");
+    await c.call("cronologia/memoria/agora", { hora: "12:09", dia: "2026-11-09" });
+    assert.equal(asked.at(-1).url, "/api/integracao/agora?usuario=u-davi&pessoa=Davi&hora=12%3A09&dia=2026-11-09", "1.62.0: the clock of the phone goes along");
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(stack.dirs.data, "cronologia.json"), "utf8")).app.memoria_on === true, { what: "the switch kept in cronologia.json" });
   });
   it("a refused key: the reason, no trechos; off again: nothing asked", async () => {

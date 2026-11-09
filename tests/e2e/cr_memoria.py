@@ -1,11 +1,15 @@
 # CronologIA 1.61.0: Agora › MemorIA. Mais › Configurações › Integrações › MemorIA › Trechos no Agora, off by default.
 # A MemorIA of mentira (an HTTP server answering /api/integracao/agora like the MemorIA 1.13.0, with an invented
 # notebook) in share/memoria/integracao.json. Off: no card, nothing asked. On: "Conectado ao MemorIA", and Agora shows
-# the trecho of now (the block, since when, the text folded with Ver mais, the ticked box struck through) and the two
-# next ones (amanhã), each opening the MemorIA in the page around (target _top). A refused key: no card, the reason in
+# only the sheet of now (1.62.0), drawn like a sheet of the MemorIA (the spiral, its paper; the block, since when, the
+# text folded with Ver mais, the ticked box struck through), opening the MemorIA in the page around (target _top), and
+# asked at the clock of the phone (hora, dia). Nothing now: no card. A refused key: no card, the reason in
 # Configurações. Phone 390 px (light and dark) and 320 px: nothing past the width, nothing cut. Computer: in the
 # column of the day.
 import os, sys, asyncio, json, threading
+from datetime import datetime
+from urllib.parse import urlsplit, parse_qs
+from zoneinfo import ZoneInfo
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
@@ -38,7 +42,7 @@ os.makedirs(f"{st.dir}/share/memoria", exist_ok=True)
 json.dump({"app": "memoria", "nome": "MemorIA", "url": f"http://127.0.0.1:{srv.server_port}", "ip_url": None, "chave": "segredo", "versao": "1.13.0", "agora": "/api/integracao/agora", "painel": "/app/a1b2c3d4_memoria"}, open(f"{st.dir}/share/memoria/integracao.json", "w"))
 
 OVERFLOW = "(el) => document.documentElement.scrollWidth > innerWidth + 1 || [...el.renderRoot.querySelectorAll('.panel.memo *')].some((x) => { const r = x.getBoundingClientRect(); return r.width && (r.right > innerWidth + 1 || r.left < -1); })"
-CUT = "(el) => [...el.renderRoot.querySelectorAll('.memo-row b, .memo-row small, .memo-at b, .memo-block span')].filter((x) => x.scrollWidth > x.clientWidth + 1 && getComputedStyle(x).textOverflow !== 'ellipsis').map((x) => x.textContent)"
+CUT = "(el) => [...el.renderRoot.querySelectorAll('.memo-name, .memo-pin, .panel.memo .sec-head small')].filter((x) => x.scrollWidth > x.clientWidth + 1 && getComputedStyle(x).textOverflow !== 'ellipsis').map((x) => x.textContent)"
 
 async def main():
     async with async_playwright() as p:
@@ -70,13 +74,17 @@ async def main():
         await memo.wait_for(timeout=6000)
         t = " ".join((await memo.inner_text()).split())
         check("MEMORIA" in t.upper() and "desde 18:00" in t and "Diário" in t and "Ler 20 páginas do livro" in t, f"the trecho of now: the block, since when, the text ({t[:120]})")
-        check("07:00 amanhã Diário Manhã" in t and "12:00 amanhã" in t, "the two next ones, amanhã")
+        check("Manhã" not in t and "07:00" not in t and "Cozinha" not in t, f"1.62.0: only the sheet of now, not the next ones ({t[:160]})")
+        check(await memo.locator(".memo-pad .memo-spiral i").count() > 3 and await memo.locator(".memo-leaf.pautado").count() == 1, "like a sheet of the MemorIA: the spiral and its paper")
+        q = parse_qs(urlsplit(ASKED[-1]["path"]).query)
+        phone = datetime.now(ZoneInfo("America/Sao_Paulo"))
+        check(q.get("dia") == [phone.strftime("%Y-%m-%d")] and q.get("hora", [""])[0][:2] == phone.strftime("%H"), f"asked at the clock of the phone ({q})")
         links = await memo.locator("a").evaluate_all("(xs) => xs.map((x) => [x.getAttribute('href'), x.getAttribute('target')])")
-        check(links == [["/app/a1b2c3d4_memoria", "_top"]] * 3, f"the trecho and the rows open the MemorIA in the page around ({links})")
-        check(await memo.locator(".ck.done").count() == 1 and "line-through" in await memo.locator(".ck.done").evaluate("(x) => getComputedStyle(x).textDecorationLine"), "the ticked box struck through")
+        check(links == [["/app/a1b2c3d4_memoria", "_top"]], f"the sheet opens the MemorIA in the page around ({links})")
+        check(await memo.locator(".ck.done").count() == 1 and "line-through" in await memo.locator(".ck.done .box ~ span").evaluate("(x) => getComputedStyle(x).textDecorationLine"), "the ticked box struck through")
         order = await a.evaluate("(el) => [...el.renderRoot.querySelectorAll('.page > .panel')].map((x) => x.className.split(' ')[1])")
         check(order.index("memo") == order.index("agenda") + 1 if "agenda" in order else True, f"right after the day ({order})")
-        txt = memo.locator(".memo-text")
+        txt = memo.locator(".memo-ink")
         h1 = (await txt.bounding_box())["height"]
         more = memo.locator(".memo-more")
         check(await more.inner_text() == "Ver mais", "a long text folded: Ver mais")
@@ -117,6 +125,17 @@ async def main():
         check(await a.locator(".now-main .panel.memo").count() == 1, "computer: in the column of the day")
         await P.screenshot(path=f"{SP}/shots/crmemoria-pc.png")
         await ctx.close()
+
+        # nothing holds now (its Fica no Agora is over): no card
+        ANSWER["trechos"][0]["agora"] = False
+        ctx = await b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, color_scheme="dark", has_touch=True, timezone_id="America/Sao_Paulo", locale="pt-BR")
+        P = await ctx.new_page(); P.on("pageerror", lambda e: errs.append(str(e)))
+        n0 = len(ASKED)
+        await P.goto(URL); await P.wait_for_timeout(1500)
+        await P.locator("cronologia-app").evaluate("(el) => el._loadMemoria(true)"); await P.wait_for_timeout(500)
+        check(len(ASKED) > n0 and await P.locator("cronologia-app").locator(".panel.memo").count() == 0, "nothing now: no card (not the next ones)")
+        await ctx.close()
+        ANSWER["trechos"][0]["agora"] = True
 
         # a refused key: no card; the reason in Configurações
         KEY["ok"] = "outra"

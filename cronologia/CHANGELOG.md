@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.62.0
+
+- **Agora › MemorIA**: o card mostra só a folha que vale agora, desenhada como no MemorIA (a espiral, o papel do bloco e a letra de mão). As próximas ficam no MemorIA; sem nada valendo agora, o card não aparece.
+- A folha de agora é a mesma do **Agora** do MemorIA, pelo relógio do celular. Antes valia o relógio do Home Assistant, e em outro fuso o card podia dizer "nada agora" com uma folha valendo. Precisa do MemorIA 1.15.1.
+
 ## 1.61.2
 
 - **Agora › MemorIA**: com o MemorIA 1.14.0, o cartão diz até quando o trecho vale ("desde 18:00 até 22:00") e mostra as caixas marcadas no Agora do MemorIA. Passado o tempo do trecho, o cartão diz "nada agora" e mostra os próximos.

@@ -1,6 +1,7 @@
-// tests/ui: Agora › MemorIA (1.61.0) — the trecho of now (block, since when, the text folded with Ver mais, the boxes
-// ticked struck through) and the two next ones (amanhã); nothing when off, not found, failing or empty; and
-// Mais › Configurações › Integrações › MemorIA › Trechos no Agora (off by default) with how it is going.
+// tests/ui: Agora › MemorIA (1.61.0) — the sheet of now (block, since when, the text folded with Ver mais, the boxes
+// ticked struck through), drawn like a sheet of the MemorIA (1.62.0: its paper and letters), and only it: nothing now,
+// no card; nothing when off, not found, failing or empty; and Mais › Configurações › Integrações › MemorIA › Trechos no
+// Agora (off by default) with how it is going.
 import { at } from "../helpers.mjs";
 import "../_lit.mjs";
 import { describe, it } from "node:test";
@@ -32,21 +33,29 @@ class App extends hostOf(MemoriaMixin) {
 }
 
 describe("Agora › MemorIA", () => {
-  it("the trecho of now: the block, since when and the text; the next two with amanhã; links to the MemorIA", () => {
+  it("the sheet of now: the block, since when and the text, and only it (1.62.0); it opens the MemorIA", () => {
     const view = new App({ memo: OK(THREE) })._renderMemoriaPanel();
     const t = text(view);
     assert.match(t, /MemorIA/);
     assert.match(t, /desde 18:00/);
     assert.match(t, /Diário/);
     assert.match(t, /Ler 20 páginas/);
-    assert.match(t, /07:00 amanhã Diário Manhã/);
-    assert.match(t, /12:00 amanhã Cozinha Tarde/, "a period without a title shows the period");
+    assert.doesNotMatch(t, /amanhã|07:00|Cozinha|Manhã/, "not the next ones");
     const h = render(view).html;
-    assert.equal((h.match(/href="\/app\/a1b2c3d4_memoria"/g) || []).length, 3, "the trecho and the two rows open the MemorIA");
+    assert.equal((h.match(/href="\/app\/a1b2c3d4_memoria"/g) || []).length, 1, "the sheet opens the MemorIA");
     assert.match(h, /target="_top"/);
     assert.match(h, /class="ck done"/, "a ticked box is struck through");
-    assert.match(h, /#E8508A/i, "framboesa: the MemorIA color, not the accent");
+    assert.match(h, /class="memo-leaf pautado"/, "like the MemorIA: the paper of the block");
+    assert.match(h, /class="memo-spiral"/, "and the spiral");
     assert.doesNotMatch(t, /Ver mais/, "a short text is not folded");
+    const raspberry = render(new App({ memo: OK([T("12:00", { agora: true, bloco: "Cozinha", cor: "framboesa" })]) })._renderMemoriaPanel()).html;
+    assert.match(raspberry, /#E8508A/i, "framboesa: the MemorIA color, not the accent");
+  });
+  it("1.62.0: the paper and the letters of the MemorIA (Letra de mão off: the letters of the app)", () => {
+    const h = render(new App({ memo: OK([T("12:00", { agora: true, papel: "quadriculado", letra: "normal" })]) })._renderMemoriaPanel()).html;
+    assert.match(h, /class="memo-leaf quadriculado"/);
+    assert.match(h, /class="memo-ink normal\s*"/);
+    assert.match(render(new App({ memo: OK([T("12:00", { agora: true })]) })._renderMemoriaPanel()).html, /class="memo-ink\s+"/, "by hand: no class normal");
   });
   it("started yesterday: desde ontem às; another block at the same time: +1; no painel: no links", () => {
     const view = new App({ memo: OK([T("22:00", { agora: true, ontem: true, outros: 1 })], { painel: null }) })._renderMemoriaPanel();
@@ -54,16 +63,15 @@ describe("Agora › MemorIA", () => {
     assert.match(t, /desde ontem às 22:00/);
     assert.match(t, /\+1/);
     assert.doesNotMatch(render(view).html, /href=/);
-    assert.doesNotMatch(render(view).html, /memo-next/, "only one start time: no rows below");
   });
   it("a long text is folded: Ver mais opens it, Ver menos closes it", () => {
     const long = Array.from({ length: 10 }, (_, i) => `☐ Item ${i + 1}`).join("\n");
     const app = new App({ memo: OK([T("18:00", { agora: true, texto: long })]) });
-    assert.match(render(app._renderMemoriaPanel()).html, /class="memo-text "/);
+    assert.match(render(app._renderMemoriaPanel()).html, /class="memo-ink\s+"/);
     click(app._renderMemoriaPanel(), "Ver mais");
-    assert.match(render(app._renderMemoriaPanel()).html, /class="memo-text open"/);
+    assert.match(render(app._renderMemoriaPanel()).html, /class="memo-ink\s+open"/);
     click(app._renderMemoriaPanel(), "Ver menos");
-    assert.doesNotMatch(render(app._renderMemoriaPanel()).html, /memo-text open/);
+    assert.doesNotMatch(render(app._renderMemoriaPanel()).html, /memo-ink\s+open/);
   });
   it("an empty sheet: Folha em branco", () => {
     assert.match(text(new App({ memo: OK([T("18:00", { agora: true, texto: "", titulo: "", folha_id: null })]) })._renderMemoriaPanel()), /Folha em branco\./);
@@ -75,6 +83,7 @@ describe("Agora › MemorIA", () => {
     empty({ memo: { ligado: true, encontrado: false, erro: null, trechos: [] } });
     empty({ memo: OK([], { erro: "O MemorIA não respondeu." }) });
     empty({ memo: OK([]) });
+    empty({ memo: OK([T("07:00", { amanha: true }), T("12:00", { amanha: true })]) }, "nothing holds now: no card (1.62.0)");
   });
   it("asks once a minute while Agora is open, again when the next one starts; not elsewhere nor off", async () => {
     const app = new App();
@@ -118,7 +127,7 @@ describe("Integrações › MemorIA", () => {
     assert.deepEqual(app.prefs.at(-1), { memoria_on: true });
     assert.deepEqual(app.api.calls.at(-1), ["memoriaNow", true]);
     const t = text(app._renderMemoriaSettings());
-    assert.match(t, /O de agora e os dois próximos, de cada pessoa\./);
+    assert.match(t, /A folha de agora, de cada pessoa\./);
     assert.match(t, /Conectado ao MemorIA 1\.13\.0/);
     assert.match(t, /Agora: Diário, desde 18:00\./);
     await fire(app._renderMemoriaSettings(), "Trechos do MemorIA no Agora", "change", { target: { checked: false } });
@@ -129,7 +138,7 @@ describe("Integrações › MemorIA", () => {
     const st = (memo) => text(new App({ memo })._renderMemoriaSettings());
     assert.match(st({ ligado: true, encontrado: false, erro: null, trechos: [] }), /MemorIA não encontrado.*Instale o MemorIA 1\.13\.0 ou mais novo no mesmo Home Assistant\./s);
     assert.match(st(OK([], { erro: "O MemorIA recusou a chave." })), /Não consegui falar com o MemorIA.*O MemorIA recusou a chave\./s);
-    assert.match(st(OK([])), /Nada com horário agora\./);
+    assert.match(st(OK([])), /Nada agora\./);
   });
 });
 
@@ -146,18 +155,15 @@ describe("helpers", () => {
     assert.equal(memoNextChange([T("07:00", { agora: true })], NOW), Infinity);
     assert.equal(memoNextChange(null, NOW), Infinity);
   });
-  it("MemorIA 1.14.0: until when (fim), and nothing now: only the next ones; it changes when the one of now ends", () => {
+  it("MemorIA 1.14.0: until when (fim), and nothing now: no card (1.62.0); it changes when the one of now ends", () => {
     let view = new App({ memo: OK([T("18:00", { agora: true, fim: "22:00" }), T("07:00", { amanha: true })]) })._renderMemoriaPanel();
     assert.match(text(view), /desde 18:00 até 22:00/);
     assert.equal(memoNextChange([T("18:00", { agora: true, fim: "22:00" }), T("07:00", { amanha: true })], NOW), at(2026, 11, 8, 22).getTime(), "the end comes before the next");
     const none = [T("07:00", { amanha: true, titulo: "Manhã" }), T("12:00", { amanha: true }), T("18:00", { amanha: true })];
     view = new App({ memo: OK(none) })._renderMemoriaPanel();
-    const t = text(view);
-    assert.match(t, /nada agora/);
-    assert.doesNotMatch(t, /Ler 20 páginas/, "no text of a trecho that isn't now");
-    assert.equal((render(view).html.match(/class="memo-row"/g) || []).length, 3, "the three next ones as rows");
-    assert.equal(memoNextChange(none, NOW), at(2026, 11, 9, 7).getTime());
+    assert.equal(render(view).html.trim(), "", "nothing now: no card, not the next ones");
+    assert.equal(memoNextChange(none, NOW), at(2026, 11, 9, 7).getTime(), "but it asks again when the next one starts");
     const st = new App({ memo: OK(none) })._renderMemoriaSettings();
-    assert.match(text(st), /Nada agora\. Depois: Diário às 07:00\./);
+    assert.match(text(st), /Nada agora\./);
   });
 });
