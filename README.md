@@ -41,6 +41,7 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Férias**: de quando até quando rotinas, tarefas, deméritos e manutenção ficam pausados (os remédios continuam), com um card na Agora para ninguém achar que sumiu tudo.
 - **Aviso de remédio no celular** pelo app Home Assistant, com **Tomei** e **Adiar 15 min** no aviso, e de novo se atrasar, também para quem cuida (o remédio do pet vai para o celular de alguém).
 - **Contas do GerencIA**: com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) instalado, as contas e faturas aparecem aqui e o **Paguei** dá baixa lá.
+- **MemorIA no Agora**: com o [MemorIA](https://github.com/diegozapella63/memoria-ha) instalado, a anotação que vale agora e as duas próximas aparecem na Agora.
 - **CorrerIA**: com o [CorrerIA](https://github.com/diegozapella63/correria-ha), a agenda responde pelo WhatsApp, pelo Claude e pelo Gemini: o que tem hoje, criar e mudar compromissos, marcar como feito e dar pontos.
 - **Falar**: toque no microfone e diga o compromisso; a IA monta o evento para você conferir.
 - **Conversa com a IA**: pergunte "o que tenho hoje?" ou "quem está ganhando?", ou peça "marca dentista sexta às 15h"; cada ação aparece num cartão e só acontece quando você toca em **Fazer**.

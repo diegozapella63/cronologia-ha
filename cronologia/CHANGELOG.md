@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.61.0
+
+- **MemorIA no Agora**: um card novo mostra a anotação do MemorIA que vale agora (o bloco, desde quando e o texto, com **Ver mais** quando é comprido) e, embaixo, os dois próximos horários (o de amanhã diz **amanhã**). As caixas marcadas aparecem riscadas. Tocar abre o MemorIA. Cada pessoa vê os blocos dela e os de todos.
+- Vem desligado: ligue em **Mais › Configurações › Integrações › MemorIA › Trechos no Agora**, que também diz se o MemorIA está conectado. Precisa do MemorIA 1.13.0 ou mais novo no mesmo Home Assistant.
+
 ## 1.60.4
 
 - **Cômodos e equipamentos**: com mais de um, uma etiqueta só, **Vários cômodos** ou **Vários equipamentos**, em vez de uma etiqueta para cada. Quais são, abrindo o item. Um só continua com o nome, e todos, **Todos os cômodos**.

@@ -64,6 +64,8 @@ function cleanApp(raw) {
   // CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda (lib/ferramentas.js); off by default,
   // and apart from Usar IA (the AI that thinks is the CorrerIA's)
   if ("correria_on" in raw) out.correria_on = raw.correria_on ? true : null;
+  // MemorIA: the trechos of now (and the next two) in Agora, of whoever is looking (off by default)
+  if ("memoria_on" in raw) out.memoria_on = raw.memoria_on ? true : null;
   if ("todo_hidden" in raw) {
     // to-do lists left out of the agenda (ResolvIA lists)
     const ids = [...new Set((Array.isArray(raw.todo_hidden) ? raw.todo_hidden : []).filter((id) => /^todo\.[a-z0-9_]+$/.test(id)))].slice(0, 100);

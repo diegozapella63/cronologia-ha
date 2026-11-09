@@ -10,7 +10,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 export class MockApi {
   constructor() {
     this.model = createCalendars();
-    this.prefs = { calendars: {}, app: { resolvia_on: true, gerencia_on: true, todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true, manual: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
+    this.prefs = { calendars: {}, app: { resolvia_on: true, gerencia_on: true, memoria_on: true, todo_hidden: ["todo.problem_list"], week_start: 1, score: { enabled: true, participants: ["Andressa", "Diego"], period: "semana", anchor: null, notify: true, manual: true }, demerits: [{ id: "toalha01", title: "Toalha molhada na cama", points: 5 }, { id: "louca001", title: "Louça suja na pia", points: 5 }, { id: "luzacesa", title: "Luz acesa sem ninguém", points: 2 }] } };
     this.evSubs = new Set();
     this.calSubs = new Set();
     this.prefSubs = new Set();
@@ -365,6 +365,27 @@ export class MockApi {
     this._pushHome();
   }
 
+  /** Agora › MemorIA: an invented notebook with sheets at set times (the MemorIA answers this way since 1.13.0). */
+  async memoriaNow() {
+    await wait(80);
+    if (!this.prefs.app.memoria_on) return { ligado: false, encontrado: true, erro: null, trechos: [] };
+    const sheets = [
+      { inicio: "07:00", bloco: "Diário", cor: "lilas", titulo: "Manhã", texto: "Manhã\n☑ Café com pouco açúcar\n☐ Regar as plantas\n☐ Separar a roupa da academia" },
+      { inicio: "12:00", bloco: "Cozinha", cor: "laranja", titulo: "Almoço da semana", texto: "Almoço da semana\nSegunda: arroz, feijão e legumes\nTerça: macarrão ao sugo\nQuarta: peixe assado" },
+      { inicio: "18:00", bloco: "Diário", cor: "lilas", titulo: "Noite", texto: "Noite\n☐ Ler 20 páginas do livro\n☐ Preparar a lancheira de amanhã\n☑ Conferir a agenda da semana\n☐ Tirar o lixo reciclável\nLembrar: a reunião da escola é quinta às 19h. Levar o caderno de recados e a autorização assinada.\nComprar pão integral e frutas para o café." },
+    ].map((t) => ({ ...t, bloco_id: t.bloco.toLowerCase(), folha_id: `f-${t.inicio}`, tipo: "trecho", outros: 0 }));
+    const d = new Date();
+    const min = d.getHours() * 60 + d.getMinutes();
+    const at = (t) => Number(t.inicio.slice(0, 2)) * 60 + Number(t.inicio.slice(3));
+    let i = sheets.length - 1;
+    sheets.forEach((t, k) => at(t) <= min && (i = k));
+    const trechos = [0, 1, 2].map((k) => {
+      const t = sheets[(i + k) % sheets.length];
+      return { ...t, agora: k === 0, ontem: k === 0 && at(t) > min, amanha: k > 0 && at(t) <= min };
+    });
+    return { ligado: true, encontrado: true, erro: null, versao: "1.13.0", painel: null, pessoa: "Ana", trechos };
+  }
+
   async aiUsage() {
     await wait(100);
     const d = new Date();
@@ -445,7 +466,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.60.4", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.61.0", user: { name: "Diego Zapella", person: "Diego" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

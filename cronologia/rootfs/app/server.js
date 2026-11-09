@@ -21,6 +21,7 @@ import { parseKind } from "./lib/kinds.js";
 import { Home } from "./lib/home.js";
 import { AwayCal } from "./lib/awaycal.js";
 import { Gerencia } from "./lib/gerencia.js";
+import { Memoria } from "./lib/memoria.js";
 import { Todos } from "./lib/todos.js";
 import { Mirror } from "./lib/mirror.js";
 import { appData, eventsCSV, backupZip, parseImport, Backups, listVersions, readVersion, fileStamp } from "./lib/data.js";
@@ -29,7 +30,7 @@ import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
 import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
 
-const VERSION = "1.60.4";
+const VERSION = "1.61.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -59,6 +60,8 @@ const resolviaOn = () => store.data.app.resolvia_on === true;
 const gerenciaOn = () => store.data.app.gerencia_on === true;
 // Mais › Configurações › Integrações › CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda (off by default)
 const correriaOn = () => store.data.app.correria_on === true;
+// Mais › Configurações › Integrações › MemorIA: the trechos of now in Agora (off by default)
+const memoriaOn = () => store.data.app.memoria_on === true;
 // dev only (tests written before 1.16.0): start with both on
 if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.resolvia_on == null && store.data.app.gerencia_on == null) store.setApp({ resolvia_on: true, gerencia_on: true });
 const ha = new HAClient(HA_URL, TOKEN, log);
@@ -78,6 +81,7 @@ const pushHome = (index) => {
   mirror.schedule();
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed(), enabled: gerenciaOn });
+const memoria = new Memoria({ shareDir: SHARE_DIR, log, enabled: memoriaOn });
 const todos = new Todos({ ha, log, onChange: () => (home.changed(), mirror.schedule()), readApp: () => JSON.parse(fs.readFileSync(path.join(SHARE_DIR, "resolvia", "integracao.json"), "utf8")) });
 const backups = new Backups({ dir: path.join(SHARE_DIR, "cronologia") });
 const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: () => calStates, gerencia, todos, onChange: pushHome });
@@ -377,6 +381,12 @@ class Session {
         return this.result(id, await gerencia.act("nova", body));
       }
 
+      // Agora › MemorIA: the trechos of now and the next two, of the person of this screen (Configurações: fresh)
+      case "cronologia/memoria/agora": {
+        const usuario = this.user.id && /^[A-Za-z0-9_-]{1,80}$/.test(this.user.id) ? this.user.id : "";
+        return this.result(id, await memoria.agora({ usuario, pessoa: home.personOfUser(this.user.id, this.user.name) || "" }, { fresh: !!msg.fresh }));
+      }
+
       case "cronologia/score/reassign":
         home.reassign(String(msg.key || ""), String(msg.who || ""));
         return this.result(id);
@@ -521,6 +531,7 @@ class Session {
         const prefs = store.setApp(msg.prefs);
         this.result(id, prefs);
         if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
+        if (msg.prefs && "memoria_on" in msg.prefs) memoria.forget();
         // CorrerIA: on writes share/cronologia/correria.json, off removes it (and the key stops working)
         if (msg.prefs && "correria_on" in msg.prefs) {
           correria.publish();

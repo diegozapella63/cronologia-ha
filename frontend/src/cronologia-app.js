@@ -18,6 +18,7 @@ import { chatStyles } from "./chat.js";
 import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
+import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
 import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
@@ -104,7 +105,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement))))) {
+class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))) {
   static properties = {
     _desk: { state: true },
     api: { attribute: false },
@@ -127,7 +128,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles)];
+  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles];
 
   constructor() {
     super();
@@ -232,6 +233,8 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
     this._chatAfterRender();
+    // Agora › MemorIA: the trecho of now, once a minute and when the next one starts
+    this._memoriaTick();
     if (this._focusSearch) {
       const inp = this.renderRoot.querySelector("input[data-q='buscar']");
       if (inp) {
@@ -267,6 +270,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       if (tab === "integracoes") {
         this._refreshAi(false);
         this._loadUsage();
+        if (this._memoriaOn()) this._loadMemoria(true);
       }
       if (tab === "dados") this._loadBackups();
     }
@@ -1934,7 +1938,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
         ${this._renderAwayBanner()}
         ${this._renderNowSearch()} ${hidden}
         <div class="now-cols">
-          <div class="now-main">${dayPart} ${this._renderTodosPanel()}</div>
+          <div class="now-main">${dayPart} ${this._renderMemoriaPanel()} ${this._renderTodosPanel()}</div>
           <div class="now-side">${medsPart} ${this._renderHomePanel()}</div>
         </div>
       </section>`;
@@ -1945,6 +1949,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
       ${this._renderNowSearch()} ${hidden}
       ${medsPart}
       ${dayPart}
+      ${this._renderMemoriaPanel()}
       ${this._renderHomePanel()}
       ${this._renderTodosPanel()}
     </section>`;
@@ -2402,7 +2407,7 @@ class CronologiaApp extends ChatMixin(DataMixin(TasksMixin(RewardsMixin(ModelsMi
     let body;
     let status = null;
     if (v.config) {
-      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
+      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderMemoriaSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
       else if (tab === "placar") body = this._renderScoreSettings();
       else if (tab === "dados") body = this._renderDataPanel();
       else if (tab === "aparencia") body = this._renderAppearance();

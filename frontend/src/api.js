@@ -363,6 +363,11 @@ export class Api {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }
 
+  /** Agora › MemorIA: the trecho of now and the next two, of the person of this screen (fresh: past the cache). */
+  memoriaNow(fresh = false) {
+    return this.call("cronologia/memoria/agora", { fresh });
+  }
+
   /** Mais › Configurações › Integrações › Uso da IA. */
   aiUsage() {
     return this.call("cronologia/ai/usage");
