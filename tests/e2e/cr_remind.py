@@ -35,8 +35,18 @@ async def main():
         check(st.stored()["app"]["score"].get("remind") == "20:00" and await fld.locator(".seg button.on").inner_text() == "Noite", "on: at 20:00, Noite chosen")
         await fld.locator(".seg button", has_text="Manhã").click(); await A.wait_for_timeout(700)
         check(st.stored()["app"]["score"].get("remind") == "09:00" and await value(fld.locator(".pickf.remind-time")) == "09:00", "Manhã: 09:00")
-        hint = await fld.locator(".field-hint").inner_text()
-        check("Vai para o celular de Davi e Aurora." in hint, f"whose phones ({hint})")
+        # 1.65.0: Quem recebe, a button for each player (all of them at first), like the alerts of every app
+        quem = [t.strip() for t in await fld.locator(".quem-p").all_inner_texts()]
+        on = [t.strip() for t in await fld.locator(".quem-p.on").all_inner_texts()]
+        check(quem == ["Davi", "Aurora"] and on == quem, f"Quem recebe: the players, all marked ({quem}, {on})")
+        qb = [await fld.locator(".quem-p").nth(i).bounding_box() for i in range(2)]
+        check(abs(qb[0]["width"] - qb[1]["width"]) < 1 and abs(qb[0]["y"] - qb[1]["y"]) < 1, "Quem recebe: side by side, the same size")
+        await fld.locator(".quem-p", has_text="Aurora").click()
+        await wait_for(lambda: st.stored()["app"]["score"].get("remind_to") == ["Davi"], "a tap takes Aurora out (saved)")
+        async def one_on(): return await fld.locator(".quem-p.on").count() == 1
+        await wait_for(one_on, "and the screen shows it")
+        await fld.locator(".quem-p", has_text="Aurora").click()
+        await wait_for(lambda: st.stored()["app"]["score"].get("remind_to") is None, "and back: everyone again")
         await fld.screenshot(path=f"{SP}/shots/crrm-field.png")
         bx = [await fld.locator(sel).bounding_box() for sel in (".pickf.remind-time", ".remind-test")]
         tt = (await fld.locator(".remind-test").inner_text()).strip()
@@ -49,7 +59,7 @@ async def main():
         # 1.54.0: the app says it by the person, never the device
         toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
         check("Lembrete enviado para o seu celular." in toast and "Pixel" not in toast, f"the toast, no device ({toast!r})")
-        check("Pixel" not in await fld.inner_text() and "Vai para o celular de Davi e Aurora." in await fld.inner_text(), "who gets it: the players by name")
+        check("Pixel" not in await fld.inner_text() and "Galaxy" not in await fld.inner_text(), "who gets it: the players by name, never a device")
         # the exact time: this minute; the server sends it to both within a round (20 s)
         # 1.63.0: the time in the app's window (24 hours, minutes of 5 in 5), no AM/PM
         await pick_time(fld.locator(".pickf.remind-time"), "21:15")

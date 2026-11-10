@@ -29,19 +29,21 @@ dev/fake-ha.mjs                   Home Assistant simulado para desenvolver e tes
 tests/                            testes (ver tests/README.md)
 ```
 
+No `config.yaml`, `url` aponta para o repositório e `panel_admin: false` fica como está: a agenda é da casa toda (remédios, rotinas, contas, placar), então o painel aparece também para quem não é administrador do Home Assistant; o que é de administrador (adicionar calendários, integrações do HA) a própria tela leva ao HA, que pede a permissão.
+
 ## Checklist de toda mudança
 
 1. Implementar. Servidor: só módulos nativos do Node (o WebSocket é o `lib/ws.js` próprio). Interface: Lit, componentes e mixins em `frontend/src`.
-2. Gerar a interface: `cd frontend && npm install && npm run build`. Faça commit também de `cronologia/rootfs/app/www/cronologia.js` e `preview/cronologia-preview.html`.
-3. Testar: `npm test` (unitários e integração, uns 40 s) e os visuais ligados à mudança: `tests/e2e/run.sh cr_xxx ...` (ver tests/README.md). Toda mudança ou bug corrigido vem com o teste dele.
-4. Subir a versão nos três lugares (iguais): `cronologia/config.yaml` (`version:`), `cronologia/rootfs/app/server.js` (`const VERSION`) e `frontend/preview/mock-api.js` (`version:` no bootstrap). Correção = patch (1.37.1 → 1.37.2); novidade = minor (1.37.x → 1.38.0).
+2. Subir a versão, escrita num lugar só: `cronologia/config.yaml` (`version:`). O servidor lê de lá (`lib/version.js`; na imagem, `/app/config.yaml`, que o Dockerfile copia), a tela recebe do servidor e a prévia, do build. Correção = patch (1.37.1 → 1.37.2); novidade = minor (1.37.x → 1.38.0).
+3. Gerar a interface: `cd frontend && npm install && npm run build`. Faça commit também de `cronologia/rootfs/app/www/cronologia.js` e `preview/cronologia-preview.html` (o `tests/version.test.mjs` confere que a prévia tem a versão do config.yaml).
+4. Testar: `tests/run.sh` (o mesmo que `npm test`: unitários, telas montadas e integração, cerca de um minuto) e os visuais ligados à mudança: `tests/e2e/run.sh cr_xxx ...` (ver tests/README.md). Toda mudança ou bug corrigido vem com o teste dele.
 5. `cronologia/CHANGELOG.md`: nova seção no topo, em português, do ponto de vista de quem usa (o que mudou na tela, não no código).
 6. `cronologia/DOCS.md` quando muda o comportamento ou aparece algo novo.
 7. Commit em `main` com mensagem em português ("CronologIA 1.38.0: ..."), `git pull --rebase` e push. O GitHub roda todos os testes a cada push (aba Actions).
 
 ## Testes
 
-- `npm test`: unitários (`tests/*.test.mjs`) e de integração (`tests/integration/`), com `node:test`, sem instalar nada. Cada arquivo de integração sobe o HA simulado e o servidor em portas livres.
+- `tests/run.sh` (ou `npm test`): unitários (`tests/*.test.mjs`), telas montadas (`tests/ui/`) e integração (`tests/integration/`), com `node:test`, sem instalar nada; `tests/run.sh unit|ui|integration|coverage` roda uma parte. Cada arquivo de integração sobe o HA simulado e o servidor em portas livres.
 - `tests/e2e/run.sh`: testes visuais em Python + Playwright (`pip install playwright && playwright install chromium`). Precisam dos outros apps ao lado deste repositório (`../resolvia-ha`, `../inventario-ha`, `../gerencia-ha`) ou nas variáveis `E2E_*`. Usam as portas fixas 8099/8123/8097: não rode duas baterias ao mesmo tempo.
 - Datas: nunca dependa do relógio real nos unitários (passe `now` ou use `mock.timers`); nos visuais, a ordem das rotinas depende da hora (períodos), então calcule o esperado a partir da hora.
 

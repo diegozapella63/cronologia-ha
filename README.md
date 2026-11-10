@@ -53,7 +53,8 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada um, sincronizados entre aparelhos), Rotinas, Recompensas, Avisos, Férias, Configurações (Integrações, Dados, Aparência e Opções) e **Sobre**.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Celular e computador**: feito para o celular; com a tela larga, barra lateral com um mês pequeno e os calendários.
-- **Tema claro e escuro** seguindo o Home Assistant, e a **Cor do dia**: a cor do app muda todo dia (ou fica fixa na que você escolher).
+- **Tema claro e escuro** seguindo o Home Assistant, e a **Cor do dia**: a cor do app muda todo dia, a mesma em todos os apps da família (ou fica fixa na que você escolher).
+- **No visual do app, nunca o do celular**: caixas de seleção, horários (sempre em 24 horas) e datas abrem uma janela de baixo para cima; o que está oculto ou pausado fica no fim da lista, recolhido.
 
 Mais detalhes em [cronologia/DOCS.md](cronologia/DOCS.md).
 
@@ -67,6 +68,7 @@ preview/                 prévia da interface com calendários de exemplo
 docs/                    telas de exemplo do README (python3 tools/prints_readme.py)
 tools/prints_readme.py   refaz as telas do README a partir da prévia, com nomes inventados
 dev/fake-ha.mjs          Home Assistant falso para desenvolver sem o HA
+tests/                   testes: tests/run.sh (sem navegador) e tests/e2e/run.sh (visuais); ver tests/README.md
 ```
 
 ## Desenvolvimento
@@ -81,7 +83,7 @@ CRONOLOGIA_DEV=1 HA_WS_URL=ws://127.0.0.1:8123/api/websocket HA_REST_URL=http://
                                                  # abre em http://127.0.0.1:8099
 ```
 
-O HA falso tem calendários de exemplo (local, "Outlook", feriados e um remoto só de leitura), repetição simples e duas IAs (`ai_task.google_ai_task`, que lê fotos, e `ai_task.ollama_ai_task`, só texto). Use `FAKE_MEDIA_DIR` igual a `MEDIA_DIR` para testar a leitura de fotos, `FAKE_HA_NO_AI=1` para testar sem IA e `FAKE_HA_OLD=1` para simular um Home Assistant sem `calendar/event/subscribe`. A prévia (`preview/cronologia-preview.html`) abre direto no navegador, sem servidor.
+O HA falso tem calendários de exemplo (local, "Outlook", feriados e um remoto só de leitura), repetição simples, pessoas com celular, listas de tarefas e duas IAs (`ai_task.google_ai_task`, que lê fotos, e `ai_task.ollama_ai_task`, só texto). Use `FAKE_MEDIA_DIR` igual a `MEDIA_DIR` para testar a leitura de fotos, `FAKE_HA_NO_AI=1` para testar sem IA e `FAKE_HA_OLD=1` para simular um Home Assistant sem `calendar/event/subscribe`; as outras variações (`FAKE_*`) estão no começo de `dev/fake-ha.mjs`. A prévia (`preview/cronologia-preview.html`) abre direto no navegador, sem servidor.
 
 ## Créditos
 

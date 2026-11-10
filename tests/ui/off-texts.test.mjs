@@ -8,7 +8,7 @@ import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { html } from "../../frontend/vendor/lit-all.min.js";
-import { text, render, fakeApi, hostOf } from "../_lit.mjs";
+import { text, render, click, fakeApi, hostOf } from "../_lit.mjs";
 import { ModelsMixin } from "../../frontend/src/models.js";
 import { RewardsMixin } from "../../frontend/src/rewards.js";
 import { TasksMixin } from "../../frontend/src/tasks.js";
@@ -115,6 +115,23 @@ describe("Novo › Remédio: Aviso no celular", () => {
   });
 });
 
+describe("Mais › Avisos › Testar no meu celular (1.65.0: at the bottom, the whole width, like every app)", () => {
+  it("with my phone: sends to me and says so", async () => {
+    const app = new App();
+    app.api = fakeApi({ testAlert: {} });
+    const view = app._renderAlertsPanel();
+    assert.match(text(view), /Testar no meu celular$/);
+    await click(view, "Testar no meu celular");
+    assert.deepEqual(app.api.calls, [["testAlert", "Davi"]]);
+    assert.match(app.toasts[0], /^Aviso de teste enviado para o seu celular\./);
+  });
+  it("without a phone tied to me: off, and says why; the alerts off: no button", () => {
+    const h = render(new App({ home: { people: [ANA, { ...DAVI, phone: false, reach: false }] } })._renderAlertsPanel()).html;
+    assert.match(h, /aviso-test"[^>]*disabled[^>]*title="Sem celular ligado a você no Home Assistant"|disabled[^>]*title="Sem celular ligado a você no Home Assistant"[^>]*>.*Testar no meu celular/s);
+    assert.doesNotMatch(text(new App({ app: { alerts: { meds: false } } })._renderAlertsPanel()), /Testar no meu celular/);
+  });
+});
+
 describe("Mais › Avisos › Quem cuida", () => {
   const panel = (late) => text(new App({ app: { alerts: { late, caregivers: ["Ana"] } } })._renderAlertsPanel());
   it("gets the late alerts of everyone, or, with Avisar de novo Não, the ones of whoever has no phone", () => {
@@ -127,12 +144,25 @@ describe("Mais › Avisos › Quem cuida", () => {
 
 describe("Placar › Lembrete diário: who gets it (the people, never a device)", () => {
   const s = { remind: "20:00", participants: ["Davi", "Beto"] };
-  it("the people with a phone, and who has none; no phone to choose in Avisos", () => {
+  it("Quem recebe: a button for each player (1.65.0), who has no phone says so; no phone to choose in Avisos", () => {
     for (const app of [new App(), new App({ app: { alerts: { meds: false } } })]) {
       const t = text(app._renderScoreRemind(s));
-      assert.match(t, /Vai para o celular de Davi\. Sem celular para Beto\./);
-      assert.doesNotMatch(t, /escolha em Avisos/);
+      assert.match(t, /Quem recebe Davi Beto sem celular Sem celular para Beto: ligue o celular à pessoa no Home Assistant\. Testar no meu celular$/);
+      assert.doesNotMatch(t, /escolha em Avisos|Galaxy|Pixel|mobile_app/);
     }
+  });
+  it("Quem recebe: all of them at first; a tap takes one out (and puts back); nobody: says to choose", () => {
+    const app = new App({ home: { score: { enabled: true, participants: ["Davi", "Beto"], remind: "20:00" } } });
+    const view = () => app._renderScoreRemind({ ...s, remind_to: (app._app_.score || {}).remind_to });
+    assert.match(render(view()).html, /aria-pressed="true"[^>]*>.*Davi.*aria-pressed="true"/s);
+    click(view(), /^Davi$/);
+    assert.deepEqual(app._app_.score.remind_to, ["Beto"]);
+    click(view(), /^Beto/);
+    assert.deepEqual(app._app_.score.remind_to, []);
+    assert.match(text(view()), /Escolha quem recebe\./);
+    click(view(), /^Davi$/);
+    click(view(), /^Beto/);
+    assert.equal(app._app_.score.remind_to, null, "everyone again: saved as everyone (a new player gets it too)");
   });
   it("Testar off without my phone says why: Home Assistant", () => {
     assert.match(render(new App({ home: { people: [] } })._renderScoreRemind(s)).html, /title="Sem celular ligado a você no Home Assistant"/);

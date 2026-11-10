@@ -29,8 +29,9 @@ import { asActor } from "./lib/actor.js";
 import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
 import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
+// the version is written only in config.yaml (copied into the image next to this file)
+import { VERSION } from "./lib/version.js";
 
-const VERSION = "1.64.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";

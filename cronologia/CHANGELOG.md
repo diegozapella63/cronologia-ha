@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.65.0
+
+- **Avisos no celular com o mesmo jeito de todos os apps da família**:
+  - **Lembrete diário** (Mais › Recompensas): **Quem recebe**, um botão para cada pessoa do placar, do mesmo tamanho, lado a lado (todas marcadas no começo; quem está sem celular diz "sem celular"), o horário no visual do app e, embaixo, **Testar no meu celular**.
+  - **Mais › Avisos**: **Testar no meu celular** no fim, com a largura toda; **Quem cuida** com os mesmos botões. Os avisos de cada remédio continuam como estão.
+
 ## 1.64.0
 
 - **O mesmo jeito em todos os apps da família**:

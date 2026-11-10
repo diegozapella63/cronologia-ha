@@ -907,7 +907,7 @@ export const RewardsMixin = (Base) =>
 
     _scorePrefs(changes) {
       const s = this._score() || {};
-      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false, manual: !!s.manual, remind: s.remind || null };
+      const cur = { enabled: !!s.enabled, participants: s.participants || [], period: s.period || "semana", anchor: s.anchor || ymd(new Date()), notify: s.notify !== false, manual: !!s.manual, remind: s.remind || null, remind_to: Array.isArray(s.remind_to) ? s.remind_to : null };
       return this._saveAppPrefs({ score: { ...cur, ...changes } });
     }
 
@@ -965,24 +965,41 @@ export const RewardsMixin = (Base) =>
       </div>`;
     }
 
-    /** Lembrete diário: when (Manhã, Tarde, Noite or the exact time), who gets it, and Testar on my phone. */
+    /**
+     * Lembrete diário, in the look of the alerts of every app of the family: when (Manhã, Tarde, Noite or the
+     * exact time), Quem recebe (a button for each player, the same size, side by side) and, at the bottom,
+     * Testar no meu celular.
+     */
     _renderScoreRemind(s) {
       const SLOTS = { manha: "09:00", tarde: "14:00", noite: "20:00" };
       const cur = periodOfHour(Number(s.remind.slice(0, 2)));
       // the phones are the ones tied to each person in Home Assistant (a child without one: the person chosen in Avisos)
       const people = this._ix().people || [];
       const reach = (n) => !!(people.find((p) => foldText(p.name) === foldText(n)) || {}).reach;
-      const withPhone = s.participants.filter((n) => reach(n));
-      const without = s.participants.filter((n) => !reach(n));
+      const to = Array.isArray(s.remind_to) ? s.participants.filter((n) => s.remind_to.includes(n)) : s.participants;
+      const without = to.filter((n) => !reach(n));
       const list = (ns) => (ns.length > 1 ? `${ns.slice(0, -1).join(", ")} e ${ns.at(-1)}` : ns[0]);
       const mine = reach(this._me ? this._me() : "");
+      const toggle = (n) => {
+        const next = to.includes(n) ? to.filter((x) => x !== n) : s.participants.filter((x) => x === n || to.includes(x));
+        this._scorePrefs({ remind_to: next.length === s.participants.length ? null : next });
+      };
       return html`<div class="field remind-field">
         <span class="flabel">Quando</span>
         <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
         <div class="remind-row">
           ${timeField(s.remind, (v) => this._scorePrefs({ remind: v }), { label: "Horário do lembrete", cls: "remind-time" })}
         </div>
-        <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? `${withPhone.length ? " " : ""}Sem celular para ${list(without)}.` : ""}</span></span>
+        <span class="flabel quem-l">Quem recebe</span>
+        <div class="chip-row quem" role="group" aria-label="Quem recebe o lembrete">${s.participants.map((n) => {
+          const on = to.includes(n);
+          return html`<button class="pick quem-p ${on ? "on" : ""} ${reach(n) ? "" : "sem"}" aria-pressed=${on ? "true" : "false"} @click=${() => toggle(n)}>${icon("user-round")}<b>${n}</b>${reach(n) ? nothing : html`<small>sem celular</small>`}</button>`;
+        })}</div>
+        ${!to.length
+          ? html`<span class="field-hint">${icon("info")}<span>Escolha quem recebe.</span></span>`
+          : without.length
+            ? html`<span class="field-hint">${icon("info")}<span>Sem celular para ${list(without)}: ligue o celular à pessoa no Home Assistant.</span></span>`
+            : nothing}
         <button class="btn outline remind-test" ?disabled=${!mine} title=${mine ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testScoreReminder()}>${icon("send")}Testar no meu celular</button>
       </div>`;
     }

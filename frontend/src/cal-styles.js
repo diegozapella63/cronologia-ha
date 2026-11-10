@@ -3370,7 +3370,50 @@ export const calStyles = css`
   .remind-row .pickf.remind-time {
     width: 100%;
   }
+  /* Quem recebe (and Quem cuida): a button for each person, the same size, side by side; who has no phone says so */
+  .flabel.quem-l {
+    display: block;
+    margin-top: 14px;
+  }
+  .chip-row.quem,
+  .chip-row.care-pick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chip-row > .pick.quem-p {
+    flex-wrap: wrap;
+    gap: 0 7px;
+    min-width: 0;
+  }
+  .pick.quem-p b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .pick.quem-p small {
+    width: 100%;
+    color: var(--rv-muted);
+    font-size: 12.5px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .pick.quem-p.on small {
+    color: inherit;
+    opacity: 0.8;
+  }
+  .pick.quem-p .i {
+    width: 17px;
+    height: 17px;
+    flex: none;
+  }
   /* Testar no meu celular: the whole width, at the bottom (the same in all the apps) */
+  #avisos .aviso-test {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    margin: 4px 0 2px;
+  }
   .remind-field .remind-test {
     display: flex;
     width: 100%;

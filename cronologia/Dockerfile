@@ -6,6 +6,8 @@ FROM ${BUILD_FROM}
 RUN apk add --no-cache nodejs tzdata
 
 COPY rootfs /
+# the version of the app is read from here (lib/version.js): written in one place
+COPY config.yaml /app/config.yaml
 RUN chmod a+x /etc/services.d/cronologia/run /etc/services.d/cronologia/finish
 
 LABEL \

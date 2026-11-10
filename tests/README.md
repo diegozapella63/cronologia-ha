@@ -1,6 +1,6 @@
 # Testes do CronologIA
 
-Três camadas, todas rodando a cada push no GitHub (aba Actions):
+Quatro camadas, todas rodando a cada push no GitHub (aba Actions):
 
 | Camada | Onde | Como rodar | O que confere |
 |---|---|---|---|
@@ -11,7 +11,7 @@ Três camadas, todas rodando a cada push no GitHub (aba Actions):
 
 O Home Assistant simulado tem variações pelas variáveis `FAKE_*` (lista no começo de `dev/fake-ha.mjs`). Os visuais mais novos usam `tests/e2e/stack_lib.py` e as portas de `E2E_HA_PORT` e `E2E_APP_PORT` (8123 e 8099 se não vierem), para rodar ao lado de outra execução.
 
-`npm test` roda as três primeiras (só Node 22, sem instalar nada; cerca de um minuto). Os visuais precisam de `python3` e `pip install playwright && playwright install chromium`, e dos outros apps da família ao lado deste repositório (`../resolvia-ha`, `../inventario-ha`, `../gerencia-ha`) ou nas variáveis `E2E_*`; um teste que precisa de um app que não está lá é pulado. As capturas ficam em `$E2E_TMP/shots`.
+`tests/run.sh` (ou `npm test`) roda as três primeiras (só Node 22, sem instalar nada; cerca de um minuto); `tests/run.sh unit`, `ui`, `integration` ou `coverage` roda uma parte. Os visuais precisam de `python3` e `pip install playwright && playwright install chromium`, e dos outros apps da família ao lado deste repositório (`../resolvia-ha`, `../inventario-ha`, `../gerencia-ha`) ou nas variáveis `E2E_*`; um teste que precisa de um app que não está lá é pulado. As capturas ficam em `$E2E_TMP/shots`.
 
 `npm run test:coverage` mostra quanto do código os testes percorrem.
 

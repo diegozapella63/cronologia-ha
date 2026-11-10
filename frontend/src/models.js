@@ -292,10 +292,10 @@ export const ModelsMixin = (Base) =>
       }
     }
 
-    async _testAlert(person) {
+    async _testAlert(person, mine = false) {
       try {
         await this.api.testAlert(person);
-        this._showToast(`Aviso de teste enviado para o celular de ${this._phoneOwner(person) || person}. Toque em Tomei nele para conferir o botão.`);
+        this._showToast(`Aviso de teste enviado para ${mine ? "o seu celular" : `o celular de ${this._phoneOwner(person) || person}`}. Toque em Tomei nele para conferir o botão.`);
       } catch (err) {
         this._showToast(`Não foi: ${err.message}`);
       }
@@ -1306,6 +1306,10 @@ export const ModelsMixin = (Base) =>
         </select>`;
       };
       const sub = (p) => (p.person ? (on && !p.phone ? "Pessoa do Home Assistant, sem celular" : "Pessoa do Home Assistant") : p.pet ? "Pet" : "Só no CronologIA");
+      // at the bottom, the whole width, like the alerts of every app of the family
+      const me = this._me ? this._me() : "";
+      const mine = people.find((p) => me && foldText(p.name) === foldText(me));
+      const testMine = html`<button class="btn outline aviso-test" ?disabled=${!(mine && mine.phone)} title=${mine && mine.phone ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testAlert(mine.name, true)}>${icon("send")}Testar no meu celular</button>`;
       return html`<div class="panel" id="avisos">
         ${this._secHead("bell-ring", "Avisos de remédio no celular", html`Na hora da dose, com <b>Tomei</b> e <b>Adiar 15 min</b>.`)}
         <div class="row switch-row">
@@ -1369,11 +1373,12 @@ export const ModelsMixin = (Base) =>
                     <span class="flabel">Quem cuida</span>
                     <div class="chip-row care-pick">${phoned.map((p) => {
                       const sel = care.some((n) => foldText(n) === foldText(p.name));
-                      return html`<button class="pick ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((n) => foldText(n) !== foldText(p.name)) : [...care, p.name] })}>${icon("user-round")}<span>${p.name}</span></button>`;
+                      return html`<button class="pick quem-p ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((n) => foldText(n) !== foldText(p.name)) : [...care, p.name] })}>${icon("user-round")}<b>${p.name}</b></button>`;
                     })}</div>
                     <span class="field-hint">${icon("info")}<span>${late > 0 ? "Recebe os atrasos de todos." : "Recebe os avisos de quem está sem celular."}</span></span>
                   </div>`
-                : nothing}`
+                : nothing}
+              ${testMine}`
           : nothing}
       </div>`;
     }

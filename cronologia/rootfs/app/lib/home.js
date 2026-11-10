@@ -326,7 +326,8 @@ export class Home {
 
   /**
    * Lembrete do placar: once a day at the chosen time (up to 2 h late, e.g. after a restart), the points
-   * and who is ahead, to the phones of everyone who plays. Not on vacation (the points rest).
+   * and who is ahead, to the phones of the players chosen in Quem recebe (all of them, unless chosen). Not on
+   * vacation (the points rest).
    */
   async scoreReminder(now = new Date()) {
     const st = scoreSettings(this.store.data.app);
@@ -339,7 +340,8 @@ export class Home {
     if (now < at || now - at > 2 * 3600 * 1000) return;
     const key = `placar|${day}`;
     if (this.store.data.sent[key]) return;
-    const targets = [...new Set(st.participants.flatMap((n) => this.phonesOf(n)))];
+    const to = st.remind_to ? st.participants.filter((n) => st.remind_to.includes(n)) : st.participants;
+    const targets = [...new Set(to.flatMap((n) => this.phonesOf(n)))];
     this.store.markSent(key, "on", targets);
     const { title, message } = this.scoreReminderText(now);
     for (const target of targets) {

@@ -137,6 +137,8 @@ function cleanApp(raw) {
       manual: !!a.manual,
       // Lembrete do placar: once a day at this time ("20:00"), the points and who is ahead on the phones
       remind: /^([01]\d|2[0-3]):[0-5]\d$/.test(a.remind || "") ? a.remind : null,
+      // ... to these players (Quem recebe, 1.65.0); null: everyone who plays
+      remind_to: Array.isArray(a.remind_to) ? [...new Set(a.remind_to.map((n) => String(n).trim().slice(0, 40)))].filter((n) => participants.includes(n)) : null,
     };
   }
   if ("demerits" in raw) {

@@ -1234,6 +1234,20 @@ describe("Home: the daily reminder of the placar", () => {
     await c.home.scoreReminder(at(2026, 11, 2, 20, 5));
     assert.equal(notifications(c.ha).length, 0, "the points rest on vacation");
   });
+  it("Quem recebe (1.65.0): only the players chosen; nobody chosen, nobody; a name that left the placar is dropped", async () => {
+    const a = setup({ app: app({ remind_to: ["Aurora"] }), ...PLAYERS });
+    await a.home.scoreReminder(at(2026, 11, 2, 20, 0));
+    assert.deepEqual(notifications(a.ha).map((x) => x.service), ["mobile_app_galaxy_s23"]);
+    assert.deepEqual(a.home.scoreIndex(at(2026, 11, 2, 20).getTime()).remind_to, ["Aurora"], "the screen gets it by the same name");
+    const b = setup({ app: app({ remind_to: [] }), ...PLAYERS });
+    await b.home.scoreReminder(at(2026, 11, 2, 20, 0));
+    assert.equal(notifications(b.ha).length, 0);
+    const c = setup({ app: app(), ...PLAYERS });
+    c.store.setApp({ score: { ...SCORE, remind: "20:00", remind_to: ["Davi", "Zeca", "Davi"] } });
+    assert.deepEqual(c.store.data.app.score.remind_to, ["Davi"], "only players, once each");
+    c.store.setApp({ score: { ...SCORE, remind: "20:00", remind_to: "todos" } });
+    assert.equal(c.store.data.app.score.remind_to, null, "not a list: everyone");
+  });
   it("the words: a tie, nobody yet, one player, closing today", () => {
     const a = setup({ app: app(), ...PLAYERS });
     assert.equal(a.home.scoreReminderText(at(2026, 11, 2, 20)).message, "Ninguém pontuou ainda. Fecha em 7 dias.");

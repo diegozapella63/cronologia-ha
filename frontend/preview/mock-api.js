@@ -472,7 +472,8 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.64.0", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    // the version of config.yaml, put in by the build (build.mjs)
+    return { version: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

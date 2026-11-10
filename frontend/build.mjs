@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
+// the version of the app is written only in cronologia/config.yaml: the preview gets it here
+const VERSION = /^version:\s*["']?([0-9][^"'\s]*)/m.exec(readFileSync(resolve(root, "cronologia/config.yaml"), "utf8"))[1];
 const common = {
   bundle: true,
   minify: true,
@@ -36,7 +38,7 @@ await build({
 });
 
 // The preview is a single file, so fonts are inlined there.
-const out = await build({ ...common, entryPoints: [resolve(here, "preview/preview.js")], write: false });
+const out = await build({ ...common, entryPoints: [resolve(here, "preview/preview.js")], write: false, define: { __APP_VERSION__: JSON.stringify(VERSION) } });
 const js = out.outputFiles[0].text.replace(/<\/script/gi, "<\\/script");
 const shell = readFileSync(resolve(here, "preview/preview.template.html"), "utf8");
 mkdirSync(resolve(root, "preview"), { recursive: true });

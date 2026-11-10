@@ -34,6 +34,8 @@ export function scoreSettings(app = {}) {
     notify: s.notify !== false,
     manual: !!s.manual,
     remind: /^([01]\d|2[0-3]):[0-5]\d$/.test(s.remind || "") ? s.remind : null,
+    // Quem recebe the reminder: those players (null: all of them); the same name as saved, for the screen too
+    remind_to: Array.isArray(s.remind_to) ? s.remind_to : null,
     weekStart: app.week_start === 0 ? 0 : 1,
   };
 }
