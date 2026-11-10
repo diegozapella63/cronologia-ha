@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.73.0
+
+- **Adicionar › Tarefa** nas listas do ResolvIA que não aceitam data (as da Alexa, a Shopping list): agora pede o prazo e o horário. Ele fica guardado no ResolvIA (2.59.0 ou mais novo), com o aviso "Guardado no ResolvIA: a lista não aceita data."
+
 ## 1.72.0
 
 - **Tarefas do ResolvIA**: as das listas que não aceitam data (as da Alexa, a Shopping list) aparecem com o prazo que o ResolvIA 2.58.0 guarda para elas, na Agora e no calendário, atrasadas em vermelho como as outras.

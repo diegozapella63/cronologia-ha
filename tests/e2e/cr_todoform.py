@@ -17,9 +17,9 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crf-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share/resolvia"); os.makedirs(f"{SP}/shots", exist_ok=True)
-def resolvia_file(prazos):
+def resolvia_file(prazos, **extra):
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    json.dump({"app": "ResolvIA", "versao": "2.15.0", "gravado_em": now, "prazos": prazos, "sem_prazo": [], "pontos": {}, "repete": {}}, open(f"{data}/share/resolvia/integracao.json", "w"))
+    json.dump({"app": "ResolvIA", "versao": "2.15.0", "gravado_em": now, "prazos": prazos, "sem_prazo": [], "pontos": {}, "repete": {}, **extra}, open(f"{data}/share/resolvia/integracao.json", "w"))
 procs = []
 def start():
     for pr in procs: pr.kill()
@@ -76,6 +76,24 @@ async def main():
         await sheet.locator(".ev-title-input").fill("Trocar a resistência")
         await sheet.locator(".btn.primary", has_text="Criar tarefa").click()
         await wait_for(lambda: any(i["summary"] == "Trocar a resistência" and i.get("due") for i in items("todo.casa")), "with prazos on, the task has the date")
+        await A.close()
+
+        # 1.73.0: a list whose deadline the ResolvIA keeps (com_prazo_app, ResolvIA 2.59.0): the deadline with the hint, and
+        # the date goes to the ResolvIA (resolvia_comodo), not to the list (the Casa list plays one without dates here)
+        resolvia_file(True, com_prazo_app=["todo.casa"]); start()
+        A = await ctx.new_page(); A.on("pageerror", lambda e: errs.append(str(e)))
+        await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1500)
+        a = A.locator("cronologia-app"); sheet = a.locator(".sheet")
+        await open_task_form(A, a)
+        hint = (await sheet.locator(".app-due").inner_text()).strip() if await sheet.locator(".app-due").count() else ""
+        check(hint == "Guardado no ResolvIA: a lista não aceita data.", f"the hint of the deadline kept by the ResolvIA ({hint})")
+        await A.screenshot(path=f"{SP}/shots/crf-app-due.png")
+        await sheet.locator(".ev-title-input").fill("Comprar pilhas")
+        await sheet.locator(".btn.primary", has_text="Criar tarefa").click()
+        await wait_for(lambda: any(i["summary"] == "Comprar pilhas" and not i.get("due") for i in items("todo.casa")), "no date in the list")
+        # the fake Home Assistant writes each event it gets ("fired <type> <json>")
+        sent = [l for l in open(f"{data}/fake.log").read().splitlines() if l.startswith("fired resolvia_comodo ") and "Comprar pilhas" in l]
+        check(sent and '"prazo"' in sent[-1], f"the deadline goes to the ResolvIA ({sent[-1:]})")
         check(not errs, f"no page errors {errs}")
         await b.close()
 try:

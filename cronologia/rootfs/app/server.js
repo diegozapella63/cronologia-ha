@@ -437,17 +437,19 @@ class Session {
       case "cronologia/todo/add": {
         if (!resolviaOn()) return this.error(id, "resolvia_off", "A integração com o ResolvIA está desligada em Mais › Configurações › Integrações.");
         const t = msg.task || {};
-        await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
+        const added = await todos.add(String(msg.entity_id || ""), { summary: t.summary, date: t.date, time: t.time, description: t.description });
         // the room and the equipment (InventarIA in the ResolvIA): the ResolvIA keeps them, by the task name
         const okId = (v) => v && /^[A-Za-z0-9_-]{1,64}$/.test(String(v));
         // several items (ResolvIA 2.31): the ResolvIA takes the room from them
         const equips = (Array.isArray(t.equips) ? t.equips : [t.equip]).filter(okId).map(String).slice(0, 10);
         // several rooms (without items): a list (ResolvIA 2.39.2)
         const rooms = [...new Set((Array.isArray(t.rooms) ? t.rooms : [t.room]).filter(okId).map(String))].slice(0, 10);
-        if (rooms.length || equips.length) {
+        // prazo: the deadline of a list without dates, kept by the ResolvIA (2.59.0+)
+        if (rooms.length || equips.length || added.prazo) {
           const event_data = { entity_id: String(msg.entity_id || ""), tarefa: String(t.summary || "").trim(), origem: "CronologIA" };
           if (rooms.length) event_data.comodo = rooms.length === 1 ? rooms[0] : rooms;
           if (equips.length) event_data.equipamento = equips.length === 1 ? equips[0] : equips;
+          if (added.prazo) event_data.prazo = added.prazo;
           await ha.send({ type: "fire_event", event_type: "resolvia_comodo", event_data }).catch(() => {});
         }
         return this.result(id);

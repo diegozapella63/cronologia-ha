@@ -17,6 +17,8 @@ const resolviaFile = () => ({
   gravado_em: new Date().toISOString(),
   pontos: { "todo.casa": { "passar pano na casa": 15, "trocar a lampada da varanda": 5 } },
   repete: { "todo.casa": { "todo-1": 7 }, "todo.trabalho": { "todo-8": 14 } },
+  // 2.59.0: a list whose deadline the ResolvIA keeps (here the Lista de compras plays one without dates)
+  com_prazo_app: ["todo.shopping_list"],
   comodos: {
     lista: [
       { id: "sala", nome: "Sala" },
@@ -97,6 +99,13 @@ describe("Novo › Tarefa", () => {
     const ev = await waitFor(() => fired("resolvia_comodo").find((e) => e.tarefa === "Limpar o filtro"), { what: "resolvia_comodo" });
     assert.deepEqual(ev, { entity_id: "todo.casa", tarefa: "Limpar o filtro", origem: "CronologIA", comodo: "cozinha", equipamento: "filtro" });
     await h.wait((x) => x.todos.items.some((i) => i.summary === "Limpar o filtro"), "the new task in Agora");
+  });
+  it("1.73.0: in a list whose deadline the ResolvIA keeps, the date goes in resolvia_comodo, not to Home Assistant", async () => {
+    await c.call("cronologia/todo/add", { entity_id: "todo.shopping_list", task: { summary: "Comprar pilhas", date: day(2), time: "10:00" } });
+    const it = (await stack.todoItems("todo.shopping_list")).find((i) => i.summary === "Comprar pilhas");
+    assert.equal(it.due, undefined, "no date in Home Assistant");
+    const ev = await waitFor(() => fired("resolvia_comodo").find((e) => e.tarefa === "Comprar pilhas"), { what: "resolvia_comodo" });
+    assert.deepEqual(ev, { entity_id: "todo.shopping_list", tarefa: "Comprar pilhas", origem: "CronologIA", prazo: `${day(2)}T10:00:00` });
   });
   it("several rooms (without equipment) go as a list", async () => {
     await c.call("cronologia/todo/add", { entity_id: "todo.casa", task: { summary: "Encerar o chão", rooms: ["cozinha", "sala", "cozinha"] } });

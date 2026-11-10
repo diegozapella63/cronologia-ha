@@ -349,6 +349,7 @@ export const TasksMixin = (Base) =>
         </div>
         ${canDate || canTime
           ? html`${f.noDue ? nothing : this._dateField("Prazo", f.date, (v) => this._setForm({ date: v }), "td-date")}
+              ${l && l.appDue && !f.noDue ? html`<p class="field-hint app-due" style="margin:-8px 0 12px">${icon("info")}<span>Guardado no ResolvIA: a lista não aceita data.</span></p>` : nothing}
               <div class="chip-row" style="margin:-8px 0 18px">
                 <button class="pick ${f.noDue ? "on" : ""}" @click=${() => this._setForm({ noDue: !f.noDue })}>Sem prazo</button>
                 ${canTime && !f.noDue

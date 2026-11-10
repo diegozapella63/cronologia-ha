@@ -313,6 +313,27 @@ describe("Todos: index (Tarefas com prazo)", () => {
     assert.equal(off.t.index(NOW).lists[0].info, "integracao");
   });
 
+  it("1.73.0: a list whose deadline the ResolvIA keeps (com_prazo_app): dates on, and the new task's date goes to the ResolvIA", async () => {
+    const ALEXA = "todo.notas_e_rotinas_do_alexa_to_do_list";
+    const F3 = TODO_F.CREATE | TODO_F.DELETE | TODO_F.UPDATE;
+    // written now (add() reads it by the clock of now)
+    const { t, ha } = make({ app: appFile({ com_prazo_app: [ALEXA, "x"], sem_prazo: [ALEXA], gravado_em: new Date().toISOString() }) });
+    t.setState(ALEXA, state("To-do list", F3));
+    ha.subs[0].onEvent({ items: [{ uid: "a1", summary: "Pão", status: "needs_action" }] });
+    const l = t.index(NOW).lists[0];
+    assert.deepEqual([l.features, l.appDue, l.info], [F3 | TODO_F.DUE_DATE | TODO_F.DUE_DATETIME, true, null]);
+    ha.sent.length = 0;
+    assert.deepEqual(await t.add(ALEXA, { summary: "Trocar o filtro", date: "2026-11-05", time: "15:00" }), { prazo: "2026-11-05T15:00:00" });
+    assert.deepEqual(ha.sent.filter((m) => m.service === "add_item").at(-1).service_data, { item: "Trocar o filtro" }, "no date for Home Assistant");
+    assert.deepEqual(await t.add(ALEXA, { summary: "Comprar pão", date: "2026-11-06" }), { prazo: "2026-11-06" });
+    assert.deepEqual(await t.add(ALEXA, { summary: "Sem data" }), {});
+    // Controlar prazos off there: no deadline, as before
+    const off = make({ app: appFile({ com_prazo_app: [ALEXA], prazos: false, gravado_em: new Date().toISOString() }) });
+    off.t.setState(ALEXA, state("To-do list", F3));
+    assert.equal(off.t.index(NOW).lists[0].appDue, undefined);
+    await assert.rejects(off.t.add(ALEXA, { summary: "X", date: "2026-11-05" }), { code: "not_supported" });
+  });
+
   it("tasks kept by Levar para o ResolvIA are left out", () => {
     const { t } = setup();
     const ix = t.index(NOW, [], { exclude: new Set(["todo.casa|t1", "todo.casa|t2"]) });

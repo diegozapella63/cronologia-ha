@@ -163,6 +163,9 @@ export class Todos {
           // prazos_app: the deadlines the ResolvIA keeps for the lists whose integration takes no date (2.58.0+):
           // {list: {task key: "AAAA-MM-DD" | "AAAA-MM-DDTHH:MM:SS"}}
           prazosApp: cleanDues(j.prazos_app),
+          // com_prazo_app: the lists whose deadline the ResolvIA keeps (2.59.0+): Adicionar › Tarefa offers one there
+          // and sends it in resolvia_comodo (Home Assistant takes no date in them)
+          comPrazoApp: Array.isArray(j.com_prazo_app) ? j.com_prazo_app.filter(isTodo) : [],
           pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {},
           // repete: how often each task comes back in the ResolvIA ({list: {uid: days}}), 2.9.1 or newer
           repete: j.repete && typeof j.repete === "object" ? j.repete : {},
@@ -207,9 +210,11 @@ export class Todos {
       // A list without dates whose deadlines the ResolvIA keeps (prazos_app, 1.72.0): its open tasks get them
       const kept = !allOff && app && app.prazosApp[id];
       if (kept) all = all.map((i) => (i.status !== "completed" && !i.due && kept[taskKey(i.summary)] ? { ...i, due: kept[taskKey(i.summary)] } : i));
-      const info = kept ? null : !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : allOff || turnedOff.has(id) ? "resolvia" : null;
+      // the screen sees the dates on in a list whose deadline the ResolvIA keeps (appDue: the date goes to the ResolvIA)
+      const appDue = this.appDue(id, app);
+      const info = kept || appDue ? null : !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : allOff || turnedOff.has(id) ? "resolvia" : null;
       const withDue = info ? [] : all.filter((i) => i.due && i.status !== "completed");
-      lists.push({ id, name, features, info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
+      lists.push({ id, name, features: appDue ? features | TODO_F.DUE_DATE | TODO_F.DUE_DATETIME : features, ...(appDue ? { appDue: true } : {}), info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
       if (off.has(id)) continue;
       if (undated) {
         // Agora › tasks without a due date (or whose dates aren't deadlines), pending only
@@ -305,11 +310,20 @@ export class Todos {
     return i ? i.summary || "" : "";
   }
 
-  /** New task with a due date (todo.add_item). */
+  /** Whether the ResolvIA keeps the deadline of a list (it takes no date): com_prazo_app, with Controlar prazos on. */
+  appDue(id, app = this.app()) {
+    return !!app && app.prazos !== false && app.comPrazoApp.includes(id);
+  }
+
+  /**
+   * New task with a due date (todo.add_item). In a list whose deadline the ResolvIA keeps, the date doesn't go to
+   * Home Assistant: it comes back ({prazo}) for the resolvia_comodo event.
+   */
   async add(id, { summary, date, time, description }) {
     const st = this.states.get(id);
     if (!isTodo(id) || !st) throw coded("invalid_format", "Escolha uma lista");
-    const f = Number((st.attributes && st.attributes.supported_features) || 0);
+    const appDue = this.appDue(id);
+    const f = Number((st.attributes && st.attributes.supported_features) || 0) | (appDue ? TODO_F.DUE_DATE | TODO_F.DUE_DATETIME : 0);
     if (!(f & TODO_F.CREATE)) throw coded("not_supported", "Essa lista não aceita tarefas novas");
     const text = String(summary || "").trim().slice(0, 255);
     if (!text) throw coded("invalid_format", "Dê um nome à tarefa");
@@ -327,8 +341,14 @@ export class Todos {
     }
     const notes = String(description || "").trim().slice(0, 4000);
     if (notes && f & TODO_F.DESCRIPTION) data.description = notes;
+    const prazo = appDue ? data.due_datetime || data.due_date || null : null;
+    if (appDue) {
+      delete data.due_date;
+      delete data.due_datetime;
+    }
     await this.ha.send({ type: "call_service", domain: "todo", service: "add_item", service_data: data, target: { entity_id: id } });
     this.refresh(id);
+    return prazo ? { prazo: prazo.replace(" ", "T") } : {};
   }
 
   /** Marks an item done (or open again) in Home Assistant. */
