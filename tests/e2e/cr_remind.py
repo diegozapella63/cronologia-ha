@@ -55,7 +55,7 @@ async def main():
         await fld.locator(".remind-test").click()
         await wait_for(lambda: any(n.get("data", {}).get("tag") == "cronologia-placar-teste" for n in st.notifications()), "Testar sends it now")
         t = [n for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-teste"][-1]
-        check(t["service"] == "mobile_app_pixel_8" and t["title"] == "🏆 Placar" and t["message"].startswith("Davi na frente por 10 pontos: Davi 30 × Aurora 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
+        check(t["service"] == "mobile_app_pixel_8" and t["title"] == "CronologIA · 🏆 Placar" and t["message"].startswith("Davi na frente por 10 pontos: Davi 30 × Aurora 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
         # 1.54.0: the app says it by the person, never the device
         # the toast comes when the answer reaches the screen, a moment after Home Assistant gets the notification
         try:
