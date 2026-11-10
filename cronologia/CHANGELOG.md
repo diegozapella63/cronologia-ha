@@ -1,4 +1,16 @@
-# Changelog
+# Mudanças
+
+## 1.64.0
+
+- **O mesmo jeito em todos os apps da família**:
+  - O botão do meio da barra de baixo agora se chama **Adicionar** (no computador, o botão no alto também), e a janela que ele abre também.
+  - **Configurações** fica com as quatro abas de todos os apps: **Integrações**, **Dados**, **Aparência** e **Opções**. Os ajustes de **Recompensas** (Usar recompensas, quem participa, lembrete diário e deméritos) viraram uma linha do **Mais**, com a tela deles, entre Rotinas e Avisos.
+  - Em Integrações, o bloco da IA se chama **IA do Home Assistant**.
+  - **Dados** na ordem de todos os apps: Exportar, Backup na pasta share, Importar (o arquivo do app e o **.ics** no mesmo lugar), Versões anteriores, Onde ficam os dados e **Começar do zero**, novo: **Apagar tudo** (depois de confirmar) apaga as marcações de Tomei, Paguei e Feito e o placar; os eventos, os calendários, as pessoas, os deméritos e as preferências continuam, e uma cópia fica em Versões anteriores.
+  - O que fica recolhido diz o nome e quantos são: **Tomados (2)**, **Concluídas (3)**, **Próximas rotinas (4)**, igual aberto ou fechado.
+  - **Lembrete diário**: **Testar no meu celular**, com a largura toda, embaixo.
+  - **Conversa**: **Nova conversa** começa outra.
+- **Aparência**: uma cor gravada que não seja da paleta (de uma versão antiga) vira a mais parecida dela.
 
 ## 1.63.0
 

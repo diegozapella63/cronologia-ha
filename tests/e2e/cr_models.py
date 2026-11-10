@@ -77,17 +77,20 @@ async def main():
             check("atrasado" in await a.locator(".brand-head .status").inner_text(), "status line warns about the late dose")
         check(await a.locator(".meds-who", has_text="Aurora").count() == 1 and await a.locator(".meds-who", has_text="Mimi").count() == 1, "doses grouped by who takes them (people and pets)")
         check("Sem celular para Mimi" in await a.locator(".panel.meds .panel-foot").inner_text(), "warns when a person has no phone for the alerts")
-        # phone alert for the late dose, then "Tomei" pressed on the phone
-        await wait_for(lambda: any("Mounjaro" in n.get("title", "") for n in get("http://127.0.0.1:8123/dev/notifications")), "late alert sent to Aurora's phone (auto-detected)", tries=120)
-        n = next(n for n in get("http://127.0.0.1:8123/dev/notifications") if "Mounjaro" in n.get("title", ""))
-        check(n["service"] == "mobile_app_galaxy_s23" and [x["title"] for x in n["data"]["actions"]] == ["Tomei", "Adiar 15 min"], f"alert has Tomei / Adiar buttons ({n['service']})")
+        # phone alert for the late dose, then "Tomei" pressed on the phone (right after midnight the sample dose
+        # an hour before now is yesterday's: no late alert to see)
         for el in (a, bb): await el.evaluate("(e) => { e._medsDoneOpen = true; e.requestUpdate(); }")  # 1.59.0: the taken doses are folded
-        fire("mobile_app_notification_action", {"action": n["data"]["actions"][0]["action"]})
-        async def taken_mj():
-            return "tomou" in await bb.locator(".dose", has_text="Mounjaro").inner_text()
-        await wait_for(taken_mj, "Tomei on the phone marks the dose on every screen")
-        await wait_for(lambda: any(x.get("message") == "clear_notification" for x in get("http://127.0.0.1:8123/dev/notifications")), "alert removed from the phone after taking")
-        check(await a.locator(".meds-alert", has_text="Mounjaro").count() == 0, "no more warning for Mounjaro")
+        late = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3))).hour >= 1
+        if late:
+            await wait_for(lambda: any("Mounjaro" in n.get("title", "") for n in get("http://127.0.0.1:8123/dev/notifications")), "late alert sent to Aurora's phone (auto-detected)", tries=120)
+            n = next(n for n in get("http://127.0.0.1:8123/dev/notifications") if "Mounjaro" in n.get("title", ""))
+            check(n["service"] == "mobile_app_galaxy_s23" and [x["title"] for x in n["data"]["actions"]] == ["Tomei", "Adiar 15 min"], f"alert has Tomei / Adiar buttons ({n['service']})")
+            fire("mobile_app_notification_action", {"action": n["data"]["actions"][0]["action"]})
+            async def taken_mj():
+                return "tomou" in await bb.locator(".dose", has_text="Mounjaro").inner_text()
+            await wait_for(taken_mj, "Tomei on the phone marks the dose on every screen")
+            await wait_for(lambda: any(x.get("message") == "clear_notification" for x in get("http://127.0.0.1:8123/dev/notifications")), "alert removed from the phone after taking")
+            check(await a.locator(".meds-alert", has_text="Mounjaro").count() == 0, "no more warning for Mounjaro")
         # Tomei in the app + Desfazer (the cat's: "Tomado", not "Tomei")
         gb = a.locator(".dose", has_text="Gardenal").locator(".dose-btn")
         check((await gb.inner_text()).strip() == "Tomado" and await gb.get_attribute("aria-label") == "Mimi tomou: Gardenal", f"someone else's dose: Tomado ({(await gb.inner_text()).strip()})")
@@ -96,12 +99,12 @@ async def main():
         await a.locator(".dose", has_text="Gardenal").locator(".dose-btn").click()
         async def g_taken(): return await a.locator(".dose.tomado", has_text="Gardenal").count() == 1
         await wait_for(g_taken, "Tomei in the app")
-        await wait_for(lambda: len(json.load(open(f"{data}/cronologia.json"))["checks"]) == 2, "checks saved on the server")
+        await wait_for(lambda: len(json.load(open(f"{data}/cronologia.json"))["checks"]) == (2 if late else 1), "checks saved on the server")
         await a.locator(".toast button", has_text="Desfazer").click()
         async def g_open(): return await a.locator(".dose.tomado", has_text="Gardenal").count() == 0
         await wait_for(g_open, "Desfazer unmarks the dose")
         # sensors in Home Assistant
-        await wait_for(lambda: state("sensor.cronologia_remedios_hoje")["attributes"]["tomados"] == 1, "sensor.cronologia_remedios_hoje published")
+        await wait_for(lambda: state("sensor.cronologia_remedios_hoje")["attributes"]["tomados"] == (1 if late else 0), "sensor.cronologia_remedios_hoje published")
         check(state("binary_sensor.cronologia_remedio_atrasado")["state"] in ("on", "off") and state("sensor.cronologia_manutencoes_vencidas")["state"] == "1", "remedio_atrasado and manutencoes_vencidas sensors")
         # event sheet of a dose
         await a.locator(".dose", has_text="Sertralina").locator(".dose-main").click(); await A.wait_for_timeout(300)

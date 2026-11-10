@@ -102,7 +102,7 @@ async def main():
         check("Trabalho" in names and "Pessoal" in names, "back on in Mais: back on the sidebar")
         # Novo (at the top right, like the InventarIA): a window in the middle
         check(await side.locator(".side-add").count() == 0, "no Novo on the sidebar: it is at the top right")
-        await a.locator(".top-acts .btn.primary", has_text="Novo").click(); await pg.wait_for_timeout(600)
+        await a.locator(".top-acts .btn.primary", has_text="Adicionar").click(); await pg.wait_for_timeout(600)
         sh = await a.locator(".sheet").bounding_box()
         check(sh and sh["y"] > 10 and sh["y"] + sh["height"] < 795 and abs((sh["x"] + sh["width"] / 2) - (272 + (1200 - 272) / 2)) < 4, f"Novo opens in the middle of the page ({sh})")
         await pg.screenshot(path=f"{SP}/shots/crdk-novo.png")
@@ -115,7 +115,7 @@ async def main():
         bg = await a.locator(".panel.meds").evaluate("e => getComputedStyle(e).backgroundColor")
         check(bg in ("rgba(0, 0, 0, 0)", "transparent"), f"sections, not cards ({bg})")
         acts = [t.strip() for t in await a.locator(".top-acts .btn").all_inner_texts()]
-        check(acts[-1] == "Novo" and await a.locator(".top-acts .mic-top:not(.chat-top)").count() == 1, f"top right: Falar and the actions ({acts})")
+        check(acts[-1] == "Adicionar" and await a.locator(".top-acts .mic-top:not(.chat-top)").count() == 1, f"top right: Falar and the actions ({acts})")
         await pg.screenshot(path=f"{SP}/shots/crdk-agora.png")
         # the phone stays the same
         await pg.set_viewport_size({"width": 390, "height": 844}); await pg.wait_for_timeout(700)

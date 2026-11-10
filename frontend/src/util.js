@@ -18,6 +18,33 @@ export const PALETTE = [
 const AUTO = ["turquesa", "lilas", "laranja", "verde", "rosa", "azul", "ouro", "coral", "menta", "indigo", "vermelho", "grafite"];
 
 export const colorById = (id) => PALETTE.find((c) => c.id === id);
+
+/**
+ * A saved color that is not of the palette (an old #hex, the name of a color of another app) becomes the nearest
+ * one of the palette (one palette in all the apps of the family); unknown: null.
+ */
+export function nearestColor(v) {
+  if (!v || typeof v !== "string") return null;
+  const id = v.trim().toLowerCase();
+  const byId = colorById(id) || PALETTE.find((c) => c.label.toLowerCase() === id || c.id === id.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+  if (byId) return byId;
+  const m = /^#?([0-9a-f]{6})$/i.exec(id);
+  if (!m) return null;
+  const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [r, g, b] = rgb(m[1]);
+  let best = null;
+  let dist = Infinity;
+  for (const c of PALETTE) {
+    const [r2, g2, b2] = rgb(c.fill.slice(1));
+    // weighted for the eye (a bit more for green, less for blue)
+    const d = 2 * (r - r2) ** 2 + 4 * (g - g2) ** 2 + 3 * (b - b2) ** 2;
+    if (d < dist) {
+      dist = d;
+      best = c;
+    }
+  }
+  return best;
+}
 export const autoColor = (i) => colorById(AUTO[i % AUTO.length]);
 
 export function hexToRgba(hex, alpha) {

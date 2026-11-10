@@ -273,6 +273,15 @@ export class Store {
     return this.data;
   }
 
+  /**
+   * Começar do zero (Mais › Configurações › Dados): the marks (Tomei, Paguei, Feito) and the placar (points,
+   * prizes, history, Extrato) go; the calendars, the settings (people, deméritos too), what was sent and what the
+   * vacation changed in the calendars (to bring it back) stay. A copy goes to Versões anteriores first.
+   */
+  resetAll() {
+    return this.replaceAll({ ...this.data, checks: {}, score: null }, "antes-de-zerar");
+  }
+
   /** Keeps only the newest MAX_VERSIONS copies in /data/versoes. */
   trimVersions() {
     try {

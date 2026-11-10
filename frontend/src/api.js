@@ -359,6 +359,11 @@ export class Api {
     return this.call("cronologia/backups/restore", { name });
   }
 
+  /** Mais › Configurações › Dados › Começar do zero. */
+  resetData() {
+    return this.call("cronologia/data/reset");
+  }
+
   addTodo(entityId, task) {
     return this.call("cronologia/todo/add", { entity_id: entityId, task });
   }

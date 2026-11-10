@@ -70,7 +70,7 @@ async def main():
             if name != "Treinamento de vendas": await close()
         # (its sheet stays open) Duplicar a read-only one: a copy in a calendar that creates
         await sheet.locator(".btn", has_text="Duplicar").click(); await A.wait_for_timeout(500)
-        check(await sheet.locator("h3").first.inner_text() == "Novo" and await sheet.locator(".ev-title-input").input_value() == "Treinamento de vendas", "Duplicar opens Novo with it filled in")
+        check(await sheet.locator("h3").first.inner_text() == "Adicionar" and await sheet.locator(".ev-title-input").input_value() == "Treinamento de vendas", "Duplicar opens Novo with it filled in")
         on = (await sheet.locator(".pick.list.on").inner_text()).strip()
         check(on in ["Casa", "Pessoal", "Remédios", "Trabalho"], f"in a calendar that creates and can be edited later, not CalDAV or Google ({on})")
         await sheet.locator(".pick.list", has_text="Pessoal").click()

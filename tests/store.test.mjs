@@ -650,6 +650,29 @@ describe("Store: versions and replaceAll (import, restore)", () => {
     assert.match(v[0], /-antes-de-importar\.json$/);
     assert.equal(JSON.parse(fs.readFileSync(path.join(dir, "versoes", v[0]), "utf8")).app.accent, "azul");
   });
+  it("resetAll (Começar do zero, 1.64.0): the marks and the placar go; calendars, settings, alerts sent and vacation stay; a copy first", () => {
+    const s = fresh();
+    s.setCalendar("calendar.casa", { name: "Casa", color: "laranja" });
+    s.setApp({ accent: "azul", demerits: [{ id: "toalha01", title: "Toalha molhada", points: 5 }] });
+    s.markSent("dose", "on", ["mobile_app_a"]);
+    s.data.checks = { k: { at: new Date(NOW).toISOString(), by: "Ana" } };
+    s.data.away_cal = { splits: [{ cal: "calendar.casa", uid: "u1", starts: ["20261101"] }], moved: [] };
+    s.data.score.entries = [{ key: "a", at: new Date(NOW).toISOString(), who: "Ana", points: 3, title: "Lixo" }];
+    s.data.score.history = [{ key: "2026-10-26", winner: "Ana" }];
+    s.flush();
+    const out = s.resetAll();
+    assert.equal(out, s.data);
+    assert.deepEqual([s.data.checks, s.data.score.entries, s.data.score.history, s.data.score.log], [{}, [], [], []]);
+    assert.deepEqual(s.data.calendars, { "calendar.casa": { name: "Casa", color: "laranja" } });
+    assert.equal(s.data.app.accent, "azul");
+    assert.equal(s.data.app.demerits.length, 1, "the deméritos are settings: they stay");
+    assert.deepEqual(Object.keys(s.data.sent), ["dose"]);
+    assert.equal(s.data.away_cal.splits.length, 1, "what the vacation changed in the calendars stays, to bring it back");
+    const v = versions();
+    assert.match(v[v.length - 1], /-antes-de-zerar\.json$/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, "versoes", v[v.length - 1]), "utf8")).score.entries.length, 1, "the copy has the old placar");
+    assert.deepEqual(onDisk().checks, {}, "written right away");
+  });
   it("replaceAll with garbage gives an empty app (but never throws)", () => {
     const s = fresh();
     s.setApp({ accent: "azul" });

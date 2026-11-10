@@ -1,22 +1,23 @@
 // Where each screen lives (the path is kept in history.state, not in the address bar).
-// Mais is a menu, like the InventarIA: Calendários, Rotinas, Avisos and Férias, each its own
-// screen, then Configurações, with its tabs (Integrações, Recompensas, Dados, Aparência, Opções), and Sobre last.
-// The tab Recompensas (the placar) keeps the key "placar" (/config/placar).
+// Mais is a menu, like the InventarIA: Calendários, Rotinas, Recompensas, Avisos and Férias, each its own
+// screen, then Configurações, with its tabs (Integrações, Dados, Aparência, Opções: the same four in every app
+// of the family), and Sobre last. The settings of Recompensas were a tab of Configurações until 1.64.0
+// (/config/placar, before that /mais/placar): those addresses open Mais › Recompensas.
 
 /** The rows of Mais, in order: [key, path, title, icon, the line under the title]. */
 export const MENU = [
   ["calendarios", "/mais/calendarios", "Calendários", "layers", "Nome, cor e quais aparecem na agenda."],
   ["rotinas", "/mais/rotinas", "Rotinas", "repeat", "Rotinas, remédios, manutenções e contas cadastrados."],
+  ["recompensas", "/mais/recompensas", "Recompensas", "trophy", "Placar, prêmio, deméritos e lembrete."],
   ["avisos", "/mais/avisos", "Avisos", "bell-ring", "Avisos de remédio no celular, pessoas e pets."],
   ["ferias", "/mais/ferias", "Férias", "plane", "Rotinas, tarefas e manutenção pausadas; remédios continuam."],
-  ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, recompensas, dados, aparência e opções."],
+  ["config", "/config", "Configurações", "sliders-horizontal", "Integrações, dados, aparência e opções."],
   ["sobre", "/mais/sobre", "Sobre", "info", "CorrerIA Code, os apps e o GitHub."],
 ];
 
 /** The tabs of Mais › Configurações: [key, label, icon]. The first one is /config. */
 export const CONFIG_TABS = [
   ["integracoes", "Integrações", "blocks"],
-  ["placar", "Recompensas", "trophy"],
   ["dados", "Dados", "archive"],
   ["aparencia", "Aparência", "palette"],
   ["opcoes", "Opções", "toggle-right"],
@@ -28,9 +29,10 @@ const TABS = CONFIG_TABS.map(([k]) => k);
 /**
  * The screen of a path: {name: "now" | "calendar" | "rewards" | "routines" | "more", tab?, config?}.
  * routines (/rotinas): the Rotinas of Mais as a tab of the bottom bar, in place of Recompensas when it is off.
- * In Mais, tab is "menu", a screen of the menu (calendarios, rotinas, avisos, ferias, sobre) or, with
- * config: true, a tab of Configurações. Old addresses still work: /mais/integracoes, /mais/placar (and
- * the other tabs that moved to Configurações) and /agendas (the Agendas page, later Mais › Calendários).
+ * In Mais, tab is "menu", a screen of the menu (calendarios, rotinas, recompensas, avisos, ferias, sobre) or,
+ * with config: true, a tab of Configurações. Old addresses still work: /mais/integracoes (and the other tabs
+ * that moved to Configurações), /config/placar and /mais/placar (Mais › Recompensas) and /agendas (the Agendas
+ * page, later Mais › Calendários).
  */
 export function viewOf(path) {
   const p = (path || "").replace(/\/+$/, "");
@@ -40,6 +42,7 @@ export function viewOf(path) {
   if (p === "/agendas") return { name: "more", tab: "calendarios" };
   if (p === "/config") return { name: "more", tab: TABS[0], config: true };
   const m = /^\/(mais|config)\/([a-z]+)$/.exec(p);
+  if (m && m[2] === "placar") return { name: "more", tab: "recompensas" };
   if (m && TABS.includes(m[2])) return { name: "more", tab: m[2], config: true };
   if (m && m[1] === "config") return { name: "more", tab: TABS[0], config: true };
   if (m && SCREENS.includes(m[2])) return { name: "more", tab: m[2] };

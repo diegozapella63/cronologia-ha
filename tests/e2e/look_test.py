@@ -83,7 +83,7 @@ async def run(app):
                 if app == "cronologia" and scheme == "dark":
                     await config_tab(root, "Opções"); await pg.wait_for_timeout(500)
                     oh = [h.strip() for h in await root.locator(".mais-head h2").all_inner_texts()]
-                    check(oh == ["Novo", "Semana"], f"CronologIA: Opções tab with Novo and Semana ({oh})")
+                    check(oh == ["Adicionar", "Semana"], f"CronologIA: Opções tab with Adicionar and Semana ({oh})")
                     await root.locator(".week-seg button", has_text="Segunda").click(); await pg.wait_for_timeout(500)
                     check(stored().get("week_start") == 1, "CronologIA: week start saved from Opções")
                     await pg.screenshot(path=f"{SP}/shots/look-cronologia-opcoes.png")

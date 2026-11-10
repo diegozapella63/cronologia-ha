@@ -7,7 +7,7 @@ Um App do Home Assistant que mostra os **calendários nativos** (`calendar.*`) n
 <p align="center">
   <img src="docs/agora.png" width="24%" alt="Hoje: os remédios de cada pessoa e do pet, com uma dose atrasada">
   <img src="docs/recompensas.png" width="24%" alt="Recompensas: quem venceu a semana passada, o placar e o prêmio">
-  <img src="docs/remedio.png" width="24%" alt="Novo › Remédio: dose, quem toma e horários">
+  <img src="docs/remedio.png" width="24%" alt="Adicionar › Remédio: dose, quem toma e horários">
   <img src="docs/contas.png" width="24%" alt="Contas a pagar do GerencIA com o Paguei">
 </p>
 <p align="center">
@@ -34,8 +34,8 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 
 - **Agora**, só o dia de hoje: os **remédios de hoje** de cada pessoa e pet (dose, quem toma; o atrasado em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os de dia todo, a **rotina e a manutenção da casa** e as **tarefas** com prazo.
 - **Calendário** por **mês, semana, 3 dias, dia ou lista**, com busca do último ano ao próximo. Toque num horário vazio para criar um evento ali.
-- **Modelos** em Novo: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** (com período do dia, cômodos, **Pular** e a que volta N dias depois de feita) e **Manutenção** contada a partir da última vez, com um ou vários equipamentos.
-- **Tarefas do ResolvIA**: as tarefas com prazo das listas do Home Assistant aparecem na Agora e no calendário, o **Concluir** daqui conclui lá, e **Novo › Tarefa** cria a tarefa numa lista, com cômodos. As **manutenções e rotinas** podem ir para uma lista do ResolvIA: concluir lá vale como feito aqui, com os pontos.
+- **Modelos** em Adicionar: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** (com período do dia, cômodos, **Pular** e a que volta N dias depois de feita) e **Manutenção** contada a partir da última vez, com um ou vários equipamentos.
+- **Tarefas do ResolvIA**: as tarefas com prazo das listas do Home Assistant aparecem na Agora e no calendário, o **Concluir** daqui conclui lá, e **Adicionar › Tarefa** cria a tarefa numa lista, com cômodos. As **manutenções e rotinas** podem ir para uma lista do ResolvIA: concluir lá vale como feito aqui, com os pontos.
 - **Cômodos e equipamentos** do [InventarIA](https://github.com/diegozapella63/inventario-ha), pelo ResolvIA: etiquetas curtas nas rotinas, manutenções e tarefas.
 - **Recompensas**: placar da casa com pontos por tarefa feita, **deméritos** que tiram pontos, pontos avulsos, quem está na frente, o prêmio da semana (ou do mês), o histórico de quem venceu e um **lembrete diário** no celular com quem está ganhando (o toque abre as Recompensas).
 - **Férias**: de quando até quando rotinas, tarefas, deméritos e manutenção ficam pausados (os remédios continuam), com um card na Agora para ninguém achar que sumiu tudo.
@@ -49,8 +49,8 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Criar, editar e apagar** nos calendários que permitem, com **repetição** (só este ou este e os próximos) e **Desfazer**.
 - **Arquivos .ics**: importar convites e exportar os calendários.
 - **Sensores** de remédios e manutenção, e o evento `cronologia_feito` para automações e etiquetas NFC.
-- **Dados**: exportar em ZIP, CSV ou JSON, backup em `share/cronologia`, importar e versões anteriores automáticas.
-- **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada um, sincronizados entre aparelhos), Rotinas, Avisos, Férias, Configurações (Integrações, Placar, Dados, Aparência e Opções) e **Sobre**.
+- **Dados**: exportar em ZIP, CSV ou JSON, backup em `share/cronologia`, importar, versões anteriores automáticas e começar do zero.
+- **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada um, sincronizados entre aparelhos), Rotinas, Recompensas, Avisos, Férias, Configurações (Integrações, Dados, Aparência e Opções) e **Sobre**.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Celular e computador**: feito para o celular; com a tela larga, barra lateral com um mês pequeno e os calendários.
 - **Tema claro e escuro** seguindo o Home Assistant, e a **Cor do dia**: a cor do app muda todo dia (ou fica fixa na que você escolher).

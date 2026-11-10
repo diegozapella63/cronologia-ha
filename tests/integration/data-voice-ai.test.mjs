@@ -122,6 +122,22 @@ describe("Mais › Dados: import, versions, backups", () => {
     await assert.rejects(c.call("cronologia/backups/restore", { name: "cronologia-1999-01-01-0000.zip" }), { code: "not_found" });
     await assert.rejects(c.call("cronologia/backups/restore", { name: "x.zip" }), { code: "invalid_format" });
   });
+  it("Começar do zero (1.64.0): the marks and the placar go, the settings stay, a version of before kept", async () => {
+    await c.call("cronologia/score/extra", { who: "Davi", points: 7, title: "Lavou o carro" });
+    const before = await c.call("cronologia/bootstrap");
+    const pushed = [];
+    await c.subscribe("cronologia/prefs/subscribe", {}, (p) => pushed.push(p));
+    const counts = await c.call("cronologia/data/reset");
+    assert.deepEqual([counts.points, counts.checks], [0, 0]);
+    await waitFor(() => pushed.length, { what: "the screens get the news" });
+    const after = await c.call("cronologia/bootstrap");
+    assert.equal(after.prefs.app.accent, before.prefs.app.accent, "the settings stay");
+    assert.deepEqual(after.prefs.app.score.participants, ["Davi"], "who plays stays");
+    const exported = await (await fetch(`${stack.url}/api/export/json`)).json();
+    assert.deepEqual([exported.checks, exported.score.entries], [{}, []]);
+    const v = (await c.call("cronologia/versions/list")).find((x) => x.reason === "antes-de-zerar");
+    assert.ok(v && v.points >= 1, "the copy of before has the points");
+  });
 });
 
 describe("Falar", () => {

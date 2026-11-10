@@ -138,8 +138,8 @@ async def main():
                 await open_more(a, "Recompensas")
                 rt = a.locator(".pickf.remind-time")
                 await rt.scroll_into_view_if_needed()
-                hb = [(await x.bounding_box())["height"] for x in (rt, a.locator(".remind-test"))]
-                check(await value(rt) == "20:00" and abs(hb[0] - hb[1]) < 1, f"{k}: Lembrete diário: 20:00, as tall as Testar ({hb})")
+                hb = [await x.bounding_box() for x in (rt, a.locator(".remind-test"))]
+                check(await value(rt) == "20:00" and abs(hb[0]["width"] - hb[1]["width"]) < 1 and hb[1]["y"] > hb[0]["y"], f"{k}: Lembrete diário: 20:00; Testar no meu celular below, as wide")
                 # Mais › Calendários: the hidden ones last, folded
                 await open_more(a, "Calendários")
                 for nm in ("Trabalho", "Pessoal"):
@@ -168,7 +168,7 @@ async def main():
         pg.on("pageerror", lambda e: errs.append(str(e)))
         await pg.goto(URL); await pg.wait_for_timeout(1800)
         a = pg.locator("cronologia-app")
-        await a.locator(".top-acts .btn.primary", has_text="Novo").click(); await pg.wait_for_timeout(600)
+        await a.locator(".top-acts .btn.primary", has_text="Adicionar").click(); await pg.wait_for_timeout(600)
         start = field_of(a.locator(".sheet"), "Começa")
         await start.click(); await pg.wait_for_timeout(400)
         sb = await pg.locator(".wp.in .ss-sheet").bounding_box()

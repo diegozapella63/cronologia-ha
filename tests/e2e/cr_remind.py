@@ -39,7 +39,8 @@ async def main():
         check("Vai para o celular de Davi e Aurora." in hint, f"whose phones ({hint})")
         await fld.screenshot(path=f"{SP}/shots/crrm-field.png")
         bx = [await fld.locator(sel).bounding_box() for sel in (".pickf.remind-time", ".remind-test")]
-        check(abs(bx[0]["height"] - bx[1]["height"]) < 1 and abs(bx[0]["y"] - bx[1]["y"]) < 1, f"the time and Testar side by side, the same height ({[round(x['height']) for x in bx]})")
+        tt = (await fld.locator(".remind-test").inner_text()).strip()
+        check(tt == "Testar no meu celular" and abs(bx[0]["width"] - bx[1]["width"]) < 1 and bx[1]["y"] >= bx[0]["y"] + bx[0]["height"], f"1.64.0: Testar no meu celular, the whole width, below the time ({tt}, {[round(x['width']) for x in bx]})")
         # Testar no meu celular (Davi's)
         await fld.locator(".remind-test").click()
         await wait_for(lambda: any(n.get("data", {}).get("tag") == "cronologia-placar-teste" for n in st.notifications()), "Testar sends it now")

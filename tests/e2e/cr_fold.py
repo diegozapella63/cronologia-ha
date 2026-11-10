@@ -1,4 +1,4 @@
-# CronologIA 1.20.2/1.20.7: Rotina da casa folds the done ones; all done, it leaves Agora ("Mostrar concluídas (N)").
+# CronologIA 1.20.2/1.20.7: Rotina da casa folds the done ones; all done, it leaves Agora ("Concluídas (N)", 1.64.0).
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -40,12 +40,12 @@ async def main():
         check(await panel.locator(".chore.done").count() == 0, "the done one leaves the list (folded)")
         check(await panel.locator(".chore").count() == n - 1, "the others stay")
         fold = panel.locator(".done-fold")
-        check(await fold.count() == 1 and "Mostrar concluídas (1)" in await fold.inner_text() and await fold.get_attribute("aria-expanded") == "false", "Mostrar concluídas (1)")
+        check(await fold.count() == 1 and (await fold.inner_text()).strip() == "Concluídas (1)" and await fold.get_attribute("aria-expanded") == "false", "Concluídas (1), closed")
         check((await panel.locator(".chores-head small").first.inner_text()).startswith("1 de"), "the header still counts it")
         await A.screenshot(path=f"{SP}/shots/crf-folded.png")
         await fold.click(); await A.wait_for_timeout(300)
         check(await panel.locator(".chore.done").count() == 1 and first in await panel.locator(".chore.done").inner_text(), "a tap shows it")
-        check("Esconder concluídas" in await fold.inner_text() and await fold.get_attribute("aria-expanded") == "true", "and the button says Esconder")
+        check((await fold.inner_text()).strip() == "Concluídas (1)" and await fold.get_attribute("aria-expanded") == "true", "open: the same name, the chevron down")
         await A.screenshot(path=f"{SP}/shots/crf-open.png")
         # unchecking from there brings it back up
         await panel.locator(".chore.done .chk").first.click(); await A.wait_for_timeout(1200)

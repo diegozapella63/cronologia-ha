@@ -262,8 +262,11 @@ describe("data panel: Mais › Dados", () => {
     const v = p._renderDataPanel();
     assert.match(text(v), /Eventos \(CSV\).*Baixar CSV.*Agenda \(\.ics\).*Escolher.*Baixar JSON.*Baixar ZIP/);
     assert.match(text(v), /01\/11\/2026 às 09:05 3,0 MB · cronologia-2026-11-01\.zip Restaurar/);
-    // Versões anteriores says when the copies are made, like the InventarIA (store.js: every 10 min of use, before import/restore, 3 kept)
-    assert.match(text(v), /Versões anteriores Uma cópia a cada 10 minutos de uso e antes de importar ou restaurar\. Ficam as 3 mais recentes\./);
+    // Versões anteriores says when the copies are made, like the InventarIA (store.js: every 10 min of use, before import/restore/reset, 3 kept)
+    assert.match(text(v), /Versões anteriores Uma cópia a cada 10 minutos de uso e antes de importar, restaurar ou começar do zero\. Ficam as 3 mais recentes\./);
+    // 1.64.0: the sections in the order of all the apps of the family
+    const heads = [...render(v).html.matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1]);
+    assert.deepEqual(heads, ["Exportar", "Backup na pasta share", "Importar", "Versões anteriores", "Onde ficam os dados", "Começar do zero"]);
     click(v, "Escolher");
     assert.deepEqual(p.opened, ["export"]);
     assert.match(controls(v).find((c) => c.text === "Escolher .ics").attrs, /disabled/, "no calendar to write to: Importar eventos off");
@@ -325,6 +328,19 @@ describe("data panel: Mais › Dados", () => {
     q._confirmRestoreVersion({ name: "v", when: 0 });
     await q._form.run();
     assert.deepEqual(q.toasts, ["corrompido", "sumiu"]);
+  });
+  it("Começar do zero: asks first (Apagar tudo, in red), then the server; a failure says why", async () => {
+    const p = P({ resetData: { calendars: 3, points: 0, checks: 0 } });
+    click(p._renderDataPanel(), "Apagar tudo");
+    assert.equal(p._sheet, "confirm");
+    assert.deepEqual([p._form.title, p._form.label, p._form.danger], ["Começar do zero?", "Apagar tudo", true]);
+    assert.match(p._form.text, /Apaga as marcações \(Tomei, Paguei, Feito\) e o placar.*Os eventos ficam nos calendários.*Versões anteriores/);
+    await p._form.run();
+    assert.deepEqual([p.api.calls.map((c) => c[0]), p.toasts, p.haptics], [["resetData"], ["Pronto: começou do zero"], ["success"]]);
+    const q = P({ resetData: new Error("sem disco") });
+    q._confirmReset();
+    await q._form.run();
+    assert.deepEqual(q.toasts, ["Não consegui apagar. sem disco"]);
   });
   it("versions: loading, the list, none, an error", async () => {
     const p = P();

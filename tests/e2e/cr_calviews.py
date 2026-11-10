@@ -101,7 +101,7 @@ async def main():
         await A.evaluate(f"() => {{ const s = document.querySelector('cronologia-app').shadowRoot.querySelector('.tgrid-scroll'); s.scrollTop = {hour * HOUR_H - 120}; }}"); await A.wait_for_timeout(300)
         box = await col.bounding_box()
         await A.mouse.click(box["x"] + box["width"] / 2, box["y"] + hour * HOUR_H + 12); await A.wait_for_timeout(600)
-        check(await sheet.locator("h3").first.inner_text() == "Novo", "a tap on an empty hour opens Novo")
+        check(await sheet.locator("h3").first.inner_text() == "Adicionar", "a tap on an empty hour opens Adicionar")
         s_, e_ = await value(field_of(sheet, "Começa")), await value(field_of(sheet, "Termina"))
         check(await value(sheet.locator("#cr-date")) == D(1) and (s_, e_) == (f"{hour:02d}:00", f"{hour + 1:02d}:00"), f"on that day and hour ({D(1)} {s_}–{e_})")
         await A.screenshot(path=f"{SP}/shots/crcv-dia-novo.png")

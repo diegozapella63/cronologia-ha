@@ -142,10 +142,10 @@ async def main():
         await skip.click(); await A.wait_for_timeout(1500)
         toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
         check("pulado" in toast and "Desfazer" in toast, f"toast: pulado ({toast!r})")
-        # 1.59.0: taken or skipped, the dose leaves the list; Mostrar tomados opens them
+        # 1.59.0: taken or skipped, the dose leaves the list; Tomados (n) opens them (1.64.0: Nome (n), like all the apps)
         check(await meds.locator(".dose", has_text=name).count() == 0, "a skipped dose leaves the list")
         fold = meds.locator(".done-fold")
-        check(await fold.count() == 1 and "Mostrar tomados (1)" in await fold.inner_text(), f"Mostrar tomados (1) ({await fold.inner_text() if await fold.count() else ''})")
+        check(await fold.count() == 1 and (await fold.inner_text()).strip() == "Tomados (1)", f"Tomados (1) ({await fold.inner_text() if await fold.count() else ''})")
         await fold.click(); await A.wait_for_timeout(400)
         row = meds.locator(".dose.pulado")
         check(await row.count() == 1 and name in await row.inner_text() and "pulado" in await row.inner_text(), f"the row: pulado ({(await row.inner_text()).strip()[:60] if await row.count() else ''})")

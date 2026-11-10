@@ -27,6 +27,7 @@ import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, ope
 import {
   PALETTE,
   colorById,
+  nearestColor,
   autoColor,
   colorVars,
   hexToRgba,
@@ -386,7 +387,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   _accent() {
     if (this._accentDaily()) return colorOfDay(PALETTE, new Date(this._now || Date.now()));
-    return colorById(this._app("accent", "turquesa")) || colorById("turquesa");
+    return nearestColor(this._app("accent", "turquesa")) || colorById("turquesa");
   }
 
   /** Every calendar entity with its look and what it allows. */
@@ -411,7 +412,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         group: plat.label,
         icon: plat.icon,
         device: dev ? dev.name_by_user || dev.name : null,
-        color: colorById(p.color) || autoColor(i),
+        color: nearestColor(p.color) || autoColor(i),
         colorId: p.color || null,
         hidden: !!p.hidden,
         features,
@@ -1521,8 +1522,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     return html`<nav>
       <div class="tabs">
         ${tab("now", "", "Agora", "clock-3")} ${tab("calendar", "/calendario", "Calendário", "calendar-days")}
-        <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Novo evento">
-          <span class="pill">${icon("plus")}</span><span>Novo</span>
+        <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Adicionar">
+          <span class="pill">${icon("plus")}</span><span>Adicionar</span>
         </button>
         ${tab(...this._fourthTab())} ${tab("more", "/mais", "Mais", "ellipsis")}
       </div>
@@ -1554,7 +1555,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   /**
    * Computador (1000 px ou mais): a barra lateral no lugar das abas de baixo, como no
-   * InventarIA. O Novo, as seções, um mês pequeno para pular para um dia e os calendários
+   * InventarIA. O Adicionar, as seções, um mês pequeno para pular para um dia e os calendários
    * (tocar mostra ou esconde, como em Mais › Calendários).
    */
   _renderSide(view) {
@@ -1638,14 +1639,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     </header>`;
   }
 
-  /** Computador: the actions at the top right, like the InventarIA (Ler com IA, Novo). */
+  /** Computador: the actions at the top right, like the InventarIA (Ler com IA, Adicionar). */
   _renderTopActs() {
     const ai = this._aiOn() && this._ai && this._ai.ready;
     const onCal = this._view().name === "calendar";
     return html`<div class="top-acts">
       ${this._renderChatBtn()}${this._renderMicBtn()}
       ${ai ? html`<button class="btn outline sm" @click=${() => this._openImport("pick")}>${icon("scan-text")}Ler com IA</button>` : nothing}
-      <button class="btn primary sm" @click=${() => this._openForm({ date: onCal ? this._cursor : null })}>${icon("plus")}Novo</button>
+      <button class="btn primary sm" @click=${() => this._openForm({ date: onCal ? this._cursor : null })}>${icon("plus")}Adicionar</button>
     </div>`;
   }
 
@@ -2402,8 +2403,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   }
 
   /**
-   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/avisos, /mais/ferias, /mais/sobre) or Configurações
-   * (/config, /config/placar, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
+   * A screen of Mais (/mais/calendarios, /mais/rotinas, /mais/recompensas, /mais/avisos, /mais/ferias, /mais/sobre) or
+   * Configurações (/config, /config/dados, /config/aparencia, /config/opcoes), with "‹ Mais" at the top. The tabs of
    * Configurações replace the history entry, so Back goes to the menu.
    */
   _renderMore() {
@@ -2414,7 +2415,6 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     let status = null;
     if (v.config) {
       if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderMemoriaSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
-      else if (tab === "placar") body = this._renderScoreSettings();
       else if (tab === "dados") body = this._renderDataPanel();
       else if (tab === "aparencia") body = this._renderAppearance();
       else body = this._renderOptions();
@@ -2422,7 +2422,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       body = this._renderCatalog();
       const n = this._catalogCount();
       status = { text: n ? `${plural(n, "cadastro", "cadastros")}` : "Nada cadastrado ainda" };
-    } else if (tab === "avisos") body = this._renderAlertsPanel();
+    } else if (tab === "recompensas") body = this._renderScoreSettings();
+    else if (tab === "avisos") body = this._renderAlertsPanel();
     else if (tab === "ferias") body = this._renderAwayOptions(false);
     else if (tab === "sobre") body = aboutPage({ app: "CronologIA", version: this._version });
     else {
@@ -2449,7 +2450,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   _renderAppearance() {
     const daily = this._accentDaily();
-    const accent = daily ? this._accent().id : this._app("accent", "turquesa");
+    const accent = this._accent().id;
     return html`
       <div class="panel">
         ${this._secHead("contrast", "Tema", "Cada aparelho guarda a sua escolha.")}
@@ -2472,7 +2473,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const details = this._app("event_details", false) === true;
     return html`
       <div class="panel">
-        ${this._secHead("calendar-plus", "Novo")}
+        ${this._secHead("calendar-plus", "Adicionar")}
         <div class="row switch-row">
           <div class="grow"><div class="label">Local e notas</div><div class="hint" style="white-space:normal">${details
             ? "Ligado."
@@ -2542,7 +2543,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </div>
       <div class="ai-box">${icon("scan-text")}<span>${ai.ready
         ? "Com uma mensagem ou foto, a IA encontra os eventos, com data, horário e local. Você confere antes de criar."
-        : "Para ler mensagens e fotos, configure a Leitura por IA em Mais › Configurações › Integrações."}</span></div>`;
+        : "Para ler mensagens e fotos, configure a IA do Home Assistant em Mais › Configurações › Integrações."}</span></div>`;
   }
 
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
@@ -2620,7 +2621,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </div>`;
     if (!on) {
       return html`<div class="panel" id="leitura-ia">
-        ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens, prints e fotos.")}
+        ${this._secHead("sparkles", "IA do Home Assistant", "Encontra eventos em mensagens, prints e fotos.")}
         ${sw}
       </div>`;
     }
@@ -2636,7 +2637,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     }
     if (ai.reason) detail = `${detail} ${ai.reason}`.trim();
     return html`<div class="panel" id="leitura-ia">
-      ${this._secHead("sparkles", "Leitura por IA", "Encontra eventos em mensagens, prints e fotos, com a IA do Home Assistant.")}
+      ${this._secHead("sparkles", "IA do Home Assistant", "Encontra eventos em mensagens, prints e fotos.")}
       ${sw}
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>
       ${ents.length || sel
@@ -2813,7 +2814,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const dur = (toMin(f.end) - toMin(f.start) + 1440) % 1440;
     const overnight = !f.allDay && !f.endDate && toMin(f.end) <= toMin(f.start);
     return html`
-      ${this._sheetHead(f.mode === "add" ? "Novo" : "Editar evento")}
+      ${this._sheetHead(f.mode === "add" ? "Adicionar" : "Editar evento")}
       ${f.mode === "add" ? this._renderModelChips("") : nothing}
       ${f.mode === "add" && this._aiOn() ? this._renderImportTiles() : nothing}
       <label class="field">
@@ -2925,7 +2926,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const error = f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing;
     const thumbs = f.images && f.images.length ? html`<div class="thumbs">${f.images.map((img) => html`<img src=${img.url} alt="" />`)}</div>` : nothing;
     const aiHint = html`<div class="imp-error soft">${icon("sparkles")}<span>${ai.reason || "Para ler mensagens e fotos, o Home Assistant precisa de uma integração de IA com tarefa de IA."}
-      <button class="text-btn inline" @click=${() => this._goAiSettings()}>Ver Leitura por IA</button></span></div>`;
+      <button class="text-btn inline" @click=${() => this._goAiSettings()}>Ver IA do Home Assistant</button></span></div>`;
 
     if (f.step === "voice") return this._renderVoiceStep(toPick);
     if (f.step === "text") {

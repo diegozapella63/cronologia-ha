@@ -1,6 +1,6 @@
 // Inativos no fim, recolhidos (a regra de todos os apps da família): o que está desligado, oculto ou pausado de
 // propósito sai do meio da lista e vai para uma seção no fim dela, fechada até tocar, com o nome e quantos são
-// ("Ocultos (2)"). Fechada de novo a cada vez que o app abre; o mesmo jeito do "Mostrar tomados" da Agora.
+// ("Ocultos (2)"). Fechada de novo a cada vez que o app abre; o mesmo jeito do "Tomados (n)" da Agora.
 import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 

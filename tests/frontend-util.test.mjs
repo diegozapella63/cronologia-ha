@@ -5,6 +5,25 @@ import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import * as U from "../frontend/src/util.js";
 
+describe("util: nearestColor (1.64.0: one palette in every app; a saved color out of it becomes the nearest)", () => {
+  it("an id or a name of the palette is itself", () => {
+    assert.equal(U.nearestColor("azul").id, "azul");
+    assert.equal(U.nearestColor("Lilás").id, "lilas");
+    assert.equal(U.nearestColor("indigo").id, "indigo");
+  });
+  it("a #hex becomes the nearest color of the palette", () => {
+    assert.equal(U.nearestColor("#62B5FF").id, "azul");
+    assert.equal(U.nearestColor("#1e88e5").id, "azul");
+    assert.equal(U.nearestColor("#ff0000").id, "vermelho");
+    assert.equal(U.nearestColor("#9e9e9e").id, "grafite");
+    assert.equal(U.nearestColor("#4caf50").id, "verde");
+    assert.equal(U.nearestColor("ff77a9").id, "rosa");
+  });
+  it("anything else: null (the app falls back to its default)", () => {
+    for (const v of ["", null, undefined, 3, "roxo", "#12"]) assert.equal(U.nearestColor(v), null, String(v));
+  });
+});
+
 describe("util: colors", () => {
   it("palette, colorById, autoColor cycles", () => {
     assert.equal(U.PALETTE.length, 12);

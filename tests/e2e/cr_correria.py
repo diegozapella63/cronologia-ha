@@ -64,13 +64,13 @@ async def main():
         check(await lixo_row.count() == 1 and "done" not in (await lixo_row.get_attribute("class") or ""), "Agora (another phone): Tirar o lixo to do")
         s, r = call(key, {"nome": "marcar_feito", "argumentos": {"id": lixo["id"]}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
         check(s == 200 and r["texto"].startswith("Feita por Ana: Tirar o lixo"), f"marcar_feito through the WhatsApp ({r})")
-        # done: it leaves the list to do and goes under Mostrar concluídas, without reloading
+        # done: it leaves the list to do and goes under Concluídas (n), without reloading
         fold = b_app.locator("#casa .done-fold")
         async def row_done():
-            return await lixo_row.count() == 0 and await fold.count() == 1 and "Mostrar concluídas (1)" in await fold.inner_text()
+            return await lixo_row.count() == 0 and await fold.count() == 1 and "Concluídas (1)" in await fold.inner_text()
         await wait_for(row_done, "Agora (another phone): Tirar o lixo goes to the done ones, without reloading")
         await fold.click(); await B.wait_for_timeout(300)
-        check(await lixo_row.count() == 1 and "done" in (await lixo_row.get_attribute("class") or "").split(), "Mostrar concluídas: Tirar o lixo done")
+        check(await lixo_row.count() == 1 and "done" in (await lixo_row.get_attribute("class") or "").split(), "Concluídas: Tirar o lixo done")
         s, r = call(key, {"nome": "resumo", "argumentos": {}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
         now = next((x for x in json.loads(r["texto"])["rotinas_hoje"] if x["id"] == lixo["id"]), {})
         check(now.get("situacao") == "feita" and now.get("feita_por") == "Ana", f"resumo reads it done by Ana ({now})")

@@ -47,11 +47,11 @@ async def main():
         await pg.screenshot(path=f"{SP}/shots/crch-avisos.png")
         # Novo: an event, then each model
         await a.locator(".tab.fab").click(); await pg.wait_for_timeout(700)
-        await uniform(a, ".sheet", "Novo evento")
+        await uniform(a, ".sheet", "Adicionar evento")
         await pg.screenshot(path=f"{SP}/shots/crch-novo.png", full_page=True)
         for m in ("Remédio", "Rotina", "Manutenção", "Conta"):
             await sheet.locator(".model", has_text=m).click(); await pg.wait_for_timeout(500)
-            await uniform(a, ".sheet", f"Novo {m}")
+            await uniform(a, ".sheet", f"Adicionar {m}")
             if m == "Rotina": await sheet.screenshot(path=f"{SP}/shots/crch-rotina.png")
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(400)
         # Dados › Exportar: one line per file

@@ -335,7 +335,7 @@ export const TasksMixin = (Base) =>
       const canTime = dueOk && !!(feats & TF.DUE_DATETIME);
       const canNotes = !!(feats & TF.DESCRIPTION);
       return html`
-        ${this._sheetHead("Novo")}
+        ${this._sheetHead("Adicionar")}
         ${this._renderModelChips("tarefa")}
         <label class="field">
           <span class="flabel">Tarefa</span>
@@ -510,7 +510,7 @@ export const TasksMixin = (Base) =>
               ${fromResolvia
                 ? html`<p class="sub-lead">Escolha quais listas entram. De quem é cada uma se escolhe no ResolvIA (⋯ › Personalizar): a lista de uma pessoa só aparece no CronologIA dela.</p>`
                 : this._todoOwners().length
-                  ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>`
+                  ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Adicionar › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>`
                   : nothing}`
           : nothing}
         ${repeat(shown, (l) => l.id, listRow)}

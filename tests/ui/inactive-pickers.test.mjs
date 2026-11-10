@@ -142,5 +142,7 @@ describe("the forms: times and dates in the look of the app", () => {
     const h = render(new App()._renderScoreRemind(s)).html;
     assert.match(h, /class="pickf t remind-time" data-value="20:00" aria-label="Horário do lembrete: 20:00"/);
     assert.doesNotMatch(h, /type="time"/);
+    // 1.64.0: Testar no meu celular, the whole width, at the bottom (the same in all the apps)
+    assert.match(text(new App()._renderScoreRemind(s)), /20:00 Vai para o celular de Ana e Beto\. Testar no meu celular$/);
   });
 });

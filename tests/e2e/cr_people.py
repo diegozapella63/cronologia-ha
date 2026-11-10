@@ -112,7 +112,7 @@ async def main():
         await av.locator(".person-row:has(b:text-is('Bob')) .pet-btn").click(); await pg.wait_for_timeout(800)
         app = prefs()
         check(app["people"]["Bob"].get("pet") is True and app["score"]["participants"] == ["Aurora", "Davi"], f"Bob marked as pet: out of the placar ({app['score']['participants']})")
-        await a.evaluate("(el) => el._go('/mais/placar')"); await pg.wait_for_timeout(600)
+        await a.evaluate("(el) => el._go('/mais/recompensas')"); await pg.wait_for_timeout(600)
         sc = await a.locator("#placar").inner_text() if await a.locator("#placar").count() else ""
         check("Bob" not in sc and "Mel" not in sc, "Ajustes do placar: no pets to choose")
         check(not errs, f"no page errors {errs}")

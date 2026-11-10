@@ -1,5 +1,6 @@
-// Mais › Configurações › Dados: exports (ZIP, CSV, JSON, .ics), backups in share/cronologia,
-// imports and automatic versions, like the other apps. Mixed into <cronologia-app>.
+// Mais › Configurações › Dados, in the order of all the apps of the family: Exportar (ZIP, CSV, JSON, .ics),
+// Backup na pasta share (share/cronologia), Importar (the app's data or the events of a .ics), Versões
+// anteriores, Onde ficam os dados and Começar do zero. Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { plural, clip } from "./util.js";
@@ -8,7 +9,7 @@ const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
 
 const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-const WHY = { "antes-de-importar": "antes de importar", "antes-de-restaurar": "antes de restaurar" };
+const WHY = { "antes-de-importar": "antes de importar", "antes-de-restaurar": "antes de restaurar", "antes-de-zerar": "antes de começar do zero" };
 
 export const DataMixin = (Base) =>
   class extends Base {
@@ -95,6 +96,26 @@ export const DataMixin = (Base) =>
       });
     }
 
+    /** Começar do zero: the marks and the placar go (a copy stays in Versões anteriores); the rest stays. */
+    _confirmReset() {
+      this._openSheet("confirm", {
+        title: "Começar do zero?",
+        text: "Apaga as marcações (Tomei, Paguei, Feito) e o placar: pontos, prêmios e histórico. Os eventos ficam nos calendários; calendários, pessoas, deméritos e preferências continuam. Antes, o app guarda uma cópia em Versões anteriores.",
+        label: "Apagar tudo",
+        danger: true,
+        run: async () => {
+          this._closeSheet();
+          try {
+            await this.api.resetData();
+            this._haptic("success");
+            this._showToast("Pronto: começou do zero");
+          } catch (err) {
+            this._showToast(`Não consegui apagar. ${err.message}`);
+          }
+        },
+      });
+    }
+
     async _openVersions() {
       this._openSheet("versions", { list: null, error: null });
       try {
@@ -172,20 +193,23 @@ export const DataMixin = (Base) =>
               </div>`
             : nothing}
         </div>
-        <div class="panel">
-          ${this._secHead("upload", "Importar", "Um .zip ou .json exportado pelo CronologIA.")}
-          <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._pickDataImport()}>${icon("upload")}Escolher arquivo</button></div>
+        <div class="panel" id="importar">
+          ${this._secHead("upload", "Importar", "Um .zip ou .json exportado pelo CronologIA, ou os eventos de um .ics (um convite, outra agenda).")}
+          <div class="btn-row sec-actions">
+            <button class="btn outline sm" @click=${() => this._pickDataImport()}>${icon("upload")}Escolher arquivo</button>
+            <button class="btn outline sm" ?disabled=${!writable.length} @click=${() => this._openImport("ics")}>${icon("calendar-plus")}Escolher .ics</button>
+          </div>
         </div>
         <div class="panel">
-          ${this._secHead("calendar-plus", "Importar eventos (.ics)", "Eventos de um convite ou de outra agenda.")}
-          <div class="btn-row sec-actions"><button class="btn outline sm" ?disabled=${!writable.length} @click=${() => this._openImport("ics")}>${icon("upload")}Escolher .ics</button></div>
-        </div>
-        <div class="panel">
-          ${this._secHead("archive-restore", "Versões anteriores", "Uma cópia a cada 10 minutos de uso e antes de importar ou restaurar. Ficam as 3 mais recentes.")}
+          ${this._secHead("archive-restore", "Versões anteriores", "Uma cópia a cada 10 minutos de uso e antes de importar, restaurar ou começar do zero. Ficam as 3 mais recentes.")}
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._openVersions()}>${icon("archive-restore")}Ver versões</button></div>
         </div>
         <div class="panel">
           ${this._secHead("database", "Onde ficam os dados", html`Os eventos ficam nos calendários; os ajustes do app, em <code>/data/cronologia.json</code>.`)}
+        </div>
+        <div class="panel" id="zerar">
+          ${this._secHead("trash", "Começar do zero", "Apaga as marcações (Tomei, Paguei, Feito) e o placar. Os eventos, os calendários, as pessoas e as preferências continuam. Uma cópia fica em Versões anteriores.")}
+          <div class="btn-row sec-actions"><button class="btn outline danger sm" @click=${() => this._confirmReset()}>${icon("trash")}Apagar tudo</button></div>
         </div>
         <input id="cr-data-import" class="sr" type="file" accept=".zip,.json,application/zip,application/json" tabindex="-1" aria-hidden="true" @change=${(e) => this._onDataImport(e)} />
       </div>`;

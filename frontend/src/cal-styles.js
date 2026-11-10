@@ -1481,7 +1481,7 @@ export const calStyles = css`
     color: var(--rv-muted);
     font-size: 13px;
   }
-  /* 1.59.0: whoever has no dose left today, one name each (the doses folded under Mostrar tomados) */
+  /* 1.59.0: whoever has no dose left today, one name each (the doses folded under Tomados (n)) */
   .meds-ready {
     display: flex;
     flex-wrap: wrap;
@@ -3352,7 +3352,7 @@ export const calStyles = css`
     padding: 10px 16px 12px;
     border-top: 1px solid var(--rv-line);
   }
-  /* Mais › Configurações › Placar › Lembrete diário */
+  /* Mais › Recompensas › Lembrete diário */
   .remind-seg button {
     gap: 6px;
   }
@@ -3360,26 +3360,22 @@ export const calStyles = css`
     width: 16px;
     height: 16px;
   }
-  /* the exact time and Testar side by side, the same height */
+  /* the exact time, then the line of who gets it and Testar no meu celular */
   .remind-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 10px;
   }
   .remind-row .pickf.remind-time {
     width: 100%;
-    height: 100%;
-    min-height: 44px;
-    justify-content: center;
-    border-radius: 12px;
   }
-  .remind-row .pickf.remind-time .pf-v {
-    flex: none;
-  }
-  .remind-row .remind-test {
-    margin: 0;
-    min-height: 44px;
+  /* Testar no meu celular: the whole width, at the bottom (the same in all the apps) */
+  .remind-field .remind-test {
+    display: flex;
+    width: 100%;
+    margin: 12px 0 0;
+    min-height: 48px;
   }
   /* Modo férias: the deméritos rest */
   .dm-lead.dm-away {

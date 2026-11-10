@@ -63,14 +63,14 @@ async def main():
         await a.locator(".panel.meds").wait_for(timeout=10000)
         # 1.56.0: Recompensas off (as it starts): Rotinas is the tab in its place, and leaves the menu of Mais
         tabs = await a.locator("nav .tab").all_inner_texts()
-        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Adicionar", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
         await a.locator("nav .tab", has_text="Rotinas").click(); await A.wait_for_timeout(500)
         check(await a.locator(".routines-tab .cat-sec").count() >= 1 and await a.locator(".uplink").count() == 0 and "on" in (await a.locator("nav .tab", has_text="Rotinas").get_attribute("class")), "the Rotinas tab: the registered ones, lit, no ‹ Mais")
         await A.screenshot(path=f"{SP}/shots/cr-rotinas-tab.png")
         # Mais is a menu (1.43.0); Calendários is its first row, Configurações the last
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-        check(mt == ["Calendários", "Avisos", "Férias", "Configurações", "Sobre"], f"off: Mais rows without Rotinas ({mt})")
+        check(mt == ["Calendários", "Recompensas", "Avisos", "Férias", "Configurações", "Sobre"], f"off: Mais rows without Rotinas, with Recompensas to turn it on ({mt})")
         await open_more(a, "Calendários")
         check(await a.locator(".cal-row").count() >= 5, "Calendários: the calendars")
         await open_more(a, "Dados"); await A.wait_for_timeout(300)
@@ -79,7 +79,7 @@ async def main():
         check(await a.locator(".menu-list").count() == 1 and await a.locator(".more-tabs").count() == 0, "Back goes to the menu of Mais instead of walking the tabs")
         await A.go_back(); await A.wait_for_timeout(400)
         check(await a.locator(".menu-list").count() == 0 and await a.locator(".panel.meds").count() == 1, "Back again leaves Mais")
-        # turned on in Configurações › Recompensas: the people of Home Assistant (no pets), weekly
+        # turned on in Mais › Recompensas (1.64.0: a row of Mais): the people of Home Assistant (no pets), weekly
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
         await wait_for(lambda: stored(data)["app"].get("score", {}).get("enabled") is True and stored(data)["score"]["current"], "scoreboard on, current period saved")
@@ -87,10 +87,10 @@ async def main():
         check(sorted(sc["participants"]) == ["Aurora", "Davi"] and sc["period"] == "semana", f"the people of Home Assistant, weekly ({sc['participants']}, {sc['period']})")
         await A.wait_for_timeout(400)
         tabs = await a.locator("nav .tab").all_inner_texts()
-        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Novo", "Recompensas", "Mais"], f"on: Recompensas back in the bar ({tabs})")
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Adicionar", "Recompensas", "Mais"], f"on: Recompensas back in the bar ({tabs})")
         await a.locator(".uplink").click(); await A.wait_for_timeout(400)
         mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
-        check(mt == ["Calendários", "Rotinas", "Avisos", "Férias", "Configurações", "Sobre"], f"on: Rotinas back in Mais ({mt})")
+        check(mt == ["Calendários", "Rotinas", "Recompensas", "Avisos", "Férias", "Configurações", "Sobre"], f"on: Rotinas back in Mais ({mt})")
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(300)
         await a.locator(".panel.board").wait_for(timeout=5000)
         board = await a.locator(".panel.board").inner_text()
@@ -196,7 +196,7 @@ async def main():
         check(await a.locator(".score-set").count() == 0, "scoreboard settings are not in Recompensas anymore")
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
-        check(await a.locator("#placar").count() == 1 and await a.locator("#demeritos-ajustes").count() == 1, "Configurações › Recompensas has the settings and the deméritos")
+        check(await a.locator("#placar").count() == 1 and await a.locator("#demeritos-ajustes").count() == 1, "Mais › Recompensas has the settings and the deméritos")
         await A.screenshot(path=f"{SP}/shots/cr-mais-placar.png")
         await a.locator("#placar .seg button", has_text="Mensal").click()
         await wait_for(lambda: stored(data)["app"]["score"]["period"] == "mes" and stored(data)["score"]["current"]["start"].endswith("-01"), "monthly period starts on the 1st")
@@ -204,10 +204,11 @@ async def main():
         await a.locator(".tab", has_text="Recompensas").click(); await A.wait_for_timeout(500)
         async def still(): return "Mês de" in await a.locator(".brand-head .status").inner_text() or "Mês" in await a.locator(".brand-head .status").inner_text()
         await wait_for(still, "status shows the month")
-        # 1.55.0: the tab is Recompensas, with Usar recompensas at the top like the other options; off, no deméritos
+        # 1.55.0: Recompensas, with Usar recompensas at the top like the other options; off, no deméritos
+        # (1.64.0: its own screen in Mais, not a tab of Configurações)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
-        check(await a.locator(".more-tabs button.on").inner_text() == "Recompensas", "the tab is called Recompensas")
+        check((await a.locator(".page-title").first.inner_text()).strip() == "Recompensas" and await a.locator(".more-tabs").count() == 0 and await a.locator(".uplink").count() == 1, "Mais › Recompensas: its own screen, ‹ Mais, no tabs")
         use = a.locator("#placar .switch input[aria-label='Usar recompensas']")
         first = (await a.locator("#placar .switch-row .label").first.inner_text()).strip()
         check(await use.is_checked() and first == "Usar recompensas" and await a.locator("text=Desligar o placar").count() == 0, f"Usar recompensas on, first, no Desligar o placar ({first})")
@@ -219,7 +220,7 @@ async def main():
         sens = await a.locator("#sensores").inner_text()
         check("cronologia_demerito" not in sens and "sensor.cronologia_placar" not in sens and "se vale pontos" not in sens, "off: no demérito, placar sensor nor points in the events")
         tabs = [t.strip() for t in await a.locator("nav .tab").all_inner_texts()]
-        check(tabs == ["Agora", "Calendário", "Novo", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        check(tabs == ["Agora", "Calendário", "Adicionar", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
         await wait_for(lambda: stored(data)["app"]["score"]["enabled"] is True and stored(data)["app"]["score"]["participants"] == ["Aurora", "Davi"] and stored(data)["app"]["score"]["period"] == "mes", "on again: the same people and period")

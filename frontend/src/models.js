@@ -352,7 +352,7 @@ export const ModelsMixin = (Base) =>
       }
       const all = taken === live.length;
       // 1.59.0: what was taken (or skipped) leaves the list, so the card doesn't keep the whole day; whoever has
-      // nothing left is one name on a line (✓ took all, the yellow mark with a skipped one); Mostrar tomados opens them
+      // nothing left is one name on a line (✓ took all, the yellow mark with a skipped one); Tomados (n) opens them
       const doneN = meds.filter((m) => m.taken).length;
       // all undone: folded again for the next one taken
       if (!doneN && this._medsDoneN) this._medsDoneOpen = false;
@@ -389,7 +389,7 @@ export const ModelsMixin = (Base) =>
           : nothing}
         ${doneN
           ? html`<button class="add-line done-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._medsDoneOpen = !open), this.requestUpdate())}>
-              ${icon(open ? "chevron-down" : "chevron-right")}${open ? "Esconder tomados" : `Mostrar tomados (${doneN})`}
+              ${icon(open ? "chevron-down" : "chevron-right")}<span>Tomados (${doneN})</span>
             </button>`
           : nothing}
         ${this._alertsHint(meds)}
@@ -478,7 +478,7 @@ export const ModelsMixin = (Base) =>
         return total ? html`<button class="hint-card maint-ok" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}<span>Manutenção da casa em dia · ${plural(total, "item", "itens")}</span>${icon("chevron-right")}</button>` : nothing;
       }
       const done = routines.filter((r) => r.done).length;
-      // the done ones stay folded (a long day has dozens): "Mostrar concluídas" opens them
+      // the done ones stay folded (a long day has dozens): "Concluídas (n)" opens them
       const now = new Date(this._now);
       const open = byPeriod(routines.filter((r) => !r.done), now);
       const shut = routines.filter((r) => r.done);
@@ -500,7 +500,7 @@ export const ModelsMixin = (Base) =>
               ${!open.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo feito hoje.</p>` : nothing}
               ${shut.length
                 ? html`<button class="add-line done-fold" aria-expanded=${this._choresDoneOpen ? "true" : "false"} @click=${() => ((this._choresDoneOpen = !this._choresDoneOpen), this.requestUpdate())}>
-                      ${icon(this._choresDoneOpen ? "chevron-down" : "chevron-right")}${this._choresDoneOpen ? "Esconder concluídas" : `Mostrar concluídas (${shut.length})`}
+                      ${icon(this._choresDoneOpen ? "chevron-down" : "chevron-right")}<span>Concluídas (${shut.length})</span>
                     </button>
                     ${this._choresDoneOpen ? repeat(shut, (r) => r.key, row) : nothing}`
                 : nothing}`
@@ -993,7 +993,7 @@ export const ModelsMixin = (Base) =>
       }
     }
 
-    /** Model chips at the top of "Novo": pick one and the form changes. */
+    /** Model chips at the top of "Adicionar": pick one and the form changes. */
     _renderModelChips(current) {
       const f = this._form;
       return html`<div class="model-strip" role="radiogroup" aria-label="Modelo">
@@ -1232,7 +1232,7 @@ export const ModelsMixin = (Base) =>
           ${notes}`;
       }
       return html`
-        ${this._sheetHead(f.mode === "add" ? "Novo" : `Editar ${ui.label.toLowerCase()}`)}
+        ${this._sheetHead(f.mode === "add" ? "Adicionar" : `Editar ${ui.label.toLowerCase()}`)}
         ${f.mode === "add" ? this._renderModelChips(K) : nothing}
         <label class="field">
           <span class="flabel">${titles[0]}</span>

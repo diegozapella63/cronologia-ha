@@ -8,11 +8,12 @@ from stack_lib import Stack, URL, SP, check, wait_for, summary
 from mais_lib import open_more
 from playwright.async_api import async_playwright
 
-ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações"), ("sobre", "Sobre")]
-TABS = [("integracoes", "Integrações", "/config"), ("placar", "Recompensas", "/config/placar"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
+ROWS = [("calendarios", "Calendários"), ("rotinas", "Rotinas"), ("recompensas", "Recompensas"), ("avisos", "Avisos"), ("ferias", "Férias"), ("config", "Configurações"), ("sobre", "Sobre")]
+# 1.64.0: the four tabs of every app of the family (Recompensas became a row of Mais)
+TABS = [("integracoes", "Integrações", "/config"), ("dados", "Dados", "/config/dados"), ("aparencia", "Aparência", "/config/aparencia"), ("opcoes", "Opções", "/config/opcoes")]
 # what each screen has (an element only that screen shows)
 MARK = {"calendarios": ".cal-row", "rotinas": ".cat-sec", "avisos": "#avisos", "ferias": "#ferias", "config": "#leitura-ia", "sobre": ".about-hero",
-        "integracoes": "#leitura-ia", "placar": "#placar", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": ".week-seg"}
+        "integracoes": "#leitura-ia", "recompensas": "#placar", "dados": "#dados", "aparencia": ".seg.themes", "opcoes": ".week-seg"}
 
 async def main():
     # Recompensas on: the menu has all its rows (off, Rotinas goes to the bar: cr_rewards)
@@ -104,7 +105,8 @@ async def main():
             # old addresses land on the new place (and the history entry is replaced)
             OLD = [("/mais/integracoes", "/config", "integracoes"), ("/mais/dados", "/config/dados", "dados"), ("/mais/aparencia", "/config/aparencia", "aparencia"),
                    ("/mais/opcoes", "/config/opcoes", "opcoes"), ("/agendas", "/mais/calendarios", "calendarios"), ("/mais/rotinas", "/mais/rotinas", "rotinas"),
-                   ("/mais/avisos", "/mais/avisos", "avisos"), ("/mais/placar", "/config/placar", "placar"), ("/mais/ferias", "/mais/ferias", "ferias"), ("/config/integracoes", "/config", "integracoes")]
+                   ("/mais/avisos", "/mais/avisos", "avisos"), ("/mais/placar", "/mais/recompensas", "recompensas"), ("/config/placar", "/mais/recompensas", "recompensas"),
+                   ("/mais/ferias", "/mais/ferias", "ferias"), ("/config/integracoes", "/config", "integracoes")]
             for old, new, k in OLD:
                 await el(f"el._go({old!r}, true)"); await pg.wait_for_timeout(400)
                 v = await view()
@@ -123,9 +125,9 @@ async def main():
             await open_more(a, "Férias")
             check((await view())["tab"] == "ferias", "open_more: Férias from Configurações")
             await open_more(a, "Recompensas")
-            check((await view())["tab"] == "placar" and (await view()).get("config") is True, "open_more: Placar (a tab of Configurações) from Férias")
+            check((await view())["tab"] == "recompensas" and not (await view()).get("config"), "open_more: Recompensas (a row of Mais since 1.64.0) from Férias")
             await open_more(a, "Aparência")
-            check((await view())["tab"] == "aparencia", "open_more: Aparência from Placar")
+            check((await view())["tab"] == "aparencia", "open_more: Aparência from Recompensas")
             check(not errs, f"phone: no page errors {errs}")
             await ctx.close()
 

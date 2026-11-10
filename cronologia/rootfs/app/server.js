@@ -30,7 +30,7 @@ import { Voice, readRaw, MAX_VOICE_BYTES } from "./lib/voice.js";
 import { Correria, ROTA as FERRAMENTAS_ROTA } from "./lib/correria.js";
 import { Ferramentas, lista as listaFerramentas, INSTRUCOES } from "./lib/ferramentas.js";
 
-const VERSION = "1.63.0";
+const VERSION = "1.64.0";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WWW = path.join(HERE, "www");
 const DEV = process.env.CRONOLOGIA_DEV === "1";
@@ -470,6 +470,11 @@ class Session {
       case "cronologia/versions/restore": {
         const raw = readVersion(store.versionsDir, String(msg.name || ""));
         replaced(store.replaceAll(raw, "antes-de-restaurar"), `versão ${msg.name}`);
+        return this.result(id, counts());
+      }
+
+      case "cronologia/data/reset": {
+        replaced(store.resetAll(), "começar do zero");
         return this.result(id, counts());
       }
 

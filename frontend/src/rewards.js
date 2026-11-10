@@ -428,7 +428,7 @@ export const RewardsMixin = (Base) =>
       if (!list.length) return nothing;
       const open = !!this._futureOpen;
       return html`<button class="add-line done-fold future-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._futureOpen = !open), this.requestUpdate())}>
-          ${icon(open ? "chevron-down" : "chevron-right")}${open ? "Esconder próximas rotinas" : `Próximas rotinas (${list.length})`}
+          ${icon(open ? "chevron-down" : "chevron-right")}<span>Próximas rotinas (${list.length})</span>
         </button>
         ${open
           ? html`<p class="future-note">Fez antes do dia? Marque aqui.</p>
@@ -486,7 +486,7 @@ export const RewardsMixin = (Base) =>
           ? html`<p class="empty-line away-line">${icon("plane")}<span><b>De férias até ${dayLabel(fromYmd(away.to), now, { long: false, cap: false })}</b>: rotinas, tarefas e manutenção pausadas.</span></p>`
           : html`${this._renderFutureScore(chores, now, pick)}
             ${!chores.length && !maint.length && !tasks.length
-              ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Novo › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
+              ? html`<p class="empty-line">Nenhuma tarefa com pontos hoje. Dê pontos às tarefas em <b>Adicionar › Rotina</b> ou <b>Manutenção</b>${this._resolviaOn() ? ", ou a uma tarefa no ResolvIA" : ""}.</p>`
               : nothing}`}
         ${away
           ? nothing
@@ -924,7 +924,8 @@ export const RewardsMixin = (Base) =>
         <div class="grow"><div class="label">Usar recompensas</div><div class="hint">${on || start.length ? "Placar da casa, prêmio e deméritos." : "Sem pessoas no Home Assistant."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} ?disabled=${!on && !start.length} @change=${(e) => this._scorePrefs(e.target.checked ? { enabled: true, participants: start, anchor: ymd(new Date()) } : { enabled: false })} aria-label="Usar recompensas" /><span class="track"></span></label>
       </div>`;
-      if (!on) return html`<div class="panel score-set" id="placar">${this._secHead("trophy", "Recompensas")} ${sw}</div>`;
+      // Mais › Recompensas (its own screen since 1.64.0: the title is already Recompensas)
+      if (!on) return html`<div class="panel score-set" id="placar">${sw}</div>`;
       return html`${this._renderScoreSettingsPanel(s, sw)} ${this._renderDemeritsSettings()}`;
     }
 
@@ -933,7 +934,6 @@ export const RewardsMixin = (Base) =>
       const people = (this._ix().people || []).filter((p) => !p.pet).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
-        ${this._secHead("trophy", "Recompensas")}
         ${sw}
         <div class="field"><span class="flabel">Quem participa</span>
           <div class="chip-row">${names.map((n) => {
@@ -981,9 +981,9 @@ export const RewardsMixin = (Base) =>
         <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
         <div class="remind-row">
           ${timeField(s.remind, (v) => this._scorePrefs({ remind: v }), { label: "Horário do lembrete", cls: "remind-time" })}
-          <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testScoreReminder()}>${icon("send")}Testar</button>
         </div>
         <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? `${withPhone.length ? " " : ""}Sem celular para ${list(without)}.` : ""}</span></span>
+        <button class="btn outline remind-test" ?disabled=${!mine} title=${mine ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testScoreReminder()}>${icon("send")}Testar no meu celular</button>
       </div>`;
     }
 

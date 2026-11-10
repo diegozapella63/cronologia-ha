@@ -350,6 +350,12 @@ export class MockApi {
     await wait(200);
   }
 
+  /** Começar do zero: in the preview nothing is saved, so it only answers. */
+  async resetData() {
+    await wait(200);
+    return { calendars: 2, points: 0, checks: 0 };
+  }
+
   async importData() {
     await wait(300);
     return { calendars: 2, points: 12, checks: 3 };
@@ -466,7 +472,7 @@ export class MockApi {
   async bootstrap() {
     await wait(60);
     const states = Object.fromEntries(this.model.ids().map((id) => [id, this.model.stateOf(id)]));
-    return { version: "1.63.0", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
+    return { version: "1.64.0", user: { name: "Davi Souza", person: "Davi" }, time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone, ai: await this.aiStatus(), prefs: clone(this.prefs), states, ...this._registry() };
   }
 
   async registry() {

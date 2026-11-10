@@ -60,7 +60,7 @@ async def main():
         a = A.locator("cronologia-app")
         await a.locator(".panel.meds").wait_for(timeout=10000)
         # some app data: a calendar name/color and the scoreboard
-        # Recompensas is turned on in Mais › Configurações › Recompensas (1.56.0: off, no tab of its own)
+        # Recompensas is turned on in Mais › Recompensas (1.56.0: off, no tab of its own; 1.64.0: a row of Mais)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
