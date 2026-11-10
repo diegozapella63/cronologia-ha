@@ -17,7 +17,7 @@ import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod } from "./models.js";
 import { ChatMixin } from "./chat-panel.js";
 import { chatStyles } from "./chat.js";
-import { everyLabel, periodInfo, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
@@ -1937,29 +1937,92 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
             ${timed.length && !lineDone && timed[timed.length - 1].end <= now ? nowLine : nothing}`}
         <button class="add-line" @click=${() => this._openForm({ date: today })}>${icon("plus")}Evento hoje</button>
       </div>`}`;
+    // the cards in the order of the person (Ordem dos cards, at the end of Agora)
+    const parts = {
+      away: this._renderAwayBanner(),
+      search: html`${this._renderNowSearch()} ${hidden}`,
+      meds: medsDone ? nothing : this._renderMedsPanel(),
+      bills: this._renderBillsPanel(),
+      day: dayPart,
+      memoria: this._renderMemoriaPanel(),
+      home: this._renderHomePanel(),
+      todos: this._renderTodosPanel(),
+    };
+    const order = this._nowOrder();
+    const pick = (ids) => order.filter((id) => ids.includes(id)).map((id) => parts[id]);
+    const orderBtn = html`<button class="add-line now-order" @click=${() => this._openSheet("nowcards")}>${icon("sliders-horizontal")}Ordem dos cards</button>`;
     // Computador, like the InventarIA: the day on the left (next appointment, Hoje, tasks), doses, bills
-    // and the house on the right. Phone: one column, the doses first.
+    // and the house on the right, each column in the order of the person. Phone: one column, in that order.
     if (this._desk) {
       return html`<section class="page now-page">
         ${this._renderHead("Hoje", status)}
-        ${this._renderAwayBanner()}
-        ${this._renderNowSearch()} ${hidden}
+        ${pick(["away", "search"])}
         <div class="now-cols">
-          <div class="now-main">${dayPart} ${this._renderMemoriaPanel()} ${this._renderTodosPanel()}</div>
-          <div class="now-side">${medsPart} ${this._renderHomePanel()}</div>
+          <div class="now-main">${pick(["day", "memoria", "todos"])}</div>
+          <div class="now-side">${pick(["meds", "bills", "home"])}</div>
         </div>
+        ${orderBtn}
       </section>`;
     }
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
-      ${this._renderAwayBanner()}
-      ${this._renderNowSearch()} ${hidden}
-      ${medsPart}
-      ${dayPart}
-      ${this._renderMemoriaPanel()}
-      ${this._renderHomePanel()}
-      ${this._renderTodosPanel()}
+      ${order.map((id) => parts[id])}
+      ${orderBtn}
     </section>`;
+  }
+
+  // ------------------------------------------------------------ Agora › Ordem dos cards (1.69.0)
+  // Each person their own order (app.now_order, by the person of the user; a device without one: ""). Every card is in
+  // the list, also the ones with nothing now or with the integration off: the order holds when they come back.
+  _nowKey() {
+    return (this._user && (this._user.person || this._user.name)) || "";
+  }
+  _nowOrder() {
+    return nowOrder((this._app("now_order", null) || {})[this._nowKey()]);
+  }
+  _saveNowOrder(ids) {
+    const all = { ...(this._app("now_order", null) || {}) };
+    if (ids && ids.join() !== NOW_CARDS.join()) all[this._nowKey()] = ids;
+    else delete all[this._nowKey()];
+    this._saveAppPrefs({ now_order: Object.keys(all).length ? all : null });
+  }
+  _moveNowCard(id, by) {
+    const ids = this._nowOrder();
+    const i = ids.indexOf(id);
+    const j = i + by;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    this._saveNowOrder(ids);
+  }
+  _renderNowCardsSheet() {
+    const ids = this._nowOrder();
+    const off = (flag) => this._app(flag, false) !== true;
+    const meta = {
+      away: ["plane", "Férias", () => (this._renderAwayBanner() === nothing ? "Só com férias marcadas" : "")],
+      search: ["search", "Busca", () => ""],
+      meds: ["pill", "Remédios de hoje", () => (this._renderMedsPanel() === nothing ? "Sem nada agora" : "")],
+      bills: ["receipt", "Contas do GerencIA", () => (off("gerencia_on") ? "Integração desligada" : this._renderBillsPanel() === nothing ? "Sem nada agora" : "")],
+      day: ["calendar-days", "Agora e Hoje", () => ""],
+      memoria: ["notebook-pen", "MemorIA", () => (off("memoria_on") ? "Integração desligada" : this._renderMemoriaPanel() === nothing ? "Sem nada agora" : "")],
+      home: ["spray-can", "Rotina da casa", () => (this._renderHomePanel() === nothing ? "Sem nada agora" : "")],
+      todos: ["list-checks", "Tarefas do ResolvIA", () => (off("resolvia_on") ? "Integração desligada" : this._renderTodosPanel() === nothing ? "Sem nada agora" : "")],
+    };
+    const custom = ids.join() !== NOW_CARDS.join();
+    return html`${this._sheetHead("Ordem dos cards")}
+      <p class="sheet-note top">A ordem da Agora, só para você.</p>
+      <ol class="now-cards">
+        ${ids.map((id, k) => {
+          const [ic, name, sub] = meta[id];
+          const s = sub();
+          return html`<li class="row nc-row ${s ? "off" : ""}" data-card=${id}>
+            <span class="tile">${icon(ic)}</span>
+            <div class="grow"><div class="label">${name}</div>${s ? html`<div class="hint">${s}</div>` : nothing}</div>
+            <button class="icon-btn" ?disabled=${k === 0} @click=${() => this._moveNowCard(id, -1)} aria-label="Subir ${name}">${icon("chevron-up")}</button>
+            <button class="icon-btn" ?disabled=${k === ids.length - 1} @click=${() => this._moveNowCard(id, 1)} aria-label="Descer ${name}">${icon("chevron-down")}</button>
+          </li>`;
+        })}
+      </ol>
+      ${custom ? html`<button class="add-line now-reset" @click=${() => this._saveNowOrder(null)}>${icon("rotate-ccw")}Voltar à ordem de sempre</button>` : nothing}`;
   }
 
   /** The box of Agora (like the InventarIA and the ResolvIA): the first letter opens the search with it. */
@@ -2702,6 +2765,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       tint = colorById(TODO_COLOR);
     }
     else if (this._sheet === "bring") body = this._renderBringSheet();
+    else if (this._sheet === "nowcards") body = this._renderNowCardsSheet();
     else if (this._sheet === "chat") body = this._renderChatSheet();
     else if (this._sheet === "extra") body = this._renderExtraSheet();
     else if (this._sheet === "demerit") body = this._renderDemeritSheet();

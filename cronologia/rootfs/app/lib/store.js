@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { actor } from "./actor.js";
-import { cleanAway, mirrorLists } from "./kinds.js";
+import { cleanAway, mirrorLists, NOW_CARDS, nowOrder } from "./kinds.js";
 
 export const COLORS = ["vermelho", "coral", "laranja", "ouro", "verde", "menta", "turquesa", "azul", "indigo", "lilas", "rosa", "grafite"];
 const CAL_RE = /^calendar\.[a-z0-9_]+$/;
@@ -72,6 +72,16 @@ function cleanApp(raw) {
     out.todo_hidden = ids.length ? ids : null;
   }
   if ("todo_off_calendar" in raw) out.todo_off_calendar = raw.todo_off_calendar ? true : null;
+  // Agora › Ordem dos cards: {person (or "" without one): [card ids]}, each person their own
+  if ("now_order" in raw) {
+    const by = {};
+    const src = raw.now_order && typeof raw.now_order === "object" && !Array.isArray(raw.now_order) ? raw.now_order : {};
+    for (const [who, ids] of Object.entries(src).slice(0, 30)) {
+      const list = nowOrder(ids);
+      if (Array.isArray(ids) && ids.some((x) => NOW_CARDS.includes(x)) && list.join() !== NOW_CARDS.join()) by[String(who).slice(0, 60)] = list;
+    }
+    out.now_order = Object.keys(by).length ? by : null;
+  }
   // Agora also lists the pending tasks without a due date
   if ("todo_undated" in raw) out.todo_undated = raw.todo_undated ? true : null;
   // Novo › Tarefa also offers the lists of another person (De quem é)

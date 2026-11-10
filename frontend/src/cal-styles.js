@@ -155,6 +155,35 @@ export const calStyles = css`
     width: 18px;
     height: 18px;
   }
+  /* Agora › Ordem dos cards: the button at the end of Agora and the list in the sheet */
+  .add-line.now-order {
+    justify-content: center;
+    padding: 14px 4px 18px;
+    color: var(--rv-muted);
+  }
+  .now-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0 4px;
+  }
+  .now-cards .row {
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .now-cards .tile {
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .now-cards .row.off .label {
+    color: var(--rv-muted);
+  }
+  .now-cards .icon-btn:disabled {
+    opacity: 0.3;
+  }
+  .add-line.now-reset {
+    justify-content: center;
+    padding: 14px 4px 6px;
+  }
   /* Rotina da casa: the done ones folded */
   /* Pular: a routine skipped this time (not done): gray, the yellow skip mark in place of the check */
   .chore.done.skipped .chk.on {

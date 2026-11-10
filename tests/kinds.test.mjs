@@ -4,6 +4,8 @@ import { at, ymd, isoLocal } from "./helpers.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  NOW_CARDS,
+  nowOrder,
   KINDS,
   UNITS,
   foldText,
@@ -615,5 +617,16 @@ describe("KINDS", () => {
   it("ymd helper sanity (suite runs in São Paulo time)", () => {
     assert.equal(new Date(2026, 0, 1).getTimezoneOffset(), 180);
     assert.equal(ymd(at(2026, 11, 2)), "2026-11-02");
+  });
+});
+
+describe("nowOrder: the cards of Agora in the order of the person", () => {
+  it("nothing saved: the order of always", () => {
+    assert.deepEqual(nowOrder(null), NOW_CARDS);
+    assert.deepEqual(NOW_CARDS, ["away", "search", "meds", "bills", "day", "memoria", "home", "todos"]);
+  });
+  it("a card left out (new in a later version) goes back after the one before it by default; unknown and repeated ones out", () => {
+    assert.deepEqual(nowOrder(["todos", "home", "day", "meds", "x", "todos"]), ["away", "search", "todos", "home", "day", "memoria", "meds", "bills"]);
+    assert.deepEqual(nowOrder(["day"]), NOW_CARDS, "the ones before it by default go before it");
   });
 });

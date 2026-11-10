@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.69.0
+
+- **Ordem dos cards**, no fim da Agora: escolha em que ordem os cards aparecem (Férias, Busca, Remédios de hoje, Contas do GerencIA, Agora e Hoje, MemorIA, Rotina da casa e Tarefas do ResolvIA), com as setas de subir e descer. Estão todos na lista, também os que agora não aparecem por não ter nada ou por estar com a integração desligada, para já ficarem no lugar certo quando voltarem. A ordem é de cada pessoa e vale em todos os aparelhos dela. **Voltar à ordem de sempre** desfaz.
+
 ## 1.68.0
 
 - **Avisos no celular**: o título começa com **CronologIA** ("CronologIA · 💊 Losartana", "CronologIA · 🏆 Placar fechado") e o ícone pequeno é o do app. Como todos os apps chegam como Home Assistant, agora dá para ver de qual app é cada aviso. Vale para todos os apps da família. O canal de cada aviso (Remédios, Placar) continua o mesmo, com o som que você escolheu no celular.

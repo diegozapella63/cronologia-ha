@@ -119,6 +119,14 @@ describe("Store: app settings", () => {
     s.setApp(changes);
     return s.data.app;
   };
+  it("Agora › Ordem dos cards: each person their own, only the cards there are, every card in it; the default is not kept", () => {
+    const o = set({ now_order: { Davi: ["todos", "meds", "nada", "todos"], Aurora: ["away", "search", "meds", "bills", "day", "memoria", "home", "todos"], "": ["day"], X: "todos", Y: [] } }).now_order;
+    assert.deepEqual(o.Davi, ["away", "search", "todos", "meds", "bills", "day", "memoria", "home"], "the rest in the place they have by default");
+    assert.equal("Aurora" in o || "" in o, false, "the order of always is not kept (also when it comes out the same)");
+    assert.equal("X" in o || "Y" in o, false, "nothing valid: out");
+    assert.equal(set({ now_order: null }).now_order, undefined);
+    assert.equal(set({ now_order: "todos" }).now_order, undefined);
+  });
   it("Modo férias: two real days, the first not after the last; null clears; anything else is refused", () => {
     assert.deepEqual(set({ away: { from: "2026-11-03", to: "2026-11-07", extra: 1 } }).away, { from: "2026-11-03", to: "2026-11-07" });
     const s = fresh();

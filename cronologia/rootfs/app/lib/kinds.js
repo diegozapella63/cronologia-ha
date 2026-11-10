@@ -65,6 +65,20 @@ export function parseEvery(text) {
 // ------------------------------------------------------------------ parts of the day
 
 /** A routine without a time can still have a part of the day: from the hour each one starts. */
+// Agora › Ordem dos cards (1.69.0): the cards of Agora, in the order they come by default. Each person chooses theirs
+// (app.now_order: {person or "": [ids]}); every card is in it, also the ones with nothing now or with the integration
+// off. One missing from a saved order (new in a later version) goes back to its place, after the one before it by default.
+export const NOW_CARDS = ["away", "search", "meds", "bills", "day", "memoria", "home", "todos"];
+export function nowOrder(saved) {
+  const ids = (Array.isArray(saved) ? saved : []).filter((x, i, a) => NOW_CARDS.includes(x) && a.indexOf(x) === i);
+  for (const id of NOW_CARDS) {
+    if (ids.includes(id)) continue;
+    const prev = NOW_CARDS.slice(0, NOW_CARDS.indexOf(id)).reverse().find((x) => ids.includes(x));
+    ids.splice(prev ? ids.indexOf(prev) + 1 : 0, 0, id);
+  }
+  return ids;
+}
+
 export const PERIODS = [
   { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5 },
   { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12 },
