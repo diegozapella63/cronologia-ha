@@ -36,7 +36,9 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
 
 As caixas de seleção (como **Calendário padrão** ou **Fala para texto**) abrem uma janela de baixo para cima com as opções; a atual vem marcada. O Voltar do celular, o **X** ou tocar fora fecham sem mudar nada. No computador, a janela abre no meio da tela, e dá para escolher com as setas e Enter.
 
-Os horários e as datas também abrem uma janela assim, nunca a do celular. O horário sempre em 24 horas: toque na hora e depois nos minutos (de 5 em 5), que escolhem e fecham; **Pronto** muda só a hora. A data mostra o mês (‹ e › trocam), com hoje marcado; tocar num dia escolhe. No campo, a data aparece por extenso ("Qua, 9 dez").
+Os horários também abrem uma janela assim, nunca a do celular. O horário sempre em 24 horas: toque na hora e depois nos minutos (de 5 em 5), que escolhem e fecham; **Pronto** muda só a hora.
+
+As datas são como o Prazo do ResolvIA: os atalhos em botões (**Hoje**, **Amanhã**, **Sábado**, **Próx. semana**; numa data que já passou, como **Feito pela última vez**, **Hoje** e **Ontem**) e **Outra data**, que abre o mês ali embaixo, com hoje marcado: ‹ e › trocam o mês, tocar no nome do mês mostra os meses do ano e tocar num dia escolhe. No botão, a data aparece por extenso ("Quinta, 24 de dez"). Na conferência da leitura por IA, a data de cada evento ainda abre a janela do mês.
 
 O que está oculto ou pausado de propósito fica no fim da lista, fechado, com o nome e quantos são (**Ocultos (2)**, **Pausadas (3)**); tocar abre. Vale para os calendários ocultos, as listas do ResolvIA deixadas de fora e as rotinas pausadas nas férias.
 

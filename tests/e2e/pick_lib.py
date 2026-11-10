@@ -1,4 +1,5 @@
-# CronologIA 1.63.0: times and dates in the look of the app (frontend/src/whenpick.js), no <input type=time|date>.
+# CronologIA 1.63.0: times and dates in the look of the app (frontend/src/whenpick.js), no <input type=time|date>;
+# 1.67.0: the dates of the forms in the field of the family (datepick.js: the shortcuts and the month under them).
 # A field (button.pickf, or the Outra data chip) opens a window at the bottom: the 24 hours and the minutes (5 by 5),
 # or a month with ‹ and ›. These choose in it as a person would; the value of a field is in its data-value.
 import re
@@ -18,10 +19,23 @@ async def pick_time(field, hm):
     await pg.wait_for_timeout(150)
 
 async def pick_date(field, ymd):
-    """Taps the field, goes to the month (‹ ›) and taps the day."""
+    """Taps the field, goes to the month (‹ ›) and taps the day. 1.67.0: Outra data of a date field (datepick.js) opens
+    the month right under it, in the form; the small fields of the list of the AI still open the window."""
     pg = field.page
     await field.scroll_into_view_if_needed()
     await field.click()
+    box = field.locator("xpath=ancestor::date-pick[1]")
+    if await box.count():
+        cal = box.locator(".cal")
+        await cal.wait_for(timeout=5000)
+        for _ in range(60):
+            cur = await cal.locator(".cal-head").get_attribute("data-month")
+            if cur == ymd[:7]: break
+            await cal.locator(".cal-nav").nth(0 if ymd[:7] < cur else 1).click()
+            await pg.wait_for_timeout(60)
+        await cal.locator(f".cal-day[data-d='{ymd}']").click()
+        await pg.wait_for_timeout(250)
+        return
     w = pg.locator(".wp.in")
     await w.wait_for(timeout=5000)
     for _ in range(36):

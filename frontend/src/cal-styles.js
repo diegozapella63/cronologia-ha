@@ -2119,8 +2119,8 @@ export const calStyles = css`
   }
   .away-dates {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
     margin-top: 12px;
   }
   .away-dates .field {
@@ -3568,5 +3568,104 @@ export const calStyles = css`
   .sub-lead.with-icon .i {
     flex: none;
     margin-top: 2px;
+  }
+  /* ---------- one height, the same in every app of the family (50 px): buttons, fields, boxes of choice and the
+     choices in buttons (the tabs of Configurações, Tema, Semana, Repetir, the dates and De quem é). Out of it: the
+     buttons with only an icon, the tiles of the AI, the rows of the lists and of the calendar, the switches and the colors. */
+  .btn,
+  .btn.sm,
+  .dose-btn,
+  .model,
+  .pickf,
+  .select,
+  .field input[type="text"],
+  .money,
+  .search-box {
+    min-height: 50px;
+  }
+  .seg {
+    min-height: 50px;
+    align-items: stretch;
+  }
+  .seg button {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .pick,
+  .chip-row.grid .pick,
+  .chip-row.c3 > .pick,
+  .chip-row.c4 > .pick {
+    min-height: 50px;
+  }
+  .chip-row.grid .pick {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .chip-row > .pick,
+  .chip-row > .num-input,
+  .chip-row > .inline-time,
+  .field .time-row input,
+  .time-row .num-input {
+    min-height: 50px;
+  }
+  .chip-row > .pick {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  /* a seg in a grid (Repete, Mostrar antes): each line as tall as the inside of a seg of one line */
+  .seg.seg-grid button {
+    min-height: 42px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  /* the times of a medicine: the pill is the box of 50 */
+  .time-pill {
+    min-height: 50px;
+  }
+  .time-pill .pickf {
+    min-height: 42px;
+  }
+  .field .money input {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0;
+  }
+  .owner-pick button {
+    min-height: 50px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+  /* the date field (datepick.js): the shortcuts in columns of the same width (as in the ResolvIA), the month under them */
+  date-pick {
+    display: block;
+  }
+  .chip-row.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5em), 1fr));
+    gap: 8px;
+  }
+  .chip-row.grid .pick {
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    min-width: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .chip-row.grid .pick > span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  date-pick .cal {
+    margin-top: 8px;
+  }
+  .field .flabel .tl {
+    font-weight: 500;
+    color: var(--rv-muted);
+  }
+  .dp-until {
+    margin-top: 10px;
   }
 `;

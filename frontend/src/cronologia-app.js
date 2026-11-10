@@ -2,6 +2,8 @@ import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS, repeat, live } fr
 import { usagePanel, usageStyles } from "./usage-panel.js";
 import { equipPickerStyles } from "./equip-picker.js";
 import { themePicker, colorPicker, lookStyles, colorOfDay } from "./look.js";
+import { datePickField } from "./datepick.js";
+import { calendarStyles } from "./calendar.js";
 import { ICONS } from "./icons.js";
 import { ensureFonts } from "./fonts.js";
 import { appIcon } from "./appicon.js";
@@ -21,7 +23,7 @@ import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
-import { timeField, dateField, pickDate } from "./whenpick.js";
+import { timeField, dateField } from "./whenpick.js";
 import { offFold } from "./offfold.js";
 import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
 import {
@@ -131,7 +133,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles];
+  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(calendarStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles];
 
   constructor() {
     super();
@@ -2509,8 +2511,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </div>
       ${a
         ? html`<div class="away-dates">
-            <div class="field"><span class="flabel">De</span>${dateField(a.from, (v) => set(v, a.to), { label: "Férias de", weekStart: this._app("week_start", 1) })}</div>
-            <div class="field"><span class="flabel">Até</span>${dateField(a.to, (v) => set(a.from, v), { label: "Férias até", min: a.from, weekStart: this._app("week_start", 1) })}</div>
+            ${datePickField("De", a.from, (v) => v && set(v, a.to), { weekStart: this._app("week_start", 1), bid: "away-from" })}
+            ${datePickField("Até", a.to, (v) => v && set(a.from, v), { min: a.from, weekStart: this._app("week_start", 1), bid: "away-to" })}
           </div>
           <span class="field-hint away-cal">${icon("calendar-x")}<span>No Google, as rotinas saem desses dias e voltam em ${dateShort(addDays(fromYmd(a.to), 1), new Date(this._now))}.</span></span>`
         : nothing}
@@ -2785,11 +2787,6 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const writable = this._writable();
     const targets = f.mode === "edit" ? (f.rid ? writable.filter((c) => c.id === f.cal) : writable.filter((c) => c.id === f.origCal || (this._cal(f.origCal) && this._cal(f.origCal).canDelete))) : writable;
     const now = new Date();
-    const quick = [
-      { label: "Hoje", d: startOfDay(now) },
-      { label: "Amanhã", d: addDays(startOfDay(now), 1) },
-    ];
-    const isQuick = quick.some((q) => ymd(q.d) === f.date);
     const weekStart = this._app("week_start", 1);
     const setDate = (v) => this._setForm({ date: v, endDate: f.endDate && f.endDate < v ? "" : f.endDate });
     const setStart = (v) => {
@@ -2831,17 +2828,11 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <div class="flabel-row"><span class="flabel">Quando</span>
           <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${f.allDay} @change=${(e) => this._setForm({ allDay: e.target.checked })} aria-label="Dia todo" /><span class="track"></span></span></label>
         </div>
-        <div class="chip-row c3">
-          ${quick.map((q) => html`<button class="pick ${f.date === ymd(q.d) ? "on" : ""}" @click=${() => this._setForm({ date: ymd(q.d), endDate: f.endDate && f.endDate < ymd(q.d) ? "" : f.endDate })}>${q.label}</button>`)}
-          <button id="cr-date" class="pick ${!isQuick ? "on" : ""}" data-value=${f.date} @click=${(e) => pickDate(e.currentTarget, { value: f.date, title: "Data", weekStart }).then((v) => v && setDate(v))}>
-            ${icon("calendar")}<span>${!isQuick ? cap(dayLabel(fromYmd(f.date), now, { long: false })) : "Outra data"}</span>
-          </button>
-        </div>
+        <date-pick .value=${f.date} kind="futuro" .weekStart=${weekStart} .bid=${"cr-date"} .label=${"Data"} @pick=${(e) => e.detail.value && setDate(e.detail.value)}></date-pick>
         ${f.allDay
-          ? html`<div class="time-row">
-              <span class="tl">Até</span>
-              ${dateField(f.endDate || f.date, (v) => this._setForm({ endDate: v > f.date ? v : "" }), { label: "Até", min: f.date, weekStart })}
-              ${f.endDate ? html`<span class="tl">${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : html`<span class="tl">um dia</span>`}
+          ? html`<div class="field dp-field dp-ate">
+              <span class="flabel">Até${f.endDate ? html` <span class="tl">· ${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : nothing}</span>
+              <date-pick .value=${f.endDate || ""} kind="nenhum" .none=${"Um dia"} .min=${f.date} .weekStart=${weekStart} .bid=${"cr-ate"} .label=${"Até"} @pick=${(e) => this._setForm({ endDate: e.detail.value > f.date ? e.detail.value : "" })}></date-pick>
             </div>`
           : html`<div class="time-row">
                 ${timeField(f.start, setStart, { label: "Começa" })}

@@ -62,7 +62,7 @@ async def main():
         check(await a.locator(".mais-head").count() == 0, "no heading repeating the title")
         await panel.locator("input[aria-label='De férias']").check(); await pg.wait_for_timeout(800)
         await wait_for(lambda: stored()["app"].get("away") == {"from": D(0), "to": D(4)}, "on: from today, 5 days")
-        check(await value(field_of(panel, "Férias até")) == D(4), "the dates to change")
+        check(await value(panel.locator("#away-to")) == D(4), "the dates to change (1.67.0: in the date field of the family)")
         hint = await panel.locator(".away-cal").inner_text() if await panel.locator(".away-cal").count() else ""
         check("No Google, as rotinas saem desses dias e voltam em" in hint, f"1.59.0: says what happens in the Google calendar ({hint!r})")
         await panel.screenshot(path=f"{SP}/shots/cra-options.png")

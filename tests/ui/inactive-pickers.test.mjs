@@ -133,7 +133,8 @@ describe("the forms: times and dates in the look of the app", () => {
       assert.doesNotMatch(h, /type="(time|date|datetime-local)"/);
       assert.doesNotMatch(h, /<datalist|showPicker/);
       for (const t of form.times) assert.match(h, new RegExp(`class="pickf t[^"]*" data-value="${t}"`));
-      assert.match(h, /class="pickf d[^"]*" data-value="2026-1[12]-\d\d" aria-label="Até: \w{3}, \d{1,2} (nov|dez)"/);
+      // 1.67.0: Até in the field of the family (datepick.js): Outra data, with the month under it, not before the start
+      assert.match(h, /<date-pick class="dp-until" value="2026-1[12]-\d\d" kind="nenhum" min="2026-11-06"/);
       assert.doesNotMatch(text(new App({ form })._renderKindForm()), /AM|PM/);
     });
   }

@@ -84,24 +84,27 @@ async def main():
                 # the closed field: as tall as a box and the other fields, the same corners and border
                 look = lambda loc: loc.evaluate("(e) => { const s = getComputedStyle(e); return [Math.round(e.getBoundingClientRect().height), s.borderTopLeftRadius, s.borderTopWidth]; }")
                 f1 = await look(start)
-                # Outra data: a month, today and the day chosen
+                # Outra data (1.67.0, the field of the family): the month right under it, in the form, today and the day chosen
                 chip = sheet.locator("#cr-date")
                 await chip.tap(); await pg.wait_for_timeout(450)
-                check(await win.count() == 1 and (await win.locator(".ss-head b").inner_text()).strip() == "Data" and await win.locator(".wp-day.today").count() == 1, f"{k}: Outra data: the month of the app, today marked")
-                wds = [t.strip() for t in await win.locator(".wp-wd").all_inner_texts()]
+                cal = sheet.locator("date-pick .cal")
+                check(await cal.count() == 1 and await win.count() == 0 and await cal.locator(".cal-day.today").count() == 1, f"{k}: Outra data: the month right under it, no window, today marked")
+                wds = [t.strip() for t in await cal.locator(".cal-wd").all_inner_texts()]
                 check(wds == ["S", "T", "Q", "Q", "S", "S", "D"], f"{k}: the week from Monday, in Portuguese ({wds})")
+                quick = [t.strip() for t in await sheet.locator("date-pick").first.locator(".dp-row .pick").all_inner_texts()]
+                check(quick[0] == "Hoje" and quick[-1] == "Outra data" and len(quick) >= 3, f"{k}: the shortcuts of the ResolvIA ({quick})")
                 await pg.screenshot(path=f"{SP}/shots/crpk-data-{scheme}-{w}.png")
-                await pg.keyboard.press("Escape"); await pg.wait_for_timeout(600)
-                check(await win.count() == 0 and await sheet.count() == 1, f"{k}: Esc closes only the window")
+                await chip.tap(); await pg.wait_for_timeout(400)
+                check(await cal.count() == 0 and await sheet.count() == 1, f"{k}: Outra data again closes the month")
                 await pick_date(chip, D(40))
                 check(await value(chip) == D(40), f"{k}: › to another month, a day chooses it ({await value(chip)})")
                 # Dia todo › Até: not before the start
                 await sheet.locator("input[aria-label='Dia todo']").check(); await pg.wait_for_timeout(300)
-                ate = field_of(sheet, "Até")
+                ate = sheet.locator("#cr-ate")
                 await ate.tap(); await pg.wait_for_timeout(450)
-                before = win.locator(f".wp-day[data-d='{D(39)}']")
+                before = sheet.locator(f"date-pick .cal-day[data-d='{D(39)}']")
                 check(await before.count() == 0 or await before.is_disabled(), f"{k}: Até: the days before the start can't be chosen")
-                await pg.keyboard.press("Escape"); await pg.wait_for_timeout(600)
+                await ate.tap(); await pg.wait_for_timeout(400)
                 await ate.scroll_into_view_if_needed()
                 await pg.screenshot(path=f"{SP}/shots/crpk-novo-{scheme}-{w}.png")
                 await fits(pg, a, f"{k} Novo")

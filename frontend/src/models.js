@@ -6,7 +6,8 @@ import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { placeTags, roomsShown } from "./place-tags.js";
-import { timeField, dateField, pickDate } from "./whenpick.js";
+import { timeField } from "./whenpick.js";
+import { datePickField } from "./datepick.js";
 import { offFold } from "./offfold.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
@@ -1012,23 +1013,10 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
-    _dateField(label, value, onPick, id, { quick = true } = {}) {
-      const now = new Date();
-      const today = startOfDay(now);
-      const opts = quick
-        ? [
-            ["Hoje", ymd(today)],
-            ["Amanhã", ymd(addDays(today, 1))],
-          ]
-        : [];
-      const isQuick = opts.some(([, v]) => v === value);
-      return html`<div class="field">
-        <span class="flabel">${label}</span>
-        <div class="chip-row c3">
-          ${opts.map(([l, v]) => html`<button class="pick ${value === v ? "on" : ""}" @click=${() => onPick(v)}>${l}</button>`)}
-          <button id=${id} class="pick ${!isQuick ? "on" : ""}" data-value=${value || ""} @click=${(e) => pickDate(e.currentTarget, { value, title: label, weekStart: this._app("week_start", 1) }).then((v) => v && onPick(v))}>${icon("calendar")}<span>${!isQuick && value ? cap(dayLabel(fromYmd(value), now, { long: false })) : "Outra data"}</span></button>
-        </div>
-      </div>`;
+    /** The date of a form: the shortcuts and Outra data, with the month right under them (datepick.js). kind: "futuro"
+     * (Hoje, Amanhã, Sábado, Próx. semana) or "passado" (Hoje and Ontem, nothing after today). */
+    _dateField(label, value, onPick, id, { kind = "futuro" } = {}) {
+      return datePickField(label, value, (v) => v && onPick(v), { kind, max: kind === "passado" ? ymd(new Date()) : "", weekStart: this._app("week_start", 1), bid: id });
     }
 
     /** pets: whether pets are among the choices (they take medicines, but do no chores). */
@@ -1109,7 +1097,7 @@ export const ModelsMixin = (Base) =>
         <span class="flabel">${label}</span>
         <div class="chip-row">${opts.map(([k, l]) => html`<button class="pick ${f.dur === k ? "on" : ""}" @click=${() => this._setForm({ dur: k })}>${l}</button>`)}</div>
         ${f.dur === "dias" ? html`<div class="time-row"><span class="tl">Por</span><input type="number" class="num-input" min="1" max="365" .value=${String(f.days)} @input=${(e) => this._setForm({ days: e.target.value })} /><span class="tl">dias</span></div>` : nothing}
-        ${f.dur === "ate" ? html`<div class="time-row"><span class="tl">Até</span>${dateField(f.until, (v) => this._setForm({ until: v }), { label: "Até", min: f.date, weekStart: this._app("week_start", 1) })}</div>` : nothing}
+        ${f.dur === "ate" ? html`<date-pick class="dp-until" .value=${f.until || ""} kind="nenhum" .min=${f.date} .weekStart=${this._app("week_start", 1)} .bid=${"kf-until"} .label=${"Até"} @pick=${(e) => e.detail.value && this._setForm({ until: e.detail.value })}></date-pick>` : nothing}
       </div>`;
     }
 
@@ -1223,8 +1211,8 @@ export const ModelsMixin = (Base) =>
             <span class="field-hint">${icon("repeat")}<span>Feito hoje, volta em ${everyLabel(f.every)}.</span></span>
           </div>
           ${f.mode === "add"
-            ? this._dateField("Feito pela última vez", f.last, (v) => this._setForm({ last: v }), "kf-last", { quick: false })
-            : this._dateField("Próxima vez", f.date, (v) => this._setForm({ date: v }), "kf-date", { quick: false })}
+            ? this._dateField("Feito pela última vez", f.last, (v) => this._setForm({ last: v }), "kf-last", { kind: "passado" })
+            : this._dateField("Próxima vez", f.date, (v) => this._setForm({ date: v }), "kf-date")}
           <p class="next-line">${icon("calendar-check")}<span>Próxima: <b>${cap(dayLabel(next, now, { long: false }))}</b>${dayDiff(next, now) > 1 ? ` · em ${plural(dayDiff(next, now), "dia", "dias")}` : ""}</span></p>
           ${this._pointsField()}
           <div class="field"><span class="flabel">Mostrar na tela inicial, antes da data</span><div class="seg seg-grid" role="radiogroup" aria-label="Mostrar na tela inicial" style="grid-template-columns:repeat(5,1fr)">${[1, 3, 7, 15, 30].map((n) => html`<button class=${f.warn === n ? "on" : ""} role="radio" aria-checked=${f.warn === n ? "true" : "false"} @click=${() => this._setForm({ warn: n })}>${n === 1 ? "1 dia" : `${n} dias`}</button>`)}</div></div>

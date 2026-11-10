@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.67.0
+
+- **Datas no jeito do ResolvIA**: no Adicionar (evento, tarefa, remédio, conta, rotina, manutenção) e em Férias, a data tem os atalhos em botões (**Hoje**, **Amanhã**, **Sábado**, **Próx. semana**; em **Feito pela última vez**, **Hoje** e **Ontem**) e **Outra data**, que abre o mês ali mesmo, embaixo, em vez de uma janela. Tocar no nome do mês mostra os meses do ano. O **Até** do dia todo tem **Um dia** e Outra data.
+- **Uma altura só**: botões, campos, caixas de seleção, botões de escolha (as abas de Configurações, o Tema, a Semana, o Repetir, De quem é) e as escolhas em botões têm a mesma altura, a mesma de todos os apps da família. O **Restaurar** das versões, os modelos do Adicionar e o **Paguei**, **Tomei** e **Feito** da tela Agora também. O Tema ficou com o ícone ao lado do nome.
+
 ## 1.66.0
 
 - **Mais › Configurações › Dados**: os botões no padrão dos outros apps da família: na largura do cartão no celular, da mesma altura.
