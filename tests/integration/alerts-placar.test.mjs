@@ -81,7 +81,7 @@ describe("the placar: a period that ended closes when the server starts", () => 
   });
   it("each player's phone is told, with the prize and the one of now", async () => {
     const told = await waitFor(async () => {
-      const n = await notes((x) => x.title === "🏆 Placar fechado");
+      const n = await notes((x) => x.title === "CronologIA · 🏆 Placar fechado");
       return n.length === 2 && n;
     }, { what: "the result on the phones" });
     assert.deepEqual(told.map((n) => n.service).sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
@@ -155,7 +155,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
   it("a dose past the late minutes: to the person and to the caregiver", { skip: lateNight && "near midnight the fake doses move" }, async () => {
     const m = med("Mounjaro 2,5 mg");
     const late = await waitFor(async () => {
-      const n = await notes((x) => x.title === "⚠️ Mounjaro 2,5 mg atrasado");
+      const n = await notes((x) => x.title === "CronologIA · ⚠️ Mounjaro 2,5 mg atrasado");
       return n.length === 2 && n;
     }, { what: "the late alert", timeout: 15000 });
     assert.deepEqual(late.map((n) => n.service).sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
@@ -186,7 +186,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
   });
   it("the test alert's Adiar comes back too: confirmed on the phone and on the screens", async () => {
     await c.call("cronologia/notify/test", { person: "Aurora" });
-    const [test] = await notes((x) => x.title === "💊 Teste do CronologIA" && x.service === "mobile_app_galaxy_s23");
+    const [test] = await notes((x) => x.title === "CronologIA · 💊 Teste do aviso" && x.service === "mobile_app_galaxy_s23");
     assert.deepEqual(
       test.data.actions.map((a) => a.title),
       ["Tomei", "Adiar 15 min"],
@@ -195,7 +195,7 @@ describe("phone alerts of the doses (the server's own timer)", () => {
     const ix = await h.wait((x) => x.test && x.test.action === "adiar", "the Adiar of the test");
     assert.equal(ix.test.person, "Aurora");
     const ok = await waitFor(async () => {
-      const n = await notes((x) => x.title === "✅ Funcionou" && x.service === "mobile_app_galaxy_s23");
+      const n = await notes((x) => x.title === "CronologIA · ✅ Funcionou" && x.service === "mobile_app_galaxy_s23");
       return n.length && n[0];
     }, { what: "the confirmation" });
     assert.equal(ok.message, "O botão Adiar chegou ao CronologIA. Num aviso de verdade, ele avisa de novo em 15 minutos.");

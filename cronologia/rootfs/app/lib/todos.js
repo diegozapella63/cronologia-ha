@@ -175,6 +175,8 @@ export class Todos {
     const off = new Set(hidden);
     const app = this.app(now);
     const turnedOff = new Set((app && app.semPrazo) || []);
+    // Controlar prazos off in the ResolvIA (1.68.0): no list has deadlines, the dates there are only information
+    const allOff = !!app && app.prazos === false;
     const lists = [];
     const items = [];
     for (const [id, st] of this.states) {
@@ -186,7 +188,7 @@ export class Todos {
       // one gets its dates from the integration ("unavailable since…"): those
       // are never tasks with a deadline. The ResolvIA can also turn a list's
       // deadlines off (sem_prazo).
-      const info = !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : turnedOff.has(id) ? "resolvia" : null;
+      const info = !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : allOff || turnedOff.has(id) ? "resolvia" : null;
       const withDue = info ? [] : all.filter((i) => i.due && i.status !== "completed");
       lists.push({ id, name, features, info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
       if (off.has(id)) continue;

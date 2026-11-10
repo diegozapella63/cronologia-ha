@@ -559,7 +559,8 @@ describe("Home: index and phone alerts of doses", () => {
     let n = notifications(ha);
     assert.equal(n.length, 1);
     assert.equal(n[0].service, "mobile_app_galaxy_s23");
-    assert.equal(n[0].service_data.title, "💊 Sertralina");
+    assert.equal(n[0].service_data.title, "CronologIA · 💊 Sertralina", "the name of the app first, as in every app of the family");
+    assert.equal(n[0].service_data.data.notification_icon, "mdi:calendar-clock", "the icon of the app");
     assert.equal(n[0].service_data.message, "Aurora · 1 comprimido · 14:00");
     assert.deepEqual(n[0].service_data.data.actions, [
       { action: `CRONOLOGIA_TOMEI_${hashOf(key)}`, title: "Tomei" },
@@ -581,7 +582,7 @@ describe("Home: index and phone alerts of doses", () => {
       n.slice(1).map((x) => x.service),
       ["mobile_app_galaxy_s23", "mobile_app_pixel_8"],
     );
-    assert.equal(n[1].service_data.title, "⚠️ Sertralina atrasado");
+    assert.equal(n[1].service_data.title, "CronologIA · ⚠️ Sertralina atrasado");
     assert.equal(n[1].service_data.message, "Aurora ainda não tomou o das 14:00 (30 min). Dose: 1 comprimido.");
     assert.deepEqual(store.data.sent[key].targets.sort(), ["mobile_app_galaxy_s23", "mobile_app_pixel_8"]);
     // and never again
@@ -647,7 +648,7 @@ describe("Home: index and phone alerts of doses", () => {
     home.rebuild();
     await home.sendAlerts();
     assert.equal(notifications(ha).length, 2);
-    assert.equal(notifications(ha)[1].service_data.title, "💊 Sertralina");
+    assert.equal(notifications(ha)[1].service_data.title, "CronologIA · 💊 Sertralina");
     assert.ok(store.data.sent[key].snoozed);
     assert.equal("snooze_until" in store.data.sent[key], false);
     home.onAction({ action: `CRONOLOGIA_TOMEI_${hashOf(key)}` });
@@ -702,8 +703,8 @@ describe("Home: index and phone alerts of doses", () => {
         .slice(2)
         .map((n) => [n.service, n.service_data.title]),
       [
-        ["mobile_app_pixel_8", "💊 Sertralina"],
-        ["mobile_app_galaxy_s23", "💊 Sertralina"],
+        ["mobile_app_pixel_8", "CronologIA · 💊 Sertralina"],
+        ["mobile_app_galaxy_s23", "CronologIA · 💊 Sertralina"],
       ],
     );
   });
@@ -763,7 +764,7 @@ describe("Home: index and phone alerts of doses", () => {
     );
     await home.onAction({ action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
     assert.deepEqual(home.lastTest, { person: "Davi", action: "tomei", at: NOW }, "said by the person, not the device");
-    assert.equal(ha.sent[1].service_data.title, "✅ Funcionou");
+    assert.equal(ha.sent[1].service_data.title, "CronologIA · ✅ Funcionou");
     await assert.rejects(home.testAlert("Zeca"), { code: "no_phone" });
     await assert.rejects(home.testAlert("mobile_app_pixel_8"), { code: "no_phone" }, "a device is not a person");
   });
@@ -947,7 +948,7 @@ describe("Home: the placar", () => {
       n.map((x) => x.service),
       ["mobile_app_pixel_8", "mobile_app_galaxy_s23"],
     );
-    assert.equal(n[0].service_data.title, "🏆 Placar fechado");
+    assert.equal(n[0].service_data.title, "CronologIA · 🏆 Placar fechado");
     assert.equal(n[0].service_data.message, "Davi venceu: 30 × 10. Prêmio: Cinema. Prêmio agora: Davi: Sorvete · Aurora: Massagem.");
     await home.rollover();
     assert.equal(store.data.score.history.length, 1, "closed once");
@@ -1211,7 +1212,7 @@ describe("Home: the daily reminder of the placar", () => {
     await home.scoreReminder(at(2026, 11, 2, 20, 0));
     const n = notifications(ha);
     assert.deepEqual(n.map((x) => x.service), ["mobile_app_pixel_8", "mobile_app_galaxy_s23"]);
-    assert.equal(n[0].service_data.title, "🏆 Placar");
+    assert.equal(n[0].service_data.title, "CronologIA · 🏆 Placar");
     assert.equal(n[0].service_data.message, "Davi na frente por 10 pontos: Davi 135 × Aurora 125. Fecha em 7 dias.");
     assert.deepEqual([n[0].service_data.data.tag, n[0].service_data.data.group, n[0].service_data.data.channel], ["cronologia-placar-lembrete", "cronologia-placar", "Placar"]);
     await home.scoreReminder(at(2026, 11, 2, 20, 30));

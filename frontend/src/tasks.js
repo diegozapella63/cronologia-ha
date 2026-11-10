@@ -461,7 +461,11 @@ export const TasksMixin = (Base) =>
       const shown = lists.filter((l) => !l.hidden);
       const due = shown.reduce((n, l) => n + l.due, 0);
       const late = shown.reduce((n, l) => n + l.overdue, 0);
-      const counts = `${plural(lists.length, "lista", "listas")} · ${plural(due, "tarefa com prazo", "tarefas com prazo")}${late ? `, ${plural(late, "atrasada", "atrasadas")}` : ""}.`;
+      // Controlar prazos off in the ResolvIA (1.68.0): no deadline anywhere, so neither the count nor Mostrar no calendário
+      const dueOk = this._todoDueOk();
+      const counts = dueOk
+        ? `${plural(lists.length, "lista", "listas")} · ${plural(due, "tarefa com prazo", "tarefas com prazo")}${late ? `, ${plural(late, "atrasada", "atrasadas")}` : ""}.`
+        : `${plural(lists.length, "lista", "listas")} · prazos desligados no ResolvIA.`;
       const state = !lists.length
         ? { tone: "off", title: "Nenhuma lista de tarefas encontrada", text: "Com o ResolvIA (ou qualquer lista de tarefas do Home Assistant), as tarefas com prazo aparecem aqui sozinhas. Nada a configurar." }
         : app
@@ -492,13 +496,15 @@ export const TasksMixin = (Base) =>
         ${onSwitch}
         <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
         ${lists.length
-          ? html`<div class="row switch-row">
-                <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">No dia do prazo.</div></div>
-                <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
-              </div>
+          ? html`${dueOk
+                ? html`<div class="row switch-row">
+                    <div class="grow"><div class="label">Mostrar no calendário</div><div class="hint">No dia do prazo.</div></div>
+                    <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("todo_off_calendar", false)} @change=${(e) => this._saveAppPrefs({ todo_off_calendar: e.target.checked ? null : true })} aria-label="Tarefas no calendário" /><span class="track"></span></label>
+                  </div>`
+                : nothing}
               <div class="row switch-row">
-                <div class="grow"><div class="label">Tarefas sem prazo na Agora</div><div class="hint">Depois das que têm prazo.</div></div>
-                <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label="Tarefas sem prazo na Agora" /><span class="track"></span></label>
+                <div class="grow"><div class="label">${dueOk ? "Tarefas sem prazo na Agora" : "Tarefas na Agora"}</div>${dueOk ? html`<div class="hint">Depois das que têm prazo.</div>` : nothing}</div>
+                <label class="switch"><input type="checkbox" role="switch" .checked=${!!this._app("todo_undated", false)} @change=${(e) => this._saveAppPrefs({ todo_undated: e.target.checked ? true : null })} aria-label=${dueOk ? "Tarefas sem prazo na Agora" : "Tarefas na Agora"} /><span class="track"></span></label>
               </div>
               ${this._todoOwners().length
                 ? html`<div class="row switch-row">

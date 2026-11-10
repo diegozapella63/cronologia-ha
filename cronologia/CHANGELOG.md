@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.68.0
+
+- **Avisos no celular**: o título começa com **CronologIA** ("CronologIA · 💊 Losartana", "CronologIA · 🏆 Placar fechado") e o ícone pequeno é o do app. Como todos os apps chegam como Home Assistant, agora dá para ver de qual app é cada aviso. Vale para todos os apps da família. O canal de cada aviso (Remédios, Placar) continua o mesmo, com o som que você escolheu no celular.
+- **Tarefas do ResolvIA** com **Controlar prazos** desligado lá: as tarefas não aparecem mais como atrasadas nem no calendário. Em Integrações, **Mostrar no calendário** some, e **Tarefas sem prazo na Agora** vira **Tarefas na Agora**.
+
 ## 1.67.1
 
 - **Tema**: **Automático** agora se chama **Sistema** (segue o claro ou escuro do Home Assistant, como antes). O nome cabe ao lado do ícone e é o mesmo em todos os apps da família.

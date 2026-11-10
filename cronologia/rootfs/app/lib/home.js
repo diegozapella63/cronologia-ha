@@ -12,7 +12,13 @@ import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, bu
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
-import { trackerDevices, trackerPhones } from "./phones.js";
+import { appTitle, trackerDevices, trackerPhones } from "./phones.js";
+
+// Every alert says which app sent it (on the phone they all arrive as Home Assistant), as in every app of the family:
+// the name of the app in front of the title ("CronologIA · 💊 Sertralina") and the icon of the app (the small one, on
+// Android). Clearing an alert (clear_notification) has no title.
+const APP_ICON = "mdi:calendar-clock";
+export const ofApp = (sd) => (sd.message === "clear_notification" ? sd : { ...sd, title: appTitle("CronologIA", sd.title), data: { notification_icon: APP_ICON, ...(sd.data || {}) } });
 
 const DAY = 86400000;
 const BACK_DAYS = 200;
@@ -346,7 +352,7 @@ export class Home {
     const { title, message } = this.scoreReminderText(now);
     for (const target of targets) {
       await this.ha
-        .send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-lembrete") } })
+        .send({ type: "call_service", domain: "notify", service: target, service_data: ofApp({ title, message, data: this.scoreNoteData("cronologia-placar-lembrete") }) })
         .then(() => this.log.info(`Lembrete do placar para ${target}`))
         .catch((err) => this.log.warn(`Lembrete do placar para ${target}: ${err.message}`));
     }
@@ -381,7 +387,7 @@ export class Home {
     const phones = this.phonesOf(person);
     if (!phones.length) throw coded("no_phone", "Sem celular ligado a você no Home Assistant");
     const { title, message } = this.scoreReminderText(new Date());
-    return this.sendEach(`Teste do lembrete para ${person}`, phones, (target) => this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data: this.scoreNoteData("cronologia-placar-teste") } }));
+    return this.sendEach(`Teste do lembrete para ${person}`, phones, (target) => this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: ofApp({ title, message, data: this.scoreNoteData("cronologia-placar-teste") }) }));
   }
 
   /**
@@ -456,7 +462,7 @@ export class Home {
     };
     for (const target of targets) {
       try {
-        await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: { title, message, data } });
+        await this.ha.send({ type: "call_service", domain: "notify", service: target, service_data: ofApp({ title, message, data }) });
         this.log.info(`Aviso (${stage}) de ${m.summary} ${m.time} para ${target}`);
       } catch (err) {
         this.log.warn(`Aviso para ${target} falhou: ${err.message}`);
@@ -492,8 +498,8 @@ export class Home {
       type: "call_service",
       domain: "notify",
       service: target,
-      service_data: {
-        title: "💊 Teste do CronologIA",
+      service_data: ofApp({
+        title: "💊 Teste do aviso",
         message: "Assim chega o aviso do remédio. Toque em Tomei para conferir se o botão chega ao app.",
         data: {
           tag: "cronologia-teste",
@@ -508,7 +514,7 @@ export class Home {
           push: { "interruption-level": "time-sensitive" },
           ...(url ? { url, clickAction: url } : {}),
         },
-      },
+      }),
     });
   }
 
@@ -522,7 +528,7 @@ export class Home {
         ? "O botão Tomei chegou ao CronologIA. Os avisos de remédio estão prontos neste celular."
         : `O botão Adiar chegou ao CronologIA. Num aviso de verdade, ele avisa de novo em ${SNOOZE_MIN} minutos.`;
     await this.ha
-      .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "✅ Funcionou", message, data: { tag: "cronologia-teste", channel: "Remédios", ttl: 0 } } })
+      .send({ type: "call_service", domain: "notify", service: target, service_data: ofApp({ title: "✅ Funcionou", message, data: { tag: "cronologia-teste", channel: "Remédios", ttl: 0 } }) })
       .catch((err) => this.log.warn(`Confirmação do teste para ${target} falhou: ${err.message}`));
   }
 
@@ -868,7 +874,7 @@ export class Home {
     const targets = [...new Set(st.participants.flatMap((n) => this.phonesOf(n)))];
     for (const target of targets) {
       await this.ha
-        .send({ type: "call_service", domain: "notify", service: target, service_data: { title: "🏆 Placar fechado", message, data: this.scoreNoteData("cronologia-placar") } })
+        .send({ type: "call_service", domain: "notify", service: target, service_data: ofApp({ title: "🏆 Placar fechado", message, data: this.scoreNoteData("cronologia-placar") }) })
         .catch((err) => this.log.warn(`Resultado para ${target}: ${err.message}`));
     }
   }

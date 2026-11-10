@@ -321,6 +321,14 @@ describe("Todos: index (Tarefas com prazo)", () => {
     assert.equal(und.items[0].undated, true);
     assert.equal(und.items[0].due, null);
   });
+  it("Controlar prazos off in the ResolvIA (prazos: false): no list has deadlines (1.68.0)", () => {
+    const { t, ha } = make({ app: appFile({ prazos: false }) });
+    t.setState("todo.casa", state("Casa"));
+    ha.subs[0].onEvent({ items: [{ uid: "c1", summary: "Passar pano", status: "needs_action", due: "2026-11-01" }] });
+    const ix = t.index(NOW);
+    assert.deepEqual([ix.lists[0].info, ix.lists[0].due, ix.lists[0].overdue, ix.items.length], ["resolvia", 0, 0, 0], "no deadline, nothing late");
+    assert.equal(t.index(NOW, [], { undated: true }).items[0].due, null, "in Agora only as a task without a deadline");
+  });
   it("undated: pending tasks without a due date come after the dated ones, at most 60", () => {
     const { t, ha } = make();
     t.setState("todo.casa", state("Casa"));

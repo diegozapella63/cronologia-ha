@@ -30,8 +30,8 @@ async def main():
             g = notes(lambda n: "Gardenal" in n.get("title", ""))
             check({n["service"] for n in g} == {"mobile_app_pixel_8"}, f"to quem cuida ({[n['service'] for n in g]})")
             check([x["title"] for x in g[0]["data"]["actions"]] == ["Tomei", "Adiar 15 min"] and g[0]["data"]["channel"] == "Remédios", "with Tomei and Adiar 15 min, on the Remédios channel")
-            await wait_for(lambda: len(notes(lambda n: n.get("title") == "⚠️ Mounjaro 2,5 mg atrasado")) == 2, "a dose past 30 minutes: the late alert")
-            late = notes(lambda n: n.get("title") == "⚠️ Mounjaro 2,5 mg atrasado")
+            await wait_for(lambda: len(notes(lambda n: n.get("title") == "CronologIA · ⚠️ Mounjaro 2,5 mg atrasado")) == 2, "a dose past 30 minutes: the late alert")
+            late = notes(lambda n: n.get("title") == "CronologIA · ⚠️ Mounjaro 2,5 mg atrasado")
             check(sorted(n["service"] for n in late) == ["mobile_app_galaxy_s23", "mobile_app_pixel_8"] and re.match(r"Aurora ainda não tomou o das \d\d:\d\d \(\d+ min\)\. Dose: 1 caneta\.", late[0]["message"]), f"to Aurora's phone and to quem cuida ({late[0]['message']})")
             # Adiar on the phone: not taken, comes back in 15 minutes
             tomei, adiar = [x["action"] for x in g[0]["data"]["actions"]]
@@ -68,25 +68,25 @@ async def main():
         await A.screenshot(path=f"{SP}/shots/crav-avisos.png", full_page=True)
         # the sininho: a test like the real one, on the phones of the person; its Adiar comes back to the app
         await row("Aurora").locator(".icon-btn[aria-label='Testar aviso para Aurora']").click()
-        await wait_for(lambda: notes(lambda n: n.get("title") == "💊 Teste do CronologIA" and n["service"] == "mobile_app_galaxy_s23"), "Testar: the test alert on Aurora's phone")
+        await wait_for(lambda: notes(lambda n: n.get("title") == "CronologIA · 💊 Teste do aviso" and n["service"] == "mobile_app_galaxy_s23"), "Testar: the test alert on Aurora's phone")
         # the toast comes right after the phone gets it: wait for it instead of reading at once
         for _ in range(40):
             if "Aviso de teste enviado para o celular de Aurora" in await toast(): break
             await A.wait_for_timeout(100)
         t = await toast()
         check("Aviso de teste enviado para o celular de Aurora" in t, f"the app says it was sent, by the person ({t!r})")
-        test = notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]
+        test = notes(lambda n: n.get("title") == "CronologIA · 💊 Teste do aviso")[-1]
         st.fire("mobile_app_notification_action", {"action": test["data"]["actions"][1]["action"]})
         async def adiar_back(): return "Aurora: o botão Adiar chegou ao app" in await toast()
         await wait_for(adiar_back, "tapping Adiar on the test: the app says it arrived")
-        await wait_for(lambda: notes(lambda n: n.get("title") == "✅ Funcionou" and "Adiar chegou" in n.get("message", "")), "and the phone gets the confirmation")
+        await wait_for(lambda: notes(lambda n: n.get("title") == "CronologIA · ✅ Funcionou" and "Adiar chegou" in n.get("message", "")), "and the phone gets the confirmation")
         # the pet's alerts on the phone of Aurora: the sininho of Mimi tests there
         await mimi_sel.select_option("Aurora")
         await wait_for(lambda: st.stored()["app"]["people"].get("Mimi") == {"pet": True, "care": "Aurora"}, "Aurora gets the alerts of Mimi")
-        n0 = len(notes(lambda n: n.get("title") == "💊 Teste do CronologIA"))
+        n0 = len(notes(lambda n: n.get("title") == "CronologIA · 💊 Teste do aviso"))
         await A.wait_for_timeout(500)
         await row("Mimi").locator(".icon-btn[aria-label='Testar aviso para Mimi']").click()
-        await wait_for(lambda: len(notes(lambda n: n.get("title") == "💊 Teste do CronologIA")) == n0 + 1 and notes(lambda n: n.get("title") == "💊 Teste do CronologIA")[-1]["service"] == "mobile_app_galaxy_s23", "the test of Mimi goes to the phone of Aurora")
+        await wait_for(lambda: len(notes(lambda n: n.get("title") == "CronologIA · 💊 Teste do aviso")) == n0 + 1 and notes(lambda n: n.get("title") == "CronologIA · 💊 Teste do aviso")[-1]["service"] == "mobile_app_galaxy_s23", "the test of Mimi goes to the phone of Aurora")
         await mimi_sel.select_option("")
         await wait_for(lambda: st.stored()["app"]["people"].get("Mimi") == {"pet": True}, "back to Quem cuida")
         # Avisar de novo: 15 min, 1 hora, Não

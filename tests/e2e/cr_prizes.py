@@ -52,8 +52,8 @@ async def main():
         check(f"semana passada · {LAST}" in ct.lower() and "Davi venceu 30 × 10" in ct and "Prêmio: Jantar fora" in ct, f"result card: who won, the score and the winner's own prize ({ct})")
         check(await card.locator(".dose-btn", has_text="Entregue").count() == 1, "with Entregue")
         await card.screenshot(path=f"{SP}/shots/crpz-result.png")
-        await wait_for(lambda: len([n for n in st.notifications() if n.get("title") == "🏆 Placar fechado"]) == 2, "the result sent to the phones")
-        told = [n for n in st.notifications() if n.get("title") == "🏆 Placar fechado"]
+        await wait_for(lambda: len([n for n in st.notifications() if n.get("title") == "CronologIA · 🏆 Placar fechado"]) == 2, "the result sent to the phones")
+        told = [n for n in st.notifications() if n.get("title") == "CronologIA · 🏆 Placar fechado"]
         check(sorted(n["service"] for n in told) == ["mobile_app_galaxy_s23", "mobile_app_pixel_8"] and told[0]["message"] == "Davi venceu: 30 × 10. Prêmio: Jantar fora.", f"the players' phones told ({[n['message'] for n in told]})")
         hist = a.locator(".panel.history .hist-row")
         check(await hist.count() == 2, "Histórico: the new period on top of the old one")

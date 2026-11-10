@@ -120,6 +120,17 @@ describe("Integrações › Tarefas do ResolvIA › Listas: the hidden ones last
     const shown = { ...todos, lists: todos.lists.map((l) => ({ ...l, hidden: false })) };
     assert.doesNotMatch(text(new App({ home: { todos: shown }, app: { resolvia_on: true } })._renderTodosSettings()), /Ocultas/);
   });
+  // 1.68.0: Controlar prazos off in the ResolvIA: no deadline anywhere, so no Mostrar no calendário and no count of deadlines
+  it("Controlar prazos off in the ResolvIA: no Mostrar no calendário, and Tarefas na Agora", () => {
+    // the server marks every list info "resolvia" then (lib/todos.js)
+    const off = { lists: todos.lists.map((l) => ({ ...l, info: "resolvia", due: 0, overdue: 0 })), items: [], app: { versao: "2.56.1", prazos: false } };
+    const t = text(new App({ home: { todos: off }, app: { resolvia_on: true } })._renderTodosSettings());
+    assert.doesNotMatch(t, /Mostrar no calendário|tarefas? com prazo|Depois das que têm prazo/);
+    assert.match(t, /3 listas · prazos desligados no ResolvIA\./);
+    assert.match(t, /Tarefas na Agora/);
+    const on = text(new App({ home: { todos: { ...todos, app: { versao: "2.56.1", prazos: true } } }, app: { resolvia_on: true } })._renderTodosSettings());
+    assert.match(on, /Mostrar no calendário No dia do prazo\..*Tarefas sem prazo na Agora Depois das que têm prazo\./);
+  });
 });
 
 describe("the forms: times and dates in the look of the app", () => {

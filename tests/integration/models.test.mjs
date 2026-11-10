@@ -287,12 +287,12 @@ describe("doses and bills", () => {
   it("the test alert reaches the phone of the person and its button comes back", async () => {
     assert.deepEqual(await c.call("cronologia/notify/test", { person: "Davi" }), { sent: 1 });
     let n = await stack.notifications();
-    const test = n.find((x) => x.title === "💊 Teste do CronologIA");
+    const test = n.find((x) => x.title === "CronologIA · 💊 Teste do aviso");
     assert.equal(test.service, "mobile_app_pixel_8");
     await stack.fire("mobile_app_notification_action", { action: "CRONOLOGIA_TESTE_TOMEI_mobile_app_pixel_8" });
     const ix = await h.wait((x) => x.test, "the test button");
     assert.deepEqual([ix.test.person, ix.test.action], ["Davi", "tomei"]);
-    n = await waitFor(async () => (await stack.notifications()).find((x) => x.title === "✅ Funcionou"), { what: "the confirmation" });
+    n = await waitFor(async () => (await stack.notifications()).find((x) => x.title === "CronologIA · ✅ Funcionou"), { what: "the confirmation" });
     assert.equal(n.service, "mobile_app_pixel_8");
     await assert.rejects(c.call("cronologia/notify/test", { person: "Mimi" }), { code: "no_phone" });
     await assert.rejects(c.call("cronologia/notify/test", { target: "mobile_app_pixel_8" }), { code: "no_phone" }, "a device is not a person");
