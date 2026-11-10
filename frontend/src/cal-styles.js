@@ -3697,4 +3697,26 @@ export const calStyles = css`
   .dp-until {
     margin-top: 10px;
   }
+  /* Opções › Atalho no celular: the steps, and the path on the whole width (never cut) with Copiar under it */
+  .shortcut .steps {
+    margin: 0 0 14px;
+    padding-left: 22px;
+    font-size: 14px;
+  }
+  .shortcut .steps b {
+    color: var(--rv-text);
+    font-weight: 600;
+  }
+  .shortcut .field {
+    margin-bottom: 0;
+  }
+  .copy-row {
+    display: grid;
+    gap: 8px;
+  }
+  .copy-row input[type="text"] {
+    min-width: 0;
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+  }
 `;

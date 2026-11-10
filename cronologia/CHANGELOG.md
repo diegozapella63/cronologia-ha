@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.71.0
+
+- **Atalho no celular**, em **Mais › Configurações › Opções**: o caminho do CronologIA no Home Assistant, com **Copiar**, e como criar um ícone na tela inicial do celular que abre o app direto (no app do Home Assistant: Configurações › Aplicativo complementar › Gerenciar atalhos). O mesmo vale em todos os apps da família.
+
 ## 1.70.0
 
 - **Ordem dos cards**: **Agora ou a seguir** (o compromisso de agora ou o próximo) e **Hoje** viram dois cards, cada um no lugar que você escolher. Quem já tinha mudado a ordem fica com os dois juntos, onde estava o de antes.

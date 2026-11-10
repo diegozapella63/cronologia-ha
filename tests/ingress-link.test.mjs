@@ -9,6 +9,14 @@ describe("ingressUrl: the app's address in the alerts", () => {
     assert.equal(ingressUrl("a1b2c3d4-cronologia"), "/app/a1b2c3d4_cronologia");
     assert.equal(ingressUrl("local-cronologia"), "/app/local_cronologia");
   });
+  it("1.71.0: CRONOLOGIA_HOST takes the place of the hostname (the tests of Atalho no celular)", () => {
+    process.env.CRONOLOGIA_HOST = "a1b2c3d4-cronologia";
+    try {
+      assert.equal(ingressUrl(), "/app/a1b2c3d4_cronologia");
+    } finally {
+      delete process.env.CRONOLOGIA_HOST;
+    }
+  });
   it("outside Home Assistant (dev, tests): no link", () => {
     for (const h of ["meu-computador", "cronologia", "a1b2-resolvia", "A1-cronologia"]) assert.equal(ingressUrl(h), null, h);
   });

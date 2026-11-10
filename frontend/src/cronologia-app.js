@@ -328,6 +328,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     try {
       const res = await this.api.bootstrap();
       this._version = res.version || "";
+      this._atalho = res.atalho || null;
       this._user = res.user || { name: "" };
       this._ai = res.ai || this._ai;
       this._aiAt = Date.now();
@@ -2561,7 +2562,48 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           ].map(([k, label]) => html`<button class=${ws === k ? "on" : ""} role="radio" aria-checked=${ws === k ? "true" : "false"} @click=${() => this._saveAppPrefs({ week_start: k })}>${label}</button>`)}
         </div>
       </div>
+      ${this._renderShortcut()}
     `;
+  }
+
+  /**
+   * Opções › Atalho no celular: the path of the panel, for a pinned shortcut of the Home Assistant app (Android) that
+   * opens the CronologIA straight from the home screen. Only inside Home Assistant (the path comes from the server).
+   */
+  _renderShortcut() {
+    if (!this._atalho) return nothing;
+    return html`<div class="panel shortcut">
+      ${this._secHead("smartphone", "Atalho no celular", "Um ícone na tela inicial do celular que abre o CronologIA direto.")}
+      <ol class="steps">
+        <li>No app do Home Assistant: <b>Configurações › Aplicativo complementar › Gerenciar atalhos</b>.</li>
+        <li>Em <b>Atalho fixado</b>, escolha o tipo <b>Painel</b> e cole o <b>Caminho</b> abaixo.</li>
+      </ol>
+      <label class="field">
+        <span class="flabel">Caminho</span>
+        <span class="copy-row"
+          ><input type="text" id="cr-atalho" readonly .value=${this._atalho} @focus=${(e) => e.target.select()} /><button
+            type="button"
+            class="btn outline"
+            @click=${() => this._copyShortcut()}
+          >
+            ${icon("copy")}Copiar
+          </button></span
+        >
+      </label>
+    </div>`;
+  }
+
+  /** Copiar of Atalho no celular: over http there is no clipboard, so the text stays selected for a long press. */
+  async _copyShortcut() {
+    const input = this.renderRoot.querySelector("#cr-atalho");
+    try {
+      await navigator.clipboard.writeText(input.value);
+      this._showToast("Caminho copiado");
+    } catch {
+      input.focus();
+      input.select();
+      this._showToast("Toque e segure no texto para copiar");
+    }
   }
 
   /**

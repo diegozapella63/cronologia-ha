@@ -18,7 +18,7 @@ import { AI } from "./lib/ai.js";
 import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind } from "./lib/kinds.js";
-import { Home } from "./lib/home.js";
+import { Home, ingressUrl } from "./lib/home.js";
 import { AwayCal } from "./lib/awaycal.js";
 import { Gerencia } from "./lib/gerencia.js";
 import { Memoria } from "./lib/memoria.js";
@@ -336,6 +336,8 @@ class Session {
           version: VERSION,
           user: { ...this.user, person: home.personOfUser(this.user.id, this.user.name) },
           time_zone: process.env.TZ || null,
+          // Opções › Atalho no celular: the path of the panel (null outside Home Assistant)
+          atalho: ingressUrl(),
           ai: aiStatus,
           prefs: store.prefs,
           states: Object.fromEntries(calStates),

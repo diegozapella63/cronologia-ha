@@ -39,9 +39,10 @@ const hm = (ms) => {
 const hashOf = (key) => crypto.createHash("sha1").update(key).digest("hex").slice(0, 10);
 const coded = (code, message) => Object.assign(new Error(message), { code });
 
-/** Address of this app in Home Assistant, for the alert's "open": /app/<slug> since HA 2026.2 (the old
- * /hassio/ingress/<slug> now opens the default dashboard). Hostname a1b2c3d4-cronologia -> slug a1b2c3d4_cronologia. */
-export function ingressUrl(h = os.hostname()) {
+/** Address of this app in Home Assistant, for the alert's "open" and Opções › Atalho no celular: /app/<slug> since HA
+ * 2026.2 (the old /hassio/ingress/<slug> now opens the default dashboard). Hostname a1b2c3d4-cronologia -> slug
+ * a1b2c3d4_cronologia (CRONOLOGIA_HOST takes the place of the hostname in the tests); outside Home Assistant, null. */
+export function ingressUrl(h = process.env.CRONOLOGIA_HOST || os.hostname()) {
   return /^[a-z0-9]+-cronologia$/.test(h) ? `/app/${h.replace("-", "_")}` : null;
 }
 
