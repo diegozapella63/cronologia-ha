@@ -1918,8 +1918,11 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           ${allDay.length > shownAllDay.length ? html`<button class="ad-chip more" @click=${() => ((this._showAllDay = true), this.requestUpdate())}>+${allDay.length - shownAllDay.length} o dia todo</button>` : nothing}
         </div>`
       : nothing;
-    const dayPart = html`${hero || nothing}
-      ${sameAsHero && !allDay.length
+    // the Hoje card: not when the only appointment is the one of Agora or A seguir, nor with nothing more today
+    const dayShown = !(sameAsHero && !allDay.length);
+    // for Ordem dos cards: which of the two have something now
+    this._nowShown = { now: !!hero, day: dayShown };
+    const dayPart = html`${!dayShown
         ? nothing
         : html`<div class="panel agenda">
         ${this._panelHead("calendar-days", "accent", `Hoje · ${dateShort(now, now)}`)}
@@ -1943,6 +1946,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       search: html`${this._renderNowSearch()} ${hidden}`,
       meds: medsDone ? nothing : this._renderMedsPanel(),
       bills: this._renderBillsPanel(),
+      now: hero || nothing,
       day: dayPart,
       memoria: this._renderMemoriaPanel(),
       home: this._renderHomePanel(),
@@ -1958,7 +1962,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${this._renderHead("Hoje", status)}
         ${pick(["away", "search"])}
         <div class="now-cols">
-          <div class="now-main">${pick(["day", "memoria", "todos"])}</div>
+          <div class="now-main">${pick(["now", "day", "memoria", "todos"])}</div>
           <div class="now-side">${pick(["meds", "bills", "home"])}</div>
         </div>
         ${orderBtn}
@@ -1997,12 +2001,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   _renderNowCardsSheet() {
     const ids = this._nowOrder();
     const off = (flag) => this._app(flag, false) !== true;
+    const shown = this._nowShown || {};
     const meta = {
       away: ["plane", "Férias", () => (this._renderAwayBanner() === nothing ? "Só com férias marcadas" : "")],
       search: ["search", "Busca", () => ""],
       meds: ["pill", "Remédios de hoje", () => (this._renderMedsPanel() === nothing ? "Sem nada agora" : "")],
       bills: ["receipt", "Contas do GerencIA", () => (off("gerencia_on") ? "Integração desligada" : this._renderBillsPanel() === nothing ? "Sem nada agora" : "")],
-      day: ["calendar-days", "Agora e Hoje", () => ""],
+      now: ["clock", "Agora ou a seguir", () => (shown.now === false ? "Sem nada agora" : "")],
+      day: ["calendar-days", "Hoje", () => (shown.day === false ? "Nada mais hoje" : "")],
       memoria: ["notebook-pen", "MemorIA", () => (off("memoria_on") ? "Integração desligada" : this._renderMemoriaPanel() === nothing ? "Sem nada agora" : "")],
       home: ["spray-can", "Rotina da casa", () => (this._renderHomePanel() === nothing ? "Sem nada agora" : "")],
       todos: ["list-checks", "Tarefas do ResolvIA", () => (off("resolvia_on") ? "Integração desligada" : this._renderTodosPanel() === nothing ? "Sem nada agora" : "")],

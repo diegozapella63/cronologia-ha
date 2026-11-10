@@ -623,10 +623,15 @@ describe("KINDS", () => {
 describe("nowOrder: the cards of Agora in the order of the person", () => {
   it("nothing saved: the order of always", () => {
     assert.deepEqual(nowOrder(null), NOW_CARDS);
-    assert.deepEqual(NOW_CARDS, ["away", "search", "meds", "bills", "day", "memoria", "home", "todos"]);
+    assert.deepEqual(NOW_CARDS, ["away", "search", "meds", "bills", "now", "day", "memoria", "home", "todos"]);
   });
   it("a card left out (new in a later version) goes back after the one before it by default; unknown and repeated ones out", () => {
-    assert.deepEqual(nowOrder(["todos", "home", "day", "meds", "x", "todos"]), ["away", "search", "todos", "home", "day", "memoria", "meds", "bills"]);
+    assert.deepEqual(nowOrder(["todos", "home", "now", "day", "meds", "x", "todos"]), ["away", "search", "todos", "home", "now", "day", "memoria", "meds", "bills"]);
     assert.deepEqual(nowOrder(["day"]), NOW_CARDS, "the ones before it by default go before it");
+  });
+  it("1.70.0: Agora ou a seguir apart from Hoje; an order of before (day was both) gets it right before Hoje", () => {
+    assert.deepEqual(nowOrder(["home", "todos", "day", "away", "search", "meds", "bills", "memoria"]), ["home", "todos", "now", "day", "away", "search", "meds", "bills", "memoria"]);
+    const apart = nowOrder(["home", "day", "now"]);
+    assert.ok(apart.indexOf("home") < apart.indexOf("day") && apart.indexOf("day") < apart.indexOf("now"), "apart, each one where the person put it");
   });
 });

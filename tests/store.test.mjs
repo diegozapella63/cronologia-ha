@@ -121,7 +121,7 @@ describe("Store: app settings", () => {
   };
   it("Agora › Ordem dos cards: each person their own, only the cards there are, every card in it; the default is not kept", () => {
     const o = set({ now_order: { Davi: ["todos", "meds", "nada", "todos"], Aurora: ["away", "search", "meds", "bills", "day", "memoria", "home", "todos"], "": ["day"], X: "todos", Y: [] } }).now_order;
-    assert.deepEqual(o.Davi, ["away", "search", "todos", "meds", "bills", "day", "memoria", "home"], "the rest in the place they have by default");
+    assert.deepEqual(o.Davi, ["away", "search", "todos", "meds", "bills", "now", "day", "memoria", "home"], "the rest in the place they have by default");
     assert.equal("Aurora" in o || "" in o, false, "the order of always is not kept (also when it comes out the same)");
     assert.equal("X" in o || "Y" in o, false, "nothing valid: out");
     assert.equal(set({ now_order: null }).now_order, undefined);

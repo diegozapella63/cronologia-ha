@@ -1,4 +1,4 @@
-# CronologIA 1.69.0: Agora › Ordem dos cards. At the end of Agora, Ordem dos cards opens a sheet with every card (also
+# CronologIA 1.69.0: Agora › Ordem dos cards (1.70.0: Agora ou a seguir and Hoje apart). At the end of Agora, Ordem dos cards opens a sheet with every card (also
 # the ones with nothing now or with the integration off: Tarefas do ResolvIA, Contas do GerencIA, MemorIA), each with
 # Subir and Descer. The Agora follows the order, it stays (saved for the person, not the device), Voltar à ordem de sempre
 # undoes it, and the Voltar of the phone closes the sheet. People and things invented.
@@ -25,7 +25,7 @@ at = lambda h, m=0: datetime.datetime(today.year, today.month, today.day, h, m, 
 # which card each child of the Agora page is
 ORDER = """() => [...document.querySelector('cronologia-app').shadowRoot.querySelector('section.page').children].map((el) =>
   el.matches('.away-card') ? 'away' : el.matches('.home-search') ? 'search' : el.matches('.panel.meds') ? 'meds' : el.matches('.panel.bills') ? 'bills'
-  : el.matches('.hero-ev, .panel.agenda') ? 'day' : el.matches('.panel.memo') ? 'memoria' : el.matches('.panel.chores') ? 'home' : el.matches('.panel.todos') ? 'todos' : null).filter(Boolean)
+  : el.matches('.hero-ev') ? 'now' : el.matches('.panel.agenda') ? 'day' : el.matches('.panel.memo') ? 'memoria' : el.matches('.panel.chores') ? 'home' : el.matches('.panel.todos') ? 'todos' : null).filter(Boolean)
   .filter((x, i, a) => a.indexOf(x) === i)"""
 async def open_at(b, when, scheme="dark", w=390, h=844):
     ctx = await b.new_context(viewport={"width": w, "height": h}, device_scale_factor=2, color_scheme=scheme, timezone_id="America/Sao_Paulo")
@@ -48,26 +48,32 @@ async def main():
         await pg.wait_for_timeout(400)
         rows = await sheet_rows(a)
         names = [r.split(" ")[0] for r in rows]
-        check([r.split(" Sem")[0].split(" Integração")[0].split(" Só")[0] for r in rows] == ["Férias", "Busca", "Remédios de hoje", "Contas do GerencIA", "Agora e Hoje", "MemorIA", "Rotina da casa", "Tarefas do ResolvIA"],
+        check([r.split(" Sem")[0].split(" Integração")[0].split(" Só")[0].split(" Nada")[0] for r in rows] == ["Férias", "Busca", "Remédios de hoje", "Contas do GerencIA", "Agora ou a seguir", "Hoje", "MemorIA", "Rotina da casa", "Tarefas do ResolvIA"],
               f"every card, also the ones not on Agora now ({rows})")
-        por = dict(zip(["away", "search", "meds", "bills", "day", "memoria", "home", "todos"], rows))
+        por = dict(zip(["away", "search", "meds", "bills", "now", "day", "memoria", "home", "todos"], rows))
         fora = [k for k in por if k not in before and k != "bills"]
-        check(fora and all(por[k].split(" ", 1)[-1] in ("Só com férias marcadas", "Integração desligada", "Sem nada agora") or por[k].endswith(("Só com férias marcadas", "Integração desligada", "Sem nada agora")) for k in fora),
+        check(fora and all(por[k].split(" ", 1)[-1] in ("Só com férias marcadas", "Integração desligada", "Sem nada agora", "Nada mais hoje") or por[k].endswith(("Só com férias marcadas", "Integração desligada", "Sem nada agora", "Nada mais hoje")) for k in fora),
               f"the ones not on Agora now are there too, saying why ({[por[k] for k in fora]})")
         check(await a.locator('.sheet .now-cards li[data-card="away"] button[aria-label="Subir Férias"]').is_disabled(), "the first one can't go up")
         await pg.screenshot(path=f"{SP}/shots/cro-cards.png")
         # Rotina da casa up to the top of the cards with something (above the search and the doses)
-        for _ in range(6):
+        for _ in range(7):
             await a.locator('.sheet .now-cards button[aria-label="Subir Rotina da casa"]').click()
             await pg.wait_for_timeout(250)
         rows = await sheet_rows(a)
         check(rows[0].startswith("Rotina da casa"), f"Rotina da casa first ({rows[:3]})")
+        # 1.70.0: Hoje is a card of its own, apart from Agora ou a seguir
+        await a.locator('.sheet .now-cards button[aria-label="Subir Hoje"]').click()
+        await pg.wait_for_timeout(250)
+        rows = [r.split(" Sem")[0].split(" Nada")[0] for r in await sheet_rows(a)]
+        check(rows.index("Hoje") == rows.index("Agora ou a seguir") - 1, f"Hoje above Agora ou a seguir ({rows})")
         check(await a.locator(".sheet .now-reset").count() == 1, "with an order of its own: Voltar à ordem de sempre")
         await pg.go_back()
         await pg.wait_for_timeout(400)
         check(await a.locator(".sheet").count() == 0, "the Voltar of the phone closes the sheet")
         after = await pg.evaluate(ORDER)
         check(after[0] == "home" and after.index("search") < after.index("meds"), f"Agora follows the order ({after})")
+        check("now" not in after or "day" not in after or after.index("day") < after.index("now"), f"the Hoje card above the Agora ou a seguir ({after})")
         st = json.load(open(f"{data}/cronologia.json")) if os.path.exists(f"{data}/cronologia.json") else {}
         saved = (st.get("app") or {}).get("now_order") or {}
         check(len(saved) == 1 and list(saved.values())[0][0] == "home", f"saved for the person ({saved})")
