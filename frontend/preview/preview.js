@@ -1,4 +1,5 @@
 import "../src/selectsheet.js";
+import "../src/textareas.js";
 import "../src/whenpick.js";
 import "../src/cronologia-app.js";
 import { MockApi } from "./mock-api.js";

@@ -58,7 +58,7 @@ async def main():
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
         await a.locator('.menu-row[data-k="ferias"]').click(); await pg.wait_for_timeout(600)
         panel = a.locator("#ferias")
-        check(await panel.count() == 1 and "Rotinas, tarefas e manutenção pausadas; remédios continuam." in await panel.inner_text() and (await a.locator(".page-title").first.inner_text()).strip() == "Férias", "Mais › Férias: its screen, saying what it does")
+        check(await panel.count() == 1 and "Rotinas, tarefas e manutenção pausadas." in await panel.inner_text() and (await a.locator(".page-title").first.inner_text()).strip() == "Férias", "Mais › Férias: its screen, saying what it does")
         check(await a.locator(".mais-head").count() == 0, "no heading repeating the title")
         await panel.locator("input[aria-label='De férias']").check(); await pg.wait_for_timeout(800)
         await wait_for(lambda: stored()["app"].get("away") == {"from": D(0), "to": D(4)}, "on: from today, 5 days")
@@ -71,7 +71,7 @@ async def main():
         card = a.locator(".away-card")
         txt = (await card.text_content()) if await card.count() else ""
         title = (await card.locator(".aw-title").text_content()).strip() if await card.count() else ""
-        check("De férias" in txt and title.startswith("até ") and "Remédios continuam" in txt and "Encerrar" in txt, f"Agora: the vacation card ({txt[:90]!r})")
+        check("De férias" in txt and title.startswith("até ") and "pausadas" in txt and "Remédios continuam" not in txt and "Encerrar" in txt, f"Agora: the vacation card, only what is paused (1.74.0) ({txt[:90]!r})")
         check((await card.locator(".aw-tx small").text_content()).strip() == "Dia 1 de 5" and await card.locator(".aw-bar[aria-valuenow='1'][aria-valuemax='5']").count() == 1, "which day of how many, with the bar")
         bg = await card.evaluate("(e) => getComputedStyle(e).backgroundImage")
         check("gradient" in bg, f"a card of its own, not the color of the day ({bg[:40]})")

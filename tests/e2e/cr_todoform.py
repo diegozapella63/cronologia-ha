@@ -73,6 +73,14 @@ async def main():
         await open_task_form(A, a)
         labels = [t.strip() for t in await sheet.locator(".flabel").all_inner_texts()]
         check("Prazo" in labels and "Notas" in labels, f"prazos on: deadline and notes ({labels})")
+        # 1.74.0: textareas.js (the same file in every app), inside the Shadow DOM: made bigger, Notas keeps the size
+        notes = sheet.locator("textarea:not(.ev-title-input)").last
+        check(await notes.evaluate("(e) => getComputedStyle(e).resize") == "vertical", "Notas: can be made bigger")
+        await notes.evaluate("(e) => { e.style.height = '210px'; }"); await A.wait_for_timeout(700)
+        await a.locator('.sheet button[aria-label="Fechar"]').first.click(); await A.wait_for_timeout(400)
+        await open_task_form(A, a)
+        h = await sheet.locator("textarea:not(.ev-title-input)").last.evaluate("(e) => Math.round(parseFloat(e.style.height || '0'))")
+        check(h == 210, f"opened again, the size it was left with ({h})")
         await sheet.locator(".ev-title-input").fill("Trocar a resistência")
         await sheet.locator(".btn.primary", has_text="Criar tarefa").click()
         await wait_for(lambda: any(i["summary"] == "Trocar a resistência" and i.get("due") for i in items("todo.casa")), "with prazos on, the task has the date")

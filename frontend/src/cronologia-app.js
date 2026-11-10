@@ -522,7 +522,6 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       ${on ? html`<div class="aw-bar" role="progressbar" aria-valuemin="1" aria-valuemax=${total} aria-valuenow=${Math.min(day, total)} aria-label="Dia ${Math.min(day, total)} de ${total}"><span style="width:${Math.round((Math.min(day, total) / total) * 100)}%"></span></div>` : nothing}
       <div class="aw-chips">
         <span class="aw-chip">${icon("circle-pause")}Rotinas, tarefas e manutenção pausadas</span>
-        <span class="aw-chip meds">${icon("pill")}Remédios continuam</span>
       </div>
       <button class="text-btn aw-end" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar férias" : "Cancelar férias"}</button>
     </div>`;
@@ -2615,7 +2614,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const today = ymd(new Date(this._now));
     const set = (from, to) => this._saveAppPrefs({ away: { from, to: to < from ? from : to } });
     return html`<div class="panel" id="ferias">
-      ${head ? this._secHead("plane", "Férias", "Rotinas, tarefas e manutenção pausadas; remédios continuam.") : html`<p class="panel-lead">Rotinas, tarefas e manutenção pausadas; remédios continuam.</p>`}
+      ${head ? this._secHead("plane", "Férias", "Rotinas, tarefas e manutenção pausadas.") : html`<p class="panel-lead">Rotinas, tarefas e manutenção pausadas.</p>`}
       <div class="row switch-row">
         <div class="grow"><div class="label">De férias</div><div class="hint">${a ? `${dateShort(fromYmd(a.from), new Date(this._now))} a ${dateShort(fromYmd(a.to), new Date(this._now))}` : "Desligado."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${!!a} @change=${(e) => this._saveAppPrefs({ away: e.target.checked ? { from: today, to: ymd(addDays(fromYmd(today), 4)) } : null })} aria-label="De férias" /><span class="track"></span></label>

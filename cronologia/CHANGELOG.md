@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.74.0
+
+- **Férias**: o card diz só o que fica pausado (rotinas, tarefas e manutenção).
+- **Remédios de hoje**: saiu a linha "Avisa no celular de …"; ela só aparece quando falta algo (alguém sem celular, escolher quem cuida). Quem recebe fica em Mais › Avisos.
+- **Campos de texto**: dá para aumentar puxando o canto, e o tamanho fica guardado no aparelho. Aberto de novo, o campo volta do tamanho que você deixou. O mesmo vale em todos os apps da família.
+
 ## 1.73.0
 
 - **Adicionar › Tarefa** nas listas do ResolvIA que não aceitam data (as da Alexa, a Shopping list): agora pede o prazo e o horário. Ele fica guardado no ResolvIA (2.59.0 ou mais novo), com o aviso "Guardado no ResolvIA: a lista não aceita data."

@@ -415,21 +415,19 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
+    // 1.74.0: only when something needs doing (no phone for someone, nobody to take care): who gets the alerts is in
+    // Mais › Avisos, not on the card
     _alertsHint(meds) {
       const a = this._app("alerts", null) || {};
-      if (a.meds === false) return html`<button class="panel-foot" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>Avisos no celular desligados</span>${icon("chevron-right")}</button>`;
-      // every medicine of today without its alert (in its form): no phone to choose
-      if (!meds.some((m) => m.alert)) return html`<div class="panel-foot plain">${icon("bell-ring")}<span>Sem aviso no celular</span></div>`;
+      if (a.meds === false || !meds.some((m) => m.alert)) return nothing;
       const noPhone = [...new Set(meds.filter((m) => m.alert && !m.phone && m.who).map((m) => m.who))];
-      // quem cuida gets the late alerts (Avisar de novo) and the ones of whoever has no phone
-      const late = a.late == null ? 30 : a.late;
       const careOn = this._careOn();
-      const care = careOn && (late > 0 || meds.some((m) => m.alert && !m.phone));
       // whose phones get the alerts: a pet has none, its alert goes to the person chosen for it (by name)
       const withPhone = [...new Set(meds.filter((m) => m.alert && m.phone).map((m) => this._phoneOwner(m.who) || m.who))];
       const warn = !careOn && (noPhone.length > 0 || !withPhone.length);
-      const text = noPhone.length && !careOn ? `Sem celular para ${noPhone.join(", ")}: escolha quem cuida` : withPhone.length ? `Avisa no celular de ${withPhone.join(", ")}${care ? ` e de quem cuida` : ""}` : careOn ? "Avisa no celular de quem cuida" : "Escolha quem cuida";
-      return html`<button class="panel-foot ${warn ? "warn" : ""}" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>${text}</span>${icon("chevron-right")}</button>`;
+      if (!warn) return nothing;
+      const text = noPhone.length ? `Sem celular para ${noPhone.join(", ")}: escolha quem cuida` : "Escolha quem cuida";
+      return html`<button class="panel-foot warn" @click=${() => this._goAlerts()}>${icon("bell-ring")}<span>${text}</span>${icon("chevron-right")}</button>`;
     }
 
     _renderBillsPanel() {

@@ -46,33 +46,27 @@ const dose = (over = {}) => ({ key: `d|${over.who || "Davi"}|${over.summary || "
 /** An event of a model, ten days ahead (no Feito button). */
 const modelEvent = (kind) => ({ key: `ev|${kind.kind}`, cal: "calendar.casa", uid: `u-${kind.kind}`, rid: null, rrule: null, summary: "Teste", start: at(2026, 11, 16), end: at(2026, 11, 17), allDay: true, kind });
 
+// 1.74.0: the line at the bottom only when something needs doing (who gets the alerts is in Mais › Avisos)
 describe("Agora › Remédios de hoje: the bell and the line at the bottom", () => {
-  it("Avisar no celular off: no bell by the name and the line says it is off", () => {
+  it("Avisar no celular off: no bell by the name and no line", () => {
     // the server sends alert: false with the alerts off; the phone of the person is still known
     const app = new App({ home: { meds: [dose({ alert: false })] }, app: { alerts: { meds: false } } });
     const view = app._renderMedsPanel();
-    assert.doesNotMatch(render(view).html, /who-bell/);
-    assert.match(text(view), /Avisos no celular desligados/);
+    assert.doesNotMatch(render(view).html, /who-bell|panel-foot/);
   });
-  it("on: the bell of whoever gets the alert", () => {
+  it("on: the bell of whoever gets the alert, no line saying who", () => {
     const view = new App({ home: { meds: [dose()] } })._renderMedsPanel();
     assert.match(render(view).html, /who-bell/);
-    assert.match(text(view), /Avisa no celular de Davi/);
+    assert.doesNotMatch(text(view), /Avisa no celular/);
+    assert.doesNotMatch(render(view).html, /panel-foot/);
   });
-  it("today's medicines all without their alert: no bell, no phone to choose", () => {
+  it("today's medicines all without their alert: no bell, no line", () => {
     const view = new App({ home: { meds: [dose({ alert: false })] } })._renderMedsPanel();
-    assert.doesNotMatch(render(view).html, /who-bell/);
-    assert.match(text(view), /Sem aviso no celular/);
-    assert.doesNotMatch(text(view), /Escolha os celulares/);
+    assert.doesNotMatch(render(view).html, /who-bell|panel-foot/);
   });
-  it("Quem cuida only when it gets something: the late alerts, or the ones of someone without a phone", () => {
+  it("Quem cuida set and everyone with a phone: no line", () => {
     const care = { caregivers: ["Ana"] };
-    assert.match(text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 30 } } })._renderMedsPanel()), /Avisa no celular de Davi e de quem cuida/);
-    const noLate = text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 0 } } })._renderMedsPanel());
-    assert.match(noLate, /Avisa no celular de Davi/);
-    assert.doesNotMatch(noLate, /quem cuida/, "Avisar de novo: Não, and everyone has a phone: nothing goes to quem cuida");
-    const mimi = dose({ who: "Mimi", summary: "Gardenal", phone: false });
-    assert.match(text(new App({ home: { meds: [dose(), mimi] }, app: { alerts: { ...care, late: 0 } } })._renderMedsPanel()), /Avisa no celular de Davi e de quem cuida/, "Mimi has no phone: hers go to quem cuida");
+    assert.doesNotMatch(text(new App({ home: { meds: [dose()] }, app: { alerts: { ...care, late: 30 } } })._renderMedsPanel()), /Avisa no celular|quem cuida/);
   });
 });
 
@@ -208,7 +202,7 @@ describe("Agora › Remédios de hoje: a pet goes by the person chosen for it", 
   it("the line names the person whose phone gets it; nothing reaches a phone: choose Quem cuida", () => {
     const mimi = dose({ who: "Mimi", summary: "Gardenal", phone: true });
     const people = [ANA, DAVI, { name: "Mimi", person: null, pet: true, phone: false, care: "Ana", reach: true }];
-    assert.match(text(new App({ home: { meds: [mimi], people } })._renderMedsPanel()), /Avisa no celular de Ana/);
+    assert.doesNotMatch(text(new App({ home: { meds: [mimi], people } })._renderMedsPanel()), /Avisa no celular/, "it reaches Ana's phone: no line");
     const lone = dose({ who: "Lia", phone: false });
     const view = new App({ home: { meds: [lone], people: [ANA] } })._renderMedsPanel();
     assert.match(text(view), /Sem celular para Lia: escolha quem cuida/);

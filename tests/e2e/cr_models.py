@@ -255,12 +255,11 @@ async def main():
         g = await a.locator("#gerencia").inner_text()
         check(re.search(r"Conectado ao GerencIA \d+\.\d+\.\d+", g), f"GerencIA connection shown in Mais ({g[:60]!r})")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(400)
-        foot = await a.locator(".panel.meds .panel-foot").inner_text()
-        check("Sem celular" not in foot, f"no more missing-phone warning ({foot.strip()})")
-        # Mimi is a pet: no phone of hers; the hint names whose phone gets her alert (Davi's)
+        # 1.74.0: the line at the bottom only when something needs doing
+        check(await a.locator(".panel.meds .panel-foot").count() == 0, "no more missing-phone warning, and no line saying who gets the alerts")
+        # Mimi is a pet: no phone of hers; her alert goes to Davi's: nothing to do, no line
         await A.evaluate("() => document.querySelector('cronologia-app')._saveAppPrefs({ people: { Mimi: { care: 'Davi', pet: true } } })"); await A.wait_for_timeout(1200)
-        foot = (await a.locator(".panel.meds .panel-foot").inner_text()).strip()
-        check("Mimi" not in foot and "Davi" in foot and "Aurora" in foot, f"a pet: the hint names the owner of the phone, not the pet ({foot})")
+        check(await a.locator(".panel.meds .panel-foot").count() == 0, "a pet with the person chosen for it: no line")
         # GerencIA turned off: card falls back to calendar bills only
         req = urllib.request.Request("http://127.0.0.1:8191/api/state")
         st = json.loads(urllib.request.urlopen(req).read())
