@@ -193,6 +193,8 @@ A integração vem **desligada**: ligue em **Mais › Configurações › Integr
 
 Se o ResolvIA estiver com **Controlar prazos** desligado (2.15.0 ou mais novo), o **Adicionar › Tarefa** daqui também não oferece prazo: a tarefa entra sem data. As datas das tarefas de lá viram só informação: nenhuma aparece como atrasada nem no calendário, **Mostrar no calendário** some de Integrações e a outra opção vira **Tarefas na Agora**. Se o ResolvIA usar os **Cômodos do InventarIA** (2.28.0 ou mais novo), as tarefas mostram o cômodo (na Agora e na tela da tarefa) e o **Adicionar › Tarefa** pede o cômodo também; o ResolvIA guarda a escolha. Com os **equipamentos** ligados lá (2.29.0 ou mais novo), o mesmo vale para os equipamentos (um ou vários, ResolvIA 2.31.0 ou mais novo): com equipamento, o cômodo vem dele e fica bloqueado. Quando várias listas começam com o mesmo nome (as da Alexa, "Notas e Rotinas do Alexa Shopping list" e "… To-do list"), o Adicionar › Tarefa mostra só o que muda (Shopping list, To-do list) e, embaixo, o nome completo da lista escolhida.
 
+Nas listas cuja integração não aceita data (as da Alexa, a Shopping list), o ResolvIA 2.58.0 ou mais novo guarda o prazo com ele, e essas tarefas também aparecem aqui com o prazo. O **Adicionar › Tarefa** daqui continua sem prazo nessas listas: o prazo delas se põe no ResolvIA.
+
 Com a integração ligada, as tarefas **com prazo** aparecem:
 
 - no card **Tarefas com prazo** da tela Agora: atrasadas em vermelho, as de hoje e as de amanhã, com o quadradinho de **Concluir** (e **Desfazer**). As de hoje que você concluir ficam com ✓;

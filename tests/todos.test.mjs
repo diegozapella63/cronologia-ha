@@ -289,6 +289,30 @@ describe("Todos: index (Tarefas com prazo)", () => {
     assert.equal(ix.lists[0].hidden, true);
     assert.equal(ix.items.length, 0);
   });
+  it("1.72.0: a list without dates whose deadlines the ResolvIA keeps (prazos_app): its open tasks with them", () => {
+    const ALEXA = "todo.notas_e_rotinas_do_alexa_shopping_list";
+    const kept = { [ALEXA]: { "pilhas aa": "2026-11-01", "detergente": "2026-11-03T15:00:00", "leite": "2026-11-02", x: "amanhã" }, "light.x": { a: "2026-11-01" } };
+    const { t, ha } = make({ app: appFile({ prazos_app: kept, sem_prazo: [ALEXA] }) });
+    t.setState(ALEXA, state("Shopping list", TODO_F.CREATE | TODO_F.DELETE | TODO_F.UPDATE));
+    ha.subs[0].onEvent({ items: [
+      { uid: "a1", summary: "Pilhas  AA", status: "needs_action" },
+      { uid: "a2", summary: "Detergente", status: "needs_action" },
+      { uid: "a3", summary: "Leite", status: "completed" },
+      { uid: "a4", summary: "Pão", status: "needs_action" },
+    ] });
+    const ix = t.index(NOW);
+    assert.equal(ix.lists[0].info, null, "a list with deadlines now");
+    assert.deepEqual(ix.items.map((i) => [i.uid, i.due, i.overdue]), [["a1", "2026-11-01", true], ["a2", "2026-11-03T15:00:00", false]], "the done one and the one without: out");
+    const und = t.index(NOW, [], { undated: true }).items.filter((i) => i.undated).map((i) => i.uid);
+    assert.deepEqual(und, ["a4"], "the one without a deadline is among the undated");
+    // Controlar prazos off there: as before, only information
+    const off = make({ app: appFile({ prazos_app: kept, prazos: false }) });
+    off.t.setState(ALEXA, state("Shopping list", TODO_F.CREATE | TODO_F.DELETE | TODO_F.UPDATE));
+    off.ha.subs[0].onEvent({ items: [{ uid: "a1", summary: "Pilhas AA", status: "needs_action" }] });
+    assert.equal(off.t.index(NOW).items.length, 0);
+    assert.equal(off.t.index(NOW).lists[0].info, "integracao");
+  });
+
   it("tasks kept by Levar para o ResolvIA are left out", () => {
     const { t } = setup();
     const ix = t.index(NOW, [], { exclude: new Set(["todo.casa|t1", "todo.casa|t2"]) });

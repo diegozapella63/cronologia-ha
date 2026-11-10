@@ -10,7 +10,20 @@ const DAY = 86400000;
 export const taskKey = (s) => foldText(s).replace(/\s+/g, " ");
 /** The rooms the ResolvIA shares (null when it does not use them). */
 /** {todo.x: "Ana"} from the ResolvIA, checked; null when it doesn't say (before 2.42.0). */
-export function cleanOwners(raw) {
+export /** prazos_app of the ResolvIA: {todo.x: {task key: deadline}}, only well formed dates. */
+function cleanDues(raw) {
+  const out = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const [id, map] of Object.entries(raw)) {
+    if (!isTodo(id) || !map || typeof map !== "object") continue;
+    const m = {};
+    for (const [k, v] of Object.entries(map)) if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/.test(v)) m[taskKey(k)] = v;
+    if (Object.keys(m).length) out[id] = m;
+  }
+  return out;
+}
+
+function cleanOwners(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const out = {};
   for (const [id, name] of Object.entries(raw).slice(0, 200)) if (isTodo(id) && typeof name === "string" && name.trim()) out[id] = name.trim().slice(0, 80);
@@ -147,6 +160,9 @@ export class Todos {
           // prazos: false when Controlar prazos is off there (2.15.0+): Novo › Tarefa offers no deadline
           prazos: j.prazos !== false,
           semPrazo: Array.isArray(j.sem_prazo) ? j.sem_prazo.filter(isTodo) : [],
+          // prazos_app: the deadlines the ResolvIA keeps for the lists whose integration takes no date (2.58.0+):
+          // {list: {task key: "AAAA-MM-DD" | "AAAA-MM-DDTHH:MM:SS"}}
+          prazosApp: cleanDues(j.prazos_app),
           pontos: j.pontos && typeof j.pontos === "object" ? j.pontos : {},
           // repete: how often each task comes back in the ResolvIA ({list: {uid: days}}), 2.9.1 or newer
           repete: j.repete && typeof j.repete === "object" ? j.repete : {},
@@ -182,13 +198,16 @@ export class Todos {
     for (const [id, st] of this.states) {
       const name = (st.attributes && st.attributes.friendly_name) || id;
       // the tasks kept by Levar para o ResolvIA are the maintenance and routines of this app: left out
-      const all = (this.items.get(id) || []).filter((i) => !(exclude && exclude.has(`${id}|${i.uid}`)));
+      let all = (this.items.get(id) || []).filter((i) => !(exclude && exclude.has(`${id}|${i.uid}`)));
       const features = Number((st.attributes && st.attributes.supported_features) || 0);
       // A deadline is only what someone set. A list that doesn't let you set
       // one gets its dates from the integration ("unavailable since…"): those
       // are never tasks with a deadline. The ResolvIA can also turn a list's
       // deadlines off (sem_prazo).
-      const info = !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : allOff || turnedOff.has(id) ? "resolvia" : null;
+      // A list without dates whose deadlines the ResolvIA keeps (prazos_app, 1.72.0): its open tasks get them
+      const kept = !allOff && app && app.prazosApp[id];
+      if (kept) all = all.map((i) => (i.status !== "completed" && !i.due && kept[taskKey(i.summary)] ? { ...i, due: kept[taskKey(i.summary)] } : i));
+      const info = kept ? null : !(features & (TODO_F.DUE_DATE | TODO_F.DUE_DATETIME)) ? "integracao" : allOff || turnedOff.has(id) ? "resolvia" : null;
       const withDue = info ? [] : all.filter((i) => i.due && i.status !== "completed");
       lists.push({ id, name, features, info, open: all.filter((i) => i.status !== "completed").length, due: withDue.length, overdue: withDue.filter((i) => dueMs(i.due) < (i.due.length > 10 ? now : t0)).length, hidden: off.has(id), unavailable: st.state === "unavailable" });
       if (off.has(id)) continue;

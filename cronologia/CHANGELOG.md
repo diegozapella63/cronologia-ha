@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.72.0
+
+- **Tarefas do ResolvIA**: as das listas que não aceitam data (as da Alexa, a Shopping list) aparecem com o prazo que o ResolvIA 2.58.0 guarda para elas, na Agora e no calendário, atrasadas em vermelho como as outras.
+
 ## 1.71.0
 
 - **Atalho no celular**, em **Mais › Configurações › Opções**: o caminho do CronologIA no Home Assistant, com **Copiar**, e como criar um ícone na tela inicial do celular que abre o app direto (no app do Home Assistant: Configurações › Aplicativo complementar › Gerenciar atalhos). O mesmo vale em todos os apps da família.
