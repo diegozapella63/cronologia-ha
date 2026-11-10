@@ -57,6 +57,11 @@ async def main():
         t = [n for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-teste"][-1]
         check(t["service"] == "mobile_app_pixel_8" and t["title"] == "🏆 Placar" and t["message"].startswith("Davi na frente por 10 pontos: Davi 30 × Aurora 20."), f"to my phone, the points and who is ahead ({t['service']}: {t['message']})")
         # 1.54.0: the app says it by the person, never the device
+        # the toast comes when the answer reaches the screen, a moment after Home Assistant gets the notification
+        try:
+            await a.locator(".toast").first.wait_for(timeout=5000)
+        except Exception:
+            pass
         toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
         check("Lembrete enviado para o seu celular." in toast and "Pixel" not in toast, f"the toast, no device ({toast!r})")
         check("Pixel" not in await fld.inner_text() and "Galaxy" not in await fld.inner_text(), "who gets it: the players by name, never a device")

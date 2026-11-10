@@ -150,6 +150,10 @@ describe("Todos: the ResolvIA integration file", () => {
     t.app(NOW + 61000);
     assert.equal(reads, 2);
   });
+  it("the ResolvIA by its id too (the start of integracao.json the same in every app: app, nome, versao, gravado_em)", () => {
+    assert.ok(make({ app: appFile({ app: "resolvia", nome: "ResolvIA" }) }).t.app(NOW), "the id of the next versions");
+    assert.ok(make({ app: appFile({ nome: "ResolvIA" }) }).t.app(NOW), "the name of before");
+  });
   it("an old file (over 2 hours), another app or no file means no ResolvIA", () => {
     assert.equal(make({ app: appFile({ gravado_em: new Date(NOW - 2 * 3600000 - 1000).toISOString() }) }).t.app(NOW), null);
     assert.equal(make({ app: appFile({ app: "GerencIA" }) }).t.app(NOW), null);

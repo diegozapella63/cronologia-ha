@@ -74,7 +74,7 @@ describe("usage panel", () => {
     const t = text(usagePanel({ u: U(), head: "", names: { "ai_task.google_ai_task": "Google AI Task" } }));
     assert.match(t, /Fotos Google AI Task 3,3 s · ≈ 1,5 mil tokens · 2 imagens · hoje 14:05/);
     assert.match(t, /Mensagens meu ollama sem cota 0,4 s · ≈ 0 tokens · 30\/10 09:07/);
-    assert.match(t, /sugestao padrão do Home Assistant resposta fora do formato 1 s · ≈ 800 tokens · 1 imagem ·/);
+    assert.match(t, /Sugestões padrão do Home Assistant resposta fora do formato 1 s · ≈ 800 tokens · 1 imagem ·/);
     assert.match(text(usagePanel({ u: U({ ultimas: [] }), head: "" })), /Nenhuma chamada ainda\./);
   });
   it("where to see the exact use: the provider of the AI in use", () => {

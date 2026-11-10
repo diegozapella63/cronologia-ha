@@ -85,6 +85,10 @@ async def main():
         check(await rows.count() == 4 and all(len(t) > 20 for t in await rows.locator(".ot span").all_inner_texts()), "Exportar: one line per file, each with its explanation")
         bw = [await rows.nth(i).evaluate("e => getComputedStyle(e).borderBottomStyle") for i in range(4)]
         check(bw == ["solid"] * 4, "a border on each line")
+        # 1.66: the buttons like the GerencIA's (the model of the family): the width of the card on the phone, the same height
+        boxes = [await x.bounding_box() for x in await a.locator("#dados .opts .btn, #dados .sec-actions .btn").all()]
+        ws, hs = [round(x["width"]) for x in boxes], [round(x["height"]) for x in boxes]
+        check(len(boxes) >= 7 and min(ws) >= 300 and max(ws) - min(ws) <= 1 and min(hs) >= 48 and max(hs) - min(hs) <= 1, f"Dados: the buttons the width of the card, the same height ({ws}, {hs})")
         # exports
         async with A.expect_download() as dl:
             await a.locator("#dados a.btn", has_text="Baixar JSON").click()

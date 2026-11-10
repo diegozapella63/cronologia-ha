@@ -14,11 +14,15 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
+// what the server.js gives (the same lib/correria.js in the ResolvIA and the MemorIA: only the options change)
+const ABOUT = { app: "cronologia", nome: "CronologIA", assunto: "agenda da família: compromissos, rotinas da casa, remédios, contas, manutenção e placar" };
+
 function make(over = {}) {
   let on = over.on ?? true;
   const log = makeLog();
   const uses = [];
-  const c = new Correria({ dataDir: path.join(dir, "data"), shareDir: path.join(dir, "share"), port: 8099, version: "1.60.0", log, enabled: () => on, host: () => "a1b2c3d4-cronologia", ip: () => "172.30.33.5", url: "", onUse: () => uses.push(1), ...over });
+  const c = new Correria({ about: ABOUT, dir: path.join(dir, "share", "cronologia"), dataDir: path.join(dir, "data"), port: 8099, version: "1.60.0", log,
+    enabled: () => on, host: () => "a1b2c3d4-cronologia", ip: () => "172.30.33.5", url: "", onUse: () => uses.push(1), ...over });
   return { c, log, uses, set: (v) => (on = v), file: path.join(dir, "share", "cronologia", "correria.json"), keyFile: path.join(dir, "data", "correria.key") };
 }
 const mode = (f) => fs.statSync(f).mode & 0o777;
@@ -88,7 +92,7 @@ describe("share/cronologia/correria.json", () => {
 
 describe("the defaults", () => {
   it("off unless turned on; the host name and the IP of this container", () => {
-    const c = new Correria({ dataDir: path.join(dir, "data"), shareDir: path.join(dir, "share"), port: 8099, version: "1.60.0", log: makeLog() });
+    const c = new Correria({ about: ABOUT, dir: path.join(dir, "share", "cronologia"), dataDir: path.join(dir, "data"), port: 8099, version: "1.60.0", log: makeLog() });
     assert.equal(c.publish(), false);
     assert.equal(c.authorized({ authorization: "Bearer x" }), false);
     const a = c.address();
@@ -127,7 +131,7 @@ describe("the key", () => {
 describe("the last use", () => {
   it("who used it and when, for the screen; kept in /data and read back after a restart", () => {
     const { c, uses } = make();
-    assert.deepEqual(c.state(), { ultimo: null });
+    assert.deepEqual(c.state(), { on: true, ultimo: null });
     c.used("Claude", "resumo");
     assert.equal(uses.length, 1);
     const s = c.state();
@@ -142,9 +146,9 @@ describe("the last use", () => {
   it("a broken file of the last use is ignored", () => {
     fs.mkdirSync(path.join(dir, "data"), { recursive: true });
     fs.writeFileSync(path.join(dir, "data", "correria-uso.json"), "{");
-    assert.deepEqual(make().c.state(), { ultimo: null });
+    assert.deepEqual(make().c.state(), { on: true, ultimo: null });
     fs.writeFileSync(path.join(dir, "data", "correria-uso.json"), JSON.stringify({ cliente: "Gemini", em: "ontem" }));
-    assert.deepEqual(make().c.state(), { ultimo: null });
+    assert.deepEqual(make().c.state(), { on: true, ultimo: null });
   });
   it("a data folder that can't be written still updates the screen", () => {
     fs.writeFileSync(path.join(dir, "arquivo"), "not a folder");

@@ -90,7 +90,11 @@ const home = new Home({ ha, store, log, rest: HA_REST, token: TOKEN, calState: (
 const mirror = new Mirror({ ha, store, todos, home, log, onChange: () => home.changed(), enabled: resolviaOn, scored: () => home.placarInfo().ativo });
 home.mirror = mirror;
 // CorrerIA: share/cronologia/correria.json and the key of /api/integracao/ferramentas; the screen shows the last use
-const correria = new Correria({ dataDir: DATA_DIR, shareDir: SHARE_DIR, port: PORT, version: VERSION, log, enabled: correriaOn, onUse: () => home.changed() });
+const correria = new Correria({
+  about: { app: "cronologia", nome: "CronologIA", assunto: "agenda da família: compromissos, rotinas da casa, remédios, contas, manutenção e placar" },
+  dir: path.join(SHARE_DIR, "cronologia"), dataDir: DATA_DIR, port: PORT, version: VERSION, log, enabled: correriaOn,
+  url: process.env.CRONOLOGIA_URL_INTERNA || "", onUse: () => home.changed(),
+});
 home.correria = () => correria.state();
 // Modo férias nos calendários que avisam no celular (Google…): the routines out of the days away, back on the day back
 const awayCal = new AwayCal({
@@ -912,7 +916,9 @@ function publishPresence() {
     fs.mkdirSync(dir, { recursive: true });
     const tmp = path.join(dir, ".integracao.json.tmp");
     // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas }, null, 1));
+    // the start is the same in every app of the family (app, nome, versao, gravado_em); app is still the name here, for the
+    // ResolvIA of before 2.55 (it checks it): the id ("cronologia") comes in a next version, the readers already take both
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", nome: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();

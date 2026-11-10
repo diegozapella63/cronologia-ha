@@ -141,7 +141,7 @@ export class Todos {
     try {
       const j = this.readApp();
       const t = Date.parse(j && j.gravado_em);
-      if (j && j.app === "ResolvIA" && Number.isFinite(t) && now - t < 2 * 3600000) {
+      if (j && (j.app === "resolvia" || j.app === "ResolvIA") && Number.isFinite(t) && now - t < 2 * 3600000) { // the id, or the name of before
         value = {
           versao: String(j.versao || "").slice(0, 20),
           // prazos: false when Controlar prazos is off there (2.15.0+): Novo › Tarefa offers no deadline

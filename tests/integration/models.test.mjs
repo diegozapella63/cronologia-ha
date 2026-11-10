@@ -339,6 +339,8 @@ describe("the placar", () => {
       return x.placar.ativo && x;
     }, { what: "share/cronologia/integracao.json" });
     assert.equal(j.app, "CronologIA");
+    assert.deepEqual(Object.keys(j).slice(0, 4), ["app", "nome", "versao", "gravado_em"], "the start of every app of the family");
+    assert.equal(j.nome, "CronologIA");
     assert.deepEqual(j.placar.participantes, ["Davi", "Aurora"]);
     assert.deepEqual(j.placar.usuarios, { "u-davi": "Davi", "u-aurora": "Aurora" });
     assert.equal(j.resolvia, true);

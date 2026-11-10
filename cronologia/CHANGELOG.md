@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.66.0
+
+- **Mais › Configurações › Dados**: os botões no padrão dos outros apps da família: na largura do cartão no celular, da mesma altura.
+- O CorrerIA e o Uso da IA usam o mesmo código do ResolvIA e do MemorIA (nada muda na tela).
+
 ## 1.65.0
 
 - **Avisos no celular com o mesmo jeito de todos os apps da família**:

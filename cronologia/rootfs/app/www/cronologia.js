@@ -85,7 +85,7 @@ dialog.ss-wrap::backdrop{background:transparent}
         ${[0,1,2,3,4,5,6].map($=>n`<span class="wp-wd" aria-hidden="true">${ve[($+i)%7].slice(0,1).toUpperCase()}</span>`)}
         ${No(m,i).map($=>{let M=z($);return n`<button type="button" class="wp-day ${$.getMonth()!==m.getMonth()?"out":""} ${X($,r)?"today":""} ${M===c?"on":""}" data-d=${M} aria-label=${B($,r)} aria-pressed=${M===c?"true":"false"} ?disabled=${!p(M)} @click=${()=>He(M)}>${$.getDate()}</button>`})}
       </div>
-    </div>`},".wp-day.on, .wp-day.today, .wp-day:not(.out):not(:disabled)")}var Es=["dom","seg","ter","qua","qui","sex","s\xE1b"],zs={mensagem:"Mensagens",fotos:"Fotos",conversa:"Conversa"},Fs={erro:"erro",cota:"sem cota",formato:"resposta fora do formato"},Ee=o=>String(o).padStart(2,"0"),Aa=o=>`${o.getFullYear()}-${Ee(o.getMonth()+1)}-${Ee(o.getDate())}`,It=o=>{let[e,t,a]=o.split("-").map(Number);return new Date(e,t-1,a)},Ns=o=>String(Math.round(o*10)/10).replace(".",","),qs=o=>o>=1e3?`${Ns(o/1e3)} mil`:String(Math.round(o||0)),Os=o=>`${o} ${o===1?"chamada":"chamadas"}`,jo=(o,e={})=>e[o]||(o||"").replace(/^ai_task\./,"").replace(/_/g," ")||"padr\xE3o do Home Assistant",Vo=(o,e)=>{let t=new Date(o);if(!Number.isFinite(t.getTime()))return"";let a=`${Ee(t.getHours())}:${Ee(t.getMinutes())}`;return Aa(t)===Aa(e)?`hoje ${a}`:`${Ee(t.getDate())}/${Ee(t.getMonth()+1)} ${a}`};function Uo(o){let e=o.join(" ").toLowerCase();return/google|gemini/.test(e)?n`Consumo exato e cota: <a href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener">Google Cloud Console</a>.`:/openai|chatgpt|gpt/.test(e)?n`Consumo exato e custo: <a href="https://platform.openai.com/usage" target="_blank" rel="noopener">platform.openai.com/usage</a>.`:/anthropic|claude/.test(e)?n`Consumo exato e custo: <a href="https://platform.claude.com/usage" target="_blank" rel="noopener">Claude Console</a>.`:"O consumo exato fica no painel do provedor da IA."}function Ps({u:o,day:e,onDay:t,head:a,app:s,using:i="",names:r={}}){if(!o||!o.hoje)return n`<div class="panel uso-panel" id="uso-ia">${a}<p class="panel-lead">Carregando…</p></div>`;let c=new Date,d=Aa(c),l=$=>$.cota?n`<span class="s alert">${$.cota} ${$.cota>1?"vezes":"vez"} sem cota</span>`:$.erros?n`<span class="s alert">${$.erros} com erro</span>`:n`<span class="s">≈ ${qs($.tokens)} tokens</span>`,p=($,M)=>n`<div class="uso-tile"><span class="k">${$}</span><span class="v">${M.chamadas||0}</span>${l(M)}</div>`,h=o.dias||[],f=Math.max(1,...h.map($=>$.chamadas||0)),g=h.find($=>$.dia===e)||h.find($=>$.dia===d)||{dia:d,chamadas:0,erros:0,cota:0},m=$=>$.dia===d?"hoje":Es[It($.dia).getDay()],w=o.semana&&o.semana.tipos||{},D=[...Object.keys(o.mes&&o.mes.ias||{}),...Object.keys(o.semana&&o.semana.ias||{}),i],y=o.ultimas||[];return n`<div class="panel uso-panel" id="uso-ia">
+    </div>`},".wp-day.on, .wp-day.today, .wp-day:not(.out):not(:disabled)")}var Es=["dom","seg","ter","qua","qui","sex","s\xE1b"],zs={mensagem:"Mensagens",fotos:"Fotos",sugestao:"Sugest\xF5es",conversa:"Conversa"},Fs={erro:"erro",cota:"sem cota",formato:"resposta fora do formato"},Ee=o=>String(o).padStart(2,"0"),Aa=o=>`${o.getFullYear()}-${Ee(o.getMonth()+1)}-${Ee(o.getDate())}`,It=o=>{let[e,t,a]=o.split("-").map(Number);return new Date(e,t-1,a)},Ns=o=>String(Math.round(o*10)/10).replace(".",","),qs=o=>o>=1e3?`${Ns(o/1e3)} mil`:String(Math.round(o||0)),Os=o=>`${o} ${o===1?"chamada":"chamadas"}`,jo=(o,e={})=>e[o]||(o||"").replace(/^ai_task\./,"").replace(/_/g," ")||"padr\xE3o do Home Assistant",Vo=(o,e)=>{let t=new Date(o);if(!Number.isFinite(t.getTime()))return"";let a=`${Ee(t.getHours())}:${Ee(t.getMinutes())}`;return Aa(t)===Aa(e)?`hoje ${a}`:`${Ee(t.getDate())}/${Ee(t.getMonth()+1)} ${a}`};function Uo(o){let e=o.join(" ").toLowerCase();return/google|gemini/.test(e)?n`Consumo exato e cota: <a href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener">Google Cloud Console</a>.`:/openai|chatgpt|gpt/.test(e)?n`Consumo exato e custo: <a href="https://platform.openai.com/usage" target="_blank" rel="noopener">platform.openai.com/usage</a>.`:/anthropic|claude/.test(e)?n`Consumo exato e custo: <a href="https://platform.claude.com/usage" target="_blank" rel="noopener">Claude Console</a>.`:"O consumo exato fica no painel do provedor da IA."}function Ps({u:o,day:e,onDay:t,head:a,app:s,using:i="",names:r={}}){if(!o||!o.hoje)return n`<div class="panel uso-panel" id="uso-ia">${a}<p class="panel-lead">Carregando…</p></div>`;let c=new Date,d=Aa(c),l=$=>$.cota?n`<span class="s alert">${$.cota} ${$.cota>1?"vezes":"vez"} sem cota</span>`:$.erros?n`<span class="s alert">${$.erros} com erro</span>`:n`<span class="s">≈ ${qs($.tokens)} tokens</span>`,p=($,M)=>n`<div class="uso-tile"><span class="k">${$}</span><span class="v">${M.chamadas||0}</span>${l(M)}</div>`,h=o.dias||[],f=Math.max(1,...h.map($=>$.chamadas||0)),g=h.find($=>$.dia===e)||h.find($=>$.dia===d)||{dia:d,chamadas:0,erros:0,cota:0},m=$=>$.dia===d?"hoje":Es[It($.dia).getDay()],w=o.semana&&o.semana.tipos||{},D=[...Object.keys(o.mes&&o.mes.ias||{}),...Object.keys(o.semana&&o.semana.ias||{}),i],y=o.ultimas||[];return n`<div class="panel uso-panel" id="uso-ia">
     ${a}
     <div class="uso-tiles">${p("Hoje",o.hoje)}${p("7 dias",o.semana)}${p("Este m\xEAs",o.mes)}</div>
     <div class="uso-chart" role="group" aria-label="Chamadas de IA nos últimos 7 dias">
@@ -3049,13 +3049,30 @@ dialog.ss-wrap::backdrop{background:transparent}
   .opts > li {
     flex-wrap: wrap;
   }
+  /* Dados: the buttons of the family (the GerencIA is the model): the width of the card on the phone (250 px from
+     1000 px on), the same height, the icon beside the text; Criar backup full, the others with a border, Apagar tudo red */
   .opts .btn,
+  #dados .opts .btn,
   #dados .sec-actions .btn {
-    flex: none;
-    width: 11.5em;
-    max-width: 100%;
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 50px;
+    font-size: 15px;
+    padding: 0 18px;
     justify-content: center;
     white-space: nowrap;
+  }
+  @media (min-width: 1000px) {
+    .opts .btn,
+    #dados .opts .btn,
+    #dados .sec-actions .btn {
+      flex: none;
+      width: 250px;
+    }
+  }
+  #dados .sec-actions .btn.danger {
+    color: var(--rv-late);
+    border-color: color-mix(in srgb, var(--rv-late) 55%, transparent);
   }
   .data-note {
     margin: 8px 0 0;
