@@ -30,7 +30,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Configurações**, em quatro abas no alto, as mesmas de todos os apps da família (ficam presas no topo ao rolar; abre em Integrações):
     - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, **trechos do MemorIA no Agora**, **CorrerIA**, **IA do Home Assistant** (o **Usar IA**), Falar, uso da IA e sensores.
     - **Dados**: exportar, backup na pasta share, importar, versões anteriores, onde ficam os dados e começar do zero.
-    - **Aparência**: tema (automático, claro ou escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
+    - **Aparência**: tema (Sistema, Claro ou Escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
     - **Opções**: **Local e notas** no Adicionar (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
   - **Sobre**, por último: quem faz o app (**CorrerIA Code**), os outros apps da família, cada um com uma linha e o link para o GitHub, e **Meu GitHub**.
 
@@ -349,7 +349,7 @@ Em **Mais › Configurações › Dados**, como nos outros apps:
 - **Onde ficam os dados**: os eventos nos calendários; os ajustes do app em `/data/cronologia.json` (veja abaixo).
 - **Começar do zero**: **Apagar tudo** (depois de confirmar) apaga as marcações de **Tomei, Paguei e Feito** e o placar (pontos, prêmios, histórico e extrato). Os eventos, os calendários, as pessoas, os deméritos e as preferências continuam, e uma cópia fica em **Versões anteriores**.
 
-Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com as pessoas e pets e quem recebe os avisos de cada um), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (automático, claro ou escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
+Os eventos ficam nos próprios calendários (no Home Assistant, no Google, no Outlook…). O app guarda o nome, a cor e a visibilidade de cada calendário, as preferências (com as pessoas e pets e quem recebe os avisos de cada um), as marcações de **Tomei, Paguei e Feito** dos últimos 120 dias, os avisos já enviados e o placar (pontos do último ano, prêmios e histórico), em `/data/cronologia.json`, que entra no backup do Home Assistant. O histórico das manutenções fica no próprio evento. O tema (Sistema, Claro ou Escuro) e o modo do calendário (mês, semana…) são escolhidos por aparelho.
 
 ## Segurança
 

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.67.1
+
+- **Tema**: **Automático** agora se chama **Sistema** (segue o claro ou escuro do Home Assistant, como antes). O nome cabe ao lado do ícone e é o mesmo em todos os apps da família.
+
 ## 1.67.0
 
 - **Datas no jeito do ResolvIA**: no Adicionar (evento, tarefa, remédio, conta, rotina, manutenção) e em Férias, a data tem os atalhos em botões (**Hoje**, **Amanhã**, **Sábado**, **Próx. semana**; em **Feito pela última vez**, **Hoje** e **Ontem**) e **Outra data**, que abre o mês ali mesmo, embaixo, em vez de uma janela. Tocar no nome do mês mostra os meses do ano. O **Até** do dia todo tem **Um dia** e Outra data.
