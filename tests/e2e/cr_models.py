@@ -7,6 +7,7 @@ FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
 from mais_lib import open_more
+from pick_lib import pick_time, pick_date
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 GREPO = GERENCIA
@@ -122,7 +123,7 @@ async def main():
         await a.locator(".sheet input[placeholder^='Ex.: 1 comprimido']").fill("1 cápsula")
         await a.locator(".sheet .pick.person", has_text="Davi").click()
         await a.locator(".sheet .pick", has_text="2x").click()
-        await a.locator(".sheet .time-pill input").nth(1).fill("23:30")
+        await pick_time(a.locator(".sheet .time-pill .pickf").nth(1), "23:30")
         await a.locator(".sheet .seg-grid button", has_text="Dia sim, dia não").click()
         await a.locator(".sheet .pick", has_text="Por alguns dias").click()
         await a.locator(".sheet .num-input").fill("10")
@@ -165,7 +166,7 @@ async def main():
         await a.locator(".sheet .ev-title-input").fill("Limpar a calha")
         await a.locator(".sheet .pick", has_text="3 meses").click()
         last = (today - datetime.timedelta(days=86)).isoformat()
-        await a.locator(".sheet #kf-last").evaluate("(el, v) => { el.value = v; el.dispatchEvent(new Event('change', {bubbles: true})); }", last)
+        await pick_date(a.locator(".sheet #kf-last"), last)
         await A.wait_for_timeout(200)
         nl = await a.locator(".sheet .next-line").inner_text()
         check("Próxima" in nl, f"form shows the next date ({nl.strip()})")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.63.0
+
+- **Horários e datas no visual do app**: nenhum campo abre mais o relógio ou o calendário do celular. O horário fica sempre em 24 horas (nada de AM/PM) e abre uma janela de baixo, como a das caixas de seleção: as horas e os minutos (de 5 em 5); a hora marca, os minutos escolhem e fecham, e **Pronto** muda só a hora. A data aparece por extenso no campo ("Qua, 9 dez", nunca mês/dia/ano) e abre o mês, com hoje marcado e ‹ › para os outros; tocar no dia escolhe. Vale no **Novo** (evento, remédio, rotina, conta, manutenção e tarefa), em **Revisar eventos** (da IA ou de um .ics), em **Mais › Férias** e no **Lembrete diário** de Recompensas. O Voltar do celular, o **X** e tocar fora fecham só a janela.
+- **Caixas de seleção**: um nome comprido termina em "…" antes da seta, sem ser cortado.
+- **Ocultos e pausados no fim, fechados**: em **Mais › Calendários**, os calendários ocultos saem do meio dos outros e vão para o fim, em **Ocultos (2)**, que abre num toque (o mesmo na barra lateral do computador). Em **Integrações › Tarefas do ResolvIA**, as listas deixadas de fora ficam em **Ocultas (n)**. Nas férias, em **Mais › Rotinas**, as rotinas e manutenções pausadas ficam no fim de cada seção, em **Pausadas (n)**.
+
 ## 1.62.0
 
 - **Agora › MemorIA**: o card mostra só a folha que vale agora, desenhada como no MemorIA (a espiral, o papel do bloco e a letra de mão). As próximas ficam no MemorIA; sem nada valendo agora, o card não aparece.

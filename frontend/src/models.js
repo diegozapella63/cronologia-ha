@@ -6,6 +6,8 @@ import { ICONS } from "./icons.js";
 import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { placeTags, roomsShown } from "./place-tags.js";
+import { timeField, dateField, pickDate } from "./whenpick.js";
+import { offFold } from "./offfold.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
 const icon = (name, cls = "") =>
@@ -557,11 +559,13 @@ export const ModelsMixin = (Base) =>
       const low = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : "");
       const daily = (c) => /FREQ=DAILY/.test(c.rrule || "") && !/INTERVAL=([2-9]|\d\d)/.test(c.rrule || "");
       const freq = (c) => (c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? low(rruleLabel(c.rrule)) : "uma vez");
-      // on vacation, routines and maintenance rest: not late, not due, until it ends (1.56.3)
+      // on vacation, routines and maintenance rest: not late, not due, until it ends (1.56.3); they go last,
+      // folded under Pausadas
       const away = this._awayNow() ? this._away() : null;
+      const paused = (c) => !!away && (c.kind === "rotina" || c.kind === "manutencao") && (c.late || c.next <= away.to);
       const when = (c) => {
         const d = dayDiff(fromYmd(c.next), now);
-        if (away && (c.kind === "rotina" || c.kind === "manutencao") && (c.late || c.next <= away.to)) return { text: "pausada nas férias" };
+        if (paused(c)) return null;
         if (c.late || d < 0) {
           const verb = c.kind === "rotina" ? "atrasada" : "venceu";
           return { text: d === -1 ? `${verb} ontem` : `${verb} há ${-d} dias`, late: true };
@@ -598,13 +602,12 @@ export const ModelsMixin = (Base) =>
         { kind: "conta", ic: "receipt", tone: "violet", title: "Contas a pagar", add: "Nova conta", none: "Nenhuma conta cadastrada aqui." },
       ];
       const g = this._ix().gerencia || {};
-      const body = (sec) => {
+      const body = (sec, list) => {
         if (sec.kind === "remedio")
           return meds.map(({ first: c, times }) => {
             const t = [...times].sort();
             return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
           });
-        const list = found.filter((c) => c.kind === sec.kind);
         if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
         // the rooms and the equipments as tags under the line, like the ResolvIA
         if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
@@ -618,11 +621,15 @@ export const ModelsMixin = (Base) =>
         </label>
         ${needle && !found.length ? html`<div class="panel"><div class="empty"><div class="em-icon">${icon("search")}</div><h3>Nada encontrado</h3><p>Nenhum cadastro com “${clip(q, 30)}”.</p></div></div>` : nothing}
         ${SECS.map((sec) => {
-          const rows = body(sec);
-          if (needle && !rows.length) return nothing;
+          const list = found.filter((c) => c.kind === sec.kind);
+          const off = list.filter(paused);
+          const rows = body(sec, list.filter((c) => !paused(c)));
+          const n = rows.length + off.length;
+          if (needle && !n) return nothing;
           return html`<div class="panel cat-sec" id="cat-${sec.kind}">
-            ${this._panelHead(sec.ic, sec.tone, sec.title, rows.length ? String(rows.length) : "")}
-            ${rows.length ? rows : html`<p class="empty-line">${sec.none}</p>`}
+            ${this._panelHead(sec.ic, sec.tone, sec.title, n ? String(n) : "")}
+            ${rows.length ? rows : off.length ? nothing : html`<p class="empty-line">${sec.none}</p>`}
+            ${offFold(this, `cat-${sec.kind}`, "Pausadas", off.length, () => body(sec, off))}
             ${sec.kind === "conta" && g.ligado ? html`<p class="cat-note">${icon("info")}As contas do GerencIA ficam no GerencIA.</p>` : nothing}
             ${needle ? nothing : html`<button class="add-line" @click=${() => this._openKindForm({ kind: sec.kind })}>${icon("plus")}${sec.add}</button>`}
           </div>`;
@@ -1019,17 +1026,7 @@ export const ModelsMixin = (Base) =>
         <span class="flabel">${label}</span>
         <div class="chip-row c3">
           ${opts.map(([l, v]) => html`<button class="pick ${value === v ? "on" : ""}" @click=${() => onPick(v)}>${l}</button>`)}
-          <button class="pick ${!isQuick ? "on" : ""}" @click=${() => {
-            const input = this.renderRoot.querySelector(`#${id}`);
-            try {
-              input.showPicker();
-            } catch (e) {
-              input.focus();
-              input.click();
-            }
-          }}>${icon("calendar")}<span>${!isQuick && value ? cap(dayLabel(fromYmd(value), now, { long: false })) : "Outra data"}</span>
-            <input id=${id} class="hidden-input" type="date" tabindex="-1" .value=${value} @change=${(e) => e.target.value && onPick(e.target.value)} />
-          </button>
+          <button id=${id} class="pick ${!isQuick ? "on" : ""}" data-value=${value || ""} @click=${(e) => pickDate(e.currentTarget, { value, title: label, weekStart: this._app("week_start", 1) }).then((v) => v && onPick(v))}>${icon("calendar")}<span>${!isQuick && value ? cap(dayLabel(fromYmd(value), now, { long: false })) : "Outra data"}</span></button>
         </div>
       </div>`;
     }
@@ -1112,7 +1109,7 @@ export const ModelsMixin = (Base) =>
         <span class="flabel">${label}</span>
         <div class="chip-row">${opts.map(([k, l]) => html`<button class="pick ${f.dur === k ? "on" : ""}" @click=${() => this._setForm({ dur: k })}>${l}</button>`)}</div>
         ${f.dur === "dias" ? html`<div class="time-row"><span class="tl">Por</span><input type="number" class="num-input" min="1" max="365" .value=${String(f.days)} @input=${(e) => this._setForm({ days: e.target.value })} /><span class="tl">dias</span></div>` : nothing}
-        ${f.dur === "ate" ? html`<div class="time-row"><span class="tl">Até</span><input type="date" .value=${f.until} min=${f.date} @change=${(e) => e.target.value && this._setForm({ until: e.target.value })} /></div>` : nothing}
+        ${f.dur === "ate" ? html`<div class="time-row"><span class="tl">Até</span>${dateField(f.until, (v) => this._setForm({ until: v }), { label: "Até", min: f.date, weekStart: this._app("week_start", 1) })}</div>` : nothing}
       </div>`;
     }
 
@@ -1158,7 +1155,7 @@ export const ModelsMixin = (Base) =>
             ${timeEdit ? html`<div class="chip-row" style="margin-bottom:10px">${DOSE_PRESETS.map(([l, t]) => html`<button class="pick ${f.times.join() === t.join() ? "on" : ""}" @click=${() => this._setForm({ times: [...t] })}>${l}</button>`)}</div>` : nothing}
             <div class="times">
               ${f.times.map(
-                (t, i) => html`<span class="time-pill"><input type="time" .value=${t} aria-label="Horário ${i + 1}" @change=${(e) => e.target.value && this._setForm({ times: f.times.map((x, j) => (j === i ? e.target.value : x)) })} />${f.times.length > 1 ? html`<button class="icon-btn mini" aria-label="Tirar horário" @click=${() => this._setForm({ times: f.times.filter((_, j) => j !== i) })}>${icon("x")}</button>` : nothing}</span>`,
+                (t, i) => html`<span class="time-pill">${timeField(t, (v) => this._setForm({ times: f.times.map((x, j) => (j === i ? v : x)) }), { label: `Horário ${i + 1}` })}${f.times.length > 1 ? html`<button class="icon-btn mini" aria-label="Tirar horário" @click=${() => this._setForm({ times: f.times.filter((_, j) => j !== i) })}>${icon("x")}</button>` : nothing}</span>`,
               )}
               ${timeEdit && f.times.length < 8 ? html`<button class="pick ghost" @click=${() => this._setForm({ times: [...f.times, "12:00"] })}>${icon("plus")}<span>Horário</span></button>` : nothing}
             </div>
@@ -1200,7 +1197,7 @@ export const ModelsMixin = (Base) =>
             <div class="chip-row">
               <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>Qualquer hora</button>
               <button class="pick ${!f.allDay ? "on" : ""}" @click=${() => this._setForm({ allDay: false, period: "" })}>${icon("clock")}<span>Num horário</span></button>
-              ${!f.allDay ? html`<input type="time" class="inline-time" .value=${f.times[0] || "19:00"} @change=${(e) => e.target.value && this._setForm({ times: [e.target.value] })} aria-label="Horário" />` : nothing}
+              ${!f.allDay ? timeField(f.times[0] || "19:00", (v) => this._setForm({ times: [v] }), { label: "Horário", cls: "inline-time" }) : nothing}
             </div>
             <div class="chip-row c3 per-row" role="group" aria-label="Período do dia">
               ${PERIODS.map((p) => html`<button class="pick ${f.allDay && f.period === p.id ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: p.id })}>${icon(p.icon)}<span>${p.label}</span></button>`)}

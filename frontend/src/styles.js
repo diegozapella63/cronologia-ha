@@ -1192,6 +1192,10 @@ export const styles = css`
     width: 100% !important;
     min-height: 44px;
   }
+  .chip-row > .pickf.inline-time {
+    border-radius: 12px;
+    padding: 0 10px 0 12px;
+  }
   /* ideas to tap (Deméritos): they keep flowing like tags */
   .chip-row.dm-ideas {
     display: flex;
@@ -1199,16 +1203,6 @@ export const styles = css`
   }
   .chip-row.dm-ideas > .pick {
     min-height: 0;
-  }
-  .hidden-input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    width: 100%;
-    height: 100%;
-    border: 0;
-    padding: 0;
-    pointer-events: none;
   }
 
   /* ---------- settings ---------- */
@@ -1543,8 +1537,7 @@ export const styles = css`
     color: var(--rv-text-2);
   }
   .field textarea,
-  .field input[type="text"],
-  .field input[type="time"] {
+  .field input[type="text"] {
     width: 100%;
     border: 1.5px solid var(--rv-line-strong);
     background: var(--rv-bg);
@@ -1571,9 +1564,8 @@ export const styles = css`
     font-size: 16px;
   }
   /* from and until: the two times share the width */
-  .field .time-row input[type="time"] {
+  .field .time-row .pickf.t {
     flex: 1;
-    min-width: 0;
   }
   .field .time-row .tl {
     color: var(--rv-muted);
@@ -2689,6 +2681,65 @@ export const extraStyles = css`
   .select:focus {
     outline: 0;
     border-color: var(--rv-accent);
+  }
+  /* a long choice ends in "…" before the arrow, never cut */
+  .select {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* Horário e data (whenpick.js): a field like the others, the value and a small icon; it opens the app's window */
+  .pickf {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 12px 0 14px;
+    border: 1.5px solid var(--rv-line-strong);
+    border-radius: 14px;
+    background: var(--rv-bg);
+    color: var(--rv-text);
+    font-size: 16px;
+    line-height: 1.2;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .pickf:focus-visible {
+    outline: 0;
+    border-color: var(--rv-accent);
+  }
+  .pickf .pf-v {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+  }
+  .pickf.t .pf-v {
+    font-family: var(--rv-display);
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pickf > .i {
+    width: 18px;
+    height: 18px;
+    color: var(--rv-muted);
+  }
+  .pickf.sm {
+    min-height: 36px;
+    gap: 6px;
+    padding: 0 8px 0 10px;
+    border-radius: 10px;
+    background: var(--rv-surface-2);
+    font-size: 15px;
+  }
+  .pickf.sm.t .pf-v {
+    font-size: 17px;
+  }
+  .pickf.sm > .i {
+    width: 15px;
+    height: 15px;
   }
   .ai-actions {
     display: flex;

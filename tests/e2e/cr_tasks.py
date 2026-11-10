@@ -7,6 +7,7 @@ FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, re, datetime
 from playwright.async_api import async_playwright
 from mais_lib import open_more
+from pick_lib import pick_time, value
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 URL = "http://127.0.0.1:8099/"
@@ -75,8 +76,12 @@ async def main():
         check("Lendo as listas de tarefas do Home Assistant" in st and "4 listas" in st, f"ResolvIA state without the app ({st})")
         rows = await a.locator("#resolvia .row").all_inner_texts()
         check(any("Problem List" in r and "10 atrasadas" in r for r in rows), "Mais lists the ResolvIA lists with counts")
-        await a.locator("#resolvia .row", has_text="Problem List").locator(".switch input").uncheck()
+        await a.locator("#resolvia .row", has_text="Problem List").locator(".switch input").click()  # hidden: to Ocultas
         await wait_for(lambda: stored(data)["app"].get("todo_hidden") == ["todo.problem_list"], "hidden list saved")
+        # 1.63.0: the hidden one last, folded under Ocultas (1)
+        async def folded(): return await a.locator("#resolvia .off-fold", has_text="Ocultas (1)").count() == 1
+        await wait_for(folded, "the hidden list goes to Ocultas (1), at the end")
+        check(await a.locator("#resolvia .row", has_text="Problem List").count() == 0, "closed: the hidden list is not shown")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(500)
         async def no_problem(): return "Dispositivo sem resposta" not in await a.locator(".panel.todos").inner_text()
         await wait_for(no_problem, "hidden list leaves the card")
@@ -104,7 +109,7 @@ async def main():
         await a.locator(".sheet .pick.list", has_text="Casa").click()
         await a.locator(".sheet .pick", has_text="Amanhã").click()
         await a.locator(".sheet .pick", has_text="Com horário").click()
-        await a.locator(".sheet .inline-time").fill("10:30")
+        await pick_time(a.locator(".sheet .pickf.inline-time"), "10:30")
         await a.locator(".sheet textarea").nth(1).fill("A do gato castrado")
         await a.locator(".sheet .btn.primary", has_text="Criar tarefa").click()
         tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()

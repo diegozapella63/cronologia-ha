@@ -6,6 +6,7 @@ import { foldText, everyLabel, PERIODS as PERIODS_DAY, periodOfHour } from "../.
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
 import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, dayLabel, WEEKDAYS } from "./util.js";
 import { routineSub, routineLate, byPeriod } from "./models.js";
+import { timeField } from "./whenpick.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
@@ -979,7 +980,7 @@ export const RewardsMixin = (Base) =>
         <span class="flabel">Quando</span>
         <div class="seg remind-seg">${PERIODS_DAY.map((p) => html`<button class=${cur === p.id ? "on" : ""} @click=${() => this._scorePrefs({ remind: SLOTS[p.id] })}>${icon(p.icon)}${p.label}</button>`)}</div>
         <div class="remind-row">
-          <input type="time" class="remind-time" .value=${s.remind} aria-label="Horário do lembrete" @change=${(e) => /^\d{2}:\d{2}$/.test(e.target.value) && this._scorePrefs({ remind: e.target.value })} />
+          ${timeField(s.remind, (v) => this._scorePrefs({ remind: v }), { label: "Horário do lembrete", cls: "remind-time" })}
           <button class="btn outline remind-test" ?disabled=${!mine} aria-label="Testar no meu celular" title=${mine ? "" : "Sem celular ligado a você no Home Assistant"} @click=${() => this._testScoreReminder()}>${icon("send")}Testar</button>
         </div>
         <span class="field-hint">${icon("bell-ring")}<span>${withPhone.length ? `Vai para o celular de ${list(withPhone)}.` : ""}${without.length ? `${withPhone.length ? " " : ""}Sem celular para ${list(without)}.` : ""}</span></span>

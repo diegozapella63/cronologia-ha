@@ -8,6 +8,7 @@ FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, urllib.request, datetime
 from playwright.async_api import async_playwright
 from mais_lib import open_more
+from pick_lib import pick_date
 SP = _os.environ["E2E_TMP"]
 REPO = CRONOLOGIA
 n_ok, failed = 0, []
@@ -112,7 +113,7 @@ async def main():
         await a.locator(".sheet .ev-title-input").fill("Trocar a areia")
         print("pick", flush=True); await a.locator(".sheet .seg-grid button", has_text="Depois de feita").click(timeout=5000); await A.wait_for_timeout(200); print("picked", flush=True)
         await a.locator(".sheet input[aria-label='Dias depois de feita']").fill("3")
-        await a.locator(".sheet #kf-date").evaluate("(el, v) => { el.value = v; el.dispatchEvent(new Event('change', {bubbles: true})); }", D(-3))
+        await pick_date(a.locator(".sheet #kf-date"), D(-3))
         await a.locator(".sheet .pick.list", has_text="Casa").click()
         await a.locator(".sheet .btn.primary", has_text="Criar rotina").click()
         await wait_for(lambda: len(events("Trocar a areia")) == 1 and events("Trocar a areia")[0]["start"] == D(-3), "created 3 days ago")

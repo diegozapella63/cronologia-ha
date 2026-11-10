@@ -1,4 +1,4 @@
-import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS } from "../vendor/lit-all.min.js";
+import { LitElement, html, svg, nothing, unsafeSVG, unsafeCSS, repeat, live } from "../vendor/lit-all.min.js";
 import { usagePanel, usageStyles } from "./usage-panel.js";
 import { equipPickerStyles } from "./equip-picker.js";
 import { themePicker, colorPicker, lookStyles, colorOfDay } from "./look.js";
@@ -21,6 +21,8 @@ import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
+import { timeField, dateField, pickDate } from "./whenpick.js";
+import { offFold } from "./offfold.js";
 import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
 import {
   PALETTE,
@@ -1563,6 +1565,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const held = this._sideHeld || (this._sideHeld = new Set());
     const cals = this._cals().filter((c) => !c.hidden || held.has(c.id));
     const shown = cals.filter((c) => !c.hidden).length;
+    // the other hidden ones last, folded under Ocultos: a tap shows one again
+    const off = this._cals().filter((c) => c.hidden && !held.has(c.id));
+    const sideCal = (c) => html`<button class="side-cal ${c.hidden ? "off" : ""}" role="switch" aria-checked=${c.hidden ? "false" : "true"} title=${c.hidden ? "Mostrar na agenda" : "Esconder da agenda"} style=${colorVars(c.color, this._dark)} @click=${() => {
+        if (!c.hidden) held.add(c.id);
+        this._saveCalPrefs(c.id, { hidden: c.hidden ? null : true });
+      }}>
+        <span class="sc-box">${c.hidden ? nothing : icon("check")}</span><span class="sl-name">${c.name}</span>
+      </button>`;
     return html`<aside class="side" aria-label="Navegação">
       <div class="side-brand">${appIcon()}Cronolog<span>IA</span></div>
       <div class="side-nav">
@@ -1572,17 +1582,11 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${item(...this._fourthTab())} ${item("more", "/mais", "Mais", "ellipsis")}
       </div>
       ${this._renderSideMonth(view)}
-      ${cals.length
+      ${cals.length || off.length
         ? html`<div class="side-h"><span>Calendários</span><small>${shown === cals.length ? cals.length : `${shown} de ${cals.length}`}</small></div>
             <div class="side-lists">
-              ${cals.map(
-                (c) => html`<button class="side-cal ${c.hidden ? "off" : ""}" role="switch" aria-checked=${c.hidden ? "false" : "true"} title=${c.hidden ? "Mostrar na agenda" : "Esconder da agenda"} style=${colorVars(c.color, this._dark)} @click=${() => {
-                  if (!c.hidden) held.add(c.id);
-                  this._saveCalPrefs(c.id, { hidden: c.hidden ? null : true });
-                }}>
-                  <span class="sc-box">${c.hidden ? nothing : icon("check")}</span><span class="sl-name">${c.name}</span>
-                </button>`,
-              )}
+              ${cals.map(sideCal)}
+              ${offFold(this, "side-cals", "Ocultos", off.length, () => off.map(sideCal))}
             </div>`
         : nothing}
       <div class="side-foot">CronologIA${this._version ? ` ${this._version}` : ""}</div>
@@ -2300,8 +2304,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   /** Mais › Calendários: every calendar (name, color, show/hide), where new events go, adding calendars. */
   _renderCalendarsTab() {
     const cals = this._cals();
+    // the hidden ones last, folded under Ocultos
+    const off = cals.filter((c) => c.hidden);
     const groups = [];
-    for (const c of cals) {
+    for (const c of cals.filter((x) => !x.hidden)) {
       const g = groups.find((x) => x.label === c.group);
       if (g) g.list.push(c);
       else groups.push({ label: c.group, list: [c] });
@@ -2309,22 +2315,22 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const errors = this._store ? this._store.errors() : new Map();
     const writable = this._writable();
     const def = this._defaultCal();
+    const row = (c) => html`<div class="row cal-row ${c.hidden ? "off" : ""}" style=${colorVars(c.color, this._dark)}>
+      <button class="tile" @click=${() => this._openCalSheet(c)} aria-label="Personalizar ${c.name}">${icon(c.icon)}</button>
+      <button class="grow" style="text-align:left" @click=${() => this._openCalSheet(c)}>
+        <div class="label">${c.name}</div>
+        <div class="hint">${[c.hidden ? c.group : "", c.device, errors.get(c.id) ? "não carregou" : c.unavailable ? "indisponível" : c.canCreate ? (c.canUpdate ? "cria e edita" : "cria eventos") : "só leitura"].filter(Boolean).join(" · ")}</div>
+      </button>
+      <label class="switch"><input type="checkbox" role="switch" .checked=${live(!c.hidden)} @change=${(e) => this._saveCalPrefs(c.id, { hidden: e.target.checked ? null : true })} aria-label="Mostrar ${c.name}" /><span class="track"></span></label>
+    </div>`;
     return html`
       ${groups.map(
         (g) => html`<div class="panel">
           ${this._secHead("calendar-days", g.label)}
-          ${g.list.map(
-            (c) => html`<div class="row cal-row ${c.hidden ? "off" : ""}" style=${colorVars(c.color, this._dark)}>
-              <button class="tile" @click=${() => this._openCalSheet(c)} aria-label="Personalizar ${c.name}">${icon(c.icon)}</button>
-              <button class="grow" style="text-align:left" @click=${() => this._openCalSheet(c)}>
-                <div class="label">${c.name}</div>
-                <div class="hint">${[c.device, errors.get(c.id) ? "não carregou" : c.unavailable ? "indisponível" : c.canCreate ? (c.canUpdate ? "cria e edita" : "cria eventos") : "só leitura"].filter(Boolean).join(" · ")}</div>
-              </button>
-              <label class="switch"><input type="checkbox" role="switch" .checked=${!c.hidden} @change=${(e) => this._saveCalPrefs(c.id, { hidden: e.target.checked ? null : true })} aria-label="Mostrar ${c.name}" /><span class="track"></span></label>
-            </div>`,
-          )}
+          ${repeat(g.list, (c) => c.id, row)}
         </div>`,
       )}
+      ${off.length ? html`<div class="panel off-panel" id="cal-ocultos">${offFold(this, "cals", "Ocultos", off.length, () => repeat(off, (c) => c.id, row))}</div>` : nothing}
       <div class="panel" id="novos-eventos">
         ${this._secHead("calendar-plus", "Novos eventos")}
         ${writable.length
@@ -2502,8 +2508,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </div>
       ${a
         ? html`<div class="away-dates">
-            <label class="field"><span class="flabel">De</span><input type="date" .value=${a.from} @change=${(e) => e.target.value && set(e.target.value, a.to)} aria-label="Férias de" /></label>
-            <label class="field"><span class="flabel">Até</span><input type="date" .value=${a.to} min=${a.from} @change=${(e) => e.target.value && set(a.from, e.target.value)} aria-label="Férias até" /></label>
+            <div class="field"><span class="flabel">De</span>${dateField(a.from, (v) => set(v, a.to), { label: "Férias de", weekStart: this._app("week_start", 1) })}</div>
+            <div class="field"><span class="flabel">Até</span>${dateField(a.to, (v) => set(a.from, v), { label: "Férias até", min: a.from, weekStart: this._app("week_start", 1) })}</div>
           </div>
           <span class="field-hint away-cal">${icon("calendar-x")}<span>No Google, as rotinas saem desses dias e voltam em ${dateShort(addDays(fromYmd(a.to), 1), new Date(this._now))}.</span></span>`
         : nothing}
@@ -2783,16 +2789,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       { label: "Amanhã", d: addDays(startOfDay(now), 1) },
     ];
     const isQuick = quick.some((q) => ymd(q.d) === f.date);
-    const openPicker = (sel) => {
-      const input = this.renderRoot.querySelector(sel);
-      if (!input) return;
-      try {
-        input.showPicker();
-      } catch (e) {
-        input.focus();
-        input.click();
-      }
-    };
+    const weekStart = this._app("week_start", 1);
+    const setDate = (v) => this._setForm({ date: v, endDate: f.endDate && f.endDate < v ? "" : f.endDate });
     const setStart = (v) => {
       if (!v) return;
       const toMin = (t) => {
@@ -2834,21 +2832,20 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         </div>
         <div class="chip-row c3">
           ${quick.map((q) => html`<button class="pick ${f.date === ymd(q.d) ? "on" : ""}" @click=${() => this._setForm({ date: ymd(q.d), endDate: f.endDate && f.endDate < ymd(q.d) ? "" : f.endDate })}>${q.label}</button>`)}
-          <button class="pick ${!isQuick ? "on" : ""}" @click=${() => openPicker("#cr-date")}>
+          <button id="cr-date" class="pick ${!isQuick ? "on" : ""}" data-value=${f.date} @click=${(e) => pickDate(e.currentTarget, { value: f.date, title: "Data", weekStart }).then((v) => v && setDate(v))}>
             ${icon("calendar")}<span>${!isQuick ? cap(dayLabel(fromYmd(f.date), now, { long: false })) : "Outra data"}</span>
-            <input id="cr-date" class="hidden-input" type="date" tabindex="-1" .value=${f.date} @change=${(e) => e.target.value && this._setForm({ date: e.target.value, endDate: f.endDate && f.endDate < e.target.value ? "" : f.endDate })} />
           </button>
         </div>
         ${f.allDay
           ? html`<div class="time-row">
               <span class="tl">Até</span>
-              <input type="date" .value=${f.endDate || f.date} min=${f.date} @change=${(e) => this._setForm({ endDate: e.target.value > f.date ? e.target.value : "" })} />
+              ${dateField(f.endDate || f.date, (v) => this._setForm({ endDate: v > f.date ? v : "" }), { label: "Até", min: f.date, weekStart })}
               ${f.endDate ? html`<span class="tl">${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : html`<span class="tl">um dia</span>`}
             </div>`
           : html`<div class="time-row">
-                <input type="time" .value=${f.start} aria-label="Começa" @change=${(e) => setStart(e.target.value)} />
+                ${timeField(f.start, setStart, { label: "Começa" })}
                 <span class="tl">até</span>
-                <input type="time" .value=${f.end} aria-label="Termina" @change=${(e) => e.target.value && this._setForm({ end: e.target.value })} />
+                ${timeField(f.end, (v) => this._setForm({ end: v }), { label: "Termina" })}
               </div>
               <div class="chip-row dur c4">
                 ${[
@@ -2973,9 +2970,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
                 <button class="icon-btn mini" aria-label="Remover" @click=${() => this._setForm({ items: f.items.filter((_, j) => j !== i) })}>${icon("x")}</button>
               </div>
               <div class="rv-when">
-                <input type="date" .value=${it.date} aria-label="Data" @change=${(e) => e.target.value && this._setItem(i, { date: e.target.value })} />
+                ${dateField(it.date, (v) => this._setItem(i, { date: v }), { label: "Data", cls: "sm", weekStart: this._app("week_start", 1) })}
                 ${it.start
-                  ? html`<span class="rv-times"><input type="time" .value=${it.start} aria-label="Começa" @change=${(e) => this._setItem(i, { start: e.target.value })} /><span>–</span><input type="time" .value=${it.end} aria-label="Termina" @change=${(e) => this._setItem(i, { end: e.target.value })} /></span>`
+                  ? html`<span class="rv-times">${timeField(it.start, (v) => this._setItem(i, { start: v }), { label: "Começa", cls: "sm" })}<span>–</span>${timeField(it.end, (v) => this._setItem(i, { end: v }), { label: "Termina", cls: "sm" })}</span>`
                   : html`<button class="pick ghost" @click=${() => this._setItem(i, { start: "09:00", end: "10:00" })}>${icon("clock")}<span>Dia todo</span></button>`}
               </div>
               <p class="rv-meta">${cap(dayLabel(fromYmd(it.date), now))}${it.end_date ? ` até ${dateShort(fromYmd(it.end_date), now)}` : ""}${it.location ? ` · ${it.location}` : ""}${it.repeat || it.rrule ? ` · ${it.rrule ? rruleLabel(it.rrule) : REPEATS.find((r) => r.id === it.repeat.toUpperCase()).label}` : ""}</p>

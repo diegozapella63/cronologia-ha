@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from pick_lib import pick_time, field_of
 
 today = datetime.date.today()
 D = lambda n: (today + datetime.timedelta(days=n)).isoformat()
@@ -30,7 +31,7 @@ async def main():
         check(await sheet.locator(".btn", has_text="Editar").count() == 1 and await sheet.locator(".btn.danger[aria-label='Apagar']").count() == 1 and "Só leitura" not in await sheet.inner_text(), "Google: Editar and Apagar on the sheet")
         await sheet.locator(".btn", has_text="Editar").click(); await A.wait_for_timeout(400)
         await sheet.locator(".ev-title-input").fill("Cinema (sessão das 21h)")
-        await sheet.locator("input[aria-label='Começa']").fill("21:00"); await A.wait_for_timeout(200)
+        await pick_time(field_of(sheet, "Começa"), "21:00")
         mark = len(st.fake_log())
         await sheet.locator(".btn.primary", has_text="Salvar").click()
         await wait_for(lambda: len(evs("Cinema")) == 1 and evs("Cinema")[0]["summary"] == "Cinema (sessão das 21h)", "saved")

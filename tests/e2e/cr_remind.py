@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
 from mais_lib import open_more
+from pick_lib import pick_time, value
 
 SPT = datetime.timezone(datetime.timedelta(hours=-3))
 now = datetime.datetime.now(SPT)
@@ -33,11 +34,11 @@ async def main():
         fld = a.locator(".remind-field")
         check(st.stored()["app"]["score"].get("remind") == "20:00" and await fld.locator(".seg button.on").inner_text() == "Noite", "on: at 20:00, Noite chosen")
         await fld.locator(".seg button", has_text="Manhã").click(); await A.wait_for_timeout(700)
-        check(st.stored()["app"]["score"].get("remind") == "09:00" and await fld.locator("input.remind-time").input_value() == "09:00", "Manhã: 09:00")
+        check(st.stored()["app"]["score"].get("remind") == "09:00" and await value(fld.locator(".pickf.remind-time")) == "09:00", "Manhã: 09:00")
         hint = await fld.locator(".field-hint").inner_text()
         check("Vai para o celular de Davi e Aurora." in hint, f"whose phones ({hint})")
         await fld.screenshot(path=f"{SP}/shots/crrm-field.png")
-        bx = [await fld.locator(sel).bounding_box() for sel in ("input.remind-time", ".remind-test")]
+        bx = [await fld.locator(sel).bounding_box() for sel in (".pickf.remind-time", ".remind-test")]
         check(abs(bx[0]["height"] - bx[1]["height"]) < 1 and abs(bx[0]["y"] - bx[1]["y"]) < 1, f"the time and Testar side by side, the same height ({[round(x['height']) for x in bx]})")
         # Testar no meu celular (Davi's)
         await fld.locator(".remind-test").click()
@@ -49,9 +50,13 @@ async def main():
         check("Lembrete enviado para o seu celular." in toast and "Pixel" not in toast, f"the toast, no device ({toast!r})")
         check("Pixel" not in await fld.inner_text() and "Vai para o celular de Davi e Aurora." in await fld.inner_text(), "who gets it: the players by name")
         # the exact time: this minute; the server sends it to both within a round (20 s)
+        # 1.63.0: the time in the app's window (24 hours, minutes of 5 in 5), no AM/PM
+        await pick_time(fld.locator(".pickf.remind-time"), "21:15")
+        check(st.stored()["app"]["score"].get("remind") == "21:15" and await fld.locator(".seg button.on").inner_text() == "Noite", "the exact time in the app's window: saved, Noite marked")
+        # this very minute (not of 5 in 5: straight to the app), so the server sends it now
         hm = datetime.datetime.now(SPT).strftime("%H:%M")
-        await fld.locator("input.remind-time").fill(hm); await fld.locator("input.remind-time").dispatch_event("change"); await A.wait_for_timeout(700)
-        check(st.stored()["app"]["score"].get("remind") == hm, f"the exact time saved ({hm})")
+        await a.evaluate(f"(el) => el._scorePrefs({{ remind: '{hm}' }})"); await A.wait_for_timeout(700)
+        check(st.stored()["app"]["score"].get("remind") == hm and await value(fld.locator(".pickf.remind-time")) == hm, f"the exact time saved and shown ({hm})")
         await wait_for(lambda: sorted(n["service"] for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-lembrete") == ["mobile_app_galaxy_s23", "mobile_app_pixel_8"], "at the time: to everyone who plays", tries=140)
         await A.wait_for_timeout(21000)
         check(len([n for n in st.notifications() if n.get("data", {}).get("tag") == "cronologia-placar-lembrete"]) == 2, "once a day")

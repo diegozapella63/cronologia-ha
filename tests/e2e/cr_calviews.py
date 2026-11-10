@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
 from mais_lib import open_more
+from pick_lib import field_of, value
 
 today = datetime.date.today()
 DD = lambda n: today + datetime.timedelta(days=n)
@@ -50,7 +51,7 @@ async def main():
             dp = await a.locator(".day-panel").inner_text()
             check("Cinema" in dp and "20:00" in dp, "a tap on another day lists that day")
             await a.locator(".day-panel .text-btn", has_text="Evento").click(); await A.wait_for_timeout(500)
-            check(await sheet.locator("#cr-date").input_value() == D(3), "+ Evento opens Novo on that day")
+            check(await value(sheet.locator("#cr-date")) == D(3), "+ Evento opens Novo on that day")
             await sheet.locator(".btn.outline", has_text="Cancelar").click(); await A.wait_for_timeout(300)
         nxt = (first + datetime.timedelta(days=32)).replace(day=1)
         prv = (first - datetime.timedelta(days=1)).replace(day=1)
@@ -101,8 +102,8 @@ async def main():
         box = await col.bounding_box()
         await A.mouse.click(box["x"] + box["width"] / 2, box["y"] + hour * HOUR_H + 12); await A.wait_for_timeout(600)
         check(await sheet.locator("h3").first.inner_text() == "Novo", "a tap on an empty hour opens Novo")
-        s_, e_ = await sheet.locator("input[aria-label='Começa']").input_value(), await sheet.locator("input[aria-label='Termina']").input_value()
-        check(await sheet.locator("#cr-date").input_value() == D(1) and (s_, e_) == (f"{hour:02d}:00", f"{hour + 1:02d}:00"), f"on that day and hour ({D(1)} {s_}–{e_})")
+        s_, e_ = await value(field_of(sheet, "Começa")), await value(field_of(sheet, "Termina"))
+        check(await value(sheet.locator("#cr-date")) == D(1) and (s_, e_) == (f"{hour:02d}:00", f"{hour + 1:02d}:00"), f"on that day and hour ({D(1)} {s_}–{e_})")
         await A.screenshot(path=f"{SP}/shots/crcv-dia-novo.png")
         await sheet.locator(".ev-title-input").fill("Reunião na escola")
         await sheet.locator(".pick.list", has_text="Pessoal").click()

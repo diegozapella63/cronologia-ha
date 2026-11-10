@@ -1154,13 +1154,6 @@ export const calStyles = css`
     flex-wrap: wrap;
     margin-top: 10px;
   }
-  .field .time-row input[type="time"],
-  .field .time-row input[type="date"] {
-    font-family: var(--rv-display);
-    font-size: 19px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
   .chip-row.dur {
     margin-top: 10px;
   }
@@ -1205,18 +1198,6 @@ export const calStyles = css`
     flex-wrap: wrap;
     gap: 6px;
     margin: 6px 0 2px 44px;
-  }
-  .rv-when input {
-    font: inherit;
-    font-family: var(--rv-display);
-    font-size: 17px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    border: 1.5px solid var(--rv-line-strong);
-    background: var(--rv-surface-2);
-    border-radius: 10px;
-    padding: 4px 8px;
-    color: var(--rv-text);
   }
   .rv-times {
     display: inline-flex;
@@ -2252,15 +2233,14 @@ export const calStyles = css`
     border-radius: 14px;
     border: 1.5px solid var(--rv-line-strong);
   }
-  .time-pill input {
+  .time-pill .pickf {
+    min-height: 40px;
+    padding: 0 6px 0 10px;
     border: 0;
     background: none;
-    padding: 6px 8px;
+  }
+  .time-pill .pickf.t .pf-v {
     font-size: 17px;
-    font-family: var(--rv-display);
-    font-weight: 600;
-    width: auto;
-    min-width: 0;
   }
   .wdp-row {
     display: flex;
@@ -2322,11 +2302,7 @@ export const calStyles = css`
   .chip-row.per-row {
     margin-top: 8px;
   }
-  .inline-time {
-    width: auto !important;
-    padding: 7px 10px !important;
-    border-radius: 12px !important;
-  }
+
   .next-line {
     display: flex;
     align-items: center;
@@ -3391,20 +3367,15 @@ export const calStyles = css`
     gap: 8px;
     margin-top: 10px;
   }
-  .remind-row input.remind-time {
+  .remind-row .pickf.remind-time {
     width: 100%;
-    min-width: 0;
     height: 100%;
     min-height: 44px;
-    padding: 0 8px;
-    font: inherit;
-    font-size: 17px;
-    font-weight: 700;
-    text-align: center;
+    justify-content: center;
     border-radius: 12px;
-    border: 1px solid var(--rv-line-strong);
-    background: var(--rv-surface);
-    color: var(--rv-text);
+  }
+  .remind-row .pickf.remind-time .pf-v {
+    flex: none;
   }
   .remind-row .remind-test {
     margin: 0;

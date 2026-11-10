@@ -8,6 +8,7 @@ INVENTARIA = _os.environ.get("E2E_INVENTARIA", "")
 FIX = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "fixtures")
 import asyncio, json, os, subprocess, time, shutil, datetime
 from playwright.async_api import async_playwright
+from pick_lib import field_of, value
 SP = _os.environ["E2E_TMP"]; REPO = CRONOLOGIA
 n_ok, failed = 0, []
 def check(c, label):
@@ -61,7 +62,7 @@ async def main():
         check(await a.locator(".mais-head").count() == 0, "no heading repeating the title")
         await panel.locator("input[aria-label='De férias']").check(); await pg.wait_for_timeout(800)
         await wait_for(lambda: stored()["app"].get("away") == {"from": D(0), "to": D(4)}, "on: from today, 5 days")
-        check(await panel.locator("input[aria-label='Férias até']").input_value() == D(4), "the dates to change")
+        check(await value(field_of(panel, "Férias até")) == D(4), "the dates to change")
         hint = await panel.locator(".away-cal").inner_text() if await panel.locator(".away-cal").count() else ""
         check("No Google, as rotinas saem desses dias e voltam em" in hint, f"1.59.0: says what happens in the Google calendar ({hint!r})")
         await panel.screenshot(path=f"{SP}/shots/cra-options.png")
@@ -127,9 +128,17 @@ async def main():
         # 1.56.3: Mais › Rotinas: a routine or maintenance is paused on vacation, not late
         await a.locator(".tab", has_text="Mais").click(); await pg.wait_for_timeout(400)
         await a.locator('.menu-row[data-k="rotinas"]').click(); await pg.wait_for_timeout(800)
-        hints = [h.strip() for h in await a.locator(".cat-row .hint").all_inner_texts()]
+        # 1.63.0: the paused ones last in their section, folded under Pausadas (n)
+        folds = [t.strip() for t in await a.locator(".cat-sec .off-fold").all_inner_texts()]
         cat = await a.locator(".page").first.inner_text()
-        check(any("pausada nas férias" in h for h in hints) and not any(w in cat for w in ("atrasada há", "atrasada ontem")), f"Rotinas: paused on vacation, nothing late ({[h for h in hints if 'férias' in h or 'atrasada' in h][:4]})")
+        check(folds and all(f.startswith("Pausadas (") and f.endswith(")") for f in folds) and not any(w in cat for w in ("atrasada há", "atrasada ontem", "pausada nas férias")), f"Rotinas: paused on vacation, last and folded, nothing late ({folds})")
+        rot = a.locator("#cat-rotina")
+        if await rot.locator(".off-fold").count():
+            n_closed = await rot.locator(".cat-row").count()
+            await rot.locator(".off-fold").click(); await pg.wait_for_timeout(300)
+            n_open = await rot.locator(".cat-row").count()
+            n_off = int(folds[0].split("(")[1].rstrip(")"))
+            check(await rot.locator(".off-fold").get_attribute("aria-expanded") == "true" and n_open == n_closed + n_off, f"a tap opens Pausadas: the {n_off} paused routines ({n_closed} → {n_open})")
         await pg.screenshot(path=f"{SP}/shots/cra-rotinas.png")
         # Encerrar: back to normal
         await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(600)

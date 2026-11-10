@@ -3,6 +3,7 @@ import os, sys, asyncio, datetime, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, wait_for, summary
 from playwright.async_api import async_playwright
+from pick_lib import pick_time, field_of
 
 today = datetime.date.today()
 D = lambda n: (today + datetime.timedelta(days=n)).isoformat()
@@ -40,7 +41,7 @@ async def main():
         check("Este evento se repete." in await sheet.inner_text(), "the form says it repeats")
         check(await sheet.locator(".flabel", has_text="Calendário").count() == 0, "a repeating event is not moved to another calendar (no Calendário choice)")
         await sheet.locator(".ev-title-input").fill("Aula de piano (turma nova)")
-        await sheet.locator("input[aria-label='Começa']").fill("19:00"); await A.wait_for_timeout(200)
+        await pick_time(field_of(sheet, "Começa"), "19:00")
         await sheet.locator(".btn.primary", has_text="Salvar").click(); await A.wait_for_timeout(500)
         head = await sheet.locator("h3").first.inner_text()
         opts = [t.split("\n")[0] for t in await sheet.locator(".imp-opt").all_inner_texts()]

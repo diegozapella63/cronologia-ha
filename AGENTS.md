@@ -22,7 +22,8 @@ cronologia/DOCS.md                manual do usuário (aba Documentação no HA)
 cronologia/rootfs/app/server.js   servidor (Node 22, sem dependências: só módulos do Node)
 cronologia/rootfs/app/lib/        regras: kinds.js (modelos e a tela Agora), home.js, store.js, mirror.js, todos.js, ferramentas.js e correria.js (CorrerIA)...
 cronologia/rootfs/app/www/        interface já gerada (não editar à mão)
-frontend/src/                     código da interface (Lit, sem framework além disso)
+frontend/src/                     código da interface (Lit, sem framework além disso); whenpick.js: horário e data no visual
+                                  do app; offfold.js: a seção dos inativos no fim, recolhida
 preview/cronologia-preview.html   prévia gerada pelo build, abre sem servidor
 dev/fake-ha.mjs                   Home Assistant simulado para desenvolver e testar
 tests/                            testes (ver tests/README.md)
@@ -73,6 +74,9 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 - Pets são pessoas sem celular: não aparecem em rotinas, recompensas nem placar, só em remédios, e o aviso vai para a pessoa escolhida para ele (ou quem cuida).
 - Os apps olham para a pessoa, nunca para o aparelho: os celulares são os ligados a cada pessoa no Home Assistant. Nada de escolher um celular nem mostrar nome de aparelho na tela.
 - Celular primeiro (390 px); com 1000 px ou mais, barra lateral. Tema claro e escuro.
+- **Inativos no fim, recolhidos**: o que está inativo, cancelado, encerrado, arquivado ou ignorado de propósito (por uma opção, como Nunca considerar) fica numa seção no fim da lista, recolhida por padrão, com o nome e a contagem (ex.: **Arquivados (3)**); abre num toque. Vale para todos os apps da família.
+- **Caixas de seleção no visual do app**: nenhuma janela nativa do celular. Toda caixa de seleção abre pelo selectsheet.js; sugestões de texto (no lugar do `<datalist>`) e horários (sem AM/PM) também no visual do app; a caixa fechada igual aos outros campos (altura, cantos, seta), no claro e no escuro.
+  - Aqui: os horários e as datas são o `timeField`/`dateField` de `frontend/src/whenpick.js` (a janela com as horas e os minutos, ou o mês, com as classes do selectsheet.js), nunca `<input type="time|date">`; a seção recolhida é o `offFold` de `frontend/src/offfold.js` (calendários ocultos, listas do ResolvIA deixadas de fora, rotinas pausadas nas férias). O `tests/frontend-pickers.test.mjs` confere que nenhuma tela volta a usar os do celular.
 
 ## Conversa com o dono
 

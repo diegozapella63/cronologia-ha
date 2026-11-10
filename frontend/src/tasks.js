@@ -1,12 +1,14 @@
 // Tarefas com prazo: the items with a due date in the Home Assistant to-do
 // lists (the ResolvIA lists). Agora card, calendar entries, the task sheet and
 // the settings in Mais. Mixed into <cronologia-app>.
-import { html, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
+import { html, nothing, unsafeSVG, repeat, live } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { colorById, colorVars, plural, clip, cap, hm, ymd, fromYmd, startOfDay, addDays, dayDiff, dayLabel, dateShort, splitLinks, shortNames } from "./util.js";
 import { foldText, mirrorLists } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { renderEquipPicker } from "./equip-picker.js";
 import { placeTags, roomsShown } from "./place-tags.js";
+import { timeField } from "./whenpick.js";
+import { offFold } from "./offfold.js";
 
 const TF = { CREATE: 1, UPDATE: 4, DUE_DATE: 16, DUE_DATETIME: 32, DESCRIPTION: 64 };
 const LAST_LIST = "cronologia.todo_list";
@@ -351,7 +353,7 @@ export const TasksMixin = (Base) =>
                 <button class="pick ${f.noDue ? "on" : ""}" @click=${() => this._setForm({ noDue: !f.noDue })}>Sem prazo</button>
                 ${canTime && !f.noDue
                   ? html`<button class="pick ${f.timed ? "on" : ""}" @click=${() => this._setForm({ timed: !f.timed })}>${icon("clock")}<span>Com horário</span></button>
-                      ${f.timed ? html`<input type="time" class="inline-time" .value=${f.time} aria-label="Horário" @change=${(e) => e.target.value && this._setForm({ time: e.target.value })} />` : nothing}`
+                      ${f.timed ? timeField(f.time, (v) => this._setForm({ time: v }), { label: "Horário", cls: "inline-time" }) : nothing}`
                   : nothing}
               </div>`
           : html`<p class="field-hint" style="margin:-6px 0 18px">${icon("info")}<span>${dueOk
@@ -465,6 +467,26 @@ export const TasksMixin = (Base) =>
         : app
           ? { tone: "ok", title: `Conectado ao ResolvIA ${app.versao || ""}`.trim(), text: `${counts} Concluir aqui conclui lá, e a repetição do ResolvIA continua valendo.` }
           : { tone: "ok", title: "Lendo as listas de tarefas do Home Assistant", text: `${counts} Concluir aqui conclui lá.` };
+      // the hidden ones last, folded under Ocultas
+      const listRow = (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
+            <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
+            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div>
+              ${fromResolvia
+                ? owners[l.id] && !l.hidden
+                  ? html`<div class="owner-of">${icon("user-round")}<span>De ${owners[l.id]}</span></div>`
+                  : nothing
+                : people.length && !l.hidden
+                ? html`<div class="owner-pick" role="radiogroup" aria-label="De quem é ${l.name}">
+                    <span class="op-l">De quem é</span>
+                    ${["", ...people].map((p) => {
+                      const on = p ? foldText(owners[l.id] || "") === foldText(p) : !owners[l.id];
+                      return html`<button class=${on ? "on" : ""} role="radio" aria-checked=${on ? "true" : "false"} @click=${() => setOwner(l.id, p)}>${p || "Todos"}</button>`;
+                    })}
+                  </div>`
+                : nothing}
+            </div>
+            <label class="switch"><input type="checkbox" role="switch" .checked=${live(!l.hidden)} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
+          </div>`;
       return html`<div class="panel" id="resolvia">
         ${this._secHead("list-checks", "Tarefas do ResolvIA")}
         ${onSwitch}
@@ -491,29 +513,8 @@ export const TasksMixin = (Base) =>
                   ? html`<p class="sub-lead">Escolha quais listas entram e, se quiser, de quem é cada uma: a lista de uma pessoa só aparece no CronologIA dela (na Agora, no calendário e no Novo › Tarefa). Num aparelho sem pessoa da casa, aparece tudo.</p>`
                   : nothing}`
           : nothing}
-        ${repeat(
-          lists,
-          (l) => l.id,
-          (l) => html`<div class="row switch-row ${l.hidden ? "off" : ""}">
-            <span class="tile" style=${colorVars(colorById(TODO_COLOR), this._dark)}>${icon("list-checks")}</span>
-            <div class="grow"><div class="label">${l.name}</div><div class="hint">${l.info === "integracao" ? "não aceita prazo (as datas são da integração)" : l.info === "resolvia" ? "prazos desligados no ResolvIA" : l.due ? `${plural(l.due, "tarefa com prazo", "tarefas com prazo")}${l.overdue ? ` · ${plural(l.overdue, "atrasada", "atrasadas")}` : ""}` : "nenhuma com prazo"}</div>
-              ${fromResolvia
-                ? owners[l.id] && !l.hidden
-                  ? html`<div class="owner-of">${icon("user-round")}<span>De ${owners[l.id]}</span></div>`
-                  : nothing
-                : people.length && !l.hidden
-                ? html`<div class="owner-pick" role="radiogroup" aria-label="De quem é ${l.name}">
-                    <span class="op-l">De quem é</span>
-                    ${["", ...people].map((p) => {
-                      const on = p ? foldText(owners[l.id] || "") === foldText(p) : !owners[l.id];
-                      return html`<button class=${on ? "on" : ""} role="radio" aria-checked=${on ? "true" : "false"} @click=${() => setOwner(l.id, p)}>${p || "Todos"}</button>`;
-                    })}
-                  </div>`
-                : nothing}
-            </div>
-            <label class="switch"><input type="checkbox" role="switch" .checked=${!l.hidden} @change=${(e) => toggle(l.id, e.target.checked)} aria-label="Mostrar ${l.name}" /><span class="track"></span></label>
-          </div>`,
-        )}
+        ${repeat(shown, (l) => l.id, listRow)}
+        ${offFold(this, "todo-lists", "Ocultas", lists.length - shown.length, () => repeat(lists.filter((l) => l.hidden), (l) => l.id, listRow))}
         ${lists.length ? this._renderMirrorSettings(lists) : nothing}
         ${lists.length && this._writable().length
           ? html`<button class="row" @click=${() => this._openBring()}>

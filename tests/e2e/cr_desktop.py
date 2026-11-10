@@ -65,7 +65,7 @@ async def main():
         n_before = await side.locator(".side-cal").count()
         await side.locator(".side-link", has_text="Mais").click(); await pg.wait_for_timeout(600)
         await open_more(a, "Calendários")
-        await a.locator(".cal-row", has_text="Trabalho").locator("input[role='switch']").uncheck()
+        await a.locator(".cal-row", has_text="Trabalho").locator("input[role='switch']").click()  # hidden: it leaves for Ocultos
         await wait_for(lambda: stored()["calendars"].get("calendar.trabalho", {}).get("hidden") is True, "Trabalho off in Mais (saved)")
         await pg.wait_for_timeout(400)
         names = [t.strip() for t in await side.locator(".side-cal").all_inner_texts()]
@@ -80,11 +80,22 @@ async def main():
         await pg.reload(); await pg.wait_for_timeout(1800)
         names = [t.strip() for t in await side.locator(".side-cal").all_inner_texts()]
         check("Pessoal" not in names, f"turned off from the sidebar: gone after a reload ({names})")
+        # 1.63.0: the hidden ones last, folded under Ocultos (2); a tap opens it, unchecked, to show one again
+        fold = side.locator(".off-fold")
+        check(await fold.count() == 1 and (await fold.inner_text()).strip() == "Ocultos (2)" and await fold.get_attribute("aria-expanded") == "false", "the sidebar: Ocultos (2), closed")
+        await fold.click(); await pg.wait_for_timeout(300)
+        offs = [t.strip() for t in await side.locator(".side-cal.off").all_inner_texts()]
+        check(sorted(offs) == ["Pessoal", "Trabalho"], f"open: the hidden ones, unchecked ({offs})")
+        await fold.click(); await pg.wait_for_timeout(300)
         # back on in Mais
         await side.locator(".side-link", has_text="Mais").click(); await pg.wait_for_timeout(600)
         await open_more(a, "Calendários")
+        # 1.63.0: in Mais › Calendários too, last and folded under Ocultos (2)
+        mfold = a.locator("#cal-ocultos .off-fold")
+        check((await mfold.inner_text()).strip() == "Ocultos (2)" and await a.locator("#cal-ocultos .cal-row").count() == 0, "Mais › Calendários: Ocultos (2), closed")
+        await mfold.click(); await pg.wait_for_timeout(300)
         for nm, cid in (("Trabalho", "calendar.trabalho"), ("Pessoal", "calendar.pessoal")):
-            await a.locator(".cal-row", has_text=nm).first.locator("input[role='switch']").check()
+            await a.locator("#cal-ocultos .cal-row", has_text=nm).first.locator("input[role='switch']").click()
             await wait_for(lambda cid=cid: not stored()["calendars"].get(cid, {}).get("hidden"), f"{nm} back on")
         await pg.wait_for_timeout(400)
         names = [t.strip() for t in await side.locator(".side-cal").all_inner_texts()]

@@ -143,7 +143,7 @@ async def main():
         await a.locator(".rv-card").first.wait_for(timeout=5000)
         cards = await a.locator(".rv-card .rv-title").evaluate_all("els => els.map(e => e.value)")
         check(cards == ["Casamento da Júlia e do Pedro", "Férias", "Aula de inglês"], f".ics read ({cards})")
-        times = await a.locator(".rv-card").nth(0).locator("input[type=time]").evaluate_all("els => els.map(e => e.value)")
+        times = await a.locator(".rv-card").nth(0).locator(".pickf.t").evaluate_all("els => els.map(e => e.dataset.value)")
         check(times == ["16:00", "23:00"], f".ics time zone handled ({times})")
         meta = await a.locator(".rv-meta").all_inner_texts()
         check("até" in meta[1] and "Toda semana" in meta[2], f"multi-day and repetition kept ({meta[1]} | {meta[2]})")
@@ -162,7 +162,7 @@ async def main():
         # prefs: color + hide, synced to the other screen and saved
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(400)
         await open_more(a, "Calendários"); await A.wait_for_timeout(400)
-        await a.locator(".cal-row", has_text="Giveaways").locator(".switch input").uncheck(); await A.wait_for_timeout(600)
+        await a.locator(".cal-row", has_text="Giveaways").locator(".switch input").click(); await A.wait_for_timeout(600)  # hidden: to Ocultos
         prefs = json.load(open(f"{data}/cronologia.json"))
         check(prefs["calendars"].get("calendar.giveaways", {}).get("hidden") is True, "hiding a calendar is saved")
         await B.wait_for_timeout(500)
