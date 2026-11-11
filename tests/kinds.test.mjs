@@ -25,6 +25,7 @@ import {
   maintStatus,
   maintDone,
   skipNext,
+  maintSkip,
   isoWithOffset,
 } from "../cronologia/rootfs/app/lib/kinds.js";
 
@@ -551,6 +552,23 @@ describe("maintDone", () => {
     assert.deepEqual(back.history, ["2026-11-02", "2026-10-30"]);
     assert.equal(back.period, "manha");
     assert.deepEqual(back.after, { n: 2, unit: "dias" });
+  });
+});
+
+describe("maintSkip (Pular a maintenance, 1.80.0)", () => {
+  const k = { kind: "manutencao", every: { n: 6, unit: "meses" }, history: ["2026-05-04"] };
+  const today = at(2026, 11, 11, 10);
+  it("the next one is an interval after the day it was due; the description stays", () => {
+    const raw = { summary: "Limpar paredes", start: "2026-11-04", end: "2026-11-12", description: "#manutenção\nA cada: 6 meses", location: "Sala" };
+    const ev = maintSkip(raw, k, today);
+    assert.deepEqual(ev, { summary: "Limpar paredes", description: raw.description, location: "Sala", start: "2027-05-04", end: "2027-05-05" });
+  });
+  it("when that one has passed too, it counts from today; timed ones keep the hour", () => {
+    assert.equal(maintSkip({ summary: "x", start: "2026-03-01", end: "2026-03-02" }, k, today).start, "2027-05-11");
+    const ev = maintSkip({ summary: "x", start: "2026-11-20T09:00:00-03:00", end: "2026-11-20T10:00:00-03:00" }, k, today);
+    assert.equal(ev.start, "2027-05-20T09:00:00-03:00");
+    assert.equal(ev.end, "2027-05-20T10:00:00-03:00");
+    assert.equal(ev.description, "");
   });
 });
 

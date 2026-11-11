@@ -706,7 +706,9 @@ export const ModelsMixin = (Base) =>
       let action = nothing;
       if (k.kind === "manutencao") {
         const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid);
-        if (m && m.canMove) action = this._pickWho() ? this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p)) : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>`;
+        // 1.80.0: Pular, como numa rotina: não feita desta vez, vai para a próxima, sem pontos
+        const skip = html`<button class="btn outline kind-skip" @click=${() => this._maintSkip(m)}>${icon("skip-forward")}Pular</button>`;
+        if (m && m.canMove) action = this._pickWho() ? html`${this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p))}${skip}` : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>${skip}`;
       } else if (e.start < addDays(startOfDay(now), 2) || (k.kind === "rotina" && k.after && !e.rrule)) {
         // (a routine that comes back N days after done: also earlier, any day; it then counts from today)
         const it = { key: doneKey || e.key, summary: e.summary };

@@ -378,6 +378,11 @@ class Session {
         return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));
       }
 
+      case "cronologia/maint/skip": {
+        if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
+        return this.result(id, await home.maintSkip(msg.entity_id, msg.uid, this.user.name || ""));
+      }
+
       case "cronologia/maint/undo": {
         if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
         await home.maintUndo(msg.entity_id, msg.uid);

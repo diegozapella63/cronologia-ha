@@ -435,8 +435,8 @@ describe("Home: Pular", () => {
     await assert.rejects(ro.home.skip(keyOf(raw), "Davi"), { code: "not_supported" });
     assert.equal(keyOf(raw) in ro.store.data.checks, false, "not marked skipped");
   });
-  it("only routines and doses can be skipped", async () => {
-    const raw = filtro();
+  it("only routines, maintenance and doses can be skipped", async () => {
+    const raw = { uid: "luz", summary: "Conta de luz", start: "2026-11-05", end: "2026-11-06", description: "#conta\nValor: 120" };
     const { home } = setup({ events: { [CAL]: [raw] } });
     await assert.rejects(home.skip(keyOf(raw), "x"), { code: "not_found" });
     await assert.rejects(home.skip("nada", "x"), { code: "not_found" });
@@ -463,6 +463,45 @@ describe("Home: maintenance", () => {
     assert.deepEqual(back.event, { summary: "Trocar o filtro", description: MAINT, location: "Cozinha", dtstart: "2026-11-07", dtend: "2026-11-08" });
     assert.equal(store.pointsByKey(out.key), null);
     await assert.rejects(home.maintUndo(CAL, "filtro"), { code: "not_found" });
+  });
+  it("Pular (1.80.0): the next one an interval after the day it was due, no points, history as it was, undo possible", async () => {
+    const raw = filtro();
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    const out = await home.maintSkip(CAL, "filtro", "App");
+    assert.deepEqual(out, { skipped: true, moved: true, next: "2027-05-07", undo: true });
+    const [upd] = sentOf(ha, "calendar/event/update");
+    assert.equal(upd.event.dtstart, "2027-05-07");
+    assert.equal(upd.event.description, MAINT, "nothing in its history");
+    assert.equal(upd.event.location, "Cozinha");
+    assert.equal(store.data.score.entries.length, 0, "no points");
+    await home.maintUndo(CAL, "filtro");
+    assert.equal(sentOf(ha, "calendar/event/update")[1].event.dtstart, "2026-11-07");
+    // through the key, as the CorrerIA tools do
+    const again = setup({ events: { [CAL]: [raw] } });
+    assert.equal((await again.home.skip(keyOf(raw), "Davi")).next, "2027-05-07");
+  });
+  it("Pular a late maintenance: the next one counts from today; a repeating one goes to its next occurrence", async () => {
+    const late = filtro({ start: "2026-04-01", end: "2026-04-02" });
+    const { home } = setup({ events: { [CAL]: [late] } });
+    assert.equal((await home.maintSkip(CAL, "filtro", "App")).next, "2027-05-02", "April + 6 months has passed too: today + 6 months");
+    const rep = filtro({ rrule: "FREQ=MONTHLY", recurrence_id: "20261107" });
+    const r = setup({ events: { [CAL]: [rep] } });
+    assert.deepEqual(await r.home.maintSkip(CAL, "filtro", "App"), { skipped: true, moved: false, key: keyOf(rep) });
+    assert.equal(r.store.data.checks[keyOf(rep)].skipped, true);
+    assert.equal(sentOf(r.ha, "calendar/event/update").length, 0);
+    const viaKey = setup({ events: { [CAL]: [rep] } });
+    assert.deepEqual(await viaKey.home.skip(keyOf(rep), "Davi"), { skipped: true });
+    assert.equal(viaKey.store.data.checks[keyOf(rep)].kind, "manutencao");
+  });
+  it("Pular a maintenance: errors, and a Google-like calendar recreates it (no undo)", async () => {
+    const ro = setup({ events: { [CAL]: [cama(), filtro()] }, features: 1 });
+    await assert.rejects(ro.home.maintSkip(CAL, "nada", "x"), { code: "not_found" });
+    await assert.rejects(ro.home.maintSkip(CAL, "cama", "x"), { code: "invalid_format" });
+    await assert.rejects(ro.home.maintSkip(CAL, "filtro", "x"), { code: "not_supported" });
+    const g = setup({ events: { [CAL]: [filtro()] }, features: 3 });
+    const out = await g.home.maintSkip(CAL, "filtro", "App");
+    assert.equal(out.undo, false);
+    assert.deepEqual(g.ha.sent.map((m) => m.type), ["calendar/event/delete", "calendar/event/create"]);
   });
   it("undo is only possible for 30 minutes", async () => {
     const { home } = setup({ events: { [CAL]: [filtro()] } });

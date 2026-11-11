@@ -148,10 +148,11 @@ describe("routines of the calendar", () => {
     assert.equal(ix.checks[r.key].skipped, true);
     assert.equal(ix.score.entries.some((e) => e.key === r.key), false);
   });
-  it("refuses a bad key and Pular of something that is not a routine nor a dose", async () => {
+  it("refuses a bad key and Pular of something that is not a routine, a maintenance nor a dose", async () => {
     await assert.rejects(c.call("cronologia/check/set", { key: "", done: true }), { code: "invalid_format" });
-    const m = h.latest.maint[0];
-    await assert.rejects(c.call("cronologia/check/set", { key: m.key, skip: true }), { code: "not_found" });
+    const b = h.latest.bills[0];
+    assert.ok(b, "a bill to try");
+    await assert.rejects(c.call("cronologia/check/set", { key: b.key, skip: true }), { code: "not_found" });
   });
   it("1.58.0: Pular a dose: pulado, out of the doses to take; Desfazer brings it back", async () => {
     const dose = h.latest.meds.find((m) => !m.taken);
@@ -243,6 +244,24 @@ describe("maintenance", () => {
     ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due === day(5), "back to its date");
     assert.equal(points(ix, "Davi"), before);
     await assert.rejects(c.call("cronologia/maint/undo", { entity_id: CASA, uid: m.uid }), { code: "not_found" });
+  });
+  it("Pular (1.80.0): the next one an interval after its date, no points, nothing in its history; Desfazer", async () => {
+    const m = h.latest.maint.find((x) => x.summary === "Trocar o filtro de água");
+    const before = points(h.latest, "Davi");
+    const hist = (parseKind((await rawOf(CASA, m.uid)).description).history || []).slice();
+    const out = await c.call("cronologia/maint/skip", { entity_id: CASA, uid: m.uid });
+    assert.equal(out.skipped, true);
+    assert.equal(out.undo, true);
+    const raw = await waitFor(async () => {
+      const e = await rawOf(CASA, m.uid);
+      return e && e.start === out.next && e;
+    }, { what: "the maintenance skipped" });
+    assert.deepEqual(parseKind(raw.description).history || [], hist, "nothing in its history");
+    let ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due === out.next, "the next due date");
+    assert.equal(points(ix, "Davi"), before, "no points");
+    await c.call("cronologia/maint/undo", { entity_id: CASA, uid: m.uid });
+    ix = await h.wait((x) => x.maint.find((y) => y.uid === m.uid).due === day(5), "back to its date");
+    await assert.rejects(c.call("cronologia/maint/skip", { entity_id: "x", uid: "y" }), { code: "invalid_format" });
   });
   it("errors: a bad id, a missing event, not a maintenance", async () => {
     await assert.rejects(c.call("cronologia/maint/done", { entity_id: "x", uid: "y" }), { code: "invalid_format" });

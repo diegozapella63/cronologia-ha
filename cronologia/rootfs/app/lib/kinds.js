@@ -281,22 +281,38 @@ export function maintDone(raw, k, today = new Date()) {
   const t = ymdOf(today);
   const nextDue = addEvery(today, k.every);
   const history = [t, ...(k.history || []).filter((d) => d !== t)].slice(0, 8);
-  const description = buildDescription({ ...k, history });
+  return movedTo(raw, nextDue, buildDescription({ ...k, history }));
+}
+
+/** The event on another day: the same hour and length (an all-day one, one day), with this description. */
+function movedTo(raw, day, description) {
   const event = { summary: raw.summary, description };
   if (raw.location) event.location = raw.location;
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw.start)) {
-    const end = new Date(nextDue);
+    const end = new Date(day);
     end.setDate(end.getDate() + 1);
-    event.start = ymdOf(nextDue);
+    event.start = ymdOf(day);
     event.end = ymdOf(end);
   } else {
     const s = new Date(raw.start);
     const dur = Math.max(15 * 60000, new Date(raw.end) - s);
-    const ns = new Date(nextDue.getFullYear(), nextDue.getMonth(), nextDue.getDate(), s.getHours(), s.getMinutes());
+    const ns = new Date(day.getFullYear(), day.getMonth(), day.getDate(), s.getHours(), s.getMinutes());
     event.start = isoWithOffset(ns);
     event.end = isoWithOffset(new Date(ns.getTime() + dur));
   }
   return event;
+}
+
+/**
+ * Pular a maintenance (1.80.0): not done this time, it goes to the next one, an interval after the day it was due (or
+ * after today, when that one has passed too). Its history and points stay as they were.
+ */
+export function maintSkip(raw, k, today = new Date()) {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const due = /^\d{4}-\d{2}-\d{2}$/.test(raw.start) ? dateOf(raw.start) : new Date(raw.start);
+  let next = addEvery(new Date(due.getFullYear(), due.getMonth(), due.getDate()), k.every);
+  if (next <= t0) next = addEvery(t0, k.every);
+  return movedTo(raw, next, raw.description || "");
 }
 
 /**
@@ -308,21 +324,7 @@ export function skipNext(raw, k, today = new Date()) {
   const due = /^\d{4}-\d{2}-\d{2}$/.test(raw.start) ? dateOf(raw.start) : new Date(raw.start);
   let next = addEvery(new Date(due.getFullYear(), due.getMonth(), due.getDate()), k.after);
   if (next < t0) next = t0;
-  const event = { summary: raw.summary, description: raw.description || "" };
-  if (raw.location) event.location = raw.location;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw.start)) {
-    const end = new Date(next);
-    end.setDate(end.getDate() + 1);
-    event.start = ymdOf(next);
-    event.end = ymdOf(end);
-  } else {
-    const s = new Date(raw.start);
-    const dur = Math.max(15 * 60000, new Date(raw.end) - s);
-    const ns = new Date(next.getFullYear(), next.getMonth(), next.getDate(), s.getHours(), s.getMinutes());
-    event.start = isoWithOffset(ns);
-    event.end = isoWithOffset(new Date(ns.getTime() + dur));
-  }
-  return event;
+  return movedTo(raw, next, raw.description || "");
 }
 
 export function isoWithOffset(d) {

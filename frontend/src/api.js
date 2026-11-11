@@ -270,6 +270,11 @@ export class Api {
     return this.call("cronologia/maint/done", { entity_id: entityId, uid, ...(who ? { who } : {}) });
   }
 
+  /** Pular a maintenance: not done this time -> {skipped, moved, next?, undo?, key?} */
+  maintSkip(entityId, uid) {
+    return this.call("cronologia/maint/skip", { entity_id: entityId, uid });
+  }
+
   // ---- Recompensas
   scoreReassign(key, who) {
     return this.call("cronologia/score/reassign", { key, who });

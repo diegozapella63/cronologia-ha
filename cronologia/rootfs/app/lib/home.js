@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -682,7 +682,8 @@ export class Home {
   /**
    * Pular: this time of a routine is not done, and leaves the list (no points, nothing in its
    * history). One that comes back N days after done goes to its next date (skipNext). A dose of a
-   * medicine skipped (not taken on purpose): no alert, not late, out of the count of the day.
+   * medicine skipped (not taken on purpose): no alert, not late, out of the count of the day. A maintenance
+   * (1.80.0): maintSkip, or the next occurrence of a repeating one.
    */
   async skip(key, by) {
     const o = this.findOccurrence(key);
@@ -692,9 +693,10 @@ export class Home {
       this.changed();
       return { skipped: true };
     }
-    if (!o || o.k.kind !== "rotina") throw coded("not_found", "Não achei essa rotina");
-    if (o.k.after && !o.raw.rrule) return this.afterSkip(o, key, by);
-    this.store.setCheck(key, { by, kind: "rotina", skipped: true });
+    if (!o || !["rotina", "manutencao"].includes(o.k.kind)) throw coded("not_found", "Não achei essa rotina");
+    if (o.k.kind === "manutencao" && !o.raw.rrule) return this.maintSkip(o.cal, o.raw.uid, by);
+    if (o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterSkip(o, key, by);
+    this.store.setCheck(key, { by, kind: o.k.kind, skipped: true });
     this.store.removePoints(key);
     this.changed();
     return { skipped: true };
@@ -916,6 +918,37 @@ export class Home {
     this.refreshCalendar(cal);
     this.changed();
     return { moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE), key: k.points > 0 && person ? key : null };
+  }
+
+  /**
+   * Pular a maintenance (1.80.0): not done this time, no points, nothing in its history. It goes to the next one (an
+   * interval after the day it was due); a repeating one, to its next occurrence. Desfazer: maintUndo (or the check).
+   */
+  async maintSkip(cal, uid, by) {
+    const raw = this.findRaw(cal, uid);
+    if (!raw) throw coded("not_found", "Não achei essa manutenção no calendário");
+    const k = parseKind(raw.description);
+    if (!k || k.kind !== "manutencao") throw coded("invalid_format", "Não é uma manutenção");
+    if (raw.rrule) {
+      const key = occurrenceKey(cal, raw);
+      this.store.setCheck(key, { by, kind: "manutencao", skipped: true });
+      this.store.removePoints(key);
+      this.changed();
+      return { skipped: true, moved: false, key };
+    }
+    const event = maintSkip(raw, k, new Date());
+    const before = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
+    const feat = this.features(cal);
+    if (feat & F.UPDATE) {
+      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(event) });
+      this.undo.set(`${cal}|${uid}`, { before, at: Date.now() });
+    } else if (feat & F.CREATE && feat & F.DELETE) {
+      await this.recreate(cal, raw, event);
+    } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
+    this.log.info(`Manutenção pulada: ${raw.summary}; próxima em ${event.start.slice(0, 10)}`);
+    this.refreshCalendar(cal);
+    this.changed();
+    return { skipped: true, moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE) };
   }
 
   /**

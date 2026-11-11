@@ -758,7 +758,7 @@ describe("marcar_feito and pular", () => {
     await refused("marcar_feito", { id: "calendar.casa|nada|2026-11-02" }, /Não achei: calendar\.casa\|nada\|2026-11-02/);
     await refused("marcar_feito", { id: "Tirar o lixo" }, /Não achei/);
   });
-  it("pular: a chore (no points), a dose; a chore that comes back N days after done goes to its next date", async () => {
+  it("pular: a chore (no points), a dose, a maintenance; a chore that comes back N days after done goes to its next date", async () => {
     const s = setup();
     let r = await s.call("pular", { id: "calendar.casa|lixo|20261102" });
     assert.equal(r.texto, "Pulado: Tirar o lixo.");
@@ -772,7 +772,10 @@ describe("marcar_feito and pular", () => {
     await s.refused("pular", { id: "calendar.casa|vitd|20261102T080000" }, /Já está pulado/);
     r = await s.call("pular", { id: "calendar.casa|cama|2026-11-02" });
     assert.equal(r.texto, "Pulado: Arrumar a cama; volta em 04/11/2026.");
-    await s.refused("pular", { id: "calendar.casa|net|2026-11-04" }, /Só rotina ou remédio se pula; este é conta a pagar/);
+    // 1.80.0: uma manutenção também: vai para a próxima vez, sem pontos nem histórico
+    r = await s.call("pular", { id: "calendar.casa|filtro|2026-10-30" });
+    assert.equal(r.texto, "Pulado: Trocar o filtro; volta em 30/04/2027.");
+    await s.refused("pular", { id: "calendar.casa|net|2026-11-04" }, /Só rotina, manutenção ou remédio se pula; este é conta a pagar/);
     await s.refused("pular", { id: "calendar.casa|x|2026-11-04" }, /Não achei/);
     await s.refused("pular", {}, /Falta o id/);
   });

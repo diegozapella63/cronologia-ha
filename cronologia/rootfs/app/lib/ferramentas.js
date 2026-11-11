@@ -154,7 +154,7 @@ export const FERRAMENTAS = [
     titulo: "Pular esta vez",
     grava: true,
     descricao:
-      "Pula esta vez de uma rotina (não feita, sem pontos; a que volta N dias depois de feita vai para a próxima data) ou de um remédio (não tomado de propósito: sem aviso, fora das atrasadas). Desfaz com cronologia_marcar_feito e feito false.",
+      "Pula esta vez de uma rotina (não feita, sem pontos; a que volta N dias depois de feita vai para a próxima data), de uma manutenção (vai para a próxima vez, um intervalo depois da data dela, sem pontos nem histórico) ou de um remédio (não tomado de propósito: sem aviso, fora das atrasadas). Desfaz com cronologia_marcar_feito e feito false.",
     entrada: obj({ id: ID }, ["id"]),
   },
   {
@@ -874,7 +874,7 @@ export class Ferramentas {
     if (!id) throw erro("Falta o id.");
     const o = this.ocorrencia(id);
     if (!o) throw erro(`Não achei: ${id}. Os ids das rotinas e dos remédios de hoje estão em cronologia_resumo.`);
-    if (!["remedio", "rotina"].includes(o.k.kind)) throw erro(`Só rotina ou remédio se pula; este é ${KINDS[o.k.kind].label.toLowerCase()}.`);
+    if (!["remedio", "rotina", "manutencao"].includes(o.k.kind)) throw erro(`Só rotina, manutenção ou remédio se pula; este é ${KINDS[o.k.kind].label.toLowerCase()}.`);
     const c = this.store.data.checks[o.key];
     if (c) throw erro(`Já está ${c.skipped ? (o.k.kind === "remedio" ? "pulado" : "pulada") : o.k.kind === "remedio" ? "tomado" : "feita"}: ${o.raw.summary}. Para desfazer, use cronologia_marcar_feito com feito false.`);
     const r = await this.home.skip(o.key, ctx.nome || ctx.cliente);

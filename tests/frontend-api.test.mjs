@@ -165,6 +165,7 @@ describe("api: what each call sends", () => {
     api.maintDone("calendar.a", "u2");
     api.maintDone("calendar.a", "u2", "Beto");
     api.maintUndo("calendar.a", "u2");
+    api.maintSkip("calendar.a", "u2");
     api.scoreReassign("k", "Ana");
     api.scoreExtra("Ana", 10, "Ajudou");
     api.scoreDemerit("d1", "Beto");
@@ -209,6 +210,7 @@ describe("api: what each call sends", () => {
       { type: "cronologia/maint/done", entity_id: "calendar.a", uid: "u2" },
       { type: "cronologia/maint/done", entity_id: "calendar.a", uid: "u2", who: "Beto" },
       { type: "cronologia/maint/undo", entity_id: "calendar.a", uid: "u2" },
+      { type: "cronologia/maint/skip", entity_id: "calendar.a", uid: "u2" },
       { type: "cronologia/score/reassign", key: "k", who: "Ana" },
       { type: "cronologia/score/extra", who: "Ana", points: 10, title: "Ajudou" },
       { type: "cronologia/score/demerit", demerit: "d1", who: "Beto" },

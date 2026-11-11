@@ -31,8 +31,8 @@ JS = """const [cal, a, b] = process.argv.slice(1); const ws = new WebSocket('ws:
  if (m.type === 'auth_required') ws.send(JSON.stringify({type:'auth', access_token:'dev'}));
  else if (m.type === 'auth_ok') ws.send(JSON.stringify({id:1, type:'calendar/event/subscribe', entity_id: cal, start: a, end: b}));
  else if (m.id === 1 && m.type === 'event') { console.log(JSON.stringify(m.event.events)); ws.close(); } };"""
-def events(name, cal="calendar.casa"):
-    out = json.loads(subprocess.check_output(["node", "-e", JS, cal, f"{D(-30)}T00:00:00-03:00", f"{D(60)}T00:00:00-03:00"], timeout=20).decode())
+def events(name, cal="calendar.casa", fim=60):
+    out = json.loads(subprocess.check_output(["node", "-e", JS, cal, f"{D(-30)}T00:00:00-03:00", f"{D(fim)}T00:00:00-03:00"], timeout=20).decode())
     return [e for e in out if e.get("summary") == name]
 def stored(): return json.load(open(f"{data}/cronologia.json"))
 def entries(): return stored()["score"]["entries"]
@@ -54,6 +54,7 @@ def create(ev, cal="calendar.casa"):
 create({"summary": "Arrumar a cama", "dtstart": D(-1), "dtend": D(0), "description": "#rotina\nPontos: 5\nVolta: 1 dia depois de feita"})
 create({"summary": "Passar aspirador", "dtstart": D(0), "dtend": D(1), "description": "#rotina\nPontos: 10\nVolta: 2 dias depois de feita"})
 create({"summary": "Levar o lixo", "dtstart": D(-3), "dtend": D(-2), "rrule": "FREQ=DAILY", "description": "#rotina\nPontos: 5"})
+create({"summary": "Limpar paredes", "dtstart": D(-1), "dtend": D(0), "description": "#manutenção\nA cada: 6 meses\nAvisar: 3 dias antes\nPontos: 100"})
 time.sleep(1.5)
 
 async def main():
@@ -167,6 +168,27 @@ async def main():
         check(await ready.count() == 1 and "tomou todos" in await ready.inner_text() and await meds.locator(".dose", has_text="Gardenal").count() == 0, f"Mimi tomou todos, without the dose ({await ready.inner_text() if await ready.count() else ''})")
         check(await meds.locator(".meds-who", has_text="Mimi").count() == 0, "and without her heading")
         await meds.screenshot(path=f"{data}/meds-ready.png")
+        # 1.80.0: Pular a maintenance: not done this time; the next one 6 months after the day it was due, no points
+        mt = a.locator(".panel.chores .maint", has_text="Limpar paredes")
+        check(await mt.count() == 1, "the maintenance on Agora")
+        await mt.locator(".maint-main").click(); await A.wait_for_timeout(500)
+        skip = sheet.locator(".btn.kind-skip", has_text="Pular")
+        check(await skip.count() == 1 and await sheet.locator(".who-btn, .kind-act").count() >= 1, "the maintenance's sheet: Feito and Pular")
+        await A.screenshot(path=f"{data}/maint-sheet.png")
+        await skip.click(); await A.wait_for_timeout(1500)
+        toast = await a.locator(".toast").inner_text() if await a.locator(".toast").count() else ""
+        check("pulada" in toast and "próxima em" in toast and "Desfazer" in toast, f"toast: pulada, próxima em ({toast!r})")
+        import calendar as _cal
+        due = today - datetime.timedelta(days=1)
+        y, mo = due.year + (due.month + 5) // 12, (due.month + 5) % 12 + 1
+        nxt = datetime.date(y, mo, min(due.day, _cal.monthrange(y, mo)[1])).isoformat()
+        ev = events("Limpar paredes", fim=240)
+        check(len(ev) == 1 and ev[0]["start"] == nxt and "Feito em" not in (ev[0].get("description") or ""), f"moved to {nxt}, nothing in its history ({[(e['start'], e.get('description')) for e in ev]})")
+        check(not any(e.get("title") == "Limpar paredes" for e in (stored().get("score") or {}).get("entries") or []), "no points")
+        check(await a.locator(".panel.chores .maint", has_text="Limpar paredes").count() == 0, "it leaves Agora")
+        await a.locator(".toast button", has_text="Desfazer").click(); await A.wait_for_timeout(1500)
+        ev = events("Limpar paredes", fim=240)
+        check(len(ev) == 1 and ev[0]["start"] == D(-1), f"Desfazer: back to its date ({[e['start'] for e in ev]})")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()
 try:

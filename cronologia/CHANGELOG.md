@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.80.0
+
+- **Pular** também na **manutenção**: na tela dela, ao lado do Feito. Ela vai para a próxima vez (o intervalo contado do dia em que vencia), sem pontos e sem entrar no "Feito em". Dá para desfazer pelo aviso. A CorrerIA também pula uma manutenção.
+
 ## 1.79.1
 
 - **Avisos do GerencIA**: o card fica separado do **Contas a pagar** também por dentro, com o seu próprio visual.

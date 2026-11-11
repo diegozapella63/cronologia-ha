@@ -199,6 +199,20 @@ export const RewardsMixin = (Base) =>
       }, by);
     }
 
+    /** Pular a maintenance (1.80.0): not done this time; it goes to the next one, with no points. */
+    async _maintSkip(m) {
+      if (this._sheet) await this._closeSheet();
+      try {
+        const r = await this.api.maintSkip(m.cal, m.uid);
+        this._haptic("light");
+        const next = r && r.next ? `, próxima em ${dateShort(fromYmd(r.next), new Date(this._now))}` : "";
+        const undo = r && r.undo ? () => this.api.maintUndo(m.cal, m.uid) : r && r.key ? () => this.api.setCheck(r.key, false, "manutencao") : null;
+        this._showToast(`${clip(m.summary, 24)}: pulada${next}`, undo ? { label: "Desfazer", run: () => undo().catch((err) => this._showToast(err.message)) } : null);
+      } catch (err) {
+        this._showToast(`Não consegui: ${err.message}`);
+      }
+    }
+
     /** Event sheet with Marcar por outras pessoas: one button per person instead of Feito. */
     _renderWhoButtons(points, go) {
       const s = this._score() || { participants: [] };

@@ -90,7 +90,7 @@ Em **Adicionar**, escolha o modelo no alto e o formulário muda:
 | **Remédio** | remédio, dose, quem toma, horários (1x, 2x, 3x, de 8 em 8 h ou à mão), frequência, por quanto tempo | **Remédios de hoje**, com **Tomei** |
 | **Conta a pagar** | conta, valor, vencimento, se repete todo mês ou todo ano | **Contas a pagar**, com **Paguei** |
 | **Rotina da casa** | tarefa, quem faz, horário (qualquer hora, manhã, tarde, noite ou num horário), frequência (ou **depois de feita**) | **Rotina da casa**, com o círculo de feito |
-| **Manutenção** | o que fazer, a cada quanto tempo, quando foi feito pela última vez, quantos dias antes mostrar | **Manutenção da casa**, com o anel do prazo e **Feito** |
+| **Manutenção** | o que fazer, a cada quanto tempo, quando foi feito pela última vez, quantos dias antes mostrar | **Manutenção da casa**, com o anel do prazo e **Feito** (na tela dela, também **Pular**) |
 
 Frequências de remédio e rotina: **todo dia**, **dia sim, dia não**, **dias da semana** (escolha os dias), **a cada N dias**, todo mês (rotina) ou **só uma vez**. Por quanto tempo: uso contínuo, **por N dias** (antibiótico) ou até uma data. Cada horário vira um evento que se repete no calendário escolhido (de preferência um calendário local, que aceita editar).
 
@@ -134,6 +134,8 @@ Os modelos não entram na lista de compromissos da tela Agora, porque têm os ca
 ### Pular uma rotina
 
 Quando uma rotina não vai ser feita dessa vez, toque nela e escolha **Pular** (ao lado do Feito). Ela sai da lista sem pontos e sem contar como feita: a que repete pelo calendário (como a que "ficou de ontem") fica marcada como **pulada**; a que volta N dias depois de feita vai para a próxima data, contando de quando vencia (nunca antes de hoje). Dá para desfazer pelo aviso ou pela tela dela.
+
+A **manutenção** também tem **Pular**, na tela dela, ao lado do Feito: ela vai para a próxima vez (o intervalo contado do dia em que vencia, ou de hoje, se essa data também já passou), sem pontos e sem entrar no "Feito em". A que repete pelo calendário vai para a próxima. Dá para desfazer pelo aviso.
 
 ### Remédios de hoje
 
