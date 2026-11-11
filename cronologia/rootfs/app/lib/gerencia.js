@@ -74,7 +74,8 @@ export class Gerencia {
         try {
           const t = new Date();
           const out = await this.request("GET", `/api/integracao/contas?de=${ymd(addDays(t, -62))}&ate=${ymd(addDays(t, 124))}`);
-          this.state = { ligado: true, contas: out.contas || [], categorias: out.categorias || [], erro: null, versao: out.versao || null, at: new Date().toISOString() };
+          // avisos (GerencIA 1.61.0): os do Início de lá, sem as contas (já estão aqui); painel: /app/<slug> de lá
+          this.state = { ligado: true, contas: out.contas || [], categorias: out.categorias || [], avisos: Array.isArray(out.avisos) ? out.avisos.slice(0, 20) : [], painel: typeof out.painel === "string" && /^\/app\/[a-z0-9_]+$/.test(out.painel) ? out.painel : null, erro: null, versao: out.versao || null, at: new Date().toISOString() };
         } catch (err) {
           this.state = { ...this.state, ligado: true, erro: err.message };
           if (this.lastLog !== err.message) this.log.warn(`GerencIA: ${err.message}`);

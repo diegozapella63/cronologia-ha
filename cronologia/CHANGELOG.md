@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.79.0
+
+- **Avisos do GerencIA** na Agora (com a integração do GerencIA ligada, e o GerencIA 1.61.0 ou mais novo): as faturas que chegaram por e-mail para conferir, o investimento que vence logo ou venceu, os valores para atualizar e os benefícios para usar. Um toque abre o GerencIA no lugar certo. As contas continuam no card **Contas a pagar**. O card entra em **Ordem dos cards**, logo depois das contas.
+
 ## 1.78.0
 
 - **Sensores novos** no Home Assistant (com **Criar sensores** ligado em **Mais › Configurações › Integrações**):

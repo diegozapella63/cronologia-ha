@@ -1947,6 +1947,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       search: html`${this._renderNowSearch()} ${hidden}`,
       meds: medsDone ? nothing : this._renderMedsPanel(),
       bills: this._renderBillsPanel(),
+      gavisos: this._renderGerenciaAvisos(),
       now: hero || nothing,
       day: dayPart,
       memoria: this._renderMemoriaPanel(),
@@ -1964,7 +1965,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${pick(["away", "search"])}
         <div class="now-cols">
           <div class="now-main">${pick(["now", "day", "memoria", "todos"])}</div>
-          <div class="now-side">${pick(["meds", "bills", "home"])}</div>
+          <div class="now-side">${pick(["meds", "bills", "gavisos", "home"])}</div>
         </div>
         ${orderBtn}
       </section>`;
@@ -2008,6 +2009,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       search: ["search", "Busca", () => ""],
       meds: ["pill", "Remédios de hoje", () => (this._renderMedsPanel() === nothing ? "Sem nada agora" : "")],
       bills: ["receipt", "Contas do GerencIA", () => (off("gerencia_on") ? "Integração desligada" : this._renderBillsPanel() === nothing ? "Sem nada agora" : "")],
+      gavisos: ["triangle-alert", "Avisos do GerencIA", () => (off("gerencia_on") ? "Integração desligada" : this._renderGerenciaAvisos() === nothing ? "Sem nada agora" : "")],
       now: ["clock", "Agora ou a seguir", () => (shown.now === false ? "Sem nada agora" : "")],
       day: ["calendar-days", "Hoje", () => (shown.day === false ? "Nada mais hoje" : "")],
       memoria: ["notebook-pen", "MemorIA", () => (off("memoria_on") ? "Integração desligada" : this._renderMemoriaPanel() === nothing ? "Sem nada agora" : "")],

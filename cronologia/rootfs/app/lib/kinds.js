@@ -70,7 +70,7 @@ export function parseEvery(text) {
 // off. One missing from a saved order (new in a later version) goes back to its place, after the one before it by default.
 // now: the Agora or A seguir card (the appointment of now or the next one); day: the Hoje card. One card until 1.69
 // ("day" was both): an order saved then gets "now" right before "day", where the two were.
-export const NOW_CARDS = ["away", "search", "meds", "bills", "now", "day", "memoria", "home", "todos"];
+export const NOW_CARDS = ["away", "search", "meds", "bills", "gavisos", "now", "day", "memoria", "home", "todos"];
 const NOW_NEXT_TO = { now: "day" };
 export function nowOrder(saved) {
   const ids = (Array.isArray(saved) ? saved : []).filter((x, i, a) => NOW_CARDS.includes(x) && a.indexOf(x) === i);

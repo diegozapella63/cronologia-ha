@@ -56,6 +56,19 @@ describe("Gerencia", () => {
     await g.refresh();
     assert.equal(changes(), 1, "same bills: no change (the time does not count)");
   });
+  it("1.79.0: the alerts of the GerencIA and its address in Home Assistant come with the bills (an older one: none)", async () => {
+    writeInfo({ url: "http://gerencia:8099", chave: "k" });
+    const avisos = [{ id: "inv:vence", tipo: "vence", titulo: "Vence hoje", texto: "CDB Azul", dias: 0, caminho: "/agora" }];
+    let body = { contas: [], avisos, painel: "/app/a1b2c3d4_gerencia" };
+    mock.method(globalThis, "fetch", async () => reply(200, body));
+    const { g, changes } = make();
+    await g.refresh();
+    assert.deepEqual([g.state.avisos, g.state.painel], [avisos, "/app/a1b2c3d4_gerencia"]);
+    body = { contas: [], avisos: "x", painel: "javascript:alert(1)" };
+    await g.refresh();
+    assert.deepEqual([g.state.avisos, g.state.painel], [[], null], "only a list, and only an address of an app");
+    assert.equal(changes(), 2, "the alerts changing is a change");
+  });
   it("tries the second address when the first does not answer; not when it answered with an error", async () => {
     writeInfo({ url: "http://gerencia:8099", ip_url: "http://172.30.33.5:8099", chave: "k" });
     let calls = [];

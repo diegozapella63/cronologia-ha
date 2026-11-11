@@ -463,6 +463,26 @@ export const ModelsMixin = (Base) =>
       </div>`;
     }
 
+    /** GerencIA 1.61.0: the Avisos of the Início there (bills that came by e-mail, investments that end, benefits to use...),
+     * without the bills (they are in Contas a pagar, above). A touch opens the GerencIA there (/app/<slug><caminho>). */
+    _renderGerenciaAvisos() {
+      const g = this._ix().gerencia || {};
+      const list = g.ligado && !g.erro && Array.isArray(g.avisos) ? g.avisos : [];
+      if (!list.length) return nothing;
+      const ICON = { email: "mail", whatsapp: "message-circle", senha: "lock", erro: "circle-alert", venceu: "triangle-alert", vence: "calendar", valores: "clock", indices: "trending-up", beneficio: "gift", beneficio_para: "triangle-alert" };
+      const LATE = ["erro", "venceu", "beneficio_para"];
+      const row = (a) => {
+        const right = a.valor != null ? html`<span class="gav-n">${formatMoney(a.valor, false)}</span>` : a.dias != null ? html`<span class="gav-n late">${a.dias}<small>${a.dias === 1 ? "dia" : "dias"}</small></span>` : a.n ? html`<span class="gav-n">${a.n}</span>` : nothing;
+        const inner = html`<span class="bill-due gav-ic">${icon(ICON[a.tipo] || "info")}</span><span class="bill-tx"><b>${a.titulo}</b><small>${a.texto}</small></span>${right}${g.painel ? icon("chevron-right", "gav-chev") : nothing}`;
+        const cls = `bill gav ${LATE.includes(a.tipo) ? "alerta" : ""}`;
+        return g.painel ? html`<a class=${cls} href=${g.painel + (a.caminho || "")} target="_top">${inner}</a>` : html`<div class=${cls}>${inner}</div>`;
+      };
+      return html`<div class="panel bills gavisos" id="gerencia-avisos">
+        ${this._panelHead("triangle-alert", "gold", "Avisos do GerencIA", String(list.length))}
+        ${repeat(list, (a) => a.id, row)}
+      </div>`;
+    }
+
     _renderHomePanel() {
       // Modo férias: the house rests (the banner at the top says so)
       if (this._awayNow && this._awayNow()) return nothing;

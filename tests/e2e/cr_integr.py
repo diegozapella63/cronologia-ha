@@ -23,7 +23,7 @@ os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{data}
 json.dump({"app": {"score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}, "mirror": {"list": "todo.casa", "maint": True, "routine": False}}}, open(f"{data}/cronologia.json", "w"))
 subprocess.run(["python3", f"{FIX}/gerencia_dados.py", f"{data}/gdata/gerencia.json"], check=True)
 procs = []
-genv = dict(os.environ, TZ="America/Sao_Paulo", GERENCIA_DEV="1", GERENCIA_PORTA="8191", GERENCIA_DATA=f"{data}/gdata", GERENCIA_SHARE=f"{data}/share/gerencia", GERENCIA_URL_INTERNA="http://127.0.0.1:8191", GERENCIA_HA_API="http://127.0.0.1:1/api")
+genv = dict(os.environ, TZ="America/Sao_Paulo", GERENCIA_DEV="1", GERENCIA_PORTA="8191", GERENCIA_DATA=f"{data}/gdata", GERENCIA_SHARE=f"{data}/share/gerencia", GERENCIA_URL_INTERNA="http://127.0.0.1:8191", GERENCIA_HA_API="http://127.0.0.1:1/api", GERENCIA_HOST="a1b2c3d4-gerencia")
 procs.append(subprocess.Popen(["python3", f"{GREPO}/gerencia/app/server.py"], env=genv, stdout=open(f"{data}/g.log", "w"), stderr=subprocess.STDOUT))
 procs.append(subprocess.Popen(["node", f"{REPO}/dev/fake-ha.mjs"], env=dict(os.environ, TZ="America/Sao_Paulo", FAKE_MEDIA_DIR=f"{data}/media"), stdout=open(f"{data}/fake.log", "w"), stderr=subprocess.STDOUT))
 time.sleep(0.8)
@@ -99,6 +99,11 @@ async def main():
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)
         check(await a.locator(".panel.todos").count() == 1, "Agora: ResolvIA tasks back")
         check("Contas do GerencIA" in await a.locator("main").inner_text(), "Agora: GerencIA bills back")
+        # 1.79.0: the alerts of the Início of the GerencIA (here, an investment that ends in 3 days), opening it there
+        gav = a.locator("#gerencia-avisos")
+        check(await gav.count() == 1 and "Vence em 3 dias" in await gav.inner_text() and "CDB Lilás" in await gav.inner_text(), "Agora: Avisos do GerencIA")
+        check(await gav.locator('a[href="/app/a1b2c3d4_gerencia/agora"][target="_top"]').count() == 1, "a touch opens the GerencIA")
+        await gav.screenshot(path=f"{SP}/shots/cri-avisos.png")
 
         # both off again
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
@@ -110,6 +115,7 @@ async def main():
         check(stored()["app"].get("mirror") == {"list": "todo.casa", "maint": True, "routine": False}, "the Levar settings are kept for next time")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(600)
         check(await a.locator(".panel.todos").count() == 0 and "Contas do GerencIA" not in await a.locator("main").inner_text(), "Agora: both gone again")
+        check(await a.locator("#gerencia-avisos").count() == 0, "and the Avisos do GerencIA")
         await a.locator(".fab, .tab.fab").first.click(); await A.wait_for_timeout(400)
         sheet = await a.locator(".sheet").inner_text()
         check("Tarefa" not in sheet.split("\n"), f"Novo: no Tarefa while the ResolvIA is off")

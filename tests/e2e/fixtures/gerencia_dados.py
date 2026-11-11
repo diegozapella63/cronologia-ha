@@ -1,5 +1,5 @@
 import json, sys
-from datetime import date
+from datetime import date, timedelta
 h = date.today()
 ym = h.isoformat()[:7]
 def ymk(k):
@@ -10,7 +10,10 @@ d = {
  "schema": 1, "rev": 3, "exemplo": False,
  "bancos": [{"id": "b-nu", "nome": "Nubank", "contas": [{"id": "k-nu-davi", "pessoa": "Davi", "cartao": True, "fechamento": 3, "vencimento": 10}]},
             {"id": "b-itau", "nome": "Itaú", "contas": [{"id": "k-itau", "pessoa": "Davi", "cartao": False, "fechamento": 1, "vencimento": 10}]}],
- "investimentos": [], "historico": [],
+ # 1.79.0: um investimento que vence daqui a 3 dias: o aviso "Vence em 3 dias" no Agora
+ "investimentos": [{"id": "i-cdb", "nome": "CDB Lilás", "banco": "b-itau", "tipo": "CDB", "indexador": "pre", "taxa": 12, "valor": 1000,
+                    "data_valor": h.isoformat(), "inicio": (h - timedelta(days=300)).isoformat(), "vencimento": (h + timedelta(days=3)).isoformat()}],
+ "historico": [],
  "categorias": [{"id": "c-casa", "nome": "Casa", "tipo": "despesa", "cor": "#f00"}, {"id": "c-sal", "nome": "Salário", "tipo": "receita", "cor": "#0f0"}],
  "recorrencias": [
    {"id": "r-aluguel", "tipo": "despesa", "descricao": "Aluguel", "valor": 2100, "categoria": "c-casa", "conta": "k-itau", "cartao": False, "dia": 5, "inicio": ymk(-3), "fim": None},

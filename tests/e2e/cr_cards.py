@@ -48,16 +48,16 @@ async def main():
         await pg.wait_for_timeout(400)
         rows = await sheet_rows(a)
         names = [r.split(" ")[0] for r in rows]
-        check([r.split(" Sem")[0].split(" Integração")[0].split(" Só")[0].split(" Nada")[0] for r in rows] == ["Férias", "Busca", "Remédios de hoje", "Contas do GerencIA", "Agora ou a seguir", "Hoje", "MemorIA", "Rotina da casa", "Tarefas do ResolvIA"],
+        check([r.split(" Sem")[0].split(" Integração")[0].split(" Só")[0].split(" Nada")[0] for r in rows] == ["Férias", "Busca", "Remédios de hoje", "Contas do GerencIA", "Avisos do GerencIA", "Agora ou a seguir", "Hoje", "MemorIA", "Rotina da casa", "Tarefas do ResolvIA"],
               f"every card, also the ones not on Agora now ({rows})")
-        por = dict(zip(["away", "search", "meds", "bills", "now", "day", "memoria", "home", "todos"], rows))
+        por = dict(zip(["away", "search", "meds", "bills", "gavisos", "now", "day", "memoria", "home", "todos"], rows))
         fora = [k for k in por if k not in before and k != "bills"]
         check(fora and all(por[k].split(" ", 1)[-1] in ("Só com férias marcadas", "Integração desligada", "Sem nada agora", "Nada mais hoje") or por[k].endswith(("Só com férias marcadas", "Integração desligada", "Sem nada agora", "Nada mais hoje")) for k in fora),
               f"the ones not on Agora now are there too, saying why ({[por[k] for k in fora]})")
         check(await a.locator('.sheet .now-cards li[data-card="away"] button[aria-label="Subir Férias"]').is_disabled(), "the first one can't go up")
         await pg.screenshot(path=f"{SP}/shots/cro-cards.png")
         # Rotina da casa up to the top of the cards with something (above the search and the doses)
-        for _ in range(7):
+        for _ in range(8):
             await a.locator('.sheet .now-cards button[aria-label="Subir Rotina da casa"]').click()
             await pg.wait_for_timeout(250)
         rows = await sheet_rows(a)

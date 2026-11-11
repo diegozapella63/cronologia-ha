@@ -1843,6 +1843,59 @@ export const calStyles = css`
   .panel-foot.plain {
     margin-top: 4px;
   }
+  /* Avisos do GerencIA (1.79.0): as linhas das contas, com o ícone no lugar do dia */
+  a.bill.gav {
+    color: inherit;
+    text-decoration: none;
+  }
+  .bill.gav {
+    gap: 10px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .gav-ic {
+    height: 42px;
+    justify-content: center;
+    color: #b58200;
+    background: rgba(242, 193, 78, 0.22);
+  }
+  :host([dark]) .gav-ic {
+    color: #f2c14e;
+  }
+  .gav-ic .i {
+    width: 20px;
+    height: 20px;
+  }
+  .bill.gav.alerta .gav-ic {
+    background: var(--rv-late-soft);
+    color: var(--rv-late);
+  }
+  .gav-n {
+    flex: none;
+    text-align: right;
+    font-family: var(--rv-display);
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .gav-n.late {
+    color: var(--rv-late);
+  }
+  .gav-n small {
+    display: block;
+    font-family: var(--rv-font, inherit);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--rv-muted);
+  }
+  .gav-chev {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--rv-faint);
+  }
 
   /* Rotina e manutenção */
   .panel.chores {
