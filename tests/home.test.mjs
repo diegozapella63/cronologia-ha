@@ -493,6 +493,42 @@ describe("Home: maintenance", () => {
     assert.deepEqual(await viaKey.home.skip(keyOf(rep), "Davi"), { skipped: true });
     assert.equal(viaKey.store.data.checks[keyOf(rep)].kind, "manutencao");
   });
+  it("Amanhã (1.81.0): a routine that comes back N days after done goes to tomorrow, not done, undo possible", async () => {
+    const raw = cama({ location: "Quarto" });
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    const out = await home.toTomorrow(CAL, "cama");
+    assert.deepEqual(out, { moved: true, next: "2026-11-03", undo: true });
+    const [upd] = sentOf(ha, "calendar/event/update");
+    assert.equal(upd.uid, "cama");
+    assert.equal(upd.event.dtstart, "2026-11-03");
+    assert.equal(upd.event.dtend, "2026-11-04");
+    assert.equal(upd.event.description, AFTER, "nothing in its history");
+    assert.equal(upd.event.location, "Quarto");
+    assert.equal(store.data.score.entries.length, 0, "no points");
+    assert.deepEqual(store.data.checks, {}, "not done nor skipped");
+    await home.maintUndo(CAL, "cama");
+    assert.equal(sentOf(ha, "calendar/event/update")[1].event.dtstart, "2026-11-02", "Desfazer: back to today");
+  });
+  it("Amanhã: a late maintenance goes to tomorrow (not to its next one); a Google-like calendar recreates it", async () => {
+    const late = setup({ events: { [CAL]: [filtro({ start: "2026-10-20", end: "2026-10-21" })] } });
+    const out = await late.home.toTomorrow(CAL, "filtro");
+    assert.equal(out.next, "2026-11-03");
+    assert.equal(parseKind(sentOf(late.ha, "calendar/event/update")[0].event.description).history[0], "2026-05-07", "history as it was");
+    const g = setup({ events: { [CAL]: [cama()] }, features: 3 });
+    assert.equal((await g.home.toTomorrow(CAL, "cama")).undo, false);
+    assert.deepEqual(g.ha.sent.map((m) => m.type), ["calendar/event/delete", "calendar/event/create"]);
+  });
+  it("Amanhã: errors (not found, not a routine nor a maintenance, repeated by the calendar, read-only calendar)", async () => {
+    const rep = cama({ uid: "lixo", rrule: "FREQ=DAILY", description: "#rotina\nPontos: 5" });
+    const med = { uid: "rem", summary: "Losartana", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:15:00-03:00", description: "#remédio\nDose: 1 comprimido" };
+    const s = setup({ events: { [CAL]: [cama(), rep, med] } });
+    await assert.rejects(s.home.toTomorrow(CAL, "nada"), { code: "not_found" });
+    await assert.rejects(s.home.toTomorrow(CAL, "rem"), { code: "invalid_format" });
+    await assert.rejects(s.home.toTomorrow(CAL, "lixo"), { code: "not_supported", message: "Esse se repete na agenda: use Pular" });
+    const ro = setup({ events: { [CAL]: [cama()] }, features: 1 });
+    await assert.rejects(ro.home.toTomorrow(CAL, "cama"), { code: "not_supported" });
+    assert.equal(sentOf(s.ha, "calendar/event/update").length, 0);
+  });
   it("Pular a maintenance: errors, and a Google-like calendar recreates it (no undo)", async () => {
     const ro = setup({ events: { [CAL]: [cama(), filtro()] }, features: 1 });
     await assert.rejects(ro.home.maintSkip(CAL, "nada", "x"), { code: "not_found" });

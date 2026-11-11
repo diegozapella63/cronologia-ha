@@ -259,6 +259,18 @@ export const ModelsMixin = (Base) =>
       }
     }
 
+    /** Amanhã (1.81.0): this time goes to tomorrow, not done, no points; Desfazer puts it back. */
+    async _toTomorrow(e) {
+      if (this._sheet) await this._closeSheet();
+      try {
+        const r = await this.api.toTomorrow(e.cal, e.uid);
+        this._haptic("light");
+        this._showToast(`${clip(e.summary, 24)}: fica para amanhã`, r && r.undo ? { label: "Desfazer", run: () => this.api.maintUndo(e.cal, e.uid).catch((err) => this._showToast(err.message)) } : null);
+      } catch (err) {
+        this._showToast(`Não consegui: ${err.message}`);
+      }
+    }
+
     async _undoCheck(it, kind) {
       try {
         await this.api.setCheck(it.key, false, kind);
@@ -703,16 +715,22 @@ export const ModelsMixin = (Base) =>
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }
       const ui = KIND_UI[k.kind];
+      // 1.81.0: Amanhã, ao lado do Pular: esta vez fica para amanhã (não para a próxima), sem pontos. Numa rotina ou
+      // manutenção de hoje ou atrasada que a agenda não repete (a que se repete já tem a próxima na agenda)
+      const tomorrow = (k.kind === "rotina" || k.kind === "manutencao") && !e.rrule && e.start < addDays(startOfDay(now), 1)
+        ? html`<button class="btn outline kind-tomorrow" @click=${() => this._toTomorrow(e)}>${icon("sunrise")}Amanhã</button>`
+        : nothing;
+      const later = (skip) => (tomorrow === nothing ? skip : skip === nothing ? html`<div class="kind-later">${tomorrow}</div>` : html`<div class="kind-later two">${skip}${tomorrow}</div>`);
       let action = nothing;
       if (k.kind === "manutencao") {
         const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid);
         // 1.80.0: Pular, como numa rotina: não feita desta vez, vai para a próxima, sem pontos
-        const skip = html`<button class="btn outline kind-skip" @click=${() => this._maintSkip(m)}>${icon("skip-forward")}Pular</button>`;
+        const skip = later(html`<button class="btn outline kind-skip" @click=${() => this._maintSkip(m)}>${icon("skip-forward")}Pular</button>`);
         if (m && m.canMove) action = this._pickWho() ? html`${this._renderWhoButtons(this._scoreOn() ? m.points || 0 : 0, (p) => this._maintDone(m, p))}${skip}` : html`<button class="btn primary kind-act" @click=${() => this._maintDone(m)}>${icon("check")}Feito hoje</button>${skip}`;
       } else if (e.start < addDays(startOfDay(now), 2) || (k.kind === "rotina" && k.after && !e.rrule)) {
         // (a routine that comes back N days after done: also earlier, any day; it then counts from today)
         const it = { key: doneKey || e.key, summary: e.summary };
-        const skip = k.kind === "rotina" || k.kind === "remedio" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it, k.kind))}>${icon("skip-forward")}Pular</button>` : nothing;
+        const skip = later(k.kind === "rotina" || k.kind === "remedio" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it, k.kind))}>${icon("skip-forward")}Pular</button>` : nothing);
         action = chk && chk.skipped
           ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
           : chk

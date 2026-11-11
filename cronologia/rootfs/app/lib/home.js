@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, toTomorrow, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -937,18 +937,41 @@ export class Home {
       return { skipped: true, moved: false, key };
     }
     const event = maintSkip(raw, k, new Date());
+    const undo = await this.moveEvent(cal, raw, event);
+    this.log.info(`Manutenção pulada: ${raw.summary}; próxima em ${event.start.slice(0, 10)}`);
+    return { skipped: true, moved: true, next: event.start.slice(0, 10), undo };
+  }
+
+  /**
+   * Amanhã (1.81.0): a routine or a maintenance that the calendar does not repeat goes to tomorrow, at the same hour.
+   * Not done: no points, nothing in its history. Desfazer: maintUndo. One repeated by the calendar has the next one
+   * already there: Pular.
+   */
+  async toTomorrow(cal, uid) {
+    const raw = this.findRaw(cal, uid);
+    if (!raw) throw coded("not_found", "Não achei esse compromisso no calendário");
+    const k = parseKind(raw.description);
+    if (!k || !["rotina", "manutencao"].includes(k.kind)) throw coded("invalid_format", "Só uma rotina ou uma manutenção fica para amanhã");
+    if (raw.rrule) throw coded("not_supported", "Esse se repete na agenda: use Pular");
+    const event = toTomorrow(raw, new Date());
+    const undo = await this.moveEvent(cal, raw, event);
+    this.log.info(`Para amanhã: ${raw.summary}`);
+    return { moved: true, next: event.start.slice(0, 10), undo };
+  }
+
+  /** The event on its new date (updated, with Desfazer for 30 min; or recreated, without). Returns whether it can be undone. */
+  async moveEvent(cal, raw, event) {
     const before = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
     const feat = this.features(cal);
     if (feat & F.UPDATE) {
-      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid, event: toHAEvent(event) });
-      this.undo.set(`${cal}|${uid}`, { before, at: Date.now() });
+      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+      this.undo.set(`${cal}|${raw.uid}`, { before, at: Date.now() });
     } else if (feat & F.CREATE && feat & F.DELETE) {
       await this.recreate(cal, raw, event);
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
-    this.log.info(`Manutenção pulada: ${raw.summary}; próxima em ${event.start.slice(0, 10)}`);
     this.refreshCalendar(cal);
     this.changed();
-    return { skipped: true, moved: true, next: event.start.slice(0, 10), undo: !!(feat & F.UPDATE) };
+    return !!(feat & F.UPDATE);
   }
 
   /**

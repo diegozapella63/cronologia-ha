@@ -270,6 +270,11 @@ export class Api {
     return this.call("cronologia/maint/done", { entity_id: entityId, uid, ...(who ? { who } : {}) });
   }
 
+  /** Amanhã (1.81.0): this time of a routine or a maintenance goes to tomorrow -> {moved, next, undo}; Desfazer: maintUndo */
+  toTomorrow(entityId, uid) {
+    return this.call("cronologia/event/tomorrow", { entity_id: entityId, uid });
+  }
+
   /** Pular a maintenance: not done this time -> {skipped, moved, next?, undo?, key?} */
   maintSkip(entityId, uid) {
     return this.call("cronologia/maint/skip", { entity_id: entityId, uid });

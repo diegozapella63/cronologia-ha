@@ -199,6 +199,20 @@ export const calStyles = css`
     width: 100%;
     margin-top: 8px;
   }
+  /* 1.81.0: Pular e Amanhã lado a lado, do mesmo tamanho */
+  .kind-later {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .kind-later.two {
+    grid-template-columns: 1fr 1fr;
+  }
+  .kind-later > .btn {
+    width: 100%;
+    margin-top: 0;
+    min-width: 0;
+  }
   .kind-state.skipped .i {
     color: var(--rv-warn);
   }

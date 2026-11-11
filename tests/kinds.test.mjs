@@ -26,6 +26,7 @@ import {
   maintDone,
   skipNext,
   maintSkip,
+  toTomorrow,
   isoWithOffset,
 } from "../cronologia/rootfs/app/lib/kinds.js";
 
@@ -569,6 +570,25 @@ describe("maintSkip (Pular a maintenance, 1.80.0)", () => {
     assert.equal(ev.start, "2027-05-20T09:00:00-03:00");
     assert.equal(ev.end, "2027-05-20T10:00:00-03:00");
     assert.equal(ev.description, "");
+  });
+});
+
+describe("toTomorrow (Amanhã, 1.81.0)", () => {
+  const today = at(2026, 11, 11, 20);
+  it("all-day: tomorrow, one day; the description (and its history) stays", () => {
+    const raw = { summary: "Dobrar roupa", start: "2026-11-11", end: "2026-11-12", description: "#rotina\nVolta: 7 dias depois de feita\nFeito em: 04/11/2026", location: "Lavanderia" };
+    assert.deepEqual(toTomorrow(raw, today), { summary: "Dobrar roupa", description: raw.description, location: "Lavanderia", start: "2026-11-12", end: "2026-11-13" });
+  });
+  it("a late one also goes to tomorrow (not to its next date); a timed one keeps the hour and length", () => {
+    assert.equal(toTomorrow({ summary: "x", start: "2026-11-01", end: "2026-11-02" }, today).start, "2026-11-12");
+    const ev = toTomorrow({ summary: "x", start: "2026-11-09T07:00:00-03:00", end: "2026-11-09T07:30:00-03:00" }, today);
+    assert.equal(ev.start, "2026-11-12T07:00:00-03:00");
+    assert.equal(ev.end, "2026-11-12T07:30:00-03:00");
+    assert.equal(ev.description, "");
+  });
+  it("the end of the month and of the year", () => {
+    assert.equal(toTomorrow({ summary: "x", start: "2026-11-30", end: "2026-12-01" }, at(2026, 11, 30, 9)).start, "2026-12-01");
+    assert.equal(toTomorrow({ summary: "x", start: "2026-12-31", end: "2027-01-01" }, at(2026, 12, 31, 9)).end, "2027-01-02");
   });
 });
 

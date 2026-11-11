@@ -316,6 +316,14 @@ export function maintSkip(raw, k, today = new Date()) {
 }
 
 /**
+ * Amanhã (1.81.0): this time goes to tomorrow, at the same hour and length. Not done: its history stays as it was
+ * (one that comes back N days after done counts again from the day it is done).
+ */
+export function toTomorrow(raw, today = new Date()) {
+  return movedTo(raw, new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1), raw.description || "");
+}
+
+/**
  * Pular: a routine that comes back N days after done goes to its next date as if this time
  * were over: N days after the day it was due, never before today. Its history stays as it was.
  */

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.81.0
+
+- **Amanhã**, ao lado do **Pular**, na tela da rotina e da manutenção: esta vez fica para amanhã, e não para a próxima (7 dias depois, na que volta 7 dias depois de feita). Sem pontos e sem entrar no "Feito em"; dá para desfazer pelo aviso. A rotina que repete pelo calendário (todo dia, toda semana) continua só com o **Pular**.
+
 ## 1.80.0
 
 - **Pular** também na **manutenção**: na tela dela, ao lado do Feito. Ela vai para a próxima vez (o intervalo contado do dia em que vencia), sem pontos e sem entrar no "Feito em". Dá para desfazer pelo aviso. A CorrerIA também pula uma manutenção.
