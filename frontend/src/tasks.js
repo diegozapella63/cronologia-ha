@@ -267,13 +267,35 @@ export const TasksMixin = (Base) =>
       return this._renderRoomEquipMulti(f, rooms, its, { multiRoom });
     }
 
-    /** multiRoom (a maintenance, a task of the ResolvIA): without equipments, several rooms (f.rooms; f.room is the first). */
-    _renderRoomEquipMulti(f, rooms, items, { multiRoom = false } = {}) {
+    /**
+     * multiRoom (a maintenance, a task of the ResolvIA): without equipments, several rooms (f.rooms; f.room is the first).
+     * Casa ou Bens (1.76.0, like the ResolvIA 2.62.0): the area Bens of the InventarIA (house, car) is not a room of the
+     * house; the form first says where (f.where), Casa shows the rooms, and each side has its own equipment.
+     */
+    _renderRoomEquipMulti(f, allRooms, allItems, { multiRoom = false } = {}) {
       const ids = f.equips || [];
       const locked = ids.length > 0;
-      const roomsOf = (list) => [...new Set(list.map((id) => (items.find((x) => x.id === id) || {}).roomId).filter((r) => r && rooms.some((c) => c.id === r)))];
-      const picked = multiRoom ? (f.rooms || (f.room ? [f.room] : [])).filter((r) => rooms.some((c) => c.id === r)) : f.room ? [f.room] : [];
+      const roomsOf = (list) => [...new Set(list.map((id) => (allItems.find((x) => x.id === id) || {}).roomId).filter((r) => r && allRooms.some((c) => c.id === r)))];
+      const bensId = (allRooms.find((c) => c.tipo === "bens") || {}).id || null;
+      const pickedAll = multiRoom ? (f.rooms || (f.room ? [f.room] : [])).filter((r) => allRooms.some((c) => c.id === r)) : f.room ? [f.room] : [];
+      const bens = !!bensId && (f.where ? f.where === "bens" : locked ? roomsOf(ids).includes(bensId) : pickedAll.includes(bensId));
+      const rooms = bensId ? (bens ? [] : allRooms.filter((c) => c.id !== bensId)) : allRooms;
+      const items = bensId ? allItems.filter((i) => (i.roomId === bensId) === bens) : allItems;
+      const picked = pickedAll.filter((r) => r !== bensId);
       const marked = locked ? roomsOf(ids) : picked;
+      const go = (toBens) => {
+        if (toBens === bens) return;
+        const keep = ids.filter((id) => ((allItems.find((x) => x.id === id) || {}).roomId === bensId) === toBens);
+        this._setForm({ where: toBens ? "bens" : "casa", equips: keep, equipQ: "", equipMore: false, equipAdding: false, ...(toBens ? { room: bensId, rooms: [bensId] } : { room: null, rooms: [] }) });
+      };
+      const where = bensId
+        ? html`<div class="field where-field">
+            <div class="seg where" role="group" aria-label="Casa ou Bens">
+              <button class=${bens ? "" : "on"} aria-pressed=${bens ? "false" : "true"} @click=${() => go(false)}>${icon("house")}<span>Casa</span></button>
+              <button class=${bens ? "on" : ""} aria-pressed=${bens ? "true" : "false"} @click=${() => go(true)}>${icon("car")}<span>Bens</span></button>
+            </div>
+          </div>`
+        : nothing;
       const toggle = (id) => {
         if (!multiRoom) return this._setForm({ room: f.room === id ? null : id });
         const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
@@ -282,8 +304,8 @@ export const TasksMixin = (Base) =>
       // Todos: every room of the house (a task of the whole house); tapped again, none
       const allIds = rooms.map((c) => c.id);
       const all = multiRoom && !locked && rooms.length > 1 && allIds.every((id) => marked.includes(id));
-      const searchRoom = locked ? marked[0] || null : all ? null : f.room || null;
-      return html`${rooms.length
+      const searchRoom = bens ? bensId : locked ? marked[0] || null : all ? null : f.room || null;
+      return html`${where}${rooms.length
           ? html`<div class="field">
               <span class="flabel">${marked.length > 1 ? "Cômodos" : "Cômodo"}</span>
               <div class="chip-row ${locked ? "locked" : ""}">
@@ -298,13 +320,14 @@ export const TasksMixin = (Base) =>
           : nothing}
         ${items.length
           ? html`<div class="field">
-              <span class="flabel">${ids.length > 1 ? "Equipamentos" : "Equipamento"}</span>
+              <span class="flabel">${bens ? (ids.length > 1 ? "Bens" : "Bem") : ids.length > 1 ? "Equipamentos" : "Equipamento"}</span>
               ${renderEquipPicker({
                 lit: { html, nothing },
                 icon,
                 items,
+                bens,
                 room: searchRoom,
-                roomName: searchRoom ? (rooms.find((c) => c.id === searchRoom) || {}).nome || "" : "",
+                roomName: searchRoom ? (allRooms.find((c) => c.id === searchRoom) || {}).nome || "" : "",
                 value: ids,
                 query: f.equipQ || "",
                 more: !!f.equipMore,
@@ -317,7 +340,7 @@ export const TasksMixin = (Base) =>
                 onRemove: (id) => {
                   const next = ids.filter((x) => x !== id);
                   // the last one out: the room is free again, starting from the one it had
-                  this._setForm({ equips: next, ...(!next.length ? { room: roomsOf(ids)[0] || f.room || null, ...(multiRoom ? { rooms: roomsOf(ids) } : {}) } : {}) });
+                  this._setForm({ equips: next, ...(bens ? { where: "bens" } : {}), ...(!next.length ? { room: roomsOf(ids)[0] || f.room || null, ...(multiRoom ? { rooms: roomsOf(ids) } : {}) } : {}) });
                 },
               })}
             </div>`

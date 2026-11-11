@@ -465,3 +465,10 @@ describe("Todos: add and setDone", () => {
     assert.equal(await code(t.setDone("todo.casa", 5, true)), "invalid_format");
   });
 });
+
+describe("todos: Casa ou Bens (1.76.0)", () => {
+  it("the area Bens of the InventarIA keeps its tipo (from the ResolvIA 2.62.0); any other tipo is dropped", () => {
+    const { t } = make({ app: appFile({ comodos: { lista: [{ id: "sala", nome: "Sala", tipo: "x" }, { id: "bens", nome: "Bens", tipo: "bens" }], tarefas: {} } }) });
+    assert.deepEqual(t.app(NOW).comodos.lista, [{ id: "sala", nome: "Sala" }, { id: "bens", nome: "Bens", tipo: "bens" }]);
+  });
+});

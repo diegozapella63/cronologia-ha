@@ -35,7 +35,8 @@ function cleanRooms(raw) {
   const lista = raw.lista
     .filter((c) => c && typeof c.id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(c.id))
     .slice(0, 2000)
-    .map((c) => ({ id: c.id, nome: String(c.nome || c.id).slice(0, 120), ...(typeof c.comodo === "string" ? { comodo: c.comodo.slice(0, 60) } : {}) }));
+    // tipo "bens" (ResolvIA 2.62.0): the area Bens of the InventarIA (house, car: outside the house), not a room of the house
+    .map((c) => ({ id: c.id, nome: String(c.nome || c.id).slice(0, 120), ...(typeof c.comodo === "string" ? { comodo: c.comodo.slice(0, 60) } : {}), ...(c.tipo === "bens" ? { tipo: "bens" } : {}) }));
   if (!lista.length) return null;
   const tarefas = {};
   for (const [list, map] of Object.entries(raw.tarefas && typeof raw.tarefas === "object" ? raw.tarefas : {})) {

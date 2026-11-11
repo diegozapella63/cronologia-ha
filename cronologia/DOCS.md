@@ -147,6 +147,8 @@ A **Rotina da casa** também pode ter um **Cômodo** ("Arrumar a cama" no Quarto
 
 Com os cômodos e equipamentos do InventarIA ligados no ResolvIA, a manutenção pode ter **vários equipamentos** (**Outro equipamento**): o cômodo vem deles e fica bloqueado. No evento ficam `Equipamentos: Ar-condicionado; Geladeira` e `Cômodos: Quarto; Cozinha`, e a tarefa no ResolvIA leva todos.
 
+**Casa ou Bens** (com o ResolvIA 2.62.0 e a área **Bens** do InventarIA: casa, terreno, carro): antes dos cômodos, a tarefa, a manutenção e a rotina perguntam onde. **Casa** mostra os cômodos da casa e os equipamentos dela; **Bens** mostra os bens (**Bem**), sem cômodo para escolher. O Bens não aparece como um cômodo da lista, nem no **Todos**.
+
 ## Recompensas
 
 Um placar para quem faz mais em casa (por exemplo, você × a Aurora), na aba **Recompensas**.

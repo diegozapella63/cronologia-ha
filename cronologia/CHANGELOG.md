@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.76.0
+
+- **Casa ou Bens**: no **Adicionar › Tarefa** e na **Manutenção**, antes dos cômodos, escolha **Casa** ou **Bens** (com o ResolvIA 2.62.0). Na Casa aparecem os cômodos da casa (o **Bens** do InventarIA não é mais um cômodo da lista) e os equipamentos dela; em **Bens**, os bens do InventarIA (carro, casa…).
+
 ## 1.75.0
 
 - **Adicionar só com o +**: o botão do meio da barra de baixo fica só com o ícone, sem o texto embaixo, como em todos os apps da família.

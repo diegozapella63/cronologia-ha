@@ -2162,6 +2162,21 @@ export const calStyles = css`
   .field.mirror-pick {
     margin: 6px 0 10px;
   }
+  /* Casa ou Bens (1.76.0): before the rooms of a task, two halves of the same size */
+  .seg.where {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .seg.where button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .seg.where .i {
+    width: 18px;
+    height: 18px;
+  }
   /* Cômodo locked by the equipment (Novo › Tarefa): the rooms of the items stay marked, the others fade */
   .chip-row.locked .pick:disabled {
     cursor: default;
