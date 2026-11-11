@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, skipNext, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -23,7 +23,8 @@ export const ofApp = (sd) => (sd.message === "clear_notification" ? sd : { ...sd
 const DAY = 86400000;
 const BACK_DAYS = 200;
 // what Sensores no Home Assistant creates (and removes when turned off)
-const SENSORS = ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"];
+// (1.78.0: férias and the routines still to do today too; the next appointment is in lib/proximo.js)
+const SENSORS = ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar", "binary_sensor.cronologia_ferias", "sensor.cronologia_rotinas_pendentes"];
 const AHEAD_DAYS = 800;
 const SNOOZE_MIN = 15;
 const F = { CREATE: 1, DELETE: 2, UPDATE: 4 };
@@ -1168,6 +1169,21 @@ export class Home {
         state: overdue.length,
         attributes: { friendly_name: "CronologIA Manutenções vencidas", icon: "mdi:wrench-clock", unit_of_measurement: "itens", vencidas: overdue.map((m) => `${m.summary} (${m.due})`), proximas: soon.map((m) => `${m.summary} (${m.due})`) },
       },
+    };
+    // 1.78.0: Férias (on while away: the house in away mode, the alarm on) and the routines still to do today
+    const away = cleanAway(this.store.data.app.away);
+    const ahead = away && away.to >= ymdOf(new Date()) ? away : null;
+    sensors["binary_sensor.cronologia_ferias"] = {
+      state: ix.away ? "on" : "off",
+      attributes: { friendly_name: "CronologIA Férias", icon: ix.away ? "mdi:beach" : "mdi:home-outline", de: ahead ? ahead.from : null, ate: ahead ? ahead.to : null },
+    };
+    const chores = ix.routines.filter((r) => r.kind === "rotina");
+    const todo = chores.filter((r) => !r.done);
+    const descR = (r) => `${r.summary}${r.who ? ` (${r.who})` : ""}`;
+    const inPeriod = (id) => todo.filter((r) => r.period === id).length;
+    sensors["sensor.cronologia_rotinas_pendentes"] = {
+      state: todo.length,
+      attributes: { friendly_name: "CronologIA Rotinas pendentes", icon: "mdi:broom", unit_of_measurement: "rotinas", feitas: chores.length - todo.length, total: chores.length, manha: inPeriod("manha"), tarde: inPeriod("tarde"), noite: inPeriod("noite"), pendentes: todo.map(descR) },
     };
     const sc = ix.score;
     if (sc && sc.enabled) {

@@ -366,8 +366,14 @@ describe("sensors in Home Assistant", () => {
     assert.equal(Number(maint.state), maint.attributes.vencidas.length);
     const placar = await sensor("sensor.cronologia_placar");
     assert.ok(placar.attributes.pontos && "Davi" in placar.attributes.pontos);
+    // 1.78.0
+    const chores = await sensor("sensor.cronologia_rotinas_pendentes");
+    assert.equal(Number(chores.state), chores.attributes.pendentes.length);
+    assert.ok(["on", "off"].includes((await sensor("binary_sensor.cronologia_ferias")).state));
+    const next = await sensor("sensor.cronologia_proximo");
+    assert.equal(next.attributes.device_class, "timestamp");
     await c.call("cronologia/prefs/set_app", { prefs: { sensors_on: false } });
-    for (const id of ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"]) {
+    for (const id of ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar", "sensor.cronologia_rotinas_pendentes", "binary_sensor.cronologia_ferias", "sensor.cronologia_proximo"]) {
       await waitFor(async () => (await stack.state(id)).status === 404, { what: `${id} removed` });
     }
   });

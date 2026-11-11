@@ -1120,7 +1120,31 @@ describe("Home: sensors and finding calendars with models (fetch stubbed)", () =
     assert.equal(home.sensorsJson, "");
     globalThis.fetch = async (url, opts) => (posts.push([url, opts.method]), { ok: true });
     await home.publishSensors();
-    assert.equal(posts.length, 1 + 3, "all three sent the next time");
+    assert.equal(posts.length, 1 + 5, "all five sent the next time (no placar without Recompensas)");
+  });
+  // 1.78.0: Férias and Rotinas pendentes
+  it("férias: on while away, with the dates; rotinas pendentes: the ones still to do today, by period", async () => {
+    const manha = { uid: "cafe", summary: "Lavar a louça", start: "2026-11-02", end: "2026-11-03", description: buildDescription({ kind: "rotina", who: "Davi", period: "manha" }) };
+    const { home, store } = setup({ events: { [CAL]: [lixo(), manha, dose(20, 0)] }, app: { sensors_on: true } });
+    home.token = "t";
+    const bodies = {};
+    globalThis.fetch = async (url, opts) => ((bodies[url.split("/").pop()] = JSON.parse(opts.body)), { ok: true });
+    home.rebuild();
+    await flushPromises(10);
+    const r = bodies["sensor.cronologia_rotinas_pendentes"];
+    assert.equal(r.state, 2);
+    assert.deepEqual([r.attributes.total, r.attributes.feitas, r.attributes.manha, r.attributes.tarde], [2, 0, 1, 0]);
+    assert.deepEqual(r.attributes.pendentes.sort(), ["Lavar a louça (Davi)", "Tirar o lixo (Aurora)"]);
+    assert.deepEqual([bodies["binary_sensor.cronologia_ferias"].state, bodies["binary_sensor.cronologia_ferias"].attributes.de], ["off", null]);
+    store.setApp({ away: { from: "2026-11-01", to: "2026-11-05" } });
+    home.rebuild();
+    await flushPromises(10);
+    const f = bodies["binary_sensor.cronologia_ferias"];
+    assert.deepEqual([f.state, f.attributes.de, f.attributes.ate, f.attributes.icon], ["on", "2026-11-01", "2026-11-05", "mdi:beach"]);
+    store.setApp({ away: { from: "2026-12-20", to: "2027-01-05" } });
+    home.rebuild();
+    await flushPromises(10);
+    assert.deepEqual([bodies["binary_sensor.cronologia_ferias"].state, bodies["binary_sensor.cronologia_ferias"].attributes.de], ["off", "2026-12-20"], "the next ones, before they start");
   });
   it("removing the sensors with Home Assistant offline does not fail", async () => {
     const { home } = setup();
@@ -1134,7 +1158,7 @@ describe("Home: sensors and finding calendars with models (fetch stubbed)", () =
     await home.removeSensors();
     assert.deepEqual(
       deletes.map((d) => d[0]),
-      ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar"],
+      ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_placar", "binary_sensor.cronologia_ferias", "sensor.cronologia_rotinas_pendentes"],
     );
     assert.ok(deletes.every((d) => d[1] === "DELETE"));
     assert.equal(home.sensorsJson, "");

@@ -276,9 +276,55 @@ Com **Criar sensores** ligado (em **Mais › Configurações › Integrações �
 
 - `sensor.cronologia_remedios_hoje`: quantas doses faltam hoje, com `tomados`, `pulados`, `total`, `atrasados`, `proximo` e `pendentes`;
 - `binary_sensor.cronologia_remedio_atrasado`: ligado quando alguma dose passou do tempo (classe "problema");
+- `sensor.cronologia_rotinas_pendentes`: quantas rotinas da casa faltam hoje, com `feitas`, `total`, quantas faltam de `manha`, `tarde` e `noite`, e `pendentes`;
 - `sensor.cronologia_manutencoes_vencidas`: quantas manutenções venceram, com `vencidas` e `proximas`;
+- `sensor.cronologia_proximo`: quando começa o próximo compromisso com horário dos calendários que aparecem (nos próximos 2 dias; os de dia inteiro, os remédios, que têm o sensor deles, e os já marcados como feitos ficam de fora), com `titulo`, `fim`, `local`, `calendario`, `minutos` (quanto falta) e `agora` (o que está acontecendo); sem nada pela frente, fica desconhecido;
+- `binary_sensor.cronologia_ferias`: ligado no modo férias, com `de` e `ate` (as férias marcadas, mesmo antes de começar);
 - `sensor.cronologia_placar` (com o placar ligado): quem está na frente, com `pontos` de cada um, `premio`, `periodo` e `termina`;
 - `sensor.cronologia_ia_hoje`: as chamadas de IA de hoje, com erros, cota e tokens estimados (veja **Uso da IA**).
+
+Exemplos de automação:
+
+```yaml
+# meia hora antes do próximo compromisso, um aviso no celular
+triggers:
+  - trigger: time
+    at:
+      entity_id: sensor.cronologia_proximo
+      offset: "-00:30:00"
+actions:
+  - action: notify.mobile_app_celular_da_ana
+    data:
+      title: "{{ state_attr('sensor.cronologia_proximo', 'titulo') }}"
+      message: "Começa em 30 minutos{{ ' em ' ~ state_attr('sensor.cronologia_proximo', 'local') if state_attr('sensor.cronologia_proximo', 'local') }}."
+```
+
+```yaml
+# de férias: a casa em modo ausente
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.cronologia_ferias
+    to: "on"
+actions:
+  - action: alarm_control_panel.alarm_arm_away
+    target:
+      entity_id: alarm_control_panel.casa
+```
+
+```yaml
+# às 20h, se ainda falta rotina, a Alexa lembra
+triggers:
+  - trigger: time
+    at: "20:00:00"
+conditions:
+  - condition: numeric_state
+    entity_id: sensor.cronologia_rotinas_pendentes
+    above: 0
+actions:
+  - action: notify.alexa_media_sala
+    data:
+      message: "Ainda faltam {{ states('sensor.cronologia_rotinas_pendentes') }} rotinas hoje."
+```
 
 Os eventos abaixo funcionam com os sensores ligados ou não.
 

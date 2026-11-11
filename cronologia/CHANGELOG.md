@@ -1,5 +1,13 @@
 # Mudanças
 
+## 1.78.0
+
+- **Sensores novos** no Home Assistant (com **Criar sensores** ligado em **Mais › Configurações › Integrações**):
+  - `sensor.cronologia_proximo`: quando começa o próximo compromisso, com o título, o fim, o local e o calendário (para avisar meia hora antes, por exemplo);
+  - `binary_sensor.cronologia_ferias`: ligado no modo férias (para deixar a casa em modo ausente);
+  - `sensor.cronologia_rotinas_pendentes`: quantas rotinas da casa faltam hoje, por período.
+- A aba **Documentação** traz exemplos de automação com eles.
+
 ## 1.77.0
 
 - **Campos que mostram o texto todo**: o **O que foi** do demérito, os prêmios, o **O que foi feito** dos pontos avulsos, o **Local** do evento e os títulos crescem com o texto (nada cortado) e aumentam puxando o canto, como nos outros apps da família.

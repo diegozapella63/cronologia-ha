@@ -7,6 +7,7 @@
 //   Home Assistant, and exports calendars as .ics.
 // - Models (remédio, conta, rotina, manutenção): doses taken, chores done,
 //   phone alerts for doses, sensors, and the bills of the GerencIA app.
+import { NextSensor } from "./lib/proximo.js";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -80,6 +81,7 @@ const pushHome = (index) => {
   for (const w of homeWatchers) w.session.event(w.id, index);
   publishPresence(); // people or scoreboard may have changed (writes only on a change)
   mirror.schedule();
+  nextSensor.schedule(); // a calendar or a Feito changed: the next appointment may be another
 };
 const gerencia = new Gerencia({ shareDir: SHARE_DIR, log, onChange: () => home.changed(), enabled: gerenciaOn });
 const memoria = new Memoria({ shareDir: SHARE_DIR, log, enabled: memoriaOn });
@@ -154,6 +156,7 @@ ha.on("ready", async () => {
     sensorsCleaned = true;
     home.removeSensors().catch(() => {});
     usage.remove().catch(() => {});
+    nextSensor.remove().catch(() => {});
   }
   try {
     const config = await ha.send({ type: "get_config" });
@@ -167,6 +170,7 @@ ha.on("ready", async () => {
   try {
     await loadStates();
     log.info(`${calStates.size} calendários encontrados`);
+    nextSensor.schedule();
     home.discover().catch((err) => log.warn(`Procurando modelos: ${err.message}`));
   } catch (err) {
     log.error(`Não consegui ler os calendários: ${err.message}`);
@@ -262,6 +266,13 @@ const ferramentas = new Ferramentas({
   deleteEvent: (cal, uid, opts) => changeEvent("calendar/event/delete", cal, uid, null, opts),
   log,
 });
+// sensor.cronologia_proximo (1.78.0): the next appointment, with Sensores no Home Assistant on
+const nextSensor = new NextSensor({
+  rest: HA_REST, token: TOKEN, log, enabled: () => store.data.app.sensors_on === true,
+  events: (from, to) => ferramentas.eventos(from, to),
+  checks: () => store.data.checks || {},
+});
+setInterval(() => nextSensor.publish().catch(() => {}), 5 * 60000);
 
 const pushPrefs = () => {
   for (const w of prefWatchers) w.session.event(w.id, store.prefs);
@@ -565,9 +576,11 @@ class Session {
             home.sensorsJson = "";
             home.publishSensors().catch(() => {});
             usage.publish().catch(() => {});
+            nextSensor.publish().catch(() => {});
           } else {
             home.removeSensors().catch(() => {});
             usage.remove().catch(() => {});
+            nextSensor.remove().catch(() => {});
           }
         }
         if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs || "resolvia_on" in msg.prefs)) {

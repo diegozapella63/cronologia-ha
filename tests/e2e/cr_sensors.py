@@ -29,7 +29,8 @@ req("POST", "sensor.cronologia_ia_hoje", {"state": "1", "attributes": {}})
 check(has("sensor.cronologia_remedios_hoje"), "an old sensor is there before the app starts")
 env = dict(os.environ, TZ="America/Sao_Paulo", CRONOLOGIA_DEV="1", CRONOLOGIA_DEV_INTEGRATIONS="1", HA_WS_URL="ws://127.0.0.1:8123/api/websocket", HA_REST_URL="http://127.0.0.1:8123/api", HA_TOKEN="dev", DATA_DIR=data, MEDIA_DIR=f"{data}/media", SHARE_DIR=f"{data}/share")
 procs.append(subprocess.Popen(["node", f"{REPO}/cronologia/rootfs/app/server.js"], env=env, stdout=open(f"{data}/app.log", "w"), stderr=subprocess.STDOUT)); time.sleep(1.3)
-SENS = ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_ia_hoje"]
+SENS = ["sensor.cronologia_remedios_hoje", "binary_sensor.cronologia_remedio_atrasado", "sensor.cronologia_manutencoes_vencidas", "sensor.cronologia_ia_hoje",
+        "sensor.cronologia_rotinas_pendentes", "binary_sensor.cronologia_ferias", "sensor.cronologia_proximo"]
 async def wait_for(fn, label, tries=40):
     for _ in range(tries):
         try:
@@ -63,7 +64,12 @@ async def main():
         await wait_for(lambda: all(has(e) for e in SENS), "on: the sensors are created")
         check(req("GET", "sensor.cronologia_remedios_hoje")["attributes"].get("total") == 5, "with the doses of today")
         rows = [t.split("\n")[0] for t in await panel.locator(":scope > .sensor-list .sensor-row > code").all_inner_texts()]
-        check("binary_sensor.cronologia_remedio_atrasado" in rows and len(rows) == 4 and "sensor.cronologia_placar" not in rows, f"the list of sensors, no placar without Recompensas ({rows})")
+        check("binary_sensor.cronologia_remedio_atrasado" in rows and len(rows) == 7 and "sensor.cronologia_placar" not in rows, f"the list of sensors, no placar without Recompensas ({rows})")
+        # 1.78.0: the next appointment, férias and the routines of today
+        check(all(e in rows for e in ["sensor.cronologia_proximo", "binary_sensor.cronologia_ferias", "sensor.cronologia_rotinas_pendentes"]), "the new sensors are in the list")
+        nx = req("GET", "sensor.cronologia_proximo")
+        check(nx["attributes"].get("device_class") == "timestamp" and (nx["state"] == "unknown" or nx["attributes"].get("titulo")), f"proximo: when it starts, with the title ({nx['state']}, {nx['attributes'].get('titulo')})")
+        check(req("GET", "binary_sensor.cronologia_ferias")["state"] == "off", "férias: off")
         await A.screenshot(path=f"{SP}/shots/crs-on.png", full_page=True)
         await sw.uncheck()
         await wait_for(lambda: not any(has(e) for e in SENS), "off: the sensors are removed")

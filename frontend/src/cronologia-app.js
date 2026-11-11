@@ -2695,7 +2695,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const list = [
       ["sensor.cronologia_remedios_hoje", "doses a tomar hoje (com as atrasadas e a próxima)"],
       ["binary_sensor.cronologia_remedio_atrasado", "liga quando um remédio atrasa"],
+      ["sensor.cronologia_rotinas_pendentes", "rotinas da casa que faltam hoje"],
       ["sensor.cronologia_manutencoes_vencidas", "manutenções vencidas e as próximas"],
+      ["sensor.cronologia_proximo", "quando começa o próximo compromisso, com o título e o local"],
+      ["binary_sensor.cronologia_ferias", "liga no modo férias"],
       ...(score ? [["sensor.cronologia_placar", "quem lidera o placar e os pontos"]] : []),
       ["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"],
     ];
