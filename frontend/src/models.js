@@ -477,7 +477,7 @@ export const ModelsMixin = (Base) =>
         const cls = `bill gav ${LATE.includes(a.tipo) ? "alerta" : ""}`;
         return g.painel ? html`<a class=${cls} href=${g.painel + (a.caminho || "")} target="_top">${inner}</a>` : html`<div class=${cls}>${inner}</div>`;
       };
-      return html`<div class="panel bills gavisos" id="gerencia-avisos">
+      return html`<div class="panel gavisos" id="gerencia-avisos">
         ${this._panelHead("triangle-alert", "gold", "Avisos do GerencIA", String(list.length))}
         ${repeat(list, (a) => a.id, row)}
       </div>`;

@@ -5660,7 +5660,12 @@ dialog.ss-wrap::backdrop{background:transparent}
   .panel-foot.plain {
     margin-top: 4px;
   }
-  /* Avisos do GerencIA (1.79.0): as linhas das contas, com o ícone no lugar do dia */
+  /* Avisos do GerencIA (1.79.0): as linhas das contas, com o ícone no lugar do dia (um card à parte: .panel.bills é só o
+     das contas) */
+  .panel.gavisos {
+    padding: 0 0 4px;
+    overflow: hidden;
+  }
   a.bill.gav {
     color: inherit;
     text-decoration: none;
@@ -7685,7 +7690,7 @@ ${s}`:e.join(`
           </div>`})}
         ${e.length>5?n`<button class="add-line" @click=${()=>(this._billsAll=!this._billsAll,this.requestUpdate())}>${C(this._billsAll?"chevron-up":"chevron-down")}${this._billsAll?"Mostrar menos":`Mais ${e.length-5}`}</button>`:u}
         ${c.ligado?n`<div class="panel-foot plain">${C("wallet")}<span>${c.erro?`GerencIA: ${c.erro}`:"Contas do GerencIA: o Paguei daqui d\xE1 baixa l\xE1"}</span></div>`:u}
-      </div>`}_renderGerenciaAvisos(){let e=this._ix().gerencia||{},t=e.ligado&&!e.erro&&Array.isArray(e.avisos)?e.avisos:[];if(!t.length)return u;let a={email:"mail",whatsapp:"message-circle",senha:"lock",erro:"circle-alert",venceu:"triangle-alert",vence:"calendar",valores:"clock",indices:"trending-up",beneficio:"gift",beneficio_para:"triangle-alert"},s=["erro","venceu","beneficio_para"],i=r=>{let c=r.valor!=null?n`<span class="gav-n">${Oe(r.valor,!1)}</span>`:r.dias!=null?n`<span class="gav-n late">${r.dias}<small>${r.dias===1?"dia":"dias"}</small></span>`:r.n?n`<span class="gav-n">${r.n}</span>`:u,d=n`<span class="bill-due gav-ic">${C(a[r.tipo]||"info")}</span><span class="bill-tx"><b>${r.titulo}</b><small>${r.texto}</small></span>${c}${e.painel?C("chevron-right","gav-chev"):u}`,l=`bill gav ${s.includes(r.tipo)?"alerta":""}`;return e.painel?n`<a class=${l} href=${e.painel+(r.caminho||"")} target="_top">${d}</a>`:n`<div class=${l}>${d}</div>`};return n`<div class="panel bills gavisos" id="gerencia-avisos">
+      </div>`}_renderGerenciaAvisos(){let e=this._ix().gerencia||{},t=e.ligado&&!e.erro&&Array.isArray(e.avisos)?e.avisos:[];if(!t.length)return u;let a={email:"mail",whatsapp:"message-circle",senha:"lock",erro:"circle-alert",venceu:"triangle-alert",vence:"calendar",valores:"clock",indices:"trending-up",beneficio:"gift",beneficio_para:"triangle-alert"},s=["erro","venceu","beneficio_para"],i=r=>{let c=r.valor!=null?n`<span class="gav-n">${Oe(r.valor,!1)}</span>`:r.dias!=null?n`<span class="gav-n late">${r.dias}<small>${r.dias===1?"dia":"dias"}</small></span>`:r.n?n`<span class="gav-n">${r.n}</span>`:u,d=n`<span class="bill-due gav-ic">${C(a[r.tipo]||"info")}</span><span class="bill-tx"><b>${r.titulo}</b><small>${r.texto}</small></span>${c}${e.painel?C("chevron-right","gav-chev"):u}`,l=`bill gav ${s.includes(r.tipo)?"alerta":""}`;return e.painel?n`<a class=${l} href=${e.painel+(r.caminho||"")} target="_top">${d}</a>`:n`<div class=${l}>${d}</div>`};return n`<div class="panel gavisos" id="gerencia-avisos">
         ${this._panelHead("triangle-alert","gold","Avisos do GerencIA",String(t.length))}
         ${J(t,r=>r.id,i)}
       </div>`}_renderHomePanel(){if(this._awayNow&&this._awayNow())return u;let e=this._ix(),t=e.routines||[],a=t.length&&t.every(p=>p.done)&&!this._choresHold?[]:t,s=(e.maint||[]).filter(p=>p.state!=="ok"),i=(e.maint||[]).length;if(!a.length&&!s.length)return i?n`<button class="hint-card maint-ok" @click=${()=>this._openSheet("maint",{})}>${C("wrench")}<span>Manutenção da casa em dia · ${F(i,"item","itens")}</span>${C("chevron-right")}</button>`:u;let r=a.filter(p=>p.done).length,c=new Date(this._now),d=xt(a.filter(p=>!p.done),c),l=a.filter(p=>p.done),h=p=>n`<div class="chore ${p.done?"done":""} ${p.done&&p.done.skipped?"skipped":""}">

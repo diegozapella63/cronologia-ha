@@ -42,6 +42,7 @@ describe("Agora › Avisos do GerencIA", () => {
     assert.equal((h.match(/href="\/app\/a1b2c3d4_gerencia\/beneficios"/g) || []).length, 1);
     assert.equal((h.match(/target="_top"/g) || []).length, 4);
     assert.equal((h.match(/class="bill gav alerta"/g) || []).length, 1, "what went wrong in red: the investment that ended");
+    assert.doesNotMatch(h, /class="panel bills/, "a card of its own: .panel.bills is only the one of the bills (1.79.1)");
   });
   it("outside Home Assistant (no painel): the alerts, without links", () => {
     const h = render(new App({ ligado: true, contas: [], avisos: AVISOS.slice(0, 1), painel: null })._renderGerenciaAvisos()).html;

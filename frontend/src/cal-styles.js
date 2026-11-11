@@ -1843,7 +1843,12 @@ export const calStyles = css`
   .panel-foot.plain {
     margin-top: 4px;
   }
-  /* Avisos do GerencIA (1.79.0): as linhas das contas, com o ícone no lugar do dia */
+  /* Avisos do GerencIA (1.79.0): as linhas das contas, com o ícone no lugar do dia (um card à parte: .panel.bills é só o
+     das contas) */
+  .panel.gavisos {
+    padding: 0 0 4px;
+    overflow: hidden;
+  }
   a.bill.gav {
     color: inherit;
     text-decoration: none;
