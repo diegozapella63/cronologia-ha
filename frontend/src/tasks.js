@@ -362,7 +362,7 @@ export const TasksMixin = (Base) =>
         ${this._renderModelChips("tarefa")}
         <label class="field">
           <span class="flabel">Tarefa</span>
-          <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder="Ex.: Levar o carro na revisão" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveTodoForm())}></textarea>
+          <textarea class="ev-title-input grow" rows="1" .value=${f.title} placeholder="Ex.: Levar o carro na revisão" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveTodoForm())}></textarea>
         </label>
         <div class="field">
           <span class="flabel">Lista do ResolvIA</span>

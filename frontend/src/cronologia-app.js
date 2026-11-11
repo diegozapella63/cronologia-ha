@@ -2921,7 +2921,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       ${f.mode === "add" && this._aiOn() ? this._renderImportTiles() : nothing}
       <label class="field">
         <span class="flabel">Título</span>
-        <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder="Ex.: Dentista, Reunião, Aniversário" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveForm())}></textarea>
+        <textarea class="ev-title-input grow" rows="1" .value=${f.title} placeholder="Ex.: Dentista, Reunião, Aniversário" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveForm())}></textarea>
       </label>
       ${targets.length > 1
         ? html`<div class="field">
@@ -2965,7 +2965,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       ${this._app("event_details", false) === true || f.details
         ? html`<label class="field">
               <span class="flabel">Local</span>
-              <input type="text" .value=${f.location} placeholder="Endereço, sala ou link" @input=${(e) => this._setForm({ location: e.target.value })} />
+              <textarea class="grow" rows="1" .value=${f.location} placeholder="Endereço, sala ou link" @keydown=${(e) => e.key === "Enter" && !e.shiftKey && e.preventDefault()} @input=${(e) => this._setForm({ location: e.target.value })}></textarea>
             </label>
             <label class="field">
               <span class="flabel">Notas</span>
@@ -3063,7 +3063,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
             (it, i) => html`<div class="rv-card ${it.on ? "" : "off"}">
               <div class="rv-top">
                 <button class="check ${it.on ? "on" : ""}" role="checkbox" aria-checked=${it.on ? "true" : "false"} aria-label="Incluir" @click=${() => this._setItem(i, { on: !it.on })}>${icon("check")}</button>
-                <input class="rv-title" type="text" .value=${it.title} aria-label="Título" @input=${(e) => this._setItem(i, { title: e.target.value })} />
+                <textarea class="rv-title" rows="1" data-size="off" .value=${it.title} aria-label="Título" @keydown=${(e) => e.key === "Enter" && !e.shiftKey && e.preventDefault()} @input=${(e) => this._setItem(i, { title: e.target.value })}></textarea>
                 <button class="icon-btn mini" aria-label="Remover" @click=${() => this._setForm({ items: f.items.filter((_, j) => j !== i) })}>${icon("x")}</button>
               </div>
               <div class="rv-when">

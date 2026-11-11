@@ -85,9 +85,16 @@ async def main():
         await a.locator(".sheet .pick", has_text="−10").click()
         await a.locator(".sheet .btn.primary").click()
         await wait_for(lambda: dms()[0]["points"] == 10, "edit the points")
-        # new one from the form
+        # new one from the form; 1.77.0: Novo demérito at the width of the card on the phone
+        nw = await cfg.locator(".btn", has_text="Novo demérito").evaluate("(b) => { const p = b.parentElement, cs = getComputedStyle(p); return [Math.round(b.getBoundingClientRect().width), Math.round(p.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)), innerWidth]; }")
+        check(nw[2] >= 1000 or abs(nw[0] - nw[1]) <= 2, f"Novo demérito at the width of the card ({nw})")
         await cfg.locator(".btn", has_text="Novo demérito").click(); await A.wait_for_timeout(300)
-        await a.locator(".sheet input[type=text]").fill("Roupa no chão")
+        # 1.77.0: O que foi shows all of the text (a box that grows, and the corner makes it bigger)
+        await a.locator(".sheet textarea.grow").fill("Toalha molhada na cama, nas bancadas ou na mesa da sala de jantar (na hora)")
+        await A.wait_for_timeout(200)
+        grown = await a.locator(".sheet textarea.grow").evaluate("(e) => [e.scrollHeight <= e.clientHeight + 2, e.clientHeight > 50, getComputedStyle(e).resize]")
+        check(grown[0] and grown[1] and grown[2] == "vertical", f"O que foi: a long text shows all of it ({grown})")
+        await a.locator(".sheet textarea.grow").fill("Roupa no chão")
         await a.locator(".sheet .pick", has_text="−3").click()
         await A.screenshot(path=f"{SP}/shots/crdm-sheet.png")
         await a.locator(".sheet .btn.primary").click()

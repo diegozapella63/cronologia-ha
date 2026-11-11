@@ -10,6 +10,8 @@ import { timeField } from "./whenpick.js";
 
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
+// a text of one line in a box that shows all of it (1.77.0): Enter doesn't break the line
+const oneLine = (e) => e.key === "Enter" && !e.shiftKey && e.preventDefault();
 
 const P_COLORS = ["turquesa", "rosa", "laranja", "lilas", "verde", "azul", "ouro", "coral", "menta", "indigo"];
 const initial = (name) => (name || "?").trim().charAt(0).toUpperCase();
@@ -389,12 +391,12 @@ export const RewardsMixin = (Base) =>
         ${f.mode === "todos"
           ? html`<label class="field" style="margin-top:14px">
               <span class="flabel">Quem fizer mais pontos ganha</span>
-              <input type="text" .value=${f.shared || ""} placeholder="Ex.: escolher o restaurante de domingo" maxlength="200" @input=${(e) => this._setForm({ shared: e.target.value })} />
+              <textarea class="grow" rows="1" .value=${f.shared || ""} placeholder="Ex.: escolher o restaurante de domingo" maxlength="200" @keydown=${oneLine} @input=${(e) => this._setForm({ shared: e.target.value })}></textarea>
             </label>`
           : html`${s.participants.map(
                 (n, i) => html`<label class="field" style=${i ? "" : "margin-top:14px"}>
                   <span class="flabel">Se ${n} vencer</span>
-                  <input type="text" .value=${(f.per && f.per[n]) || ""} placeholder=${examples[i % examples.length]} maxlength="200" @input=${(e) => this._setForm({ per: { ...this._form.per, [n]: e.target.value } })} />
+                  <textarea class="grow" rows="1" .value=${(f.per && f.per[n]) || ""} placeholder=${examples[i % examples.length]} maxlength="200" @keydown=${oneLine} @input=${(e) => this._setForm({ per: { ...this._form.per, [n]: e.target.value } })}></textarea>
                 </label>`,
               )}
               <span class="field-hint">${icon("info")}<span>Quem vencer ganha o seu prêmio. Empate: ninguém leva.</span></span>`}
@@ -630,7 +632,7 @@ export const RewardsMixin = (Base) =>
       return html`${this._sheetHead(f.mode === "edit" ? "Editar demérito" : "Novo demérito")}
         <label class="field">
           <span class="flabel">O que foi</span>
-          <input type="text" .value=${f.title || ""} placeholder="Ex.: Toalha molhada na cama" maxlength="80" @input=${(e) => this._setForm({ title: e.target.value })} />
+          <textarea class="grow" rows="1" .value=${f.title || ""} placeholder="Ex.: Toalha molhada na cama" maxlength="80" @keydown=${oneLine} @input=${(e) => this._setForm({ title: e.target.value })}></textarea>
         </label>
         <div class="field">
           <span class="flabel">Quantos pontos tira</span>
@@ -664,7 +666,7 @@ export const RewardsMixin = (Base) =>
       const s = this._score() || { participants: [] };
       return html`${this._sheetHead("Pontos avulsos")}
         <p class="sheet-note top">Para o que não está na agenda.</p>
-        <label class="field"><span class="flabel">O que foi feito</span><input type="text" id="ex-title" .value=${f.title} placeholder="Ex.: Lavou o carro" maxlength="120" @input=${(e) => this._setForm({ title: e.target.value })} /></label>
+        <label class="field"><span class="flabel">O que foi feito</span><textarea class="grow" rows="1" id="ex-title" .value=${f.title} placeholder="Ex.: Lavou o carro" maxlength="120" @keydown=${oneLine} @input=${(e) => this._setForm({ title: e.target.value })}></textarea></label>
         <div class="field"><span class="flabel">Quem fez</span>
           <div class="chip-row">${s.participants.map((p) => html`<button class="pick person ${f.who === p ? "on" : ""}" @click=${() => this._setForm({ who: p })}><span class="avatar sm">${initial(p)}</span><span>${p}</span></button>`)}</div>
         </div>

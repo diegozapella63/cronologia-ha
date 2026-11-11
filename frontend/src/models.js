@@ -1222,7 +1222,7 @@ export const ModelsMixin = (Base) =>
         ${f.mode === "add" ? this._renderModelChips(K) : nothing}
         <label class="field">
           <span class="flabel">${titles[0]}</span>
-          <textarea class="ev-title-input" rows="1" .value=${f.title} placeholder=${titles[1]} @input=${(e) => this._setForm({ title: e.target.value })}></textarea>
+          <textarea class="ev-title-input grow" rows="1" .value=${f.title} placeholder=${titles[1]} @input=${(e) => this._setForm({ title: e.target.value })}></textarea>
         </label>
         ${body}
         ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este item se repete.</span></div>` : nothing}

@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.77.0
+
+- **Campos que mostram o texto todo**: o **O que foi** do demérito, os prêmios, o **O que foi feito** dos pontos avulsos, o **Local** do evento e os títulos crescem com o texto (nada cortado) e aumentam puxando o canto, como nos outros apps da família.
+- **Botões na largura do cartão** no celular: **Novo demérito**, **Tarefa com pontos** e **Pontos avulsos** (os dois dividem a linha) e **Verificar de novo**.
+
 ## 1.76.0
 
 - **Casa ou Bens**: no **Adicionar › Tarefa** e na **Manutenção**, antes dos cômodos, escolha **Casa** ou **Bens** (com o ResolvIA 2.62.0). Na Casa aparecem os cômodos da casa (o **Bens** do InventarIA não é mais um cômodo da lista) e os equipamentos dela; em **Bens**, os bens do InventarIA (carro, casa…).

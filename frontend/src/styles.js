@@ -2746,8 +2746,17 @@ export const extraStyles = css`
     display: flex;
     margin: 14px 0 6px;
   }
+  /* Verificar de novo (IA, Falar): the width of the card on the phone, like the buttons of Dados (1.77.0) */
   .ai-actions .btn {
-    flex: none;
+    flex: 1 1 100%;
+    width: 100%;
+    min-height: 50px;
+  }
+  @media (min-width: 1000px) {
+    .ai-actions .btn {
+      flex: none;
+      width: 250px;
+    }
   }
   .steps-box {
     margin: 10px 0 14px;

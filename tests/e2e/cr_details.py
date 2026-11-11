@@ -74,7 +74,7 @@ async def main():
         labels = [t.strip() for t in await sheet.locator(".flabel").all_inner_texts()]
         check("Local" in labels and "Notas" in labels, "on: Local and Notas in the form")
         await sheet.locator(".ev-title-input").fill("Reunião do condomínio")
-        await sheet.locator("input[placeholder='Endereço, sala ou link']").fill("Salão de festas")
+        await sheet.locator("textarea[placeholder='Endereço, sala ou link']").fill("Salão de festas")
         await sheet.locator(".btn.primary", has_text="Criar evento").click()
         await wait_for(lambda: "Salão de festas" in fake_log(), "the place is saved")
 
@@ -87,7 +87,7 @@ async def main():
         await a.locator(".ev-row", has_text="Reunião do condomínio").first.click(); await A.wait_for_timeout(400)
         await sheet.locator(".btn", has_text="Editar").click(); await A.wait_for_timeout(400)
         labels = [t.strip() for t in await sheet.locator(".flabel").all_inner_texts()]
-        check("Local" in labels and await sheet.locator("input[placeholder='Endereço, sala ou link']").input_value() == "Salão de festas", "off: an event that has a place keeps showing it")
+        check("Local" in labels and await sheet.locator("textarea[placeholder='Endereço, sala ou link']").input_value() == "Salão de festas", "off: an event that has a place keeps showing it")
         await sheet.locator(".btn.outline", has_text="Cancelar").click(); await A.wait_for_timeout(300)
         await a.locator(".ev-row", has_text="Aula de violão").first.click(); await A.wait_for_timeout(400)
         await sheet.locator(".btn", has_text="Editar").click(); await A.wait_for_timeout(400)

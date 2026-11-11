@@ -1174,6 +1174,23 @@ export const calStyles = css`
     font-weight: 500;
     color: var(--rv-text-2);
   }
+  /* 1.77.0: a text of one line that can be long (a title, a demérito, a prize, a place) shows all of it, growing with
+     the text (and the corner makes it bigger, textareas.js) */
+  .field textarea.grow,
+  textarea.rv-title {
+    field-sizing: content;
+    min-height: 50px;
+    max-height: 40vh;
+  }
+  textarea.rv-title {
+    min-height: 0;
+    resize: none;
+    line-height: 1.35;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--rv-text);
+  }
   .ev-title-input {
     font-size: 18px !important;
     font-weight: 600;
@@ -2929,10 +2946,24 @@ export const calStyles = css`
     margin-top: 4px;
     border-top: 1px solid var(--rv-line);
   }
+  /* 1.77.0: Novo demérito, Tarefa com pontos and Pontos avulsos at the width of the card on the phone (two share the line),
+     250 px on the computer, like the other buttons of the family */
+  .score-actions {
+    flex-wrap: wrap;
+  }
   .score-actions .btn {
-    min-height: 42px;
-    font-size: 14px;
-    padding: 0 10px;
+    flex: 1 1 calc(50% - 4px);
+    min-width: fit-content;
+    min-height: 50px;
+    font-size: 15px;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+  @media (min-width: 1000px) {
+    .score-actions .btn {
+      flex: none;
+      width: 250px;
+    }
   }
   .panel.score-today .empty-line {
     padding: 4px 16px 8px;
