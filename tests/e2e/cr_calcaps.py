@@ -96,7 +96,7 @@ async def main():
         # from the Google calendar to the local one
         await open_ev("Consulta do Theo")
         await sheet.locator(".btn", has_text="Editar").click(); await A.wait_for_timeout(500)
-        check("Levar a carteirinha" in await sheet.locator("textarea").nth(1).input_value(), "an event with notes shows them (Local e notas off)")
+        check("Levar a carteirinha" in await sheet.locator('textarea[placeholder^="Detalhes"]').input_value(), "an event with notes shows them (Local e notas off)")
         await sheet.locator(".pick.list", has_text="Pessoal").click()
         await sheet.locator(".btn.primary", has_text="Salvar").click()
         await wait_for(lambda: evs("calendar.familia", "Consulta do Theo") == [] and evs("calendar.pessoal", "Consulta do Theo")[0].get("description") == "Levar a carteirinha", "from Google to Pessoal, with its notes")
