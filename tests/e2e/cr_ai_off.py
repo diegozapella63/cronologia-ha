@@ -63,6 +63,9 @@ async def main():
         # AI on by default: Novo shows the import strip
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(400)
         check(await a.locator(".sheet .imp-tile").count() == 3, "AI on: Novo has Colar mensagem, Escolher fotos, Digitalizar")
+        # 1.75.0: no notes that only take room (the gallery one photo at a time, what the AI finds)
+        txt = await a.locator(".sheet").inner_text()
+        check("uma foto por vez" not in txt and "a IA encontra" not in txt and "Você confere" not in txt, "AI on: no notes under the tiles")
         await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(400)
         # off
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)

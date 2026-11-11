@@ -1525,7 +1525,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       <div class="tabs">
         ${tab("now", "", "Agora", "clock-3")} ${tab("calendar", "/calendario", "Calendário", "calendar-days")}
         <button class="tab fab" @click=${() => this._openForm({ date: view.name === "calendar" ? this._cursor : null })} aria-label="Adicionar">
-          <span class="pill">${icon("plus")}</span><span>Adicionar</span>
+          <span class="pill">${icon("plus")}</span>
         </button>
         ${tab(...this._fourthTab())} ${tab("more", "/mais", "Mais", "ellipsis")}
       </div>
@@ -1802,7 +1802,6 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   _renderRow(e, day, { showCal = true } = {}) {
     const now = this._now;
     const past = e.end.getTime() <= now;
-    const live = e.start.getTime() <= now && e.end.getTime() > now && !e.allDay;
     const cal = this._cal(e.cal);
     let time;
     if (e.allDay) {
@@ -1816,6 +1815,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     }
     const k = e.kind;
     const done = e.todo ? e.todo.done : k ? k.kind !== "manutencao" && this._checkOf(e) : this._checkOf(e);
+    // happening now (the background of the color): not when already marked Feito (1.75.0)
+    const live = !done && e.start.getTime() <= now && e.end.getTime() > now && !e.allDay;
     // a dose of a day that is over, not taken: an X where the check would be
     const missed = !done && k && k.kind === "remedio" && startOfDay(e.start) < startOfDay(new Date(now));
     const extra = k ? (k.kind === "remedio" ? [k.dose, k.who] : k.kind === "conta" && k.value != null ? [this._money(k.value)] : [k.who]) : [];
@@ -2637,7 +2638,6 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   /** Novo › Evento: Colar mensagem / Escolher fotos / Digitalizar com IA, dashed tiles like the InventarIA and the ResolvIA. */
   _renderImportTiles() {
     const ai = this._ai || {};
-    const android = this._isHaAndroid();
     const camOk = this._camOk();
     const tile = (start, ic, text, off = false, note = "") => html`<button type="button" class="imp-tile ${note ? "no-cam" : ""}" ?disabled=${off} @click=${() => this._openImport(start)}>${icon(ic)}<span>${text}</span>${note ? html`<small>${note}</small>` : nothing}</button>`;
     return html`<div class="field imp-field">
@@ -2647,15 +2647,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           ${tile("photos", "images", "Escolher fotos", !ai.images)}
           ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images, camOk ? "" : "Precisa de https")}
         </div>
-        ${ai.images && !camOk
-          ? html`<p class="imp-help">Em http a câmera não abre aqui: tire a foto pelo celular e use Escolher fotos.</p>`
-          : android && ai.images
-            ? html`<p class="imp-help">No app do Home Assistant, a galeria manda uma foto por vez.</p>`
-            : nothing}
+        ${ai.images && !camOk ? html`<p class="imp-help">Em http a câmera não abre aqui: tire a foto pelo celular e use Escolher fotos.</p>` : nothing}
       </div>
-      <div class="ai-box">${icon("scan-text")}<span>${ai.ready
-        ? "Com uma mensagem ou foto, a IA encontra os eventos, com data, horário e local. Você confere antes de criar."
-        : "Para ler mensagens e fotos, configure a IA do Home Assistant em Mais › Configurações › Integrações."}</span></div>`;
+      ${ai.ready ? nothing : html`<div class="ai-box">${icon("scan-text")}<span>Para ler mensagens e fotos, configure a IA do Home Assistant em Mais › Configurações › Integrações.</span></div>`}`;
   }
 
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
@@ -3103,13 +3097,12 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     }
     return html`
       ${this._sheetHead("Trazer eventos")}
-      <p class="sheet-note top">${aiOn ? "De uma mensagem, de uma foto ou de um arquivo .ics." : "De um arquivo .ics."}</p>
       <div class="imp-options">
         ${aiOn ? html`<button class="imp-opt" ?disabled=${!ai.ready} @click=${() => (this._setForm({ step: "text", error: null }), this._focusSheetText())}>
           <span class="imp-ic">${icon("message-square-text")}</span><span class="imp-tx"><b>Colar mensagem</b><small>WhatsApp, e-mail, convite</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._pickFiles("photos")}>
-          <span class="imp-ic">${icon("images")}</span><span class="imp-tx"><b>Escolher fotos</b><small>${this._isHaAndroid() ? "Prints e fotos da galeria, uma por vez" : "Prints e fotos da galeria (até 6)"}</small></span>${icon("chevron-right")}
+          <span class="imp-ic">${icon("images")}</span><span class="imp-tx"><b>Escolher fotos</b><small>Prints e fotos da galeria</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._openCamera()}>
           <span class="imp-ic">${icon("scan-text")}</span><span class="imp-tx"><b>Digitalizar com IA</b><small>${this._camOk() ? "Fotografe um convite ou cartão de consulta" : "Neste endereço (http) a câmera não abre: precisa de https"}</small></span>${icon("chevron-right")}

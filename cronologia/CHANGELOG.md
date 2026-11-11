@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.75.0
+
+- **Adicionar só com o +**: o botão do meio da barra de baixo fica só com o ícone, sem o texto embaixo, como em todos os apps da família.
+- **Menos avisos na tela**: saíram "No app do Home Assistant, a galeria manda uma foto por vez", o quadro "a IA encontra os eventos… Você confere antes de criar" e a linha de cima do Trazer eventos.
+- No **Calendário**, um compromisso que está acontecendo agora e já foi marcado como **Feito** perde o fundo colorido de "agora": fica como os outros feitos.
+
 ## 1.74.0
 
 - **Férias**: o card diz só o que fica pausado (rotinas, tarefas e manutenção).

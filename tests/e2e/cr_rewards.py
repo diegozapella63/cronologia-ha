@@ -63,7 +63,12 @@ async def main():
         await a.locator(".panel.meds").wait_for(timeout=10000)
         # 1.56.0: Recompensas off (as it starts): Rotinas is the tab in its place, and leaves the menu of Mais
         tabs = await a.locator("nav .tab").all_inner_texts()
-        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Adicionar", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        # 1.75.0: Adicionar only with the + (the name in the aria-label), in every app of the family
+        fab = a.locator("nav .tab.fab")
+        check(await fab.get_attribute("aria-label") == "Adicionar" and await fab.locator("svg").count() == 1, "Adicionar: only the +, its name for the screen reader")
+        fb, tb = await fab.locator(".pill").bounding_box(), await a.locator("nav .tab", has_text="Agora").bounding_box()
+        check(abs((fb["y"] + fb["height"] / 2) - (tb["y"] + tb["height"] / 2)) <= 3, f"the + in the middle of the bar ({fb}, {tb})")
         await a.locator("nav .tab", has_text="Rotinas").click(); await A.wait_for_timeout(500)
         check(await a.locator(".routines-tab .cat-sec").count() >= 1 and await a.locator(".uplink").count() == 0 and "on" in (await a.locator("nav .tab", has_text="Rotinas").get_attribute("class")), "the Rotinas tab: the registered ones, lit, no ‹ Mais")
         await A.screenshot(path=f"{SP}/shots/cr-rotinas-tab.png")
@@ -87,7 +92,7 @@ async def main():
         check(sorted(sc["participants"]) == ["Aurora", "Davi"] and sc["period"] == "semana", f"the people of Home Assistant, weekly ({sc['participants']}, {sc['period']})")
         await A.wait_for_timeout(400)
         tabs = await a.locator("nav .tab").all_inner_texts()
-        check([t.strip() for t in tabs] == ["Agora", "Calendário", "Adicionar", "Recompensas", "Mais"], f"on: Recompensas back in the bar ({tabs})")
+        check([t.strip() for t in tabs] == ["Agora", "Calendário", "", "Recompensas", "Mais"], f"on: Recompensas back in the bar ({tabs})")
         await a.locator(".uplink").click(); await A.wait_for_timeout(400)
         mt = [t.strip() for t in await a.locator(".menu-row b").all_inner_texts()]
         check(mt == ["Calendários", "Rotinas", "Recompensas", "Avisos", "Férias", "Configurações", "Sobre"], f"on: Rotinas back in Mais ({mt})")
@@ -220,7 +225,7 @@ async def main():
         sens = await a.locator("#sensores").inner_text()
         check("cronologia_demerito" not in sens and "sensor.cronologia_placar" not in sens and "se vale pontos" not in sens, "off: no demérito, placar sensor nor points in the events")
         tabs = [t.strip() for t in await a.locator("nav .tab").all_inner_texts()]
-        check(tabs == ["Agora", "Calendário", "Adicionar", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
+        check(tabs == ["Agora", "Calendário", "", "Rotinas", "Mais"], f"off: Rotinas in place of Recompensas ({tabs})")
         await open_more(a, "Recompensas"); await A.wait_for_timeout(400)
         await a.locator("#placar .switch input[aria-label='Usar recompensas']").check()
         await wait_for(lambda: stored(data)["app"]["score"]["enabled"] is True and stored(data)["app"]["score"]["participants"] == ["Aurora", "Davi"] and stored(data)["app"]["score"]["period"] == "mes", "on again: the same people and period")

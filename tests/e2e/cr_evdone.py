@@ -1,4 +1,5 @@
 # CronologIA 1.24.0: Feito on any event: green in the calendar like a dose taken, out of A seguir, Desfazer.
+# 1.75.0: one happening now and marked Feito loses the background of "now" (the color of the calendar) in the list.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 RESOLVIA = _os.environ.get("E2E_RESOLVIA", "")
@@ -100,6 +101,21 @@ async def main():
         check(await far.count() == 1, "an event 5 days ahead in the list")
         await far.click(); await pg.wait_for_timeout(500)
         check("Anivers" in await sheet.inner_text() and await sheet.locator(".ev-done-btn").count() == 0, "an event days ahead: no Feito yet")
+        await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(400)
+        # 1.75.0: happening now, then marked Feito: no background of now
+        await a.locator(".tab", has_text="Agora").click(); await pg.wait_for_timeout(700)
+        h, m = map(int, (await a.locator(".panel.agenda .ev-row", has_text="Pilates").locator(".ev-time b").inner_text()).split(":"))
+        await pg.clock.set_fixed_time(at(h, m) + datetime.timedelta(minutes=10))
+        await pg.reload(); await pg.wait_for_timeout(2000)
+        await a.locator(".tab", has_text="Calendário").click(); await pg.wait_for_timeout(1000)
+        row = a.locator(".ev-row", has_text="Pilates").first
+        bg = lambda: row.evaluate("(r) => getComputedStyle(r).backgroundColor")
+        check("live" in await row.get_attribute("class") and await bg() != "rgba(0, 0, 0, 0)", f"happening now: the background of now ({await bg()})")
+        await row.click(); await pg.wait_for_timeout(500)
+        await sheet.locator(".ev-done-btn").click(); await pg.wait_for_timeout(1500)
+        row = a.locator(".ev-row", has_text="Pilates").first
+        check("done" in await row.get_attribute("class") and "live" not in await row.get_attribute("class") and await bg() == "rgba(0, 0, 0, 0)", f"marked Feito: no background of now ({await bg()})")
+        await pg.screenshot(path=f"{SP}/shots/cre-live-done.png")
         check(not errs, f"no page errors {errs[:2]}")
         await b.close()
 try: asyncio.run(main())
