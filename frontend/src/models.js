@@ -505,9 +505,8 @@ export const ModelsMixin = (Base) =>
       const routines = all.length && all.every((r) => r.done) && !this._choresHold ? [] : all;
       const maint = (ix.maint || []).filter((m) => m.state !== "ok");
       const total = (ix.maint || []).length;
-      if (!routines.length && !maint.length) {
-        return total ? html`<button class="hint-card maint-ok" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}<span>Manutenção da casa em dia · ${plural(total, "item", "itens")}</span>${icon("chevron-right")}</button>` : nothing;
-      }
+      // 1.81.1: nada para fazer hoje e a manutenção em dia: nada na tela Agora (a lista fica em Mais › Rotinas e na agenda)
+      if (!routines.length && !maint.length) return nothing;
       const done = routines.filter((r) => r.done).length;
       // the done ones stay folded (a long day has dozens): "Concluídas (n)" opens them
       const now = new Date(this._now);

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.81.1
+
+- Com as rotinas de hoje feitas e toda a manutenção em dia, a tela **Agora** não mostra mais "Manutenção da casa em dia". A lista fica em **Mais › Rotinas** e na agenda, e volta para a Agora quando um item chega perto de vencer.
+
 ## 1.81.0
 
 - **Amanhã**, ao lado do **Pular**, na tela da rotina e da manutenção: esta vez fica para amanhã, e não para a próxima (7 dias depois, na que volta 7 dias depois de feita). Sem pontos e sem entrar no "Feito em"; dá para desfazer pelo aviso. A rotina que repete pelo calendário (todo dia, toda semana) continua só com o **Pular**.

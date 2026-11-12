@@ -2026,15 +2026,6 @@ export const calStyles = css`
   .panel.chores .add-line {
     padding-left: 16px;
   }
-  .hint-card.maint-ok {
-    width: 100%;
-    text-align: left;
-    background: var(--rv-surface);
-    border: 1px solid var(--rv-line);
-  }
-  .hint-card.maint-ok > span {
-    flex: 1;
-  }
 
   /* model events in the calendar screens */
   .kind-ic {
