@@ -384,7 +384,7 @@ export const TasksMixin = (Base) =>
               ? "Essa lista não aceita prazo."
               : "Os prazos estão desligados no ResolvIA."}</span></p>`}
         ${this._renderRoomEquipFields(f, { multiRoom: true })}
-        ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
+        ${canNotes && this._app("event_details", false) === true ? html`<div class="field fold-txt"><span class="flabel">Notas${(f.notes || "").trim() ? html`<span class="fl-val">· ${clip(f.notes.trim().split("\n")[0], 40)}</span>` : nothing}</span><textarea rows="2" aria-label="Notas" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></div>` : nothing}
         <div class="sheet-actions">
           <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
           <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim() || !l} @click=${() => this._saveTodoForm()}>${icon("plus")}${f.saving ? "Salvando…" : "Criar tarefa"}</button>

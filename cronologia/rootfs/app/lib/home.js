@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, toTomorrow, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway } from "./kinds.js";
+import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, toTomorrow, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway, afterStuck, afterCopies, movedTo, addEvery } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -313,6 +313,51 @@ export class Home {
       this.onChange(this.index);
     }
     this.publishSensors().catch(() => {});
+    this.healAfter(occs).catch((err) => this.log.warn(`Rotina: ${err.message}`));
+  }
+
+  /**
+   * A routine that comes back N days after done, done here today or yesterday, whose event the calendar left on the
+   * day it was done (1.86.0; seen on a Google calendar): a copy that is also on its next date stays and this one
+   * leaves; with no copy, this one goes to its next date. Once per event and day, and not right after a move of this
+   * app (the calendar may still be showing the change).
+   */
+  async healAfter(occs) {
+    if (this.healing || Date.now() - (this.lastMove || 0) < 30000) return;
+    const today = new Date();
+    const recent = [ymd(today), ymd(addDays(today, -1))];
+    const done = Object.values(this.store.data.checks).filter((v) => v && v.moved && !v.skipped && recent.includes(v.moved.day));
+    if (!done.length) return;
+    const copies = afterCopies(occs);
+    this.healed = this.healed || new Set();
+    this.healing = true;
+    try {
+      for (const o of occs) {
+        const day = afterStuck(o.raw, o.k);
+        if (!day || !recent.includes(day)) continue;
+        if (!done.some((v) => v.moved.cal === o.cal && v.moved.day === day && (v.moved.uid === o.raw.uid || v.moved.summary === o.raw.summary))) continue;
+        // (a copy leaves once per event; a move is tried once per routine and day, whatever comes of it)
+        const copy = copies.has(o.raw);
+        const tried = copy ? `${o.cal}|${o.raw.uid}|${day}` : `${o.cal}|name:${foldText(o.raw.summary || "")}|${day}`;
+        if (this.healed.has(tried)) continue;
+        this.healed.add(tried);
+        const feat = this.features(o.cal);
+        if (copy) {
+          if (!(feat & F.DELETE)) continue;
+          await this.ha.send({ type: "calendar/event/delete", entity_id: o.cal, uid: o.raw.uid });
+          this.log.info(`Rotina: a cópia de ${o.raw.summary} que ficou em ${day} saiu do calendário`);
+        } else {
+          const event = movedTo(o.raw, addEvery(new Date(`${day}T00:00:00`), o.k.after), o.raw.description || "");
+          if (feat & F.UPDATE) await this.ha.send({ type: "calendar/event/update", entity_id: o.cal, uid: o.raw.uid, event: toHAEvent(event) });
+          else if (feat & F.CREATE && feat & F.DELETE) await this.recreate(o.cal, o.raw, event);
+          else continue;
+          this.log.info(`Rotina: ${o.raw.summary} ficou em ${day}; foi para ${event.start.slice(0, 10)}`);
+        }
+        this.refreshCalendar(o.cal);
+      }
+    } finally {
+      this.healing = false;
+    }
   }
 
   features(cal) {
@@ -703,6 +748,7 @@ export class Home {
   }
 
   async afterSkip(o, key, by) {
+    this.lastMove = Date.now();
     const { cal, raw, k } = o;
     const today = new Date();
     const event = skipNext(raw, k, today);
@@ -890,6 +936,7 @@ export class Home {
 
   /** Maintenance done today: the event moves to today + interval, with today in its history. */
   async maintDone(cal, uid, by, who = "") {
+    this.lastMove = Date.now();
     const raw = this.findRaw(cal, uid);
     if (!raw) throw coded("not_found", "Não achei essa manutenção no calendário");
     const k = parseKind(raw.description);
@@ -961,6 +1008,7 @@ export class Home {
 
   /** The event on its new date (updated, with Desfazer for 30 min; or recreated, without). Returns whether it can be undone. */
   async moveEvent(cal, raw, event) {
+    this.lastMove = Date.now();
     const before = { summary: raw.summary, start: raw.start, end: raw.end, description: raw.description || "", ...(raw.location ? { location: raw.location } : {}) };
     const feat = this.features(cal);
     if (feat & F.UPDATE) {
@@ -980,6 +1028,7 @@ export class Home {
    * in its history; the check keeps where it was, for Desfazer.
    */
   async afterDone(o, key, by, who = "") {
+    this.lastMove = Date.now();
     const { cal, raw, k } = o;
     const today = new Date();
     // already done today (the moved event marked again from the calendar): nothing to do
@@ -1033,6 +1082,7 @@ export class Home {
 
   /** Desfazer of a routine that moved: back to where it was, without today in its history. */
   async afterUndo(key, c) {
+    this.lastMove = Date.now();
     const m = c.moved;
     const raw = this.movedRaw(m);
     if (raw) {

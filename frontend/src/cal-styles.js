@@ -1221,6 +1221,10 @@ export const calStyles = css`
     padding-left: 12px;
     padding-right: 12px;
   }
+  /* Quando › Manhã, Tarde, Noite: the usual hour of each part of the day */
+  .chip-row.parts {
+    margin-top: 10px;
+  }
 
   /* ---------- import review ---------- */
   .rv-list {
@@ -1332,6 +1336,9 @@ export const calStyles = css`
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     margin: 0 0 16px;
+  }
+  .model-field > .model-strip {
+    margin: 0;
   }
   .model {
     display: flex;
@@ -4032,6 +4039,20 @@ export const calStyles = css`
   }
   .sheet .field.dobravel > .flabel::after {
     margin-left: auto;
+  }
+  /* closed: what is chosen or written, after the title */
+  .sheet .field > .flabel > .fl-val {
+    display: none;
+  }
+  .sheet .field.dobravel.shut > .flabel > .fl-val {
+    display: block;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--rv-muted);
+    font-weight: 500;
   }
   .panel.dobra.fechada > .fold-head::after,
   .sheet .field.dobravel.shut > .flabel::after {

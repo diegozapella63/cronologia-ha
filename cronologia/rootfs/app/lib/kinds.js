@@ -87,9 +87,10 @@ export function nowOrder(saved) {
 }
 
 export const PERIODS = [
-  { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5 },
-  { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12 },
-  { id: "noite", label: "Noite", when: "à noite", icon: "moon", from: 18 },
+  // at: the usual hour of each part (Quando › Manhã, Tarde, Noite of a new event; the reminder of the placar)
+  { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5, at: "09:00" },
+  { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12, at: "14:00" },
+  { id: "noite", label: "Noite", when: "à noite", icon: "moon", from: 18, at: "20:00" },
 ];
 export const periodInfo = (id) => PERIODS.find((p) => p.id === id) || null;
 const parsePeriod = (text) => {
@@ -285,7 +286,7 @@ export function maintDone(raw, k, today = new Date()) {
 }
 
 /** The event on another day: the same hour and length (an all-day one, one day), with this description. */
-function movedTo(raw, day, description) {
+export function movedTo(raw, day, description) {
   const event = { summary: raw.summary, description };
   if (raw.location) event.location = raw.location;
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw.start)) {
@@ -378,6 +379,35 @@ export function cleanAway(v) {
   return { from: v.from, to: v.to };
 }
 
+/**
+ * A routine that comes back N days after done, whose event says it was done on its own date or later ("Feito em" with
+ * that day): the calendar did not move it (1.86.0). The last day done, or "" for one that is fine.
+ */
+export function afterStuck(raw, k) {
+  if (!k || k.kind !== "rotina" || !k.after || raw.rrule) return "";
+  const h0 = (k.history || [])[0] || "";
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(raw.start || "") ? raw.start : ymdOf(new Date(raw.start));
+  return h0 && h0 >= day ? h0 : "";
+}
+
+/**
+ * The same routine that comes back N days after done, twice in a calendar: the same name and the same last day done
+ * (a copy left behind when it moved). Only the later one counts; returns the ones to leave out.
+ */
+export function afterCopies(occurrences) {
+  const keep = new Map();
+  const all = [];
+  for (const o of occurrences) {
+    const k = o.k || parseKind(o.raw.description);
+    if (!k || k.kind !== "rotina" || !k.after || o.raw.rrule || !(k.history || []).length) continue;
+    const g = `${o.cal}|${foldText(o.raw.summary || "")}|${k.history[0]}`;
+    all.push([g, o.raw]);
+    const cur = keep.get(g);
+    if (!cur || msOf(o.raw.start) > msOf(cur.start)) keep.set(g, o.raw);
+  }
+  return new Set(all.filter(([g, raw]) => keep.get(g) !== raw).map(([, raw]) => raw));
+}
+
 /** A day (YYYY-MM-DD) inside the vacation. */
 export const awayOn = (away, day) => !!(away && day >= away.from && day <= away.to);
 
@@ -401,6 +431,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
   const seenMaint = new Set();
   // routines that come back N days after being done: done today = a check that moved the event (by event)
   const movedToday = new Map();
+  const copies = afterCopies(occurrences);
   for (const [ck, v] of Object.entries(checks)) {
     if (!v || !v.moved || Date.parse(v.at) < t0) continue;
     movedToday.set(`${v.moved.cal}|${v.moved.uid}`, [ck, v]);
@@ -410,7 +441,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
   for (const o of occurrences) {
     const { cal, raw } = o;
     const k = o.k || parseKind(raw.description);
-    if (!k) continue;
+    if (!k || copies.has(raw)) continue;
     const key = o.key || occurrenceKey(cal, raw);
     const start = msOf(raw.start);
     const end = msOf(raw.end);
@@ -435,13 +466,17 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       if (seenMaint.has(`r|${id}`)) continue;
       seenMaint.add(`r|${id}`);
       if (pausedToday) continue;
-      const due = allDay ? raw.start : ymdOf(new Date(start));
-      const doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
+      // done on its own date or later and not moved by the calendar: the next time counts from that day
+      const stuck = afterStuck(raw, k);
+      const due = stuck ? ymdOf(addEvery(dateOf(stuck), k.after)) : allDay ? raw.start : ymdOf(new Date(start));
+      const dueMs = stuck ? dateOf(due).getTime() : start;
+      let doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
+      if (!doneToday && stuck === todayYmd) doneToday = [key, { by: "", kind: "rotina", at: null }];
       const common = { kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
       // skipped (Pular) and its next time is already today: it is today's, to do
-      const skippedToToday = doneToday && doneToday[1].skipped && start < t1;
+      const skippedToToday = doneToday && doneToday[1].skipped && dueMs < t1;
       if (doneToday && !skippedToToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
-      else if (start < t1) {
+      else if (dueMs < t1) {
         // due before or during the vacation: late counts from the day back
         const from = backFrom && due <= away.to ? Math.max(dateOf(due).getTime(), backFrom) : dateOf(due).getTime();
         out.routines.push({ ...base, ...common, done: null, late: Math.max(0, Math.round((t0 - from) / DAY)) });

@@ -375,6 +375,62 @@ describe("Home: routines that come back N days after done", () => {
   });
 });
 
+describe("Home: a routine the calendar left on the day it was done (1.86.0)", () => {
+  const LIXO = (h) => `#rotina\nPontos: 5\nVolta: 1 dia depois de feita\nFeito em: ${h}`;
+  const stuck = (extra = {}) => ({ uid: "lixo2", summary: "Esvaziar lixos", start: "2026-11-02", end: "2026-11-03", description: LIXO("02/11/2026, 25/10/2026"), ...extra });
+  const doneHere = { "calendar.casa|lixo1|2026-10-26": { by: "Aurora", kind: "rotina", at: new Date(NOW - 3600000).toISOString(), moved: { cal: CAL, uid: "lixo1", start: "2026-10-26", end: "2026-10-27", day: "2026-11-02", summary: "Esvaziar lixos", recreated: true } } };
+  const heal = (s) => s.home.healAfter([...s.home.occurrences()]);
+  it("alone: it goes to its next date (recreated on a Google-like calendar), once", async () => {
+    const s = setup({ events: { [CAL]: [stuck()] }, features: 3 });
+    s.store.data.checks = { ...doneHere };
+    await heal(s);
+    assert.deepEqual(s.ha.sent.map((m) => [m.type, m.uid || m.event.dtstart]), [["calendar/event/delete", "lixo2"], ["calendar/event/create", "2026-11-03"]]);
+    assert.deepEqual(parseKind(s.ha.sent[1].event.description).history, ["2026-11-02", "2026-10-25"], "its history as it was");
+    await heal(s);
+    assert.equal(s.ha.sent.length, 2, "not again");
+  });
+  it("alone on a calendar that changes events: updated to its next date", async () => {
+    const s = setup({ events: { [CAL]: [stuck()] } });
+    s.store.data.checks = { ...doneHere };
+    await heal(s);
+    assert.deepEqual(s.ha.sent.map((m) => [m.type, m.uid, m.event.dtstart]), [["calendar/event/update", "lixo2", "2026-11-03"]]);
+  });
+  it("with a copy on its next date: the one left behind leaves the calendar", async () => {
+    const next = stuck({ uid: "lixo3", start: "2026-11-03", end: "2026-11-04" });
+    const s = setup({ events: { [CAL]: [stuck(), next] }, features: 3 });
+    s.store.data.checks = { ...doneHere };
+    await heal(s);
+    assert.deepEqual(s.ha.sent.map((m) => [m.type, m.uid]), [["calendar/event/delete", "lixo2"]]);
+  });
+  it("nothing without a Feito here, right after a move of the app, or on a read-only calendar", async () => {
+    const a = setup({ events: { [CAL]: [stuck()] }, features: 3 });
+    await heal(a);
+    assert.equal(a.ha.sent.length, 0, "no Feito here: left as it is");
+    const b = setup({ events: { [CAL]: [stuck()] }, features: 3 });
+    b.store.data.checks = { ...doneHere };
+    b.home.lastMove = Date.now() - 5000;
+    await heal(b);
+    assert.equal(b.ha.sent.length, 0, "the calendar may still be showing the move");
+    const c = setup({ events: { [CAL]: [stuck()] }, features: 1 });
+    c.store.data.checks = { ...doneHere };
+    await heal(c);
+    assert.equal(c.ha.sent.length, 0, "read-only");
+    const d = setup({ events: { [CAL]: [stuck({ start: "2026-10-31", end: "2026-11-01", description: LIXO("31/10/2026") })] }, features: 3 });
+    d.store.data.checks = { ...doneHere };
+    await heal(d);
+    assert.equal(d.ha.sent.length, 0, "done here on another day: not this one");
+  });
+  it("runs after the index is built (and a failure is only logged)", async () => {
+    const s = setup({ events: { [CAL]: [stuck()] }, features: 3 });
+    s.store.data.checks = { ...doneHere };
+    s.ha.fail = (m) => m.type === "calendar/event/delete";
+    s.home.rebuild();
+    await flushPromises();
+    assert.equal(s.ha.sent[0].type, "calendar/event/delete");
+    assert.equal(s.home.healing, false);
+  });
+});
+
 describe("Home: Pular", () => {
   it("a calendar routine: skipped, no points, nothing else", async () => {
     const raw = lixo();

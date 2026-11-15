@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.86.0
+
+- **Adicionar**: o tipo (Evento, Tarefa, Remédio…) ganhou o título **Tipo** e fecha num toque nele, como o Calendário. **Repetir**, **Local** e **Notas** (e as **Observações** dos modelos) também fecham pelo título. Fechado, o escolhido ou o escrito aparece ao lado do título (Tipo · Evento, Local · Salão de festas), e o aparelho lembra o que ficou fechado.
+- **Adicionar › Quando**: **Manhã**, **Tarde** e **Noite** põem a hora de cada parte do dia (9:00, 14:00 e 20:00), mantendo a duração escolhida.
+- **Rotina que volta depois de feita**: quando o calendário (visto no Google) deixa no dia a rotina já feita, ela aparece **feita** no Calendário, como na Agora, e não pendente com os botões de quem fez. O app tira do calendário essa cópia que ficou (ou, se ela for a única, leva para a próxima data).
+
 ## 1.85.0
 
 - **Mais › Recompensas**: o cartão das opções do placar ganhou o título **Placar** e fecha e abre num toque nele, como os outros cartões.

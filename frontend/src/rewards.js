@@ -991,7 +991,7 @@ export const RewardsMixin = (Base) =>
      * Testar no meu celular.
      */
     _renderScoreRemind(s) {
-      const SLOTS = { manha: "09:00", tarde: "14:00", noite: "20:00" };
+      const SLOTS = Object.fromEntries(PERIODS_DAY.map((p) => [p.id, p.at]));
       const cur = periodOfHour(Number(s.remind.slice(0, 2)));
       // the phones are the ones tied to each person in Home Assistant (a child without one: the person chosen in Avisos)
       const people = this._ix().people || [];

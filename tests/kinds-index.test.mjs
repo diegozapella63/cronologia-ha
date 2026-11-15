@@ -3,7 +3,7 @@
 import { at, isoLocal, addDaysYmd } from "./helpers.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildIndex, occurrenceKey, buildDescription } from "../cronologia/rootfs/app/lib/kinds.js";
+import { buildIndex, occurrenceKey, buildDescription, afterStuck } from "../cronologia/rootfs/app/lib/kinds.js";
 
 const NOW = at(2026, 11, 2, 14, 0).getTime(); // Monday, 14:00 (afternoon)
 const TODAY = "2026-11-02";
@@ -190,7 +190,8 @@ describe("buildIndex: routines that come back N days after done", () => {
     assert.equal(r.points, 10);
   });
   it("late ones stay until done, with the days late", () => {
-    const ix = index([due("2026-10-30")]);
+    // (last done before its date: one done on its own date would count from that day, 1.86.0)
+    const ix = index([allDay("Arrumar a cama", "2026-10-30", AFTER().replace("30/10/2026", "28/10/2026"))]);
     assert.equal(ix.routines[0].late, 3);
     assert.equal(ix.routines[0].done, null);
   });
@@ -247,6 +248,54 @@ describe("buildIndex: routines that come back N days after done", () => {
     const ix = index([moved], { checks: { [keyOf(before)]: c } });
     assert.equal(ix.routines.length, 1);
     assert.deepEqual(ix.routines[0].done, c);
+  });
+  // 1.86.0: an event the calendar left on the day it was done (its "Feito em" already has that day)
+  const STUCK = (h) => `#rotina\nPontos: 5\nVolta: 1 dia depois de feita\nFeito em: ${h}`;
+  it("left on today with today in its history: done today (by the check), next tomorrow", () => {
+    const stuck = allDay("Esvaziar lixos", TODAY, STUCK("02/11/2026, 25/10/2026"), { uid: "stuck" });
+    const c = check(at(2026, 11, 2, 9), { kind: "rotina", moved: { cal: CAL, uid: "old-uid", day: TODAY, summary: "Esvaziar lixos", recreated: true } });
+    const ix = index([stuck], { checks: { "calendar.casa|old-uid|2026-10-26": c } });
+    assert.equal(ix.routines.length, 1);
+    assert.deepEqual(ix.routines[0].done, c);
+    assert.equal(ix.routines[0].next, "2026-11-03");
+  });
+  it("left on today, no check: done by its history", () => {
+    const ix = index([allDay("Esvaziar lixos", TODAY, STUCK("02/11/2026"), { uid: "stuck" })]);
+    assert.equal(ix.routines.length, 1);
+    assert.equal(ix.routines[0].done.by, "");
+    assert.equal(ix.routines[0].late, 0);
+  });
+  it("left yesterday on the day it was done: today's, not late (1 day after)", () => {
+    const ix = index([allDay("Esvaziar lixos", "2026-11-01", STUCK("01/11/2026"), { uid: "stuck" })]);
+    assert.equal(ix.routines.length, 1);
+    assert.equal(ix.routines[0].done, null);
+    assert.equal(ix.routines[0].late, 0);
+    assert.equal(ix.routines[0].next, TODAY);
+  });
+  it("left on today and also on its next date: one routine, the later one", () => {
+    const stuck = allDay("Esvaziar lixos", TODAY, STUCK("02/11/2026"), { uid: "stuck" });
+    const next = allDay("Esvaziar lixos", "2026-11-03", STUCK("02/11/2026"), { uid: "next" });
+    const c = check(at(2026, 11, 2, 9), { kind: "rotina", moved: { cal: CAL, uid: "old-uid", day: TODAY, summary: "Esvaziar lixos", recreated: true } });
+    const ix = index([stuck, next], { checks: { k: c } });
+    assert.deepEqual(ix.routines.map((r) => [r.uid, !!r.done]), [["next", true]]);
+    assert.deepEqual(ix.catalog.map((r) => r.uid), ["next"]);
+  });
+  it("two routines of the same name done on different days are both kept", () => {
+    const a = allDay("Regar", TODAY, STUCK("01/11/2026"), { uid: "a", raw: { description: STUCK("01/11/2026").replace("Pontos: 5", "Quem faz: Davi") } });
+    const b = allDay("Regar", "2026-11-03", STUCK("02/11/2026"), { uid: "b" });
+    const ix = index([a, b]);
+    assert.equal(ix.catalog.length, 2);
+  });
+  it("afterStuck: only a routine that comes back after done, on or before its last day done", () => {
+    const k = (h) => ({ kind: "rotina", after: { n: 1, unit: "dias" }, history: h });
+    assert.equal(afterStuck({ start: TODAY }, k([TODAY])), TODAY);
+    assert.equal(afterStuck({ start: "2026-11-01" }, k([TODAY])), TODAY);
+    assert.equal(afterStuck({ start: "2026-11-03" }, k([TODAY])), "");
+    assert.equal(afterStuck({ start: TODAY }, k([])), "");
+    assert.equal(afterStuck({ start: isoLocal(at(2026, 11, 2, 7)) }, k([TODAY])), TODAY);
+    assert.equal(afterStuck({ start: TODAY, rrule: "FREQ=DAILY" }, k([TODAY])), "");
+    assert.equal(afterStuck({ start: TODAY }, { kind: "manutencao", every: { n: 1, unit: "dias" }, history: [TODAY] }), "");
+    assert.equal(afterStuck({ start: TODAY }, null), "");
   });
   it("a recreated check does not match another calendar with the same name", () => {
     const moved = { ...due("2026-11-04", { uid: "new-uid" }), cal: "calendar.outro" };

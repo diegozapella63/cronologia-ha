@@ -3,7 +3,7 @@
 // app and the "Avisos" settings. Mixed into <cronologia-app>.
 import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed, afterStuck } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { placeTags, roomsShown } from "./place-tags.js";
 import { timeField } from "./whenpick.js";
@@ -132,10 +132,30 @@ export const ModelsMixin = (Base) =>
       return this._home || { meds: [], routines: [], bills: [], maint: [], checks: {}, people: [], caregivers: [], gerencia: { ligado: false, contas: [] } };
     }
 
+    /**
+     * A routine that comes back N days after done whose event stayed on a day it was already done (its "Feito em" says
+     * so; the calendar did not move it): the day done, or "". Shown as done there, as on Agora (1.86.0).
+     */
+    _afterDoneOn(e) {
+      return e && e.kind && e.raw && e.raw.start ? afterStuck(e.raw, e.kind) : "";
+    }
+
+    /** That routine's Feito: today's (and its key, for Desfazer), or the day of its history; null for any other. */
+    _afterDone(e) {
+      const day = this._afterDoneOn(e);
+      if (!day) return null;
+      const ix = this._ix().routines || [];
+      const r = ix.find((x) => x.cal === e.cal && x.uid === e.uid && x.done) || ix.find((x) => x.cal === e.cal && x.summary === e.summary && x.done);
+      return r ? { chk: r.done, key: r.key } : { chk: { at: null, by: "", day }, key: null };
+    }
+
     _checkOf(e) {
       if (e.gerencia) return e.gerencia.pago ? { at: null, by: "" } : null;
       if (e.todo) return e.todo.done ? { at: null, by: "" } : null;
-      return this._ix().checks[e.key] || null;
+      const c = this._ix().checks[e.key];
+      if (c) return c;
+      const a = this._afterDone(e);
+      return a ? a.chk : null;
     }
 
     /**
@@ -677,9 +697,14 @@ export const ModelsMixin = (Base) =>
       // a routine that comes back N days after done, done or skipped today: the event is already on its
       // next date (another key); today's check is found by the event, and Desfazer uses its key
       let doneKey = null;
-      if (!chk && k.kind === "rotina" && k.after && !e.rrule) {
-        const r = (this._ix().routines || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.done);
-        if (r) {
+      if (k.kind === "rotina" && k.after && !e.rrule && !this._ix().checks[e.key]) {
+        // (one left on a day it was done, 1.86.0: the routine of the same name, done; or what its history says)
+        const a = this._afterDone(e);
+        const r = a ? null : (this._ix().routines || []).find((x) => x.cal === e.cal && x.uid === e.uid && x.done);
+        if (a) {
+          chk = a.chk;
+          doneKey = a.key;
+        } else if (r) {
           chk = r.done;
           doneKey = r.key;
         }
@@ -733,7 +758,7 @@ export const ModelsMixin = (Base) =>
         action = chk && chk.skipped
           ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>`
           : chk
-          ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>`
+          ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : chk.day ? ` ${dayDiff(fromYmd(chk.day), now) === 0 ? "hoje" : `em ${dateShort(fromYmd(chk.day), now)}`}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span>${chk.day ? nothing : html`<button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button>`}</div>`
           : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
             ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
@@ -1034,7 +1059,7 @@ export const ModelsMixin = (Base) =>
     /** Model chips at the top of "Adicionar": pick one and the form changes. */
     _renderModelChips(current) {
       const f = this._form;
-      return html`<div class="model-strip" role="radiogroup" aria-label="Modelo">
+      return html`<div class="field model-field"><span class="flabel">Tipo<span class="fl-val">· ${(KIND_UI[current] || KIND_UI[""]).label}</span></span><div class="model-strip" role="radiogroup" aria-label="Modelo">
         ${Object.entries(KIND_UI)
           // "evento" is only for marking a plain event Feito: the Evento of this strip is ""
           .filter(([k]) => k !== "evento" && (k !== "tarefa" || this._todoLists().length))
@@ -1047,7 +1072,7 @@ export const ModelsMixin = (Base) =>
               else this._openForm({ date });
             }}>${icon(ui.icon)}<span>${ui.label}</span></button>`,
           )}
-      </div>`;
+      </div></div>`;
     }
 
     /** The date of a form: the shortcuts and Outra data, with the month right under them (datepick.js). kind: "futuro"
@@ -1163,7 +1188,7 @@ export const ModelsMixin = (Base) =>
         rotina: ["Tarefa", "Ex.: Regar as plantas, Tirar o lixo"],
         manutencao: ["O que fazer", "Ex.: Trocar o filtro de água"],
       }[K];
-      const notes = html`<label class="field"><span class="flabel">Observações</span><textarea rows="2" .value=${f.notes} placeholder=${K === "remedio" ? "Ex.: tomar em jejum, depois do almoço" : "Detalhes"} @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>`;
+      const notes = html`<div class="field fold-txt"><span class="flabel">Observações${(f.notes || "").trim() ? html`<span class="fl-val">· ${clip(f.notes.trim().split("\n")[0], 40)}</span>` : nothing}</span><textarea rows="2" aria-label="Observações" .value=${f.notes} placeholder=${K === "remedio" ? "Ex.: tomar em jejum, depois do almoço" : "Detalhes"} @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></div>`;
       let body;
       if (K === "remedio") {
         // whose phone gets the alert: theirs, or the person chosen for one without a phone (Mais › Avisos)

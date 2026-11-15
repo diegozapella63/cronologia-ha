@@ -17,7 +17,7 @@ import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod } from "./models.js";
 import { ChatMixin } from "./chat-panel.js";
 import { chatStyles, chatFiles } from "./chat.js";
-import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
@@ -98,7 +98,7 @@ export const sheetIc = (t = "") =>
   /^Falar|disse/.test(t) ? "mic" : /^Colar/.test(t) ? "clipboard-paste" : /^Tarefa/.test(t) ? "list-checks" : /^Conversa/.test(t) ? "message-circle" : "calendar";
 /** The icon of the title of an option or of a field, by its words (when its template brings none). */
 const LABEL_IC = [
-  [/^Cor do dia/, "calendar"], [/^Cor/, "palette"], [/^Usar IA|^IA usada|Trazer de mensagem/, "sparkles"], [/CorrerIA/, "zap"], [/sensores/i, "activity"],
+  [/^Tipo/, "layout-grid"], [/^Cor do dia/, "calendar"], [/^Cor/, "palette"], [/^Usar IA|^IA usada|Trazer de mensagem/, "sparkles"], [/CorrerIA/, "zap"], [/sensores/i, "activity"],
   [/Trechos no Agora/, "notebook-pen"], [/^Fala/, "mic"], [/^Usar a integração/, "blocks"], [/^Mostrar n[oa] (calendário|agenda)/, "calendar-check"],
   [/^Mostrar na tela inicial/, "smartphone"], [/Tarefas|^Lista|^Tarefa/, "list-checks"], [/^Local e notas|^Local/, "map-pin"], [/^De férias/, "plane"],
   [/recompensas|^Marcar|pontos|^Pontos|placar|ganha|^Quantos pontos/i, "trophy"], [/^Se .* vencer/, "crown"], [/^Resultado|^Lembrete|^Avisar|^Aviso/, "bell"],
@@ -317,7 +317,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     }
   }
 
-  /** Each card with a heading folds; each field of choices of a window too (closed: only what is chosen). */
+  /**
+   * Each card with a heading folds; each field of choices of a window too, and Local and Notas (closed: the title
+   * and, after it, what is chosen or written, the .fl-val).
+   */
   _applyFolds() {
     const root = this.renderRoot;
     if (!root || !root.querySelectorAll) return;
@@ -338,7 +341,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     }
     for (const field of root.querySelectorAll(".sheet .field")) {
       const lab = field.querySelector(":scope > .flabel");
-      if (!lab || !field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick")) continue;
+      if (!lab || !(field.classList.contains("fold-txt") || field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick, :scope > .model-strip, :scope > .seg"))) continue;
       const key = fieldKeyOf(field);
       if (!key) continue;
       const off = this._camposFechados.has(key);
@@ -607,7 +610,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // Modo férias: the routines and the maintenance of the days away are not there (the medicines are)
     const away = this._away();
     if (away) list = [...list.filter((e) => !(e.kind && (e.kind.kind === "rotina" || e.kind.kind === "manutencao") && this._awayDay(e.start))), ...this._awayBack(away, start, end)];
-    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...this._movedDoneEvents(start, end)];
+    // a routine done that day whose event stayed there (the calendar did not move it): the event shows it, no copy
+    const stuck = new Set(list.filter((e) => this._afterDoneOn(e) === ymd(e.start)).map((e) => `${e.cal}|${e.summary}|${ymd(e.start)}`));
+    const moved = this._movedDoneEvents(start, end).filter((e) => !stuck.has(`${e.cal}|${e.summary}|${ymd(e.start)}`));
+    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...moved];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
@@ -3098,7 +3104,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </label>
       ${targets.length > 1
         ? html`<div class="field">
-            <span class="flabel">${f.mode === "edit" ? "Calendário (mover)" : "Calendário"}</span>
+            <span class="flabel">${f.mode === "edit" ? "Calendário (mover)" : "Calendário"}${this._cal(f.cal) ? html`<span class="fl-val">· ${clip(this._cal(f.cal).name, 24)}</span>` : nothing}</span>
             <div class="chip-row">${targets.map((c) => html`<button class="pick list ${f.cal === c.id ? "on" : ""}" style=${colorVars(c.color, this._dark)} @click=${() => this._setForm({ cal: c.id })}><span class="dot"></span><span>${clip(c.name, 24)}</span></button>`)}</div>
           </div>`
         : nothing}
@@ -3112,7 +3118,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
               <span class="flabel">Até${f.endDate ? html` <span class="tl">· ${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : nothing}</span>
               <date-pick .value=${f.endDate || ""} kind="nenhum" .none=${"Um dia"} .min=${f.date} .weekStart=${weekStart} .bid=${"cr-ate"} .label=${"Até"} @pick=${(e) => this._setForm({ endDate: e.detail.value > f.date ? e.detail.value : "" })}></date-pick>
             </div>`
-          : html`<div class="time-row">
+          : html`<div class="chip-row parts c3" role="radiogroup" aria-label="Parte do dia">
+                ${PERIODS.map((p) => html`<button class="pick ${f.start === p.at ? "on" : ""}" role="radio" aria-checked=${f.start === p.at ? "true" : "false"} @click=${() => setStart(p.at)}>${icon(p.icon)}<span>${p.label}</span></button>`)}
+              </div>
+              <div class="time-row">
                 ${timeField(f.start, setStart, { label: "Começa" })}
                 <span class="tl">até</span>
                 ${timeField(f.end, (v) => this._setForm({ end: v }), { label: "Termina" })}
@@ -3128,7 +3137,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
               ${overnight ? html`<div class="field-hint">${icon("info")}<span>Termina no dia seguinte.</span></div>` : nothing}`}
       </div>
       <div class="field">
-        <span class="flabel">Repetir</span>
+        <span class="flabel">Repetir<span class="fl-val">· ${(REPEATS.find((r) => r.id === f.repeat) || REPEATS[0]).short}</span></span>
         <div class="seg rep-seg" role="radiogroup" aria-label="Repetir">${REPEATS.map(
           (r) => html`<button class=${f.repeat === r.id ? "on" : ""} role="radio" aria-checked=${f.repeat === r.id ? "true" : "false"} title=${r.label} @click=${() => this._setForm({ repeat: r.id })}>${r.short}</button>`,
         )}</div>
@@ -3136,14 +3145,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este evento se repete.</span></div>` : nothing}
       </div>
       ${this._app("event_details", false) === true || f.details
-        ? html`<label class="field">
-              <span class="flabel">Local</span>
-              <textarea class="grow" rows="1" .value=${f.location} placeholder="Endereço, sala ou link" @keydown=${(e) => e.key === "Enter" && !e.shiftKey && e.preventDefault()} @input=${(e) => this._setForm({ location: e.target.value })}></textarea>
-            </label>
-            <label class="field">
-              <span class="flabel">Notas</span>
-              <textarea rows="3" .value=${f.notes} placeholder="Detalhes, o que levar…" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea>
-            </label>`
+        ? html`<div class="field fold-txt">
+              <span class="flabel">Local${(f.location || "").trim() ? html`<span class="fl-val">· ${clip(f.location.trim(), 40)}</span>` : nothing}</span>
+              <textarea class="grow" rows="1" aria-label="Local" .value=${f.location} placeholder="Endereço, sala ou link" @keydown=${(e) => e.key === "Enter" && !e.shiftKey && e.preventDefault()} @input=${(e) => this._setForm({ location: e.target.value })}></textarea>
+            </div>
+            <div class="field fold-txt">
+              <span class="flabel">Notas${(f.notes || "").trim() ? html`<span class="fl-val">· ${clip(f.notes.trim().split("\n")[0], 40)}</span>` : nothing}</span>
+              <textarea rows="3" aria-label="Notas" .value=${f.notes} placeholder="Detalhes, o que levar…" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea>
+            </div>`
         : nothing}
       <div class="sheet-actions">
         <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>

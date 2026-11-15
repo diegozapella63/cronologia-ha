@@ -83,6 +83,10 @@ Mudar o evento de calendário cria uma cópia no novo calendário e apaga a orig
 
 **Repetir** fica numa linha só: Não, Diário, Semanal, Mensal ou Anual.
 
+Em **Quando**, **Manhã**, **Tarde** e **Noite** põem a hora de cada parte do dia (9:00, 14:00 e 20:00), mantendo a duração; depois dá para acertar a hora.
+
+**Tipo**, **Calendário**, **Repetir**, **Local** e **Notas** fecham num toque no título (a seta no canto). Fechado, o escolhido ou o escrito aparece ao lado do título, e o aparelho lembra o que ficou fechado da próxima vez.
+
 **Local e notas** (em **Mais › Configurações › Opções › Adicionar**) vem desligado: o formulário do evento fica sem **Local** e **Notas**, e o da tarefa sem **Notas**. Ligado, os campos aparecem. Um evento que já tem local ou notas continua mostrando os dois ao editar, para nada ficar escondido.
 
 ## Modelos
@@ -117,6 +121,7 @@ Na **Rotina da casa**, a frequência **Depois de feita** serve para o que conta 
 - Na Agora, ela aparece na **Rotina da casa** no dia em que vence. Se não for feita, continua lá nos dias seguintes, no alto e em vermelho ("atrasada há 2 dias").
 - **Feito** (o círculo, os botões de quem fez, a ficha do evento, o Alexa ou NFC com `cronologia_feito`, ou o ResolvIA) leva a próxima vez para **hoje + N dias**, guarda o dia em "Feito em" e dá os pontos. Ela fica marcada como feita na lista de hoje ("feito por Beto · volta terça").
 - **Desmarcar** (ou **Desfazer**) volta o evento para onde estava e tira os pontos.
+- Se o calendário deixar no dia uma rotina já feita (o "Feito em" dela já tem aquele dia; visto no Google), ela aparece feita ali, e não pendente. O app tira essa cópia do calendário, ou, se ela for a única, leva para a próxima data.
 - Ao editar, dá para mudar os dias e a próxima vez. Uma rotina que se repete por calendário (todo dia, dias da semana…) não vira "Depois de feita" pela edição: crie uma nova.
 - Com **Levar para o ResolvIA** ligado, ela vai para a lista com a próxima data (atrasada também); concluir lá faz o mesmo que o Feito daqui.
 
