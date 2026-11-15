@@ -1,3 +1,4 @@
+import re
 # CronologIA 1.63.0, two rules of all the apps of the family:
 # - Caixas de seleção no visual do app: no window of the phone. The times and dates are fields like the others (no
 #   AM/PM, no mm/dd/yyyy) that open the app's window (whenpick.js, the look of the boxes of selectsheet.js): the 24
@@ -149,20 +150,23 @@ async def main():
                     # (a click: hidden, the row leaves for Ocultos at once)
                     await a.locator(".cal-row", has_text=nm).locator("input[role='switch']").click(); await pg.wait_for_timeout(400)
                 await wait_for(lambda: all(st.stored()["calendars"].get(c, {}).get("hidden") for c in ("calendar.trabalho", "calendar.pessoal")), f"{k}: two calendars hidden")
-                fold = a.locator("#cal-ocultos .off-fold")
-                order = await a.locator(".panel").evaluate_all("(ps) => ps.map((p) => p.id || (p.querySelector('.mais-head h2') || {}).textContent || '')")
-                i_off = order.index("cal-ocultos") if "cal-ocultos" in order else -1
-                check(await fold.count() == 1 and (await fold.inner_text()).strip() == "Ocultos (2)" and await fold.get_attribute("aria-expanded") == "false" and await a.locator("#cal-ocultos .cal-row").count() == 0, f"{k}: Ocultos (2), closed")
-                check(i_off > 0 and order[i_off + 1] == "novos-eventos", f"{k}: after all the calendars ({order})")
-                await fold.scroll_into_view_if_needed()
+                # 1.85.0: each group's hidden ones inside its card, last, folded (Trabalho and Pessoal are in two groups here)
+                folds = a.locator(".cal-ocultos .off-fold")
+                texts = [t.strip() for t in await folds.all_inner_texts()]
+                n_hidden = sum(int(re.search(r"\((\d+)\)", t).group(1)) for t in texts)
+                closed = all([await f.get_attribute("aria-expanded") == "false" for f in await folds.all()])
+                check(texts and all(t.startswith("Ocultos (") for t in texts) and n_hidden == 2 and closed and await a.locator(".cal-ocultos .cal-row").count() == 0, f"{k}: Ocultos, closed ({texts})")
+                inside = await a.locator(".cal-ocultos").evaluate_all("(xs) => xs.every((x) => { const p = x.closest('.panel'); return !!p && !!p.querySelector(':scope > .mais-head h2') && p.lastElementChild === x; })")
+                check(inside and await a.locator("#cal-ocultos").count() == 0, f"{k}: inside the card of their group, last in it")
+                await folds.first.scroll_into_view_if_needed()
                 await pg.screenshot(path=f"{SP}/shots/crpk-ocultos-{scheme}-{w}.png")
-                await fold.click(); await pg.wait_for_timeout(300)
-                rows = [t.split("\n")[0].strip() for t in await a.locator("#cal-ocultos .cal-row .label").all_inner_texts()]
-                check(sorted(rows) == ["Pessoal", "Trabalho"] and await fold.get_attribute("aria-expanded") == "true", f"{k}: a tap opens them ({rows})")
-                await a.locator("#cal-ocultos .cal-row", has_text="Pessoal").locator("input[role='switch']").click(); await pg.wait_for_timeout(600)
-                check((await fold.inner_text()).strip() == "Ocultos (1)" and await a.locator("#cal-ocultos .cal-row", has_text="Pessoal").count() == 0, f"{k}: shown again: back to its group")
-                await a.locator("#cal-ocultos .cal-row", has_text="Trabalho").locator("input[role='switch']").click(); await pg.wait_for_timeout(600)
-                check(await a.locator("#cal-ocultos").count() == 0, f"{k}: nothing hidden: no Ocultos")
+                for f in await folds.all(): await f.click(); await pg.wait_for_timeout(250)
+                rows = [t.split("\n")[0].strip() for t in await a.locator(".cal-ocultos .cal-row .label").all_inner_texts()]
+                check(sorted(rows) == ["Pessoal", "Trabalho"], f"{k}: a tap opens them ({rows})")
+                await a.locator(".cal-ocultos .cal-row", has_text="Pessoal").locator("input[role='switch']").click(); await pg.wait_for_timeout(600)
+                check(await a.locator(".cal-ocultos .cal-row", has_text="Pessoal").count() == 0 and await a.locator(".cal-row", has_text="Pessoal").count() == 1, f"{k}: shown again: back to its group")
+                await a.locator(".cal-ocultos .cal-row", has_text="Trabalho").locator("input[role='switch']").click(); await pg.wait_for_timeout(600)
+                check(await a.locator(".cal-ocultos").count() == 0, f"{k}: nothing hidden: no Ocultos")
                 check(not errs, f"{k}: no page errors {errs}")
                 await ctx.close()
         # a computer: the window is a card in the middle; the keyboard

@@ -2545,13 +2545,13 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   /** Mais › Calendários: every calendar (name, color, show/hide), where new events go, adding calendars. */
   _renderCalendarsTab() {
     const cals = this._cals();
-    // the hidden ones last, folded under Ocultos
-    const off = cals.filter((c) => c.hidden);
+    // each group of calendars (an integration, like Google Agenda) in its card; its hidden ones last in it, folded under
+    // Ocultos (1.85.0: inside the card of their group, no longer a card of their own)
     const groups = [];
-    for (const c of cals.filter((x) => !x.hidden)) {
-      const g = groups.find((x) => x.label === c.group);
-      if (g) g.list.push(c);
-      else groups.push({ label: c.group, list: [c] });
+    for (const c of cals) {
+      let g = groups.find((x) => x.label === c.group);
+      if (!g) groups.push((g = { label: c.group, list: [], off: [] }));
+      (c.hidden ? g.off : g.list).push(c);
     }
     const errors = this._store ? this._store.errors() : new Map();
     const writable = this._writable();
@@ -2560,7 +2560,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       <button class="tile" @click=${() => this._openCalSheet(c)} aria-label="Personalizar ${c.name}">${icon(c.icon)}</button>
       <button class="grow" style="text-align:left" @click=${() => this._openCalSheet(c)}>
         <div class="label">${c.name}</div>
-        <div class="hint">${[c.hidden ? c.group : "", c.device, errors.get(c.id) ? "não carregou" : c.unavailable ? "indisponível" : c.canCreate ? (c.canUpdate ? "cria e edita" : "cria eventos") : "só leitura"].filter(Boolean).join(" · ")}</div>
+        <div class="hint">${[c.device, errors.get(c.id) ? "não carregou" : c.unavailable ? "indisponível" : c.canCreate ? (c.canUpdate ? "cria e edita" : "cria eventos") : "só leitura"].filter(Boolean).join(" · ")}</div>
       </button>
       <label class="switch"><input type="checkbox" role="switch" .checked=${live(!c.hidden)} @change=${(e) => this._saveCalPrefs(c.id, { hidden: e.target.checked ? null : true })} aria-label="Mostrar ${c.name}" /><span class="track"></span></label>
     </div>`;
@@ -2569,9 +2569,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         (g) => html`<div class="panel">
           ${this._secHead("calendar-days", g.label)}
           ${repeat(g.list, (c) => c.id, row)}
+          ${g.off.length ? html`<div class="cal-ocultos">${offFold(this, `cals:${g.label}`, "Ocultos", g.off.length, () => repeat(g.off, (c) => c.id, row))}</div>` : nothing}
         </div>`,
       )}
-      ${off.length ? html`<div class="panel off-panel" id="cal-ocultos">${offFold(this, "cals", "Ocultos", off.length, () => repeat(off, (c) => c.id, row))}</div>` : nothing}
       <div class="panel" id="novos-eventos">
         ${this._secHead("calendar-plus", "Novos eventos")}
         ${writable.length

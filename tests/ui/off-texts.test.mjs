@@ -238,14 +238,15 @@ describe("Mais › Recompensas: Usar recompensas at the top (1.55.0; a row of Ma
     const app = new App({ home: { score: { ...on, enabled: false } } });
     const view = app._renderScoreSettings();
     const t = text(view);
-    assert.match(t, /^\s*Usar recompensas\s*Placar da casa, prêmio e deméritos\./, "the screen is called Recompensas: no heading repeats it");
+    // 1.85.0: the card has its heading, Placar (not Recompensas, the name of the screen), so it closes like the others
+    assert.match(t, /^\s*Placar\s*Usar recompensas\s*Placar da casa, prêmio e deméritos\./, "the heading Placar, then the switch");
     assert.doesNotMatch(t, /Deméritos|Quem participa|Desligar o placar|Ir para Recompensas/);
     assert.doesNotMatch(render(view).html, /aria-label="Usar recompensas"[^>]*checked/);
   });
   it("on: the switch first, then the settings and the deméritos; no Desligar o placar", () => {
     const view = new App({ home: { score: on } })._renderScoreSettings();
     const t = text(view);
-    assert.match(t, /^\s*Usar recompensas[\s\S]*Quem participa[\s\S]*Deméritos/);
+    assert.match(t, /^\s*Placar\s*Usar recompensas[\s\S]*Quem participa[\s\S]*Deméritos/);
     assert.doesNotMatch(t, /Desligar o placar/);
   });
   it("nobody in Home Assistant: the switch can't be turned on, and says why", () => {

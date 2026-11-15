@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.85.0
+
+- **Mais › Recompensas**: o cartão das opções do placar ganhou o título **Placar** e fecha e abre num toque nele, como os outros cartões.
+- **Mais › Calendários**: os calendários ocultos ficam dentro do cartão da integração deles (como Google Agenda), no fim, em **Ocultos (n)**.
+
 ## 1.84.2
 
 - **Conversa**: o **Nova conversa** não quebra mais em duas linhas; num celular bem estreito, fica só o **+**.

@@ -90,12 +90,13 @@ async def main():
         # back on in Mais
         await side.locator(".side-link", has_text="Mais").click(); await pg.wait_for_timeout(600)
         await open_more(a, "Calendários")
-        # 1.63.0: in Mais › Calendários too, last and folded under Ocultos (2)
-        mfold = a.locator("#cal-ocultos .off-fold")
-        check((await mfold.inner_text()).strip() == "Ocultos (2)" and await a.locator("#cal-ocultos .cal-row").count() == 0, "Mais › Calendários: Ocultos (2), closed")
-        await mfold.click(); await pg.wait_for_timeout(300)
+        # 1.63.0: in Mais › Calendários too, last and folded under Ocultos; 1.85.0: each group's in its own card
+        mfolds = a.locator(".cal-ocultos .off-fold")
+        mt = [t.strip() for t in await mfolds.all_inner_texts()]
+        check(mt and all(t.startswith("Ocultos (") for t in mt) and await a.locator(".cal-ocultos .cal-row").count() == 0, f"Mais › Calendários: Ocultos, closed, in the cards of their groups ({mt})")
+        for f in await mfolds.all(): await f.click(); await pg.wait_for_timeout(250)
         for nm, cid in (("Trabalho", "calendar.trabalho"), ("Pessoal", "calendar.pessoal")):
-            await a.locator("#cal-ocultos .cal-row", has_text=nm).first.locator("input[role='switch']").click()
+            await a.locator(".cal-ocultos .cal-row", has_text=nm).first.locator("input[role='switch']").click()
             await wait_for(lambda cid=cid: not stored()["calendars"].get(cid, {}).get("hidden"), f"{nm} back on")
         await pg.wait_for_timeout(400)
         names = [t.strip() for t in await side.locator(".side-cal").all_inner_texts()]

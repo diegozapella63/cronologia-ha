@@ -941,7 +941,8 @@ export const RewardsMixin = (Base) =>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} ?disabled=${!on && !start.length} @change=${(e) => this._scorePrefs(e.target.checked ? { enabled: true, participants: start, anchor: ymd(new Date()) } : { enabled: false })} aria-label="Usar recompensas" /><span class="track"></span></label>
       </div>`;
       // Mais › Recompensas (its own screen since 1.64.0: the title is already Recompensas)
-      if (!on) return html`<div class="panel score-set" id="placar">${sw}</div>`;
+      // 1.85.0: with a heading (Placar), the card closes and opens in a tap like the others
+      if (!on) return html`<div class="panel score-set" id="placar">${this._secHead("trophy", "Placar")}${sw}</div>`;
       return html`${this._renderScoreSettingsPanel(s, sw)} ${this._renderDemeritsSettings()}`;
     }
 
@@ -950,6 +951,7 @@ export const RewardsMixin = (Base) =>
       const people = (this._ix().people || []).filter((p) => !p.pet).map((p) => p.name);
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
+        ${this._secHead("trophy", "Placar")}
         ${sw}
         <div class="sub-op"><div class="sub-box">
         <div class="field"><span class="flabel">Quem participa</span>
