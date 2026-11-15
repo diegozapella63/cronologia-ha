@@ -58,7 +58,7 @@ async def main():
         check(heads["Recompensas"] == ["Deméritos"], "Mais › Recompensas: the settings (no heading repeating the title) and the deméritos")
         # 1.60.0: the CorrerIA with the apps of the family, before the AI; 1.61.0: the MemorIA before it
         check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "MemorIA", "CorrerIA", "IA do Home Assistant", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
-        check(await a.locator(".mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
+        check(await a.locator(".mais-head .mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
         check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Adicionar", "Semana"], "Aparência: Tema and Cor do app; Opções: Adicionar and Semana")
         # AI on by default: Novo shows the import strip
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(400)

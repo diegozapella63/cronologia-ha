@@ -63,7 +63,7 @@ async def main():
         await wait_for(lambda: json.load(open(f"{data}/cronologia.json"))["app"].get("sensors_on") is True, "on: saved")
         await wait_for(lambda: all(has(e) for e in SENS), "on: the sensors are created")
         check(req("GET", "sensor.cronologia_remedios_hoje")["attributes"].get("total") == 5, "with the doses of today")
-        rows = [t.split("\n")[0] for t in await panel.locator(":scope > .sensor-list .sensor-row > code").all_inner_texts()]
+        rows = [t.split("\n")[0] for t in await panel.locator(":scope > .sub-op > .sensor-list .sensor-row > code").all_inner_texts()]
         check("binary_sensor.cronologia_remedio_atrasado" in rows and len(rows) == 7 and "sensor.cronologia_placar" not in rows, f"the list of sensors, no placar without Recompensas ({rows})")
         # 1.78.0: the next appointment, férias and the routines of today
         check(all(e in rows for e in ["sensor.cronologia_proximo", "binary_sensor.cronologia_ferias", "sensor.cronologia_rotinas_pendentes"]), "the new sensors are in the list")

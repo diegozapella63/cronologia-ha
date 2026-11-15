@@ -197,7 +197,7 @@ async def main():
         check(await a.locator(".panel.bills .bill").count() == 5, "card shows 5 bills, late ones first")
         await a.locator(".panel.bills .add-line", has_text="Mais").click(); await A.wait_for_timeout(300)
         bills = await a.locator(".panel.bills").inner_text()
-        check("IPTU" in bills and "Fatura Nubank · Davi" in bills and "Internet" in bills, "Contas a pagar mixes GerencIA bills and #conta events")
+        check("IPTU" in bills and "Fatura Banco Coral · Davi" in bills and "Internet" in bills, "Contas a pagar mixes GerencIA bills and #conta events")
         await a.locator(".bill", has_text="IPTU").locator(".dose-btn").click()
         await wait_for(lambda: any(l["descricao"] == "IPTU" and l["pago"] for l in gdata(data)["lancamentos"]), "Paguei gives the GerencIA bill a payment")
         async def iptu_paid(): return await bb.locator(".bill.paid", has_text="IPTU").count() + (0 if "IPTU" in await bb.locator(".panel.bills").inner_text() else 1) >= 1

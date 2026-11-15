@@ -8,11 +8,11 @@ def ymk(k):
     return f"{a:04d}-{m:02d}"
 d = {
  "schema": 1, "rev": 3, "exemplo": False,
- "bancos": [{"id": "b-nu", "nome": "Nubank", "contas": [{"id": "k-nu-davi", "pessoa": "Davi", "cartao": True, "fechamento": 3, "vencimento": 10}]},
-            {"id": "b-itau", "nome": "Itaú", "contas": [{"id": "k-itau", "pessoa": "Davi", "cartao": False, "fechamento": 1, "vencimento": 10}]}],
- # 1.79.0: um investimento que vence daqui a 3 dias: o aviso "Vence em 3 dias" no Agora
+ "bancos": [{"id": "b-nu", "nome": "Banco Coral", "contas": [{"id": "k-nu-davi", "pessoa": "Davi", "cartao": True, "fechamento": 3, "vencimento": 10}]},
+            {"id": "b-itau", "nome": "Banco Índigo", "contas": [{"id": "k-itau", "pessoa": "Davi", "cartao": False, "fechamento": 1, "vencimento": 10}]}],
+ # 1.79.0: um investimento que vence amanhã: o aviso "Vence amanhã" no Agora (o GerencIA 1.69.0 avisa só na véspera e no dia)
  "investimentos": [{"id": "i-cdb", "nome": "CDB Lilás", "banco": "b-itau", "tipo": "CDB", "indexador": "pre", "taxa": 12, "valor": 1000,
-                    "data_valor": h.isoformat(), "inicio": (h - timedelta(days=300)).isoformat(), "vencimento": (h + timedelta(days=3)).isoformat()}],
+                    "data_valor": h.isoformat(), "inicio": (h - timedelta(days=300)).isoformat(), "vencimento": (h + timedelta(days=1)).isoformat()}],
  "historico": [],
  "categorias": [{"id": "c-casa", "nome": "Casa", "tipo": "despesa", "cor": "#f00"}, {"id": "c-sal", "nome": "Salário", "tipo": "receita", "cor": "#0f0"}],
  "recorrencias": [
