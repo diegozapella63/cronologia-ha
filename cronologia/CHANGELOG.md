@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.83.0
+
+- **Conversa › Perguntas prontas**: as perguntas de exemplo viram suas. **Editar perguntas** tira (✕) e acrescenta as que você quiser; **Padrão** volta às de antes. Ficam guardadas no aparelho.
+- **Conversa**: o botão ✨ ao lado da caixa abre as perguntas prontas a qualquer momento, não só na conversa vazia.
+
 ## 1.82.1
 
 - **Avisos › Avisar de novo se não tomar**: as escolhas voltam a ficar duas por linha no celular.

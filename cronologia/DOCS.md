@@ -57,6 +57,8 @@ O botão de balão, ao lado do microfone, abre uma conversa com a IA. Pergunte s
 
 Pedindo para mexer na agenda ("marca dentista sexta às 15h", "fiz arrumar a cama", "tomei a sertralina"), ela mostra cada ação num cartão e só faz quando você toca em **Fazer** (ou **Fazer todas**). O evento vai para o calendário do **Adicionar**. **Nova conversa** começa outra. Com **Usar IA** desligado, o botão não aparece. Cada mensagem conta em **Uso da IA** como Conversa.
 
+**Perguntas prontas**: na conversa vazia aparecem algumas perguntas para tocar; o botão ✨ ao lado da caixa abre as mesmas a qualquer momento. Em **Editar perguntas**, o ✕ tira uma pergunta e **Adicionar** põe outra; **Padrão** volta às de exemplo. Ficam guardadas no aparelho.
+
 ### Buscar
 
 Na **Agora**, o campo **Buscar nos eventos** logo abaixo do título: a primeira letra já abre a busca do **Calendário › Lista** (do último ano ao próximo) com o que foi digitado. No computador, também pelo **Buscar** da barra lateral e pela tecla **/** de qualquer tela.

@@ -102,6 +102,12 @@ async def main():
         await wait_for(lambda: answered(6), "Enter sends")
         ia = await chat.locator(".chat-msg.ia .chat-bubble").last.inner_text()
         check("tela: Calendário" in ia, f"the AI knows the screen ({ia!r})")
+        # 1.83.0: Perguntas prontas at any moment (the sparkles by the box), with Editar perguntas
+        await chat.locator(".chat-qbtn").click(); await pg.wait_for_timeout(250)
+        qk = [t.strip() for t in await chat.locator(".chat-quick .chat-ex .pick").all_inner_texts()]
+        check(len(qk) >= 1 and await chat.locator(".chat-quick .chat-ed-open").count() == 1, f"Perguntas prontas at any moment, with Editar perguntas ({qk})")
+        await chat.locator(".chat-qbtn").click(); await pg.wait_for_timeout(200)
+        check(await chat.locator(".chat-quick").count() == 0, "the same button closes them")
         check((await chat.locator(".chat-head .text-btn").inner_text()).strip() == "Nova conversa", "Nova conversa (the same in all the apps)")
         await chat.locator(".chat-head .text-btn", has_text="Nova conversa").click(); await pg.wait_for_timeout(300)
         check(await chat.locator(".chat-msg").count() == 0, "Nova clears the conversation")
