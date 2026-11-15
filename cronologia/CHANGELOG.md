@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.84.1
+
+- **Prévia**: as contas de exemplo usam bancos inventados.
+
 ## 1.84.0
 
 - **Conversa › Clipe**: manda junto uma foto ou um PDF: **Tirar foto**, **Escolher fotos** (a galeria) ou **Escolher arquivo**. A IA olha o arquivo para responder e pode propor marcar o compromisso que vê.

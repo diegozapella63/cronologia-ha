@@ -102,10 +102,10 @@ export class MockApi {
         { id: "c-saude", nome: "Saúde" },
       ],
       contas: [
-        { id: "f:k-nu|1", tipo: "fatura", descricao: "Fatura Nubank · Davi", valor: 1843.27, vencimento: day(-1), pago: false, atrasada: true, itens: 23, categoria: "", conta: "Nubank · Davi" },
-        { id: "v:r-plano:1", tipo: "fixo", descricao: "Plano de saúde", valor: 689.9, vencimento: day(0), pago: true, atrasada: false, categoria: "Saúde", conta: "Itaú · Davi" },
-        { id: "v:r-aluguel:1", tipo: "fixo", descricao: "Aluguel", valor: 2100, vencimento: day(2), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Davi" },
-        { id: "v:r-condominio:1", tipo: "fixo", descricao: "Condomínio", valor: 650, vencimento: day(6), pago: false, atrasada: false, categoria: "Moradia", conta: "Itaú · Davi" },
+        { id: "f:k-nu|1", tipo: "fatura", descricao: "Fatura Banco Coral · Davi", valor: 1843.27, vencimento: day(-1), pago: false, atrasada: true, itens: 23, categoria: "", conta: "Banco Coral · Davi" },
+        { id: "v:r-plano:1", tipo: "fixo", descricao: "Plano de saúde", valor: 689.9, vencimento: day(0), pago: true, atrasada: false, categoria: "Saúde", conta: "Banco Índigo · Davi" },
+        { id: "v:r-aluguel:1", tipo: "fixo", descricao: "Aluguel", valor: 2100, vencimento: day(2), pago: false, atrasada: false, categoria: "Moradia", conta: "Banco Índigo · Davi" },
+        { id: "v:r-condominio:1", tipo: "fixo", descricao: "Condomínio", valor: 650, vencimento: day(6), pago: false, atrasada: false, categoria: "Moradia", conta: "Banco Índigo · Davi" },
         { id: "l-iptu", tipo: "conta", descricao: "IPTU 9/10", valor: 187.4, vencimento: day(15), pago: false, atrasada: false, categoria: "Moradia", conta: "" },
       ],
     };
