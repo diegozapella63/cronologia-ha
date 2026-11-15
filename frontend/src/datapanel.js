@@ -156,7 +156,7 @@ export const DataMixin = (Base) =>
               : html`<div class="data-list">
                   ${f.list.map(
                     (v) => html`<div class="data-item"><div><b>${this._dateTime(v.when)}</b><span>${plural(v.calendars, "agenda", "agendas")} · ${plural(v.points, "ponto", "pontos")} · ${WHY[v.reason] || "automática"}</span></div>
-                      <button class="btn outline sm" @click=${() => this._confirmRestoreVersion(v)}>Restaurar</button></div>`,
+                      <button class="btn outline sm" @click=${() => this._confirmRestoreVersion(v)}>${icon("archive-restore")}Restaurar</button></div>`,
                   )}
                 </div>`}
       `;

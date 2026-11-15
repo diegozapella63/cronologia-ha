@@ -423,7 +423,7 @@ export const ModelsMixin = (Base) =>
         </button>
         ${st === "tomado" || st === "pulado"
           ? html`<button class="dose-done ${st === "pulado" ? "skipped" : ""}" @click=${() => this._undoCheck(m, "remedio")} aria-label="Desmarcar ${m.summary}">${icon(st === "pulado" ? "skip-forward" : "check")}</button>`
-          : html`<button class="dose-btn ${st}" aria-label="${this._doseVerb(m.who, true)}: ${m.summary}" @click=${() => this._check(m, "remedio")}>${this._doseVerb(m.who)}</button>`}
+          : html`<button class="dose-btn ${st}" aria-label="${this._doseVerb(m.who, true)}: ${m.summary}" @click=${() => this._check(m, "remedio")}>${icon("check")}${this._doseVerb(m.who)}</button>`}
       </div>`;
     }
 
@@ -467,7 +467,7 @@ export const ModelsMixin = (Base) =>
             </button>
             ${b.paid
               ? html`<button class="dose-done" @click=${() => this._unpay(b)} aria-label="Desfazer pagamento de ${b.title}">${icon("check")}</button>`
-              : html`<button class="dose-btn ${b.overdue ? "atrasado" : today ? "agora" : ""}" ?disabled=${b.busy} @click=${() => this._pay(b)}>Paguei</button>`}
+              : html`<button class="dose-btn ${b.overdue ? "atrasado" : today ? "agora" : ""}" ?disabled=${b.busy} @click=${() => this._pay(b)}>${icon("check")}Paguei</button>`}
           </div>`;
         })}
         ${bills.length > 5 ? html`<button class="add-line" @click=${() => ((this._billsAll = !this._billsAll), this.requestUpdate())}>${icon(this._billsAll ? "chevron-up" : "chevron-down")}${this._billsAll ? "Mostrar menos" : `Mais ${bills.length - 5}`}</button>` : nothing}
@@ -554,7 +554,7 @@ export const ModelsMixin = (Base) =>
         ${m.canMove
           ? this._pickWho()
             ? this._renderQuickWho(m.summary, m.points || 0, (p) => this._maintDone(m, p))
-            : html`<button class="dose-btn ${m.state === "vencida" ? "atrasado" : m.state === "perto" ? "agora" : "later"}" @click=${() => this._maintDone(m)}>Feito</button>`
+            : html`<button class="dose-btn ${m.state === "vencida" ? "atrasado" : m.state === "perto" ? "agora" : "later"}" @click=${() => this._maintDone(m)}>${icon("check")}Feito</button>`
           : nothing}
       </div>`;
     }
@@ -731,9 +731,9 @@ export const ModelsMixin = (Base) =>
         const it = { key: doneKey || e.key, summary: e.summary };
         const skip = later(k.kind === "rotina" || k.kind === "remedio" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it, k.kind))}>${icon("skip-forward")}Pular</button>` : nothing);
         action = chk && chk.skipped
-          ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
+          ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>`
           : chk
-          ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>Desfazer</button></div>`
+          ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>`
           : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
             ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
@@ -1119,7 +1119,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="field">
         <span class="flabel">Pontos para quem fizer</span>
         <div class="chip-row c4">
-          ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${n === v ? "on" : ""}" @click=${() => this._setForm({ points: v })}>${v ? `+${v}` : "Sem pontos"}</button>`)}
+          ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${n === v ? "on" : ""}" @click=${() => this._setForm({ points: v })}>${icon(v ? "trophy" : "x")}<span>${v ? `+${v}` : "Sem pontos"}</span></button>`)}
           <input type="number" class="num-input" min="0" max="1000" .value=${String(n)} aria-label="Outro valor de pontos" @input=${(e) => this._setForm({ points: e.target.value })} />
         </div>
         ${n > 0 && !this._scoreOn() ? html`<span class="field-hint">${icon("trophy")}<span>O placar está desligado (aba <b>Recompensas</b>).</span></span>` : nothing}
@@ -1220,7 +1220,7 @@ export const ModelsMixin = (Base) =>
           ${this._renderRoomEquipFields(f, { equips: false, multiRoom: true })}
           <div class="field"><span class="flabel">Horário</span>
             <div class="chip-row">
-              <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>Qualquer hora</button>
+              <button class="pick ${f.allDay && !f.period ? "on" : ""}" @click=${() => this._setForm({ allDay: true, period: "" })}>${icon("clock")}<span>Qualquer hora</span></button>
               <button class="pick ${!f.allDay ? "on" : ""}" @click=${() => this._setForm({ allDay: false, period: "" })}>${icon("clock")}<span>Num horário</span></button>
               ${!f.allDay ? timeField(f.times[0] || "19:00", (v) => this._setForm({ times: [v] }), { label: "Horário", cls: "inline-time" }) : nothing}
             </div>
@@ -1240,7 +1240,7 @@ export const ModelsMixin = (Base) =>
           ${this._whoField("Quem faz")}
           ${this._renderRoomEquipFields(f, { multiRoom: true })}
           <div class="field"><span class="flabel">A cada</span>
-            <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${everyLabel(p)}</button>`)}</div>
+            <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${icon("repeat")}<span>${everyLabel(p)}</span></button>`)}</div>
             <div class="time-row">
               <input type="number" class="num-input" min="1" max="999" .value=${String(f.every.n)} @input=${(e) => this._setForm({ every: { ...f.every, n: Math.max(1, Number(e.target.value) || 1) } })} aria-label="Quantidade" />
               <div class="seg compact">${Object.keys(UNITS).map((u) => html`<button class=${f.every.unit === u ? "on" : ""} @click=${() => this._setForm({ every: { ...f.every, unit: u } })}>${u}</button>`)}</div>
@@ -1266,8 +1266,8 @@ export const ModelsMixin = (Base) =>
         ${body}
         ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este item se repete.</span></div>` : nothing}
         <div class="sheet-actions">
-          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-          <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveKindForm()}>${f.saving ? "Salvando…" : f.mode === "add" ? (toGerencia ? "Criar no GerencIA" : `Criar ${ui.label.toLowerCase()}`) : "Salvar"}</button>
+          <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+          <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveKindForm()}>${icon(f.mode === "add" ? "plus" : "check")}${f.saving ? "Salvando…" : f.mode === "add" ? (toGerencia ? "Criar no GerencIA" : `Criar ${ui.label.toLowerCase()}`) : "Salvar"}</button>
         </div>`;
     }
 
@@ -1341,6 +1341,23 @@ export const ModelsMixin = (Base) =>
           <div class="grow"><div class="label">Avisar no celular</div><div class="hint">Dá para desligar em cada remédio.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => setAlerts({ meds: e.target.checked })} aria-label="Avisar no celular" /><span class="track"></span></label>
         </div>
+        ${on
+          ? html`<div class="sub-op"><div class="sub-box"><div class="field">
+                <span class="flabel">Avisar de novo se não tomar</span>
+                <div class="chip-row">${[[0, "Não"], [15, "15 min depois"], [30, "30 min"], [60, "1 hora"]].map(([n, l]) => html`<button class="pick ${late === n ? "on" : ""}" @click=${() => setAlerts({ late: n })}>${icon(n ? "hourglass" : "x")}<span>${l}</span></button>`)}</div>
+              </div>
+              ${phoned.length
+                ? html`<div class="field">
+                    <span class="flabel">Quem cuida</span>
+                    <div class="chip-row care-pick">${phoned.map((p) => {
+                      const sel = care.some((n) => foldText(n) === foldText(p.name));
+                      return html`<button class="pick quem-p ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((n) => foldText(n) !== foldText(p.name)) : [...care, p.name] })}>${icon("user-round")}<b>${p.name}</b></button>`;
+                    })}</div>
+                    <span class="field-hint">${icon("info")}<span>${late > 0 ? "Recebe os atrasos de todos." : "Recebe os avisos de quem está sem celular."}</span></span>
+                  </div>`
+                : nothing}
+              ${testMine}</div></div>`
+          : nothing}
         <div class="field people-field">
           <span class="flabel">Pessoas e pets</span>
           ${people.length
@@ -1370,8 +1387,8 @@ export const ModelsMixin = (Base) =>
                   <button class=${add.pet ? "on" : ""} @click=${() => ((this._newPerson = { ...this._newPerson, pet: true }), this.requestUpdate())}>${icon("paw-print")}Pet</button>
                 </div>
                 <div class="person-add-acts">
-                  <button class="btn outline sm" @click=${() => ((this._newPerson = null), this.requestUpdate())}>Cancelar</button>
-                  <button class="btn primary sm" ?disabled=${!(add.name || "").trim()} @click=${addPerson}>Adicionar</button>
+                  <button class="btn outline sm" @click=${() => ((this._newPerson = null), this.requestUpdate())}>${icon("x")}Cancelar</button>
+                  <button class="btn primary sm" ?disabled=${!(add.name || "").trim()} @click=${addPerson}>${icon("plus")}Adicionar</button>
                 </div>
               </div>`
             : html`<button class="add-line" @click=${() => {
@@ -1388,23 +1405,7 @@ export const ModelsMixin = (Base) =>
                 : "Ninguém tem celular ligado no Home Assistant (Configurações › Pessoas)."}</span></span>`
             : nothing}
         </div>
-        ${on
-          ? html`<div class="field">
-                <span class="flabel">Avisar de novo se não tomar</span>
-                <div class="chip-row">${[[0, "Não"], [15, "15 min depois"], [30, "30 min"], [60, "1 hora"]].map(([n, l]) => html`<button class="pick ${late === n ? "on" : ""}" @click=${() => setAlerts({ late: n })}>${l}</button>`)}</div>
-              </div>
-              ${phoned.length
-                ? html`<div class="field">
-                    <span class="flabel">Quem cuida</span>
-                    <div class="chip-row care-pick">${phoned.map((p) => {
-                      const sel = care.some((n) => foldText(n) === foldText(p.name));
-                      return html`<button class="pick quem-p ${sel ? "on" : ""}" aria-pressed=${sel ? "true" : "false"} @click=${() => setAlerts({ caregivers: sel ? care.filter((n) => foldText(n) !== foldText(p.name)) : [...care, p.name] })}>${icon("user-round")}<b>${p.name}</b></button>`;
-                    })}</div>
-                    <span class="field-hint">${icon("info")}<span>${late > 0 ? "Recebe os atrasos de todos." : "Recebe os avisos de quem está sem celular."}</span></span>
-                  </div>`
-                : nothing}
-              ${testMine}`
-          : nothing}
+
       </div>`;
     }
 
@@ -1428,7 +1429,7 @@ export const ModelsMixin = (Base) =>
           <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ correria_on: e.target.checked ? true : null })} aria-label="Usar com o CorrerIA" /><span class="track"></span></label>
         </div>
         ${on
-          ? html`<div class="ai-state ${used ? "ok" : "off"}"><span class="dot"></span><div>${used ? html`<b>${used}</b>` : html`<b>Nenhum uso ainda</b><span>Conecte no app CorrerIA.</span>`}</div></div>`
+          ? html`<div class="sub-op"><div class="sub-box"><div class="ai-state ${used ? "ok" : "off"}"><span class="dot"></span><div>${used ? html`<b>${used}</b>` : html`<b>Nenhum uso ainda</b><span>Conecte no app CorrerIA.</span>`}</div></div></div></div>`
           : nothing}
       </div>`;
     }
@@ -1453,6 +1454,7 @@ export const ModelsMixin = (Base) =>
       return html`<div class="panel" id="gerencia">
         ${this._secHead("wallet", "Contas do GerencIA")}
         ${toggle}
+        <div class="sub-op"><div class="sub-box">
         <div class="ai-state ${tone}"><span class="dot"></span><div>
           <b>${g.ligado ? (g.erro ? "Não consegui falar com o GerencIA" : `Conectado ao GerencIA ${g.versao || ""}`) : "GerencIA não encontrado"}</b>
           <span>${g.ligado
@@ -1465,6 +1467,7 @@ export const ModelsMixin = (Base) =>
               <label class="switch"><input type="checkbox" role="switch" .checked=${!this._app("gerencia_hidden", false)} @change=${(e) => this._saveAppPrefs({ gerencia_hidden: e.target.checked ? null : true })} aria-label="Mostrar contas no calendário" /><span class="track"></span></label>
             </div>`
           : nothing}
+        </div></div>
       </div>`;
     }
   };

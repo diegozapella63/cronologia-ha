@@ -86,6 +86,62 @@ const platformOf = (pl) => PLATFORMS[pl] || { label: pl ? cap(pl.replace(/_/g, "
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
 
+// 1.82.0 (padrão da família): an icon on every title (of each screen, each window, each option and each field), every
+// section folds with a tap on its heading and each field of choices of a window with a tap on its title (the device
+// keeps the closed ones)
+const PAGE_IC = { Hoje: "clock-3", Agora: "clock-3", Recompensas: "trophy", Rotinas: "repeat", Mais: "ellipsis", "Calendários": "layers", Avisos: "bell-ring", "Férias": "plane", "Configurações": "sliders-horizontal", Sobre: "info" };
+/** The icon of a window, by its title. */
+export const sheetIc = (t = "") =>
+  /^Apagar/.test(t) ? "trash" : /^Mudar|^Editar/.test(t) ? "pencil" : /^Adicionar|^Novo|^Nova/.test(t) ? "plus" : /^Prêmio/.test(t) ? "gift" : /^Extrato|^Pontos/.test(t) ? "trophy" :
+  /^Versões/.test(t) ? "archive-restore" : /^Trazer|^Revisar/.test(t) ? "list-checks" : /^Quem fez/.test(t) ? "users" : /^Qualquer hora/.test(t) ? "clock" : /^Personalizar/.test(t) ? "sliders-horizontal" :
+  /Outlook|^Exportar/.test(t) ? "external-link" : /^Ordem/.test(t) ? "layers" : /calendário/i.test(t) ? "calendar-days" : /^Manutenção/.test(t) ? "wrench" : /^Lendo/.test(t) ? "scan-text" :
+  /^Falar|disse/.test(t) ? "mic" : /^Colar/.test(t) ? "clipboard-paste" : /^Tarefa/.test(t) ? "list-checks" : /^Conversa/.test(t) ? "message-circle" : "calendar";
+/** The icon of the title of an option or of a field, by its words (when its template brings none). */
+const LABEL_IC = [
+  [/^Cor do dia/, "calendar"], [/^Cor/, "palette"], [/^Usar IA|^IA usada|Trazer de mensagem/, "sparkles"], [/CorrerIA/, "zap"], [/sensores/i, "activity"],
+  [/Trechos no Agora/, "notebook-pen"], [/^Fala/, "mic"], [/^Usar a integração/, "blocks"], [/^Mostrar n[oa] (calendário|agenda)/, "calendar-check"],
+  [/^Mostrar na tela inicial/, "smartphone"], [/Tarefas|^Lista|^Tarefa/, "list-checks"], [/^Local e notas|^Local/, "map-pin"], [/^De férias/, "plane"],
+  [/recompensas|^Marcar|pontos|^Pontos|placar|ganha|^Quantos pontos/i, "trophy"], [/^Se .* vencer/, "crown"], [/^Resultado|^Lembrete|^Avisar|^Aviso/, "bell"],
+  [/^Pessoas|^Quem|participa/, "users"], [/^Calendário|^Adicionar em|^Onde guardar/, "calendar-days"], [/^Notas|^Observações|^O que foi feito/, "notebook-pen"],
+  [/^Título|^Nome|^O que foi/, "pencil"], [/^Quando/, "calendar-clock"], [/^Horário/, "clock"], [/^Até|^Período/, "calendar-range"], [/^Repet|^A cada/, "repeat"],
+  [/^Dose/, "pill"], [/^Valor/, "wallet"], [/^Categoria/, "layers"], [/^Caminho/, "smartphone"], [/^Mensagem/, "message-square-text"],
+  [/^Cômodo/, "door-open"], [/^Equipamento|^Bem/, "package"], [/^Calendários/, "layers"],
+];
+const labelIc = (t) => (LABEL_IC.find(([re]) => re.test(t)) || [0, "circle-check"])[1];
+const svgNode = (name, cls) => {
+  const t = document.createElement("template");
+  t.innerHTML = `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ICONS.calendar}</svg>`;
+  return t.content.firstChild;
+};
+const FOLD_KEY = "cronologia-fechadas";
+const FIELD_KEY = "cronologia-campos";
+/** The heading of a card (Mais and the cards of the Agora): its first child, one of these. */
+const HEAD = ".mais-head, .meds-head, .bills-head, .chores-head, .prize-head, .sec-head";
+export const foldKeyOf = (card) => {
+  if (!card) return "";
+  const head = card.firstElementChild && card.firstElementChild.matches(HEAD) ? card.firstElementChild : null;
+  const t = head && (head.querySelector("h2, .overline") || head);
+  return card.id || (card.dataset && card.dataset.card) || (t ? t.textContent.trim() : "");
+};
+export const fieldKeyOf = (field) => {
+  const l = field && field.querySelector(":scope > .flabel");
+  return l ? l.textContent.trim().replace(/\s*[(·].*$/, "").replace(/s$/, "") : "";
+};
+const keptSet = (key) => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+  } catch (e) {
+    return new Set();
+  }
+};
+const keep = (key, set) => {
+  try {
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch (e) {
+    /* private window: only for now */
+  }
+};
+
 const local = {
   get(key, fallback) {
     try {
@@ -235,8 +291,101 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     else this.requestUpdate();
   }
 
+  /** When the tabs don't fit, the end where there are more fades, with an arrow. */
+  _markTabs() {
+    const t = this.renderRoot && this.renderRoot.querySelector(".tabs-wrap > .more-tabs");
+    if (!t) return;
+    t.parentElement.classList.toggle("tem-esq", t.scrollLeft > 2);
+    t.parentElement.classList.toggle("tem-dir", t.scrollLeft + t.clientWidth < t.scrollWidth - 2);
+    if (window.ResizeObserver && (!this._tabsRo || this._tabsRo.t !== t)) {
+      if (this._tabsRo) this._tabsRo.ro.disconnect();
+      const ro = new ResizeObserver(() => this._markTabs());
+      ro.observe(t);
+      t.querySelectorAll("button").forEach((b) => ro.observe(b));
+      this._tabsRo = { t, ro };
+    }
+  }
+
+  /** The icon before the title of each option and each field that has none of its own (by its words). */
+  _labelIcons() {
+    const root = this.renderRoot;
+    if (!root || !root.querySelectorAll) return;
+    for (const l of root.querySelectorAll(".flabel, .row .grow > .label")) {
+      if (l.querySelector(":scope > svg") || l.closest(".row:has(> .tile), .now-cards")) continue;
+      const t = l.textContent.trim();
+      if (t) l.prepend(svgNode(labelIc(t), "lbl-ic"));
+    }
+  }
+
+  /** Each card with a heading folds; each field of choices of a window too (closed: only what is chosen). */
+  _applyFolds() {
+    const root = this.renderRoot;
+    if (!root || !root.querySelectorAll) return;
+    this._fechadas = this._fechadas || keptSet(FOLD_KEY);
+    this._camposFechados = this._camposFechados || keptSet(FIELD_KEY);
+    for (const card of root.querySelectorAll(".panel")) {
+      const head = card.firstElementChild;
+      if (!head || !head.matches(HEAD) || head.matches(".chores-head.sub")) continue;
+      head.classList.add("fold-head");
+      const key = foldKeyOf(card);
+      if (!key) continue;
+      const off = this._fechadas.has(key);
+      card.classList.add("dobra");
+      card.classList.toggle("fechada", off);
+      head.setAttribute("role", "button");
+      head.setAttribute("tabindex", "0");
+      head.setAttribute("aria-expanded", off ? "false" : "true");
+    }
+    for (const field of root.querySelectorAll(".sheet .field")) {
+      const lab = field.querySelector(":scope > .flabel");
+      if (!lab || !field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick")) continue;
+      const key = fieldKeyOf(field);
+      if (!key) continue;
+      const off = this._camposFechados.has(key);
+      field.classList.add("dobravel");
+      field.classList.toggle("shut", off);
+      lab.setAttribute("role", "button");
+      lab.setAttribute("tabindex", "0");
+      lab.setAttribute("aria-expanded", off ? "false" : "true");
+    }
+  }
+
+  _toggleFold(el, field) {
+    const key = field ? fieldKeyOf(el.parentElement) : foldKeyOf(el.parentElement);
+    if (!key) return;
+    const set = field ? this._camposFechados : this._fechadas;
+    if (set.has(key)) set.delete(key);
+    else set.add(key);
+    keep(field ? FIELD_KEY : FOLD_KEY, set);
+    this._applyFolds();
+  }
+
+  firstUpdated() {
+    const target = (e) => {
+      if (!e.target.closest || e.target.closest("button, a, input, select, textarea, label:not(.flabel)")) return null;
+      const head = e.target.closest(".panel.dobra > .fold-head");
+      if (head) return [head, false];
+      const lab = e.target.closest(".sheet .field.dobravel > .flabel");
+      return lab ? [lab, true] : null;
+    };
+    this.renderRoot.addEventListener("click", (e) => {
+      const t = target(e);
+      if (t) this._toggleFold(t[0], t[1]);
+    });
+    this.renderRoot.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const t = target(e);
+      if (!t) return;
+      e.preventDefault();
+      this._toggleFold(t[0], t[1]);
+    });
+  }
+
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
+    this._markTabs();
+    this._labelIcons();
+    this._applyFolds();
     this._chatAfterRender();
     // Agora › MemorIA: the trecho of now, once a minute and when the next one starts
     this._memoriaTick();
@@ -523,7 +672,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       <div class="aw-chips">
         <span class="aw-chip">${icon("circle-pause")}Rotinas, tarefas e manutenção pausadas</span>
       </div>
-      <button class="text-btn aw-end" @click=${() => this._saveAppPrefs({ away: null })}>${on ? "Encerrar férias" : "Cancelar férias"}</button>
+      <button class="text-btn aw-end" @click=${() => this._saveAppPrefs({ away: null })}>${icon("x")}${on ? "Encerrar férias" : "Cancelar férias"}</button>
     </div>`;
   }
 
@@ -1138,7 +1287,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       </div>
       ${f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing}
       <div class="sheet-actions">
-        <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
+        <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
         <button class="btn primary" ?disabled=${!on} @click=${() => this._finishVoice()}>${icon("sparkles")}Pronto</button>
       </div>
       ${v.ready ? nothing : html`<p class="sheet-note">${v.reason || ""}</p>`}
@@ -1635,7 +1784,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     return html`<header class="brand-head">
       <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
       ${up ? html`<button class="uplink" @click=${() => this._goMenu()}>${icon("chevron-left")}<span>Mais</span></button>` : nothing}
-      <h1 class="page-title">${title}</h1>
+      <h1 class="page-title">${PAGE_IC[title] ? html`<span class="mais-ic page-ic" aria-hidden="true">${icon(PAGE_IC[title])}</span>` : nothing}${title}</h1>
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
     </header>`;
@@ -1906,7 +2055,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // right after the last Tomei here, until you leave Agora, so it doesn't vanish from under the finger.
     const meds = this._ix().meds || [];
     const medsDone = meds.length > 0 && meds.every((m) => m.taken) && !this._medsHold;
-    const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais/calendarios")}>Mostrar</button></div>` : nothing;
+    const hidden = !cals.length ? html`<div class="hint-card">${icon("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${() => this._go("/mais/calendarios")}>${icon("eye")}Mostrar</button></div>` : nothing;
     const medsPart = html`${medsDone ? nothing : this._renderMedsPanel()} ${this._renderBillsPanel()}`;
     // the all-day ones (a hotel stay, a birthday) live in the Hoje card, under its title, with when they end
     const untilOf = (e) => {
@@ -2188,7 +2337,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <button class="pick ${isToday ? "on" : ""}" @click=${() => {
           this._cursor = startOfDay(new Date());
           this._scrollWeek = true;
-        }}>Hoje</button>
+        }}>${icon("sun")}<span>Hoje</span></button>
       </div>
       ${body}
     </section>`;
@@ -2514,9 +2663,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     };
     return html`<section class="page more-page">
       ${this._renderHead("Configurações", status, nothing, true)}
-      <div class="seg compact more-tabs" role="tablist" aria-label="Seções de Configurações">
+      <div class="tabs-wrap"><div class="seg compact more-tabs" role="tablist" aria-label="Seções de Configurações" @scroll=${() => this._markTabs()}>
         ${CONFIG_TABS.map(([k, label, ic]) => html`<button class=${tab === k ? "on" : ""} role="tab" aria-selected=${tab === k ? "true" : "false"} @click=${() => go(k)}>${icon(ic)}<span>${label}</span></button>`)}
-      </div>
+      </div><span class="tabs-fim esq" aria-hidden="true">${icon("chevron-left")}</span><span class="tabs-fim dir" aria-hidden="true">${icon("chevron-right")}</span></div>
       <div role="tabpanel" aria-label=${CONFIG_TABS.find((t) => t[0] === tab)[1]}>${body}</div>
       ${this._renderFoot()}
     </section>`;
@@ -2561,7 +2710,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           ${[
             [0, "Domingo"],
             [1, "Segunda"],
-          ].map(([k, label]) => html`<button class=${ws === k ? "on" : ""} role="radio" aria-checked=${ws === k ? "true" : "false"} @click=${() => this._saveAppPrefs({ week_start: k })}>${label}</button>`)}
+          ].map(([k, label]) => html`<button class=${ws === k ? "on" : ""} role="radio" aria-checked=${ws === k ? "true" : "false"} @click=${() => this._saveAppPrefs({ week_start: k })}>${icon("calendar-days")}<span>${label}</span></button>`)}
         </div>
       </div>
       ${this._renderShortcut()}
@@ -2623,11 +2772,11 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <label class="switch"><input type="checkbox" role="switch" .checked=${!!a} @change=${(e) => this._saveAppPrefs({ away: e.target.checked ? { from: today, to: ymd(addDays(fromYmd(today), 4)) } : null })} aria-label="De férias" /><span class="track"></span></label>
       </div>
       ${a
-        ? html`<div class="away-dates">
+        ? html`<div class="sub-op"><div class="sub-box"><div class="away-dates">
             ${datePickField("De", a.from, (v) => v && set(v, a.to), { weekStart: this._app("week_start", 1), bid: "away-from" })}
             ${datePickField("Até", a.to, (v) => v && set(a.from, v), { min: a.from, weekStart: this._app("week_start", 1), bid: "away-to" })}
           </div>
-          <span class="field-hint away-cal">${icon("calendar-x")}<span>No Google, as rotinas saem desses dias e voltam em ${dateShort(addDays(fromYmd(a.to), 1), new Date(this._now))}.</span></span>`
+          <span class="field-hint away-cal">${icon("calendar-x")}<span>No Google, as rotinas saem desses dias e voltam em ${dateShort(addDays(fromYmd(a.to), 1), new Date(this._now))}.</span></span></div></div>`
         : nothing}
     </div>`;
   }
@@ -2710,7 +2859,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <div class="grow"><div class="label">Criar sensores</div><div class="hint" style="white-space:normal">${on ? "Ligado." : "Desligado: nenhum sensor no Home Assistant."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${on} @change=${(e) => this._saveAppPrefs({ sensors_on: e.target.checked ? true : null })} aria-label="Criar sensores" /><span class="track"></span></label>
       </div>
-      ${on ? html`<div class="sensor-list">${list.map(([id, t]) => html`<div class="sensor-row"><code>${id}</code><span>${t}</span></div>`)}</div>` : nothing}
+      ${on ? html`<div class="sub-op"><div class="sub-box sensor-list">${list.map(([id, t]) => html`<div class="sensor-row"><code>${id}</code><span>${t}</span></div>`)}</div></div>` : nothing}
       <div class="ha-events">
         <b>Eventos para automações</b>
         <span class="ha-ev-lead">Para marcar de fora do app, numa automação, numa rotina da Alexa ou numa etiqueta NFC. Funcionam com os sensores ligados ou não.</span>
@@ -2750,6 +2899,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     return html`<div class="panel" id="leitura-ia">
       ${this._secHead("sparkles", "IA do Home Assistant", "Encontra eventos em mensagens, prints e fotos.")}
       ${sw}
+      <div class="sub-op"><div class="sub-box">
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>
       ${ents.length || sel
         ? html`<label class="field" style="margin:14px 0 0">
@@ -2773,6 +2923,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
               <li>Volte aqui e escolha essa IA na lista.</li>
             </ol>
           </div>`}
+      </div></div>
     </div>`;
   }
 
@@ -2830,10 +2981,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     `;
   }
 
-  _sheetHead(title, back) {
+  _sheetHead(title, back, ic = "") {
     return html`<div class="sheet-head">
       ${back ? html`<button class="icon-btn back" @click=${back} aria-label="Voltar">${icon("chevron-left")}</button>` : nothing}
-      <h3 class="display">${title}</h3>
+      <h3 class="display">${icon(ic || sheetIc(title), "sh-ic")}${title}</h3>
       <button class="icon-btn" @click=${() => this._closeSheet()} aria-label="Fechar">${icon("x")}</button>
     </div>`;
   }
@@ -2885,7 +3036,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const chk = this._checkOf(e);
     const it = { key: e.key, summary: e.summary };
     if (chk)
-      return html`<div class="kind-state">${icon("circle-check")}<span>Feito${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, "evento")}>Desfazer</button></div>`;
+      return html`<div class="kind-state">${icon("circle-check")}<span>Feito${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, "evento")}>${icon("undo-2")}Desfazer</button></div>`;
     // the ones of today, tomorrow and before: far ahead it is too early to say it was done (a day of several: that day)
     if ((e.day ? fromYmd(e.day) : e.start) >= addDays(startOfDay(now), 2)) return nothing;
     return html`<button class="btn outline kind-act ev-done-btn" @click=${() => this._check(it, "evento").then(() => this._closeSheet())}>${icon("check")}Feito</button>`;
@@ -2955,7 +3106,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
                   [30, "30 min"],
                   [60, "1 h"],
                   [120, "2 h"],
-                ].map(([m, label]) => html`<button class="pick ${dur === m && !f.endDate ? "on" : ""}" @click=${() => setDuration(m)}>${label}</button>`)}
+                ].map(([m, label]) => html`<button class="pick ${dur === m && !f.endDate ? "on" : ""}" @click=${() => setDuration(m)}>${icon("hourglass")}<span>${label}</span></button>`)}
               </div>
               ${overnight ? html`<div class="field-hint">${icon("info")}<span>Termina no dia seguinte.</span></div>` : nothing}`}
       </div>
@@ -2978,8 +3129,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
             </label>`
         : nothing}
       <div class="sheet-actions">
-        <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-        <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveForm()}>${f.saving ? "Salvando…" : f.mode === "add" ? "Criar evento" : "Salvar"}</button>
+        <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+        <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim()} @click=${() => this._saveForm()}>${icon(f.mode === "add" ? "plus" : "check")}${f.saving ? "Salvando…" : f.mode === "add" ? "Criar evento" : "Salvar"}</button>
       </div>
     `;
   }
@@ -3004,12 +3155,13 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   _renderConfirm() {
     const f = this._form;
+    const ic = f.icon || (/^Apagar/.test(f.label) ? "trash" : /^Restaurar/.test(f.label) ? "archive-restore" : /^Importar/.test(f.label) ? "upload" : /^Pular/.test(f.label) ? "skip-forward" : "circle-alert");
     return html`
-      <div class="sheet-head"><h3 class="display">${f.title}</h3></div>
+      <div class="sheet-head"><h3 class="display">${icon(ic, "sh-ic")}${f.title}</h3></div>
       <p class="confirm-text">${f.text}</p>
       <div class="sheet-actions">
-        <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-        <button class="btn ${f.danger ? "danger-fill" : "primary"}" @click=${() => f.run()}>${f.label}</button>
+        <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+        <button class="btn ${f.danger ? "danger-fill" : "primary"}" @click=${() => f.run()}>${icon(ic)}${f.label}</button>
       </div>
     `;
   }
@@ -3027,7 +3179,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const error = f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing;
     const thumbs = f.images && f.images.length ? html`<div class="thumbs">${f.images.map((img) => html`<img src=${img.url} alt="" />`)}</div>` : nothing;
     const aiHint = html`<div class="imp-error soft">${icon("sparkles")}<span>${ai.reason || "Para ler mensagens e fotos, o Home Assistant precisa de uma integração de IA com tarefa de IA."}
-      <button class="text-btn inline" @click=${() => this._goAiSettings()}>Ver IA do Home Assistant</button></span></div>`;
+      <button class="text-btn inline" @click=${() => this._goAiSettings()}>${icon("sparkles")}Ver IA do Home Assistant</button></span></div>`;
 
     if (f.step === "voice") return this._renderVoiceStep(toPick);
     if (f.step === "text") {
@@ -3050,7 +3202,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${this._sheetHead("Lendo…")}
         ${thumbs}
         <div class="imp-loading"><span class="spin">${icon("loader-circle")}</span><span>${f.loadingText || "Lendo…"}</span></div>
-        <div class="sheet-actions"><button class="btn outline" @click=${() => ((this._importToken = 0), this._setForm({ step: f.prevStep || "pick" }))}>Cancelar</button></div>
+        <div class="sheet-actions"><button class="btn outline" @click=${() => ((this._importToken = 0), this._setForm({ step: f.prevStep || "pick" }))}>${icon("x")}Cancelar</button></div>
       `;
     }
     if (f.step === "review") {
@@ -3095,7 +3247,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           : nothing}
         <div class="sheet-actions">
           <button class="btn primary" ?disabled=${!chosen || f.adding} @click=${() => this._importAdd()}>
-            ${f.adding ? "Adicionando…" : chosen ? `Adicionar ${plural(chosen, "evento", "eventos")}${target && writable.length <= 1 ? ` em ${clip(target.name, 16)}` : ""}` : "Nenhum evento marcado"}
+            ${icon("plus")}${f.adding ? "Adicionando…" : chosen ? `Adicionar ${plural(chosen, "evento", "eventos")}${target && writable.length <= 1 ? ` em ${clip(target.name, 16)}` : ""}` : "Nenhum evento marcado"}
           </button>
         </div>
       `;
@@ -3147,7 +3299,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       ${this._isAdmin() ? html`<button class="menu-row" @click=${() => this._openInHA(`/calendar?entity_id=${c.id}`)}>${icon("external-link")}Abrir na tela padrão do HA</button>` : nothing}
       <div class="sheet-actions">
         <button class="btn outline" @click=${() => this._setForm({ name: "", color: null, hidden: false })}>${icon("rotate-ccw")}Padrão</button>
-        <button class="btn primary" @click=${() => this._saveCalSheet()}>Salvar</button>
+        <button class="btn primary" @click=${() => this._saveCalSheet()}>${icon("check")}Salvar</button>
       </div>
     `;
   }
@@ -3171,7 +3323,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
             ["3m", "Próximos 3 meses"],
             ["12m", "Próximos 12 meses"],
             ["year", "Último ano e próximo"],
-          ].map(([k, label]) => html`<button class="pick ${f.range === k ? "on" : ""}" @click=${() => this._setForm({ range: k })}>${label}</button>`)}
+          ].map(([k, label]) => html`<button class="pick ${f.range === k ? "on" : ""}" @click=${() => this._setForm({ range: k })}>${icon("calendar-range")}<span>${label}</span></button>`)}
         </div>
       </div>
       <p class="sheet-note">Cada repetição vira um evento no arquivo. Abre no Google Agenda, no Outlook e no iPhone.</p>
@@ -3230,7 +3382,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <div class="cam-bottom">
           <div class="cam-shots">${c.shots.slice(-3).map((s) => html`<img src=${s.url} alt="" />`)}${n > 3 ? html`<span>+${n - 3}</span>` : nothing}</div>
           <button class="cam-shutter" aria-label="Fotografar" ?disabled=${c.status !== "live" || n >= 6} @click=${() => this._shoot()}><span></span></button>
-          <button class="cam-done" ?disabled=${!n} @click=${() => this._useShots()}>Pronto${n ? ` (${n})` : ""}</button>
+          <button class="cam-done" ?disabled=${!n} @click=${() => this._useShots()}>${icon("check")}Pronto${n ? ` (${n})` : ""}</button>
         </div>
       </div>
     `;
@@ -3245,7 +3397,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ? html`<button @click=${() => {
             this._toast = null;
             t.action.run();
-          }}>${t.action.label}</button>`
+          }}>${icon(t.action.icon || (t.action.label === "Desfazer" ? "undo-2" : "arrow-right"))}${t.action.label}</button>`
         : nothing}
     </div>`;
   }

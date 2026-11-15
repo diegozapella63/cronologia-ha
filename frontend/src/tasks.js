@@ -309,7 +309,7 @@ export const TasksMixin = (Base) =>
           ? html`<div class="field">
               <span class="flabel">${marked.length > 1 ? "Cômodos" : "Cômodo"}</span>
               <div class="chip-row ${locked ? "locked" : ""}">
-                <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null, rooms: [] })}>Nenhum</button>
+                <button class="pick ${!marked.length ? "on" : ""}" ?disabled=${locked} @click=${() => this._setForm({ room: null, rooms: [] })}>${icon("x")}<span>Nenhum</span></button>
                 ${multiRoom && rooms.length > 1
                   ? html`<button class="pick all-rooms ${all ? "on" : ""}" aria-pressed=${all ? "true" : "false"} ?disabled=${locked} @click=${() => this._setForm(all ? { room: null, rooms: [] } : { rooms: allIds, room: allIds[0] })}>${icon("house")}<span>Todos</span></button>`
                   : nothing}
@@ -374,7 +374,7 @@ export const TasksMixin = (Base) =>
           ? html`${f.noDue ? nothing : this._dateField("Prazo", f.date, (v) => this._setForm({ date: v }), "td-date")}
               ${l && l.appDue && !f.noDue ? html`<p class="field-hint app-due" style="margin:-8px 0 12px">${icon("info")}<span>Guardado no ResolvIA: a lista não aceita data.</span></p>` : nothing}
               <div class="chip-row" style="margin:-8px 0 18px">
-                <button class="pick ${f.noDue ? "on" : ""}" @click=${() => this._setForm({ noDue: !f.noDue })}>Sem prazo</button>
+                <button class="pick ${f.noDue ? "on" : ""}" @click=${() => this._setForm({ noDue: !f.noDue })}>${icon("x")}<span>Sem prazo</span></button>
                 ${canTime && !f.noDue
                   ? html`<button class="pick ${f.timed ? "on" : ""}" @click=${() => this._setForm({ timed: !f.timed })}>${icon("clock")}<span>Com horário</span></button>
                       ${f.timed ? timeField(f.time, (v) => this._setForm({ time: v }), { label: "Horário", cls: "inline-time" }) : nothing}`
@@ -386,8 +386,8 @@ export const TasksMixin = (Base) =>
         ${this._renderRoomEquipFields(f, { multiRoom: true })}
         ${canNotes && this._app("event_details", false) === true ? html`<label class="field"><span class="flabel">Notas</span><textarea rows="2" .value=${f.notes} placeholder="Detalhes, links" @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></label>` : nothing}
         <div class="sheet-actions">
-          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-          <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim() || !l} @click=${() => this._saveTodoForm()}>${f.saving ? "Salvando…" : "Criar tarefa"}</button>
+          <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+          <button class="btn primary" ?disabled=${f.saving || !(f.title || "").trim() || !l} @click=${() => this._saveTodoForm()}>${icon("plus")}${f.saving ? "Salvando…" : "Criar tarefa"}</button>
         </div>`;
     }
 
@@ -508,7 +508,7 @@ export const TasksMixin = (Base) =>
                     <span class="op-l">De quem é</span>
                     ${["", ...people].map((p) => {
                       const on = p ? foldText(owners[l.id] || "") === foldText(p) : !owners[l.id];
-                      return html`<button class=${on ? "on" : ""} role="radio" aria-checked=${on ? "true" : "false"} @click=${() => setOwner(l.id, p)}>${p || "Todos"}</button>`;
+                      return html`<button class=${on ? "on" : ""} role="radio" aria-checked=${on ? "true" : "false"} @click=${() => setOwner(l.id, p)}>${icon(p ? "user-round" : "users")}<span>${p || "Todos"}</span></button>`;
                     })}
                   </div>`
                 : nothing}
@@ -518,6 +518,7 @@ export const TasksMixin = (Base) =>
       return html`<div class="panel" id="resolvia">
         ${this._secHead("list-checks", "Tarefas do ResolvIA")}
         ${onSwitch}
+        <div class="sub-op"><div class="sub-box">
         <div class="ai-state ${state.tone}"><span class="dot"></span><div><b>${state.title}</b><span>${state.text}</span></div></div>
         ${lists.length
           ? html`${dueOk
@@ -553,6 +554,7 @@ export const TasksMixin = (Base) =>
               ${icon("chevron-right")}
             </button>`
           : nothing}
+        </div></div>
       </div>`;
     }
 

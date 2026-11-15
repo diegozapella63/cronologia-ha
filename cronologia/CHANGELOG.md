@@ -1,5 +1,14 @@
 # Mudanças
 
+## 1.82.0
+
+- **Contrair e expandir**: todo cartão (os da Agora e os de Mais) fecha e abre num toque no cabeçalho, com a seta no canto. Nas janelas (Adicionar, Editar…), cada campo de escolhas fecha e abre pelo título. O aparelho lembra os que ficaram fechados.
+- **Ícones em tudo**, como nos outros apps: no título de cada tela e de cada janela, em cada opção e em cada campo, e nos botões que faltavam (Cancelar, Salvar, Criar, Tomei, Paguei, Feito, Desfazer, Hoje…).
+- **Sem linhas entre as opções** de uma seção.
+- **Sub-opções num quadro**: o que depende de uma chave fica num quadro embaixo dela: o estado e a escolha da IA embaixo de **Usar IA**; o estado e o Mostrar no calendário embaixo de **Usar a integração** (GerencIA e ResolvIA); o último uso embaixo de **Usar com o CorrerIA**; o estado embaixo de **Trechos no Agora**; quem participa, quando fecha e os avisos embaixo de **Usar recompensas**; Avisar de novo, Quem cuida e Testar embaixo de **Avisar no celular**; as datas embaixo de **De férias**; e os sensores embaixo de **Criar sensores**.
+- **Configurações**: quando as abas não cabem, a ponta de onde há mais some aos poucos, com uma seta.
+- **Últimas chamadas** (Uso da IA) com o ícone e quantas são; a Conversa no padrão dos outros apps.
+
 ## 1.81.1
 
 - Com as rotinas de hoje feitas e toda a manutenção em dia, a tela **Agora** não mostra mais "Manutenção da casa em dia". A lista fica em **Mais › Rotinas** e na agenda, e volta para a Agora quando um item chega perto de vencer.

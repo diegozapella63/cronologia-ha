@@ -104,7 +104,7 @@ export const MemoriaMixin = (Base) =>
         ${m.painel
           ? html`<a class="memo-pad" href=${m.painel} target="_top" aria-label=${label}>${sheet}</a>`
           : html`<div class="memo-pad" role="group" aria-label=${label}>${sheet}</div>`}
-        ${long ? html`<button class="text-btn memo-more" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._memoOpen = !open), this.requestUpdate())}>${open ? "Ver menos" : "Ver mais"}</button>` : nothing}
+        ${long ? html`<button class="text-btn memo-more" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._memoOpen = !open), this.requestUpdate())}>${icon(open ? "chevron-up" : "chevron-down")}${open ? "Ver menos" : "Ver mais"}</button>` : nothing}
       </div>`;
     }
 
@@ -120,10 +120,10 @@ export const MemoriaMixin = (Base) =>
       if (on && m && m.ligado) {
         const tone = !m.encontrado ? "off" : m.erro ? "warn" : "ok";
         const n = (m.trechos || []).length;
-        state = html`<div class="ai-state ${tone}" id="memoria-estado"><span class="dot"></span><div>
+        state = html`<div class="sub-op"><div class="sub-box"><div class="ai-state ${tone}" id="memoria-estado"><span class="dot"></span><div>
           <b>${!m.encontrado ? "MemorIA não encontrado" : m.erro ? "Não consegui falar com o MemorIA" : `Conectado ao MemorIA ${m.versao || ""}`}</b>
           <span>${!m.encontrado ? "Instale o MemorIA 1.13.0 ou mais novo no mesmo Home Assistant." : m.erro ? m.erro : n && m.trechos[0].agora ? `Agora: ${m.trechos[0].bloco}, desde ${m.trechos[0].inicio}.` : "Nada agora."}</span>
-        </div></div>`;
+        </div></div></div></div>`;
       }
       return html`<div class="panel" id="memoria-config">
         ${this._secHead("notebook-pen", "MemorIA")}

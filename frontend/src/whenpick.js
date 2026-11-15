@@ -242,7 +242,7 @@ export function pickTime(anchor, { value = "", title = "Horário" } = {}) {
         ${Array.from({ length: 12 }, (_, k) => k * 5).map((m) => html`<button type="button" class="wp-cell ${m === s.m ? "on" : ""}" aria-pressed=${m === s.m ? "true" : "false"} @click=${() => ((s.m = m), pick())}>${pad(m)}</button>`)}
       </div>
     </div>
-    <div class="wp-foot"><button type="button" class="wp-ok" @click=${pick}>Pronto</button></div>`;
+    <div class="wp-foot"><button type="button" class="wp-ok" @click=${pick}>${icon("check")}Pronto</button></div>`;
   return open(anchor, title, s, draw, ".wp-h .wp-cell.on");
 }
 

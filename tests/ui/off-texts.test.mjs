@@ -114,7 +114,9 @@ describe("Mais › Avisos › Testar no meu celular (1.65.0: at the bottom, the 
     const app = new App();
     app.api = fakeApi({ testAlert: {} });
     const view = app._renderAlertsPanel();
-    assert.match(text(view), /Testar no meu celular$/);
+    // 1.82.0: in the box under Avisar no celular, at its end, before Pessoas e pets
+    assert.match(text(view), /Avisar no celular Dá para desligar em cada remédio\. Avisar de novo se não tomar .* Testar no meu celular Pessoas e pets/);
+    assert.match(render(view).html, /class="sub-op"><div class="sub-box"><div class="field">/);
     await click(view, "Testar no meu celular");
     assert.deepEqual(app.api.calls, [["testAlert", "Davi"]]);
     assert.match(app.toasts[0], /^Aviso de teste enviado para o seu celular\./);

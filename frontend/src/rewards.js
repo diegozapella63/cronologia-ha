@@ -238,7 +238,7 @@ export const RewardsMixin = (Base) =>
             </button>`,
           )}
         </div>
-        <button class="btn outline" style="width:100%" @click=${() => f.run("")}>Ninguém do placar (sem pontos)</button>`;
+        <button class="btn outline" style="width:100%" @click=${() => f.run("")}>${icon("x")}Ninguém do placar (sem pontos)</button>`;
     }
 
     // ------------------------------------------------------------ the tab
@@ -317,7 +317,7 @@ export const RewardsMixin = (Base) =>
           <b>${h.winner ? `${h.winner} venceu` : "Empate"} <span class="result-score">${score}</span></b>
           ${h.reward ? html`<small>${h.winner ? "Prêmio" : "Prêmio em jogo"}: ${h.reward}</small>` : nothing}
         </div>
-        ${h.winner && h.reward ? html`<button class="dose-btn agora" @click=${() => this._setDelivered(h.key, true)}>Entregue</button>` : html`<button class="icon-btn" aria-label="Fechar" @click=${() => this._setDelivered(h.key, true)}>${icon("x")}</button>`}
+        ${h.winner && h.reward ? html`<button class="dose-btn agora" @click=${() => this._setDelivered(h.key, true)}>${icon("check")}Entregue</button>` : html`<button class="icon-btn" aria-label="Fechar" @click=${() => this._setDelivered(h.key, true)}>${icon("x")}</button>`}
       </div>`;
     }
 
@@ -336,7 +336,7 @@ export const RewardsMixin = (Base) =>
             <span class="overline">${per(cur) ? "Prêmios" : "Prêmio"} ${THIS[s.period]}</span>
             ${per(cur) ? nothing : cur.reward ? html`<b>${cur.reward}</b>` : html`<span class="prize-empty">Ainda sem prêmio. Pode ser um para todos ou um para cada pessoa.</span>`}
           </div>
-          <button class="text-btn" @click=${() => this._openPrize("current")}>${curSet ? "Mudar" : "Definir"}</button>
+          <button class="text-btn" @click=${() => this._openPrize("current")}>${icon(curSet ? "pencil" : "plus")}${curSet ? "Mudar" : "Definir"}</button>
         </div>
         ${per(cur)
           ? html`<div class="prize-people">
@@ -356,7 +356,7 @@ export const RewardsMixin = (Base) =>
             : nx.reward
               ? html`Prêmio ${NEXT[s.period]}: <b>${nx.reward}</b>`
               : `Prêmio ${NEXT[s.period]} ainda livre`}</span></span>
-          <button class="text-btn" @click=${() => this._openPrize("next")}>${nextSet ? "Mudar" : "Definir"}</button>
+          <button class="text-btn" @click=${() => this._openPrize("next")}>${icon(nextSet ? "pencil" : "plus")}${nextSet ? "Mudar" : "Definir"}</button>
         </div>
       </div>`;
     }
@@ -415,8 +415,8 @@ export const RewardsMixin = (Base) =>
               )}
               <span class="field-hint">${icon("info")}<span>Quem vencer ganha o seu prêmio. Empate: ninguém leva.</span></span>`}
         <div class="sheet-actions">
-          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-          <button class="btn primary" @click=${() => this._savePrize()}>Salvar</button>
+          <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+          <button class="btn primary" @click=${() => this._savePrize()}>${icon("check")}Salvar</button>
         </div>`;
     }
 
@@ -652,15 +652,15 @@ export const RewardsMixin = (Base) =>
           <span class="flabel">Quantos pontos tira</span>
           <div class="chip-row c4">
             ${DEMERIT_PICKS.map((v) => html`<button class="pick ${n === v && !custom ? "on" : ""}" @click=${() => this._setForm({ points: v, custom: false })}>−${v}</button>`)}
-            <button class="pick ${custom ? "on" : ""}" @click=${() => this._setForm({ custom: true })}>Outro</button>
+            <button class="pick ${custom ? "on" : ""}" @click=${() => this._setForm({ custom: true })}>${icon("pencil")}<span>Outro</span></button>
           </div>
           ${custom
             ? html`<div class="time-row"><input type="number" inputmode="numeric" min="1" max="1000" class="num" .value=${String(n || "")} @input=${(e) => this._setForm({ points: Math.max(0, Math.min(1000, parseInt(e.target.value, 10) || 0)) })} /><span class="tl">pontos</span></div>`
             : nothing}
         </div>
         <div class="sheet-actions">
-          ${f.mode === "edit" ? html`<button class="btn outline danger" @click=${() => this._deleteDemerit()}>${icon("trash")}Apagar</button>` : html`<button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>`}
-          <button class="btn primary" ?disabled=${!(f.title || "").trim() || !(n > 0)} @click=${() => this._saveDemeritForm()}>${f.mode === "edit" ? "Salvar" : "Criar"}</button>
+          ${f.mode === "edit" ? html`<button class="btn outline danger" @click=${() => this._deleteDemerit()}>${icon("trash")}Apagar</button>` : html`<button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>`}
+          <button class="btn primary" ?disabled=${!(f.title || "").trim() || !(n > 0)} @click=${() => this._saveDemeritForm()}>${icon(f.mode === "edit" ? "check" : "plus")}${f.mode === "edit" ? "Salvar" : "Criar"}</button>
         </div>`;
     }
 
@@ -691,8 +691,8 @@ export const RewardsMixin = (Base) =>
           </div>
         </div>
         <div class="sheet-actions">
-          <button class="btn outline" @click=${() => this._closeSheet()}>Cancelar</button>
-          <button class="btn primary" ?disabled=${!f.who || !(f.title || "").trim() || !Number(f.points)} @click=${() => this._saveExtra()}>Dar ${Number(f.points) || 0} pontos</button>
+          <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+          <button class="btn primary" ?disabled=${!f.who || !(f.title || "").trim() || !Number(f.points)} @click=${() => this._saveExtra()}>${icon("trophy")}Dar ${Number(f.points) || 0} pontos</button>
         </div>`;
     }
 
@@ -951,6 +951,7 @@ export const RewardsMixin = (Base) =>
       const names = [...new Set([...s.participants, ...people])];
       return html`<div class="panel score-set" id="placar">
         ${sw}
+        <div class="sub-op"><div class="sub-box">
         <div class="field"><span class="flabel">Quem participa</span>
           <div class="chip-row">${names.map((n) => {
             const on = s.participants.includes(n);
@@ -958,7 +959,7 @@ export const RewardsMixin = (Base) =>
           })}</div>
         </div>
         <div class="field"><span class="flabel">O placar fecha</span>
-          <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${p.label}</button>`)}</div>
+          <div class="seg">${Object.entries(PERIODS).map(([k, p]) => html`<button class=${s.period === k ? "on" : ""} @click=${() => this._scorePrefs({ period: k, anchor: ymd(new Date()) })}>${icon({ semana: "calendar-days", quinzena: "calendar-range", mes: "calendar" }[k] || "calendar")}<span>${p.label}</span></button>`)}</div>
           <span class="field-hint">${icon("info")}<span>${s.period === "mes" ? "No primeiro dia de cada mês." : `A semana começa ${this._app("week_start", 1) === 1 ? "na segunda" : "no domingo"}.`}</span></span>
         </div>
         <div class="row switch-row">
@@ -977,7 +978,8 @@ export const RewardsMixin = (Base) =>
           <div class="grow"><div class="label">Lembrete diário</div><div class="hint">Os pontos e quem está ganhando, no celular.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${!!s.remind} @change=${(e) => this._scorePrefs({ remind: e.target.checked ? "20:00" : null })} aria-label="Lembrete diário" /><span class="track"></span></label>
         </div>
-        ${s.remind ? this._renderScoreRemind(s) : nothing}
+        ${s.remind ? html`<div class="sub-op"><div class="sub-box">${this._renderScoreRemind(s)}</div></div>` : nothing}
+        </div></div>
       </div>`;
     }
 

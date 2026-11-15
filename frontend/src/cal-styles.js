@@ -3828,4 +3828,260 @@ export const calStyles = css`
     font-family: ui-monospace, monospace;
     font-size: 14px;
   }
+
+  /* ---------- 1.82.0, the pattern of the family ---------- */
+  /* the tabs that don't fit: the end where there are more fades, with an arrow */
+  .tabs-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    margin: 0 0 14px;
+  }
+  .tabs-wrap > .more-tabs {
+    position: relative;
+    top: auto;
+    z-index: 0;
+    margin: 0;
+  }
+  .tabs-fim {
+    position: absolute;
+    top: 1px;
+    bottom: 1px;
+    z-index: 1;
+    width: 48px;
+    display: none;
+    align-items: center;
+    pointer-events: none;
+    color: var(--rv-text);
+  }
+  .tabs-fim.dir {
+    right: 1px;
+    justify-content: flex-end;
+    padding-right: 6px;
+    border-radius: 0 12px 12px 0;
+    background: linear-gradient(to right, transparent, var(--rv-surface-2) 62%);
+  }
+  .tabs-fim.esq {
+    left: 1px;
+    padding-left: 6px;
+    border-radius: 12px 0 0 12px;
+    background: linear-gradient(to left, transparent, var(--rv-surface-2) 62%);
+  }
+  .tabs-fim .i {
+    width: 18px;
+    height: 18px;
+    display: block !important;
+  }
+  .tabs-wrap.tem-dir > .tabs-fim.dir,
+  .tabs-wrap.tem-esq > .tabs-fim.esq {
+    display: flex;
+  }
+  /* every title of an option or a field with its icon; no line between the options of a section (the lists with the
+     square of the icon keep it) */
+  .label:has(> .lbl-ic),
+  .flabel:has(> .lbl-ic) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lbl-ic {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--rv-accent-ink, var(--rv-accent));
+  }
+  .row .grow:has(> .label > .lbl-ic) > .hint {
+    padding-left: 26px;
+    white-space: normal;
+  }
+  .panel > .row:not(:has(> .tile)):not(:has(> .em-icon)),
+  .sub-box > .row:not(:has(> .tile)):not(:has(> .em-icon)) {
+    border-top: 0;
+  }
+  /* the sub-options: in a box under the switch, to see whose they are */
+  .sub-op {
+    padding: 0 0 14px 26px;
+  }
+  .sub-box {
+    padding: 12px 14px 14px;
+    border: 1px solid var(--rv-line);
+    border-radius: 14px;
+    background: var(--rv-surface-2);
+  }
+  .sub-box > .ai-state {
+    padding: 0;
+    margin: 0;
+    background: none;
+  }
+  .sub-box > .row:first-child {
+    padding-top: 0;
+  }
+  .sub-box > .row:last-child {
+    padding-bottom: 0;
+  }
+  .sub-box > .ai-actions {
+    margin-top: 12px;
+  }
+  @media (max-width: 360px) {
+    .sub-op {
+      padding-left: 10px;
+    }
+    .sub-box {
+      padding: 10px;
+    }
+  }
+  .sub-box.sensor-list {
+    display: grid;
+    padding: 4px 14px;
+  }
+  .sensor-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 9px 0;
+    border-top: 1px solid var(--rv-line);
+    font-size: 13.5px;
+    color: var(--rv-muted);
+  }
+  .sensor-row:first-child {
+    border-top: 0;
+  }
+  .sensor-row code {
+    font-size: 13px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--rv-bg);
+    color: var(--rv-text);
+    overflow-wrap: anywhere;
+  }
+  /* the title of each screen and each window with its icon */
+  .page-title:has(> .page-ic) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-title > .page-ic {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .page-title > .page-ic .i {
+    width: 23px;
+    height: 23px;
+  }
+  .sheet-head h3:has(> .sh-ic) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sh-ic {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+    border-radius: 9px;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink, var(--rv-accent));
+  }
+  .text-btn:has(> .i) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .text-btn > .i {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .pick > .i + span {
+    min-width: 0;
+  }
+  /* every card with a heading folds (a tap on it, the arrow at the end); each field of choices of a window too */
+  .panel.dobra > .fold-head,
+  .sheet .field.dobravel > .flabel {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .panel.dobra > .fold-head {
+    position: relative;
+    padding-right: 30px;
+  }
+  .sheet .field.dobravel > .flabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel.dobra > .fold-head::after,
+  .sheet .field.dobravel > .flabel::after {
+    content: "";
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: var(--rv-muted);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 20px no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 20px no-repeat;
+    transition: transform 0.2s;
+  }
+  .panel.dobra > .fold-head::after {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    margin-top: -10px;
+  }
+  .sheet .field.dobravel > .flabel::after {
+    margin-left: auto;
+  }
+  .panel.dobra.fechada > .fold-head::after,
+  .sheet .field.dobravel.shut > .flabel::after {
+    transform: rotate(-90deg);
+  }
+  .panel.dobra.fechada > :not(.fold-head),
+  .sheet .field.dobravel.shut > :not(.flabel) {
+    display: none !important;
+  }
+  .panel.dobra.fechada > .fold-head {
+    margin-bottom: 0;
+  }
+  .panel.dobra.fechada > .mais-head {
+    padding-bottom: 16px;
+  }
+  .panel.dobra > .fold-head:focus-visible,
+  .sheet .field.dobravel > .flabel:focus-visible {
+    outline: 2px solid var(--rv-accent);
+    outline-offset: 2px;
+    border-radius: 10px;
+  }
+  /* inside a box of sub-options, the choices two by row, as everywhere */
+  .sub-box .chip-row:not(.care-pick) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 8em), 1fr));
+    gap: 8px;
+  }
+  .sub-box .chip-row .pick {
+    justify-content: center;
+    min-width: 0;
+  }
+  @media (max-width: 420px) {
+    .sub-box .seg button > .i {
+      display: none;
+    }
+  }
+  /* the buttons of the Agora (Tomei, Paguei, Feito, Entregue), the camera and the toast with their icons */
+  .dose-btn,
+  .cam-done,
+  .toast button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .dose-btn > .i,
+  .cam-done > .i,
+  .toast button > .i {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
 `;
