@@ -17,10 +17,12 @@ def check(c, label):
     else: failed.append(label)
 data = f"{SP}/crx-data"; shutil.rmtree(data, ignore_errors=True)
 os.makedirs(f"{data}/media"); os.makedirs(f"{data}/share"); os.makedirs(f"{SP}/shots", exist_ok=True)
-# halfway between the start of this week (Monday, 00:00) and now: in this period even right after midnight on a Monday
+# halfway between the start of this period and now: the period that closes when the app starts (prev, below) ends
+# yesterday at 00:00, so this one starts there (and never before this Monday); in this period even right after midnight
 _now = datetime.datetime.now().astimezone()
 _monday = (_now - datetime.timedelta(days=_now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-old_at = (_monday + (_now - _monday) / 2).astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+_start = max(_monday, (_now - datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0))
+old_at = (_start + (_now - _start) / 2).astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 # data from before the Extrato: points, no log. One of them a week ago, in a period that closes when the app starts.
 now_l = datetime.datetime.now()
 week_ago = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)).isoformat().replace("+00:00", "Z")

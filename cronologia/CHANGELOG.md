@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.82.1
+
+- **Avisos › Avisar de novo se não tomar**: as escolhas voltam a ficar duas por linha no celular.
+- **Recompensas › Lembrete diário › Quem recebe**: as pessoas voltam a ficar lado a lado, do mesmo tamanho.
+
 ## 1.82.0
 
 - **Contrair e expandir**: todo cartão (os da Agora e os de Mais) fecha e abre num toque no cabeçalho, com a seta no canto. Nas janelas (Adicionar, Editar…), cada campo de escolhas fecha e abre pelo título. O aparelho lembra os que ficaram fechados.

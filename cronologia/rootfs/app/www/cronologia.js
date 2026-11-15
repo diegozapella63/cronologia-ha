@@ -7877,9 +7877,9 @@ dialog.ss-wrap::backdrop{background:transparent}
     border-radius: 10px;
   }
   /* inside a box of sub-options, the choices two by row, as everywhere */
-  .sub-box .chip-row:not(.care-pick) {
+  .sub-box .chip-row:not(.care-pick):not(.quem) {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 8em), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 7em), 1fr));
     gap: 8px;
   }
   .sub-box .chip-row .pick {
