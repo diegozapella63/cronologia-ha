@@ -267,6 +267,14 @@ describe("Ler com IA", () => {
     assert.equal(out.events[0].title, "Oftalmologista");
     await waitFor(() => fs.readdirSync(path.join(stack.dirs.media, "cronologia", "ia-temp")).length === 0, { what: "the photo removed" });
   });
+  it("1.84.0: a PDF too (Escolher fotos ou PDF), as a PDF in the media folder", async () => {
+    const pdf = Buffer.from("%PDF-1.4 convite").toString("base64");
+    const res = await post("/api/extract", JSON.stringify({ images: [{ data: pdf, mime: "application/pdf" }] }));
+    assert.equal(res.status, 200);
+    const line = await waitFor(() => stack.fake.lines.filter((l) => l.startsWith("fake AI call") && l.includes(".pdf")).at(-1), { what: "the pdf call" });
+    assert.match(line, /ia-temp\/[^"]+\.pdf/);
+    await waitFor(() => fs.readdirSync(path.join(stack.dirs.media, "cronologia", "ia-temp")).length === 0, { what: "the pdf removed" });
+  });
   it("an AI that can't read photos, and the AI turned off, are 409", async () => {
     await c.call("cronologia/prefs/set_app", { prefs: { ai_entity: "ai_task.ollama_ai_task" } });
     const img = Buffer.from("x").toString("base64");

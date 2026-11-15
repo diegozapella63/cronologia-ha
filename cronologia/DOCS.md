@@ -57,6 +57,8 @@ O botão de balão, ao lado do microfone, abre uma conversa com a IA. Pergunte s
 
 Pedindo para mexer na agenda ("marca dentista sexta às 15h", "fiz arrumar a cama", "tomei a sertralina"), ela mostra cada ação num cartão e só faz quando você toca em **Fazer** (ou **Fazer todas**). O evento vai para o calendário do **Adicionar**. **Nova conversa** começa outra. Com **Usar IA** desligado, o botão não aparece. Cada mensagem conta em **Uso da IA** como Conversa.
 
+O **clipe**, à esquerda da caixa, manda junto uma foto ou um PDF: **Tirar foto** (a câmera do Digitalizar com IA), **Escolher fotos** (a galeria, até 4) ou **Escolher arquivo** (uma foto ou um PDF). A IA olha o arquivo para responder e pode propor marcar o compromisso que vê (um convite, um cartão de consulta). Na conversa fica só o nome do arquivo. O botão redondo da direita é o microfone com a caixa vazia e vira o Enviar quando você escreve ou escolhe um arquivo.
+
 **Perguntas prontas**: na conversa vazia aparecem algumas perguntas para tocar; o botão ✨ ao lado da caixa abre as mesmas a qualquer momento. Em **Editar perguntas**, o ✕ tira uma pergunta e **Adicionar** põe outra; **Padrão** volta às de exemplo. Ficam guardadas no aparelho.
 
 ### Buscar
@@ -370,7 +372,7 @@ data:
 No botão **Adicionar**:
 
 - **Colar mensagem**: cole o convite, a mensagem do WhatsApp ou o e-mail ("consulta com a Dra. Paula quinta às 15h"). A IA encontra datas, horários e locais.
-- **Escolher fotos**: prints, convites, cartazes. No app Android do Home Assistant é uma foto por vez (limitação da versão atual do app); use **Mais fotos** na revisão para juntar outras.
+- **Escolher fotos ou PDF**: prints, convites, cartazes, ou um PDF (um convite, uma escala). No app Android do Home Assistant é uma foto por vez (limitação da versão atual do app); use **Mais fotos** na revisão para juntar outras.
 - **Digitalizar com IA**: abre a câmera dentro do app para fotografar um cartão de consulta ou um convite, com lanterna e várias fotos seguidas.
 - **Arquivo .ics**: convite de e-mail ou exportação de outra agenda (também em **Mais › Configurações › Dados**).
 
@@ -378,7 +380,7 @@ Você revisa título, data e horário de cada evento e escolhe o calendário ant
 
 ### IA do Home Assistant
 
-**Usar IA** (em **Mais › Configurações › Integrações › IA do Home Assistant**) liga ou desliga tudo o que usa IA. Desligada, somem do **Adicionar** o **Colar mensagem**, o **Escolher fotos** e o **Digitalizar com IA**, e o app não chama a IA. O **arquivo .ics** continua em **Mais › Configurações › Dados**. Começa ligada.
+**Usar IA** (em **Mais › Configurações › Integrações › IA do Home Assistant**) liga ou desliga tudo o que usa IA. Desligada, somem do **Adicionar** o **Colar mensagem**, o **Escolher fotos ou PDF** e o **Digitalizar com IA**, e o app não chama a IA. O **arquivo .ics** continua em **Mais › Configurações › Dados**. Começa ligada.
 
 **Uso da IA** (logo abaixo, em Mais › Configurações › Integrações): cada mensagem ou foto lida é uma chamada para a IA do Home Assistant. Como o Home Assistant não informa tokens nem custo, o CronologIA conta as chamadas e estima os tokens pelo tamanho do texto (uns 4 caracteres por token). Mostra hoje, os últimos 7 dias e o mês, um gráfico por dia (toque numa barra para ver o dia), os tipos de chamada e as últimas chamadas, com o link para o consumo exato no painel do provedor (Google, OpenAI ou Anthropic). O sensor `sensor.cronologia_ia_hoje` traz as chamadas de hoje, com erros, cota e tokens estimados, para um painel ou uma automação. Os números ficam em `/data/uso_ia.json` (120 dias).
 

@@ -3,6 +3,8 @@
 import { startStack } from "./harness.mjs";
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 
 let stack;
 let c;
@@ -44,6 +46,23 @@ describe("Conversa (cronologia/ai/chat)", () => {
     assert.deepEqual((await say("fiz lavar a louça")).actions, [], "already done");
     assert.deepEqual((await say("fiz lavar o carro")).actions, []);
     assert.deepEqual((await say("marca Reunião dia 2026-11-06", { ...context, criar: false })).actions, []);
+  });
+  it("1.84.0: the clip: photos or a PDF go with the last message (POST /api/chat); the names stay in the conversation", async () => {
+    const jpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]).toString("base64");
+    const chat = async (body) => {
+      const res = await fetch(`${stack.url}/api/chat`, { method: "POST", body: JSON.stringify(body) });
+      return { status: res.status, body: await res.json() };
+    };
+    const one = await chat({ messages: [{ role: "user", text: "que dia é a consulta?" }], context, files: [{ data: jpg, mime: "image/jpeg", nome: "cartao.jpg" }] });
+    assert.equal(one.status, 200, JSON.stringify(one.body));
+    assert.equal(one.body.reply, "Li o arquivo (image/jpeg).");
+    const pdf = await chat({ messages: [{ role: "user", text: "", anexos: ["convite.pdf"] }], context, files: [{ data: Buffer.from("%PDF-1.4 x").toString("base64"), mime: "application/pdf", nome: "convite.pdf" }] });
+    assert.equal(pdf.body.reply, "Li o arquivo (application/pdf).", "only the file, no text");
+    assert.deepEqual(fs.readdirSync(path.join(stack.dirs.media, "cronologia", "ia-temp")), [], "the files are removed after");
+    const bad = await chat({ messages: [{ role: "user", text: "oi" }], context, files: [{ data: "eA==", mime: "text/plain" }] });
+    assert.deepEqual([bad.status, bad.body.code], [400, "invalid_format"]);
+    const next = await say("e agora?", context, [{ role: "user", text: "que dia é a consulta?", anexos: ["cartao.jpg"] }, { role: "ia", text: "Dia 5." }]);
+    assert.match(next.reply, /"e agora\?"/, "the next turn goes without the files");
   });
   it("needs something from the person; counted in Uso da IA as conversa", async () => {
     await assert.rejects(c.call("cronologia/ai/chat", { messages: [], context }), { code: "invalid_format" });

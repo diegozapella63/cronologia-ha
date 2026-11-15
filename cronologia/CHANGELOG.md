@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.84.0
+
+- **Conversa › Clipe**: manda junto uma foto ou um PDF: **Tirar foto**, **Escolher fotos** (a galeria) ou **Escolher arquivo**. A IA olha o arquivo para responder e pode propor marcar o compromisso que vê.
+- **Conversa**: o microfone e o Enviar dividem o mesmo botão, como no WhatsApp: com a caixa vazia, o microfone; escrevendo, o Enviar.
+- **Adicionar › Escolher fotos ou PDF**: um PDF também vira eventos (um convite, uma escala).
+
 ## 1.83.0
 
 - **Conversa › Perguntas prontas**: as perguntas de exemplo viram suas. **Editar perguntas** tira (✕) e acrescenta as que você quiser; **Padrão** volta às de antes. Ficam guardadas no aparelho.

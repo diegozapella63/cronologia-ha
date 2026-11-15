@@ -102,6 +102,16 @@ function fakeAI(msg) {
   // Conversa: answers the last thing the person said; "marca X dia AAAA-MM-DD às HH:MM", "fiz X" and
   // "tomei X" become actions; "o que tem hoje" lists the agenda it got
   if (/: conversa$/.test(d.task_name || "") && d.structure && d.structure.resposta) {
+    // the clip of the Conversa: the files must be where Home Assistant looks for them
+    const sent = (d.attachments || []).map((a) => {
+      const p = path.join(MEDIA_DIR, String(a.media_content_id || "").replace("media-source://media_source/local/", ""));
+      if (!fs.existsSync(p)) fail("service_validation_error", `attachment not found: ${p}`);
+      return { path: p, bytes: fs.statSync(p).size, type: a.media_content_type };
+    });
+    if (sent.length) {
+      console.log("fake AI chat", JSON.stringify({ entity_id: d.entity_id, files: sent }));
+      return { context: { id: "ctx" }, response: { conversation_id: "c1", data: { resposta: `Li ${sent.length === 1 ? "o arquivo" : `os ${sent.length} arquivos`} (${sent.map((f) => f.type).join(", ")}).`, acoes: [] } } };
+    }
     const ins = d.instructions || "";
     const last = (ins.match(/Pessoa: (.*)$/) || [])[1] || "";
     console.log("fake AI chat", JSON.stringify({ entity_id: d.entity_id, last }));

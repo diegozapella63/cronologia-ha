@@ -4,6 +4,8 @@
 // and only does after a tap. The AI is the one Home Assistant gives the app (ai_task.generate_data),
 // so there is no memory on its side: the conversation and what the screen shows go in every call.
 
+import { fileNames, withFiles, filesNote } from "./anexos.js";
+
 const WEEKDAY = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
 const MONTH = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const MAX_TURNS = 16;
@@ -56,10 +58,14 @@ const rows = (list, max, map) => (Array.isArray(list) ? list : []).filter((x) =>
  */
 export function cleanChat(raw) {
   const r = raw && typeof raw === "object" ? raw : {};
+  // 1.84.0: a message of the person can be only the files sent (their names; the files go only with the last one)
   const messages = (Array.isArray(r.messages) ? r.messages : [])
-    .filter((m) => m && (m.role === "user" || m.role === "ia") && typeof m.text === "string" && m.text.trim())
+    .filter((m) => m && (m.role === "user" || m.role === "ia") && ((typeof m.text === "string" && m.text.trim()) || (m.role === "user" && fileNames(m.anexos).length)))
     .slice(-MAX_TURNS)
-    .map((m) => ({ role: m.role, text: text(m.text, 2000) }));
+    .map((m) => {
+      const names = m.role === "user" ? fileNames(m.anexos) : [];
+      return names.length ? { role: m.role, text: text(m.text, 2000), anexos: names } : { role: m.role, text: text(m.text, 2000) };
+    });
   const c = r.context && typeof r.context === "object" ? r.context : {};
   const context = {
     tela: oneLine(c.tela, 160),
@@ -82,7 +88,7 @@ const money = (v) => (v == null ? "" : `R$ ${v.toFixed(2).replace(".", ",")}`);
 const section = (title, list, line) => (list.length ? [title, ...list.map((x) => `  - ${line(x)}`)].join("\n") : "");
 
 /** The instructions for one turn: who the AI is, today, the screen, what the app shows and the conversation so far. */
-export function chatInstructions({ messages, context: c }, now = new Date()) {
+export function chatInstructions({ messages, context: c, arquivos = 0 }, now = new Date()) {
   const parts = [
     section("Agenda (próximos dias):", c.agenda, (e) => `${e.data}${e.inicio ? ` ${e.inicio}${e.fim ? `–${e.fim}` : ""}` : " (dia todo)"}: ${e.titulo}${e.calendario ? ` [${e.calendario}]` : ""}`),
     section("Rotinas da casa de hoje:", c.rotinas, (x) => `${x.nome}${x.hora ? ` às ${x.hora}` : x.periodo ? ` (${x.periodo})` : ""}${x.quem ? `, ${x.quem}` : ""}${x.pontos ? `, ${x.pontos} pontos` : ""}: ${x.feito ? (x.pulada ? "pulada" : "feita") : x.atrasada ? "atrasada" : "a fazer"}`),
@@ -92,7 +98,7 @@ export function chatInstructions({ messages, context: c }, now = new Date()) {
     section("Placar:", c.placar, (x) => `${x.pessoa}: ${x.pontos} pontos`),
     section("Tarefas com prazo (ResolvIA):", c.tarefas, (x) => `${x.nome}${x.lista ? ` [${x.lista}]` : ""}${x.prazo ? `, prazo ${x.prazo}` : ""}${x.atrasada ? " (atrasada)" : ""}`),
   ].filter(Boolean);
-  const talk = messages.map((m) => `${m.role === "user" ? "Pessoa" : "Você"}: ${m.text}`).join("\n");
+  const talk = messages.map((m) => `${m.role === "user" ? "Pessoa" : "Você"}: ${m.role === "user" ? withFiles(m) : m.text}`).join("\n");
   return [
     "Você é a IA da CronologIA, a agenda da família no Home Assistant (compromissos, rotinas da casa, remédios, contas, manutenção e placar de recompensas). Converse em português do Brasil, de forma curta e direta, sem palavras em inglês e sem markdown.",
     "A pessoa pode perguntar sobre a agenda e a tela em que está, ou sobre qualquer outro assunto: responda das duas formas. Sobre a agenda, use só os dados abaixo; não invente compromissos.",
@@ -100,6 +106,7 @@ export function chatInstructions({ messages, context: c }, now = new Date()) {
     c.tela ? `A pessoa está na tela: ${c.tela}.` : "",
     parts.length ? parts.join("\n") : "(nada na agenda)",
     `Quando a pessoa pedir para ${c.criar ? "marcar um compromisso, " : ""}marcar uma rotina como feita ou um remédio como tomado, escreva em "acoes" uma linha por ação e, na resposta, diga o que vai fazer: ela confirma na tela antes. Datas relativas ("amanhã", "sexta") contam a partir de hoje. Sem pedido, deixe "acoes" vazio.`,
+    filesNote(arquivos),
     "Conversa até agora (responda à última fala da pessoa):",
     talk,
   ]

@@ -16,7 +16,7 @@ import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod } from "./models.js";
 import { ChatMixin } from "./chat-panel.js";
-import { chatStyles } from "./chat.js";
+import { chatStyles, chatFiles } from "./chat.js";
 import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
@@ -1319,14 +1319,22 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   }
 
   async _onFiles(ev) {
-    const files = [...(ev.target.files || [])].filter((f) => !f.type || f.type.startsWith("image/")).slice(0, 6);
+    // 1.84.0: a PDF too (Escolher fotos ou PDF), as it is; one PDF goes alone
+    const isPdf = (f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
+    let files = [...(ev.target.files || [])].filter((f) => !f.type || f.type.startsWith("image/") || isPdf(f)).slice(0, 6);
     ev.target.value = "";
+    if (files.some(isPdf)) files = [files.find(isPdf)];
     if (!files.length) return;
     if (this._sheet !== "import") await this._openImport("pick");
     const appending = this._form.step === "review";
     this._setForm({ step: "loading", error: null, loadingText: "Preparando as fotos…", prevStep: appending ? "review" : "pick" });
     const images = [];
-    for (const file of files) images.push(await prepareImage(file));
+    for (const file of files) {
+      if (isPdf(file)) {
+        const { files: got } = await chatFiles([file]);
+        if (got[0]) images.push({ mime: "application/pdf", data: got[0].data, url: "", pdf: true, nome: got[0].nome });
+      } else images.push(await prepareImage(file));
+    }
     this._readImages(images, appending);
   }
 
@@ -1355,7 +1363,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       step: "loading",
       images: all,
       prevStep: appending ? "review" : "pick",
-      loadingText: images.length > 1 ? `Lendo ${images.length} fotos com IA…` : "Lendo a foto com IA…",
+      loadingText: images.some((i) => i.pdf) ? "Lendo o PDF com IA…" : images.length > 1 ? `Lendo ${images.length} fotos com IA…` : "Lendo a foto com IA…",
     });
     this._runExtract({ images, appending });
   }
@@ -1474,15 +1482,18 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   // ------------------------------------------------------------ camera ("Digitalizar com IA")
 
-  async _openCamera() {
+  async _openCamera(opts = {}) {
     const md = navigator.mediaDevices;
-    const appending = !!(this._form && this._form.step === "review");
+    // 1.84.0: from the clip of the Conversa (Tirar foto), the photos go to the chat
+    const chat = !!opts.chat;
+    const appending = !chat && !!(this._form && this._form.step === "review");
     if (!md || !md.getUserMedia) {
       // http:// (not the https address): the browser does not let a page use the camera. Say so
       // instead of opening the gallery as if it were the camera.
       this._cam = {
         status: "error",
         shots: [],
+        chat,
         appending,
         flash: 0,
         error: window.isSecureContext === false
@@ -1496,7 +1507,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       }
       return;
     }
-    this._cam = { status: "starting", shots: [], torch: false, torchOk: false, appending, flash: 0 };
+    this._cam = { status: "starting", shots: [], torch: false, torchOk: false, appending, chat, flash: 0 };
     try {
       history.pushState({ ...(history.state || {}), rvCam: true }, "");
     } catch (e) {
@@ -1576,15 +1587,21 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     if (!this._cam || !this._cam.shots.length) return;
     const shots = this._cam.shots;
     const appending = this._cam.appending;
+    const chat = this._cam.chat;
     this._cam = { ...this._cam, used: true };
     this._closeCamera();
     if (this._popping) await this._popping;
+    if (chat) return this._chatAddShots(shots);
     if (this._sheet !== "import") await this._openImport("pick");
     this._readImages(shots, appending && this._form.step === "review");
   }
 
   _cameraFallback() {
     const appending = this._cam && this._cam.appending;
+    if (this._cam && this._cam.chat) {
+      this._closeCamera();
+      return this._chatAttach("fotos");
+    }
     this._closeCamera();
     if (appending && this._form) this._setForm({ step: "review" });
     this._pickFiles("scan");
@@ -1660,7 +1677,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           ${this._renderNav(view)}
         </div>
         ${this._renderSheet()} ${this._renderToast()} ${this._renderCamera()}
-        <input id="cr-photos" class="sr" type="file" accept="image/*" ?multiple=${!this._isHaAndroid()} tabindex="-1" aria-hidden="true" @change=${(e) => this._onFiles(e)} />
+        <input id="cr-photos" class="sr" type="file" accept="image/*,application/pdf" ?multiple=${!this._isHaAndroid()} tabindex="-1" aria-hidden="true" @change=${(e) => this._onFiles(e)} />
         <input id="cr-scan" class="sr" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true" @change=${(e) => this._onFiles(e)} />
         <input id="cr-ics" class="sr" type="file" accept=".ics,text/calendar" tabindex="-1" aria-hidden="true" @change=${(e) => this._onIcsFile(e)} />
       </div>
@@ -2795,10 +2812,10 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         <span class="flabel">Trazer de mensagem ou foto</span>
         <div class="imp-tiles">
           ${tile("text", "clipboard-paste", "Colar mensagem")}
-          ${tile("photos", "images", "Escolher fotos", !ai.images)}
+          ${tile("photos", "images", "Escolher fotos ou PDF", !ai.images)}
           ${tile("scan", "scan-text", "Digitalizar com\u00a0IA", !ai.images, camOk ? "" : "Precisa de https")}
         </div>
-        ${ai.images && !camOk ? html`<p class="imp-help">Em http a câmera não abre aqui: tire a foto pelo celular e use Escolher fotos.</p>` : nothing}
+        ${ai.images && !camOk ? html`<p class="imp-help">Em http a câmera não abre aqui: tire a foto pelo celular e use Escolher fotos ou PDF.</p>` : nothing}
       </div>
       ${ai.ready ? nothing : html`<div class="ai-box">${icon("scan-text")}<span>Para ler mensagens e fotos, configure a IA do Home Assistant em Mais › Configurações › Integrações.</span></div>`}`;
   }
@@ -3177,7 +3194,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       this._setForm({ step: "pick", error: null, note: null });
     };
     const error = f.error ? html`<div class="imp-error">${icon("circle-alert")}<span>${f.error}</span></div>` : nothing;
-    const thumbs = f.images && f.images.length ? html`<div class="thumbs">${f.images.map((img) => html`<img src=${img.url} alt="" />`)}</div>` : nothing;
+    const thumbs = f.images && f.images.length ? html`<div class="thumbs">${f.images.map((img) => (img.pdf ? html`<span class="thumb-pdf" title=${img.nome || "PDF"}>${icon("file-text")}</span>` : html`<img src=${img.url} alt="" />`))}</div>` : nothing;
     const aiHint = html`<div class="imp-error soft">${icon("sparkles")}<span>${ai.reason || "Para ler mensagens e fotos, o Home Assistant precisa de uma integração de IA com tarefa de IA."}
       <button class="text-btn inline" @click=${() => this._goAiSettings()}>${icon("sparkles")}Ver IA do Home Assistant</button></span></div>`;
 
@@ -3259,7 +3276,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           <span class="imp-ic">${icon("message-square-text")}</span><span class="imp-tx"><b>Colar mensagem</b><small>WhatsApp, e-mail, convite</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._pickFiles("photos")}>
-          <span class="imp-ic">${icon("images")}</span><span class="imp-tx"><b>Escolher fotos</b><small>Prints e fotos da galeria</small></span>${icon("chevron-right")}
+          <span class="imp-ic">${icon("images")}</span><span class="imp-tx"><b>Escolher fotos ou PDF</b><small>Prints, fotos da galeria ou um PDF</small></span>${icon("chevron-right")}
         </button>
         <button class="imp-opt" ?disabled=${!ai.images} @click=${() => this._openCamera()}>
           <span class="imp-ic">${icon("scan-text")}</span><span class="imp-tx"><b>Digitalizar com IA</b><small>${this._camOk() ? "Fotografe um convite ou cartão de consulta" : "Neste endereço (http) a câmera não abre: precisa de https"}</small></span>${icon("chevron-right")}
@@ -3372,7 +3389,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${c.flash ? html`<div class="cam-flash" .key=${c.flash}></div>` : nothing}
         <div class="cam-top">
           <button class="cam-btn" aria-label="Fechar" @click=${() => this._closeCamera()}>${icon("x")}</button>
-          <span class="cam-title">Digitalizar com IA</span>
+          <span class="cam-title">${c.chat ? "Tirar foto" : "Digitalizar com IA"}</span>
           ${c.torchOk ? html`<button class="cam-btn ${c.torch ? "on" : ""}" aria-label="Lanterna" @click=${() => this._toggleTorch()}>${icon("zap")}</button>` : html`<span class="cam-btn ghost"></span>`}
         </div>
         ${c.status === "error"
