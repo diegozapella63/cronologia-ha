@@ -55,7 +55,8 @@ async def main():
         check(all(heads[t] for t in heads if t != "Férias"), "every Mais tab opens with icon headings")
         check(heads["Férias"] == [], "Férias: its own screen, no heading repeating the title")
         check(heads["Dados"] == ["Exportar", "Backup na pasta share", "Importar", "Versões anteriores", "Onde ficam os dados", "Começar do zero"], "Dados in sections")
-        check(heads["Recompensas"] == ["Deméritos"], "Mais › Recompensas: the settings (no heading repeating the title) and the deméritos")
+        # 1.85.0: the settings under Placar (so the card folds), then the deméritos
+        check(heads["Recompensas"] == ["Placar", "Deméritos"], f"Mais › Recompensas: Placar (the settings) and Deméritos ({heads['Recompensas']})")
         # 1.60.0: the CorrerIA with the apps of the family, before the AI; 1.61.0: the MemorIA before it
         check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "MemorIA", "CorrerIA", "IA do Home Assistant", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
         check(await a.locator(".mais-head .mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
