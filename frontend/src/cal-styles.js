@@ -1221,9 +1221,17 @@ export const calStyles = css`
     padding-left: 12px;
     padding-right: 12px;
   }
-  /* Quando › Manhã, Tarde, Noite: the usual hour of each part of the day */
-  .chip-row.parts {
-    margin-top: 10px;
+  /* Quando › Manhã, Tarde, Noite (the whole part of the day) and the lengths: one group, three and then four in a row */
+  .chip-row.dur.span {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .chip-row.dur.span > .pick {
+    grid-column: span 3;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .chip-row.dur.span > .pick.part {
+    grid-column: span 4;
   }
 
   /* ---------- import review ---------- */

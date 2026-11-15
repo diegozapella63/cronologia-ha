@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.86.1
+
+- **Adicionar › Quando**: **Manhã**, **Tarde** e **Noite** ficam junto com as durações (15 min, 30 min, 1 h, 2 h) e põem a parte do dia inteira: das 8h ao meio-dia, das 13h às 17h e das 18h às 22h. Só uma das opções fica marcada.
+
 ## 1.86.0
 
 - **Adicionar**: o tipo (Evento, Tarefa, Remédio…) ganhou o título **Tipo** e fecha num toque nele, como o Calendário. **Repetir**, **Local** e **Notas** (e as **Observações** dos modelos) também fecham pelo título. Fechado, o escolhido ou o escrito aparece ao lado do título (Tipo · Evento, Local · Salão de festas), e o aparelho lembra o que ficou fechado.

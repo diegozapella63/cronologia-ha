@@ -1,5 +1,5 @@
 # CronologIA 1.86.0: Adicionar › Tipo, Repetir, Local e Notas fecham pelo título (fechados, o escolhido ou o escrito
-# depois do título); Quando › Manhã, Tarde e Noite põem a hora de cada parte do dia, mantendo a duração.
+# depois do título); Quando › Manhã, Tarde e Noite põem a parte do dia inteira (1.86.1), junto com as durações.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 import asyncio, json, os, subprocess, time, shutil
@@ -51,29 +51,29 @@ async def main():
         check((await tipo.locator(".fl-val").inner_text()).strip() == "· Evento", "Tipo closed: · Evento after the title")
         await A.screenshot(path=f"{SP}/shots/crcampos-tipo.png")
 
-        # Quando › Manhã, Tarde, Noite
-        parts = sheet.locator(".chip-row.parts .pick")
-        check([t.strip() for t in await parts.all_inner_texts()] == ["Manhã", "Tarde", "Noite"], "Quando: Manhã, Tarde and Noite")
-        tops = {round((await parts.nth(k).bounding_box())["y"]) for k in range(3)}
-        check(len(tops) == 1, f"the three in one line ({tops})")
+        # Quando › Manhã, Tarde, Noite: the whole part of the day (1.86.1), in one group with the lengths
+        group = sheet.locator(".chip-row.dur .pick")
+        check([t.strip() for t in await group.all_inner_texts()] == ["Manhã", "Tarde", "Noite", "15 min", "30 min", "1 h", "2 h"], "Quando: Manhã, Tarde, Noite and the lengths, one group")
+        parts = sheet.locator(".chip-row.dur .pick.part")
+        tops = [round((await group.nth(k).bounding_box())["y"]) for k in range(7)]
+        check(len(set(tops[:3])) == 1 and len(set(tops[3:])) == 1 and tops[3] > tops[0], f"three in a row, then four ({tops})")
+        widths = [round((await group.nth(k).bounding_box())["width"]) for k in range(7)]
+        check(max(widths[:3]) - min(widths[:3]) <= 1 and max(widths[3:]) - min(widths[3:]) <= 1, f"the same width in each row ({widths})")
         times = sheet.locator(".time-row .pickf.t")
         async def hours():
             return [await times.nth(k).get_attribute("data-value") for k in range(2)]
-        await sheet.locator(".chip-row.dur .pick", has_text="30 min").click(); await A.wait_for_timeout(200)
-        await parts.filter(has_text="Manhã").click(); await A.wait_for_timeout(250)
+        on = lambda: sheet.locator(".chip-row.dur .pick.on").all_inner_texts()
+        for name, want in (("Manhã", ["08:00", "12:00"]), ("Tarde", ["13:00", "17:00"]), ("Noite", ["18:00", "22:00"])):
+            await parts.filter(has_text=name).click(); await A.wait_for_timeout(250)
+            h = await hours()
+            check(h == want, f"{name}: the whole part, {want} ({h})")
+            check([t.strip() for t in await on()] == [name], f"{name}: the only one marked ({await on()})")
+        await group.filter(has_text="30 min").click(); await A.wait_for_timeout(250)
         h = await hours()
-        check(h == ["09:00", "09:30"], f"Manhã: 09:00, keeping the 30 min ({h})")
-        check(await parts.filter(has_text="Manhã").get_attribute("aria-checked") == "true", "Manhã marked")
-        await parts.filter(has_text="Tarde").click(); await A.wait_for_timeout(250)
-        h = await hours()
-        check(h == ["14:00", "14:30"], f"Tarde: 14:00 ({h})")
-        await parts.filter(has_text="Noite").click(); await A.wait_for_timeout(250)
-        h = await hours()
-        check(h == ["20:00", "20:30"], f"Noite: 20:00 ({h})")
-        check(await parts.filter(has_text="Tarde").get_attribute("aria-checked") == "false", "only Noite marked")
+        check(h == ["18:00", "18:30"] and [t.strip() for t in await on()] == ["30 min"], f"30 min after Noite: from its start, only 30 min marked ({h})")
         # Dia todo: no hours, no parts
         await sheet.locator("input[aria-label='Dia todo']").check(); await A.wait_for_timeout(250)
-        check(await sheet.locator(".chip-row.parts").count() == 0, "Dia todo: no Manhã, Tarde, Noite")
+        check(await sheet.locator(".chip-row.dur").count() == 0, "Dia todo: no Manhã, Tarde, Noite")
         await sheet.locator("input[aria-label='Dia todo']").uncheck(); await A.wait_for_timeout(250)
 
         # Repetir folds; closed, the chosen one

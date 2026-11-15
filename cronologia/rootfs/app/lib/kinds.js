@@ -87,10 +87,10 @@ export function nowOrder(saved) {
 }
 
 export const PERIODS = [
-  // at: the usual hour of each part (Quando › Manhã, Tarde, Noite of a new event; the reminder of the placar)
-  { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5, at: "09:00" },
-  { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12, at: "14:00" },
-  { id: "noite", label: "Noite", when: "à noite", icon: "moon", from: 18, at: "20:00" },
+  // at: the usual hour of each part (the reminder of the placar); span: an event in that part (Adicionar › Quando)
+  { id: "manha", label: "Manhã", when: "de manhã", icon: "sunrise", from: 5, at: "09:00", span: ["08:00", "12:00"] },
+  { id: "tarde", label: "Tarde", when: "à tarde", icon: "sun", from: 12, at: "14:00", span: ["13:00", "17:00"] },
+  { id: "noite", label: "Noite", when: "à noite", icon: "moon", from: 18, at: "20:00", span: ["18:00", "22:00"] },
 ];
 export const periodInfo = (id) => PERIODS.find((p) => p.id === id) || null;
 const parsePeriod = (text) => {

@@ -3093,6 +3093,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       return h * 60 + m;
     };
     const dur = (toMin(f.end) - toMin(f.start) + 1440) % 1440;
+    // Manhã, Tarde, Noite: the whole part of the day (1.86.1), with the lengths: one choice of the same kind
+    const part = f.endDate ? null : PERIODS.find((p) => f.start === p.span[0] && f.end === p.span[1]) || null;
     const overnight = !f.allDay && !f.endDate && toMin(f.end) <= toMin(f.start);
     return html`
       ${this._sheetHead(f.mode === "add" ? "Adicionar" : "Editar evento")}
@@ -3118,21 +3120,19 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
               <span class="flabel">Até${f.endDate ? html` <span class="tl">· ${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : nothing}</span>
               <date-pick .value=${f.endDate || ""} kind="nenhum" .none=${"Um dia"} .min=${f.date} .weekStart=${weekStart} .bid=${"cr-ate"} .label=${"Até"} @pick=${(e) => this._setForm({ endDate: e.detail.value > f.date ? e.detail.value : "" })}></date-pick>
             </div>`
-          : html`<div class="chip-row parts c3" role="radiogroup" aria-label="Parte do dia">
-                ${PERIODS.map((p) => html`<button class="pick ${f.start === p.at ? "on" : ""}" role="radio" aria-checked=${f.start === p.at ? "true" : "false"} @click=${() => setStart(p.at)}>${icon(p.icon)}<span>${p.label}</span></button>`)}
-              </div>
-              <div class="time-row">
+          : html`<div class="time-row">
                 ${timeField(f.start, setStart, { label: "Começa" })}
                 <span class="tl">até</span>
                 ${timeField(f.end, (v) => this._setForm({ end: v }), { label: "Termina" })}
               </div>
-              <div class="chip-row dur c4">
+              <div class="chip-row dur span" role="group" aria-label="Duração">
+                ${PERIODS.map((p) => html`<button class="pick part ${part === p ? "on" : ""}" aria-pressed=${part === p ? "true" : "false"} @click=${() => this._setForm({ start: p.span[0], end: p.span[1], endDate: "" })}>${icon(p.icon)}<span>${p.label}</span></button>`)}
                 ${[
                   [15, "15 min"],
                   [30, "30 min"],
                   [60, "1 h"],
                   [120, "2 h"],
-                ].map(([m, label]) => html`<button class="pick ${dur === m && !f.endDate ? "on" : ""}" @click=${() => setDuration(m)}>${icon("hourglass")}<span>${label}</span></button>`)}
+                ].map(([m, label]) => html`<button class="pick ${!part && dur === m && !f.endDate ? "on" : ""}" @click=${() => setDuration(m)}>${icon("hourglass")}<span>${label}</span></button>`)}
               </div>
               ${overnight ? html`<div class="field-hint">${icon("info")}<span>Termina no dia seguinte.</span></div>` : nothing}`}
       </div>
