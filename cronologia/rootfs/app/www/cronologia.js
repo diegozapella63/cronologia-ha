@@ -5055,18 +5055,6 @@ dialog.ss-wrap::backdrop{background:transparent}
     padding-left: 12px;
     padding-right: 12px;
   }
-  /* Quando › Manhã, Tarde, Noite (the whole part of the day) and the lengths: one group, three and then four in a row */
-  .chip-row.dur.span {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-  .chip-row.dur.span > .pick {
-    grid-column: span 3;
-    padding-left: 6px;
-    padding-right: 6px;
-  }
-  .chip-row.dur.span > .pick.part {
-    grid-column: span 4;
-  }
 
   /* ---------- import review ---------- */
   .rv-list {
@@ -9706,21 +9694,26 @@ ${s}`:e.join(`
             <div class="chip-row">${a.map(m=>n`<button class="pick list ${e.cal===m.id?"on":""}" style=${B(m.color,this._dark)} @click=${()=>this._setForm({cal:m.id})}><span class="dot"></span><span>${N(m.name,24)}</span></button>`)}</div>
           </div>`:u}
       <div class="field">
-        <div class="flabel-row"><span class="flabel">Quando</span>
-          <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${e.allDay} @change=${m=>this._setForm({allDay:m.target.checked})} aria-label="Dia todo" /><span class="track"></span></span></label>
-        </div>
+        <span class="flabel">Quando</span>
         <date-pick .value=${e.date} kind="futuro" .weekStart=${i} .bid=${"cr-date"} .label=${"Data"} @pick=${m=>m.detail.value&&r(m.detail.value)}></date-pick>
         ${e.allDay?n`<div class="field dp-field dp-ate">
               <span class="flabel">Até${e.endDate?n` <span class="tl">· ${P(K(q(e.endDate),q(e.date))+1,"dia","dias")}</span>`:u}</span>
               <date-pick .value=${e.endDate||""} kind="nenhum" .none=${"Um dia"} .min=${e.date} .weekStart=${i} .bid=${"cr-ate"} .label=${"At\xE9"} @pick=${m=>this._setForm({endDate:m.detail.value>e.date?m.detail.value:""})}></date-pick>
-            </div>`:n`<div class="time-row">
+            </div>`:u}
+      </div>
+      <div class="field ev-hours">
+        <!-- 1.86.2: Quando is the day; Horário, the hours: the parts of the day and the lengths first, then from and until -->
+        <div class="flabel-row"><span class="flabel">Horário</span>
+          <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${e.allDay} @change=${m=>this._setForm({allDay:m.target.checked})} aria-label="Dia todo" /><span class="track"></span></span></label>
+        </div>
+        ${e.allDay?u:n`<div class="chip-row dur c3" role="group" aria-label="Duração">
+                ${Me.map(m=>n`<button class="pick part ${p===m?"on":""}" aria-pressed=${p===m?"true":"false"} @click=${()=>this._setForm({start:m.span[0],end:m.span[1],endDate:""})}>${w(m.icon)}<span>${m.label}</span></button>`)}
+                ${[[15,"15 min"],[30,"30 min"],[60,"1 h"]].map(([m,x])=>n`<button class="pick ${!p&&h===m&&!e.endDate?"on":""}" @click=${()=>d(m)}>${w("hourglass")}<span>${x}</span></button>`)}
+              </div>
+              <div class="time-row">
                 ${we(e.start,l,{label:"Come\xE7a"})}
                 <span class="tl">até</span>
                 ${we(e.end,m=>this._setForm({end:m}),{label:"Termina"})}
-              </div>
-              <div class="chip-row dur span" role="group" aria-label="Duração">
-                ${Me.map(m=>n`<button class="pick part ${p===m?"on":""}" aria-pressed=${p===m?"true":"false"} @click=${()=>this._setForm({start:m.span[0],end:m.span[1],endDate:""})}>${w(m.icon)}<span>${m.label}</span></button>`)}
-                ${[[15,"15 min"],[30,"30 min"],[60,"1 h"],[120,"2 h"]].map(([m,x])=>n`<button class="pick ${!p&&h===m&&!e.endDate?"on":""}" @click=${()=>d(m)}>${w("hourglass")}<span>${x}</span></button>`)}
               </div>
               ${f?n`<div class="field-hint">${w("info")}<span>Termina no dia seguinte.</span></div>`:u}`}
       </div>

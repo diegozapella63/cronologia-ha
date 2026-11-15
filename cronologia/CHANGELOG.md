@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.86.2
+
+- **Adicionar**: **Quando** ficou só o dia. Embaixo vem **Horário**, com o **Dia todo**: primeiro as escolhas (Manhã, Tarde e Noite em cima; 15 min, 30 min e 1 h embaixo, todas do mesmo tamanho) e depois a hora de começar e de terminar. Saiu a duração de 2 h.
+
 ## 1.86.1
 
 - **Adicionar › Quando**: **Manhã**, **Tarde** e **Noite** ficam junto com as durações (15 min, 30 min, 1 h, 2 h) e põem a parte do dia inteira: das 8h ao meio-dia, das 13h às 17h e das 18h às 22h. Só uma das opções fica marcada.

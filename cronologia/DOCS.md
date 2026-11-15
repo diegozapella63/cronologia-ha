@@ -83,7 +83,7 @@ Mudar o evento de calendário cria uma cópia no novo calendário e apaga a orig
 
 **Repetir** fica numa linha só: Não, Diário, Semanal, Mensal ou Anual.
 
-Em **Quando**, junto com as durações (15 min, 30 min, 1 h, 2 h), **Manhã**, **Tarde** e **Noite** põem a parte do dia inteira: das 8h ao meio-dia, das 13h às 17h e das 18h às 22h. Depois dá para acertar as horas.
+**Quando** é o dia. Em **Horário** (com o **Dia todo**), **Manhã**, **Tarde** e **Noite** põem a parte do dia inteira (das 8h ao meio-dia, das 13h às 17h e das 18h às 22h), e **15 min**, **30 min** e **1 h** a duração a partir da hora de começar. Embaixo delas ficam a hora de começar e a de terminar, para acertar.
 
 **Tipo**, **Calendário**, **Repetir**, **Local** e **Notas** fecham num toque no título (a seta no canto). Fechado, o escolhido ou o escrito aparece ao lado do título, e o aparelho lembra o que ficou fechado da próxima vez.
 

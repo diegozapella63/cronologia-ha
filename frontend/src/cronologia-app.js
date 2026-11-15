@@ -3111,28 +3111,34 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
           </div>`
         : nothing}
       <div class="field">
-        <div class="flabel-row"><span class="flabel">Quando</span>
-          <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${f.allDay} @change=${(e) => this._setForm({ allDay: e.target.checked })} aria-label="Dia todo" /><span class="track"></span></span></label>
-        </div>
+        <span class="flabel">Quando</span>
         <date-pick .value=${f.date} kind="futuro" .weekStart=${weekStart} .bid=${"cr-date"} .label=${"Data"} @pick=${(e) => e.detail.value && setDate(e.detail.value)}></date-pick>
         ${f.allDay
           ? html`<div class="field dp-field dp-ate">
               <span class="flabel">Até${f.endDate ? html` <span class="tl">· ${plural(dayDiff(fromYmd(f.endDate), fromYmd(f.date)) + 1, "dia", "dias")}</span>` : nothing}</span>
               <date-pick .value=${f.endDate || ""} kind="nenhum" .none=${"Um dia"} .min=${f.date} .weekStart=${weekStart} .bid=${"cr-ate"} .label=${"Até"} @pick=${(e) => this._setForm({ endDate: e.detail.value > f.date ? e.detail.value : "" })}></date-pick>
             </div>`
-          : html`<div class="time-row">
-                ${timeField(f.start, setStart, { label: "Começa" })}
-                <span class="tl">até</span>
-                ${timeField(f.end, (v) => this._setForm({ end: v }), { label: "Termina" })}
-              </div>
-              <div class="chip-row dur span" role="group" aria-label="Duração">
+          : nothing}
+      </div>
+      <div class="field ev-hours">
+        <!-- 1.86.2: Quando is the day; Horário, the hours: the parts of the day and the lengths first, then from and until -->
+        <div class="flabel-row"><span class="flabel">Horário</span>
+          <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${f.allDay} @change=${(e) => this._setForm({ allDay: e.target.checked })} aria-label="Dia todo" /><span class="track"></span></span></label>
+        </div>
+        ${f.allDay
+          ? nothing
+          : html`<div class="chip-row dur c3" role="group" aria-label="Duração">
                 ${PERIODS.map((p) => html`<button class="pick part ${part === p ? "on" : ""}" aria-pressed=${part === p ? "true" : "false"} @click=${() => this._setForm({ start: p.span[0], end: p.span[1], endDate: "" })}>${icon(p.icon)}<span>${p.label}</span></button>`)}
                 ${[
                   [15, "15 min"],
                   [30, "30 min"],
                   [60, "1 h"],
-                  [120, "2 h"],
                 ].map(([m, label]) => html`<button class="pick ${!part && dur === m && !f.endDate ? "on" : ""}" @click=${() => setDuration(m)}>${icon("hourglass")}<span>${label}</span></button>`)}
+              </div>
+              <div class="time-row">
+                ${timeField(f.start, setStart, { label: "Começa" })}
+                <span class="tl">até</span>
+                ${timeField(f.end, (v) => this._setForm({ end: v }), { label: "Termina" })}
               </div>
               ${overnight ? html`<div class="field-hint">${icon("info")}<span>Termina no dia seguinte.</span></div>` : nothing}`}
       </div>

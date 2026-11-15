@@ -53,12 +53,21 @@ async def main():
 
         # Quando › Manhã, Tarde, Noite: the whole part of the day (1.86.1), in one group with the lengths
         group = sheet.locator(".chip-row.dur .pick")
-        check([t.strip() for t in await group.all_inner_texts()] == ["Manhã", "Tarde", "Noite", "15 min", "30 min", "1 h", "2 h"], "Quando: Manhã, Tarde, Noite and the lengths, one group")
+        check([t.strip() for t in await group.all_inner_texts()] == ["Manhã", "Tarde", "Noite", "15 min", "30 min", "1 h"], "Quando: Manhã, Tarde, Noite and the lengths, one group (no 2 h, 1.86.2)")
         parts = sheet.locator(".chip-row.dur .pick.part")
-        tops = [round((await group.nth(k).bounding_box())["y"]) for k in range(7)]
-        check(len(set(tops[:3])) == 1 and len(set(tops[3:])) == 1 and tops[3] > tops[0], f"three in a row, then four ({tops})")
-        widths = [round((await group.nth(k).bounding_box())["width"]) for k in range(7)]
-        check(max(widths[:3]) - min(widths[:3]) <= 1 and max(widths[3:]) - min(widths[3:]) <= 1, f"the same width in each row ({widths})")
+        tops = [round((await group.nth(k).bounding_box())["y"]) for k in range(6)]
+        check(len(set(tops[:3])) == 1 and len(set(tops[3:])) == 1 and tops[3] > tops[0], f"three in a row, then three ({tops})")
+        boxes = [await group.nth(k).bounding_box() for k in range(6)]
+        check(all(abs(boxes[k]["x"] - boxes[k + 3]["x"]) <= 1 and abs(boxes[k]["width"] - boxes[k + 3]["width"]) <= 1 for k in range(3)), "the same width, one under the other")
+        check(all(abs(b["height"] - boxes[0]["height"]) <= 1 for b in boxes), "the same height")
+        # 1.86.2: Quando is the day; Horário (with Dia todo) the hours: the choices first, then from and until
+        hrs = sheet.locator(".field.ev-hours")
+        check(await hrs.locator(".flabel", has_text="Horário").count() == 1 and await hrs.locator("input[aria-label='Dia todo']").count() == 1, "Horário: its own title, with Dia todo")
+        quando = sheet.locator(".field").filter(has=A.locator(":scope > .flabel", has_text="Quando"))
+        check(await quando.locator("date-pick").count() >= 1 and await quando.locator(".time-row").count() == 0, "Quando: only the day")
+        chips_y = (await hrs.locator(".chip-row.dur").bounding_box())["y"]
+        row_y = (await hrs.locator(".time-row").bounding_box())["y"]
+        check(chips_y < row_y and (await quando.bounding_box())["y"] < chips_y, "the parts and the lengths come before from and until, under Quando")
         times = sheet.locator(".time-row .pickf.t")
         async def hours():
             return [await times.nth(k).get_attribute("data-value") for k in range(2)]
