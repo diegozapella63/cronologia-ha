@@ -8240,7 +8240,7 @@ ${s}`:e.join(`
     </div>`},K=c&&c.on,he=!!D&&!K,te=he&&$e.menu,V=O=>(A({menu:!1}),D(O)),Z=!!(c&&c.ready)&&(K||!(s||"").trim()&&!l.length);return g`<div class="chat">
     <div class="chat-head">
       <span class="chat-title">${e("message-circle")}Conversa</span>
-      ${a.length?g`<button type="button" class="text-btn" @click=${()=>y()}>${e("plus")}Nova conversa</button>`:w}
+      ${a.length?g`<button type="button" class="text-btn chat-nova" aria-label="Nova conversa" @click=${()=>y()}>${e("plus")}<span>Nova conversa</span></button>`:w}
       <button type="button" class="icon-btn" aria-label="Fechar" @click=${()=>M()}>${e("x")}</button>
     </div>
     <div class="chat-log">
@@ -8268,7 +8268,8 @@ ${s}`:e.join(`
   .chat-head { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; }
   .chat-title { display: inline-flex; align-items: center; gap: 8px; flex: 1; font-weight: 700; font-size: 18px; }
   .chat-title .i { width: 30px; height: 30px; padding: 6px; border-radius: 9px; background: var(--rv-accent-soft); color: var(--rv-accent-ink, var(--rv-accent)); }
-  .chat-head .text-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .chat-head .text-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  @media (max-width: 340px) { .chat-nova span { display: none; } }
   .chat-head .text-btn .i { width: 16px; height: 16px; }
   .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 6px 2px 12px; overscroll-behavior: contain; }
   .chat-empty { margin: auto 0 0; color: var(--rv-muted); font-size: 15px; line-height: 1.45; }

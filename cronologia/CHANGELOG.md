@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.84.2
+
+- **Conversa**: o **Nova conversa** não quebra mais em duas linhas; num celular bem estreito, fica só o **+**.
+
 ## 1.84.1
 
 - **Prévia**: as contas de exemplo usam bancos inventados.
