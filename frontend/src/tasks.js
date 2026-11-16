@@ -127,12 +127,14 @@ export const TasksMixin = (Base) =>
       if (this._awayNow && this._awayNow()) return nothing;
       const now = new Date(this._now);
       const all = this._todos().items;
+      // Tela cheia (1.88.0): only the ones with a due date, all of them (no Mais N, no line about the lists)
+      const full = !!(this._fullOn && this._fullOn());
       // late, today and tomorrow (done ones of today stay with ✓), then the ones without a due date (option)
-      const items = all.filter((t) => (t.undated ? true : t.done ? t.days === 0 : t.overdue || t.days <= 1));
+      const items = all.filter((t) => (t.undated ? !full : t.done ? t.days === 0 : t.overdue || t.days <= 1));
       if (!items.length) return nothing;
       const late = items.filter((t) => t.overdue);
       const open = items.filter((t) => !t.done);
-      const shown = this._todosOpen ? items : items.slice(0, 6);
+      const shown = this._todosOpen || full ? items : items.slice(0, 6);
       // tasks worth points: one quick button per person (up to 3) concludes and gives them the points
       const people = this._scoreOn() ? (this._score() || {}).participants || [] : [];
       const row = (t) => {
@@ -167,8 +169,8 @@ export const TasksMixin = (Base) =>
                 (t) => row(t),
               )}`
           : nothing}
-        ${items.length > 6 ? html`<button class="add-line" @click=${() => ((this._todosOpen = !this._todosOpen), this.requestUpdate())}>${icon(this._todosOpen ? "chevron-up" : "chevron-down")}${this._todosOpen ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
-        <div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais › Configurações › Integrações.</span></div>
+        ${items.length > 6 && !full ? html`<button class="add-line" @click=${() => ((this._todosOpen = !this._todosOpen), this.requestUpdate())}>${icon(this._todosOpen ? "chevron-up" : "chevron-down")}${this._todosOpen ? "Mostrar menos" : `Mais ${items.length - 6}`}</button>` : nothing}
+        ${full ? nothing : html`<div class="panel-foot plain">${icon("list-checks")}<span>Das listas do ResolvIA. Escolha quais aparecem em Mais › Configurações › Integrações.</span></div>`}
       </div>`;
     }
 

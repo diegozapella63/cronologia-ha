@@ -72,7 +72,8 @@ export const MemoriaMixin = (Base) =>
       this._loadMemoria();
     }
 
-    _renderMemoriaPanel() {
+    /** full: the Tela cheia of Agora (1.88.0): the whole text, no Ver mais. */
+    _renderMemoriaPanel(full = false) {
       const m = this._memo;
       if (!this._memoriaOn() || !m || !m.ligado || m.erro || !(m.trechos || []).length) return nothing;
       // only the sheet that holds now (the MemorIA 1.14.0 may have none: the time of the one before is over); the next
@@ -80,8 +81,8 @@ export const MemoriaMixin = (Base) =>
       const cur = m.trechos[0].agora ? m.trechos[0] : null;
       if (!cur) return nothing;
       const text = cur.texto || "";
-      const long = memoLong(text);
-      const open = !!this._memoOpen && long;
+      const long = !full && memoLong(text);
+      const open = full || (!!this._memoOpen && long);
       const lines = text.split("\n");
       const since = `desde ${cur.ontem ? "ontem às " : ""}${cur.inicio}${cur.fim ? ` até ${cur.fim}` : ""}`;
       // like the sheet of the Agora of the MemorIA: the cover in the color of the block, the spiral, its paper and letters

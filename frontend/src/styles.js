@@ -3342,6 +3342,10 @@ export const extraStyles = css`
       padding-left: 4px;
       padding-right: 4px;
     }
+    /* the arrow of folding at the end of the heading, not over the text at its right (desde 18:00, 12 atrasadas) */
+    .page:not(.cal-page) .panel.dobra > .chores-head.sec-head.fold-head {
+      padding-right: 30px;
+    }
     .now-cols {
       display: grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -3503,6 +3507,69 @@ export const extraStyles = css`
     }
     :host([full]) .page {
       max-width: 1400px;
+    }
+  }
+  /* 1.88.0: with a sheet of the MemorIA now, the sheet on one side (whole, big, like a page of the notebook) and the
+     other cards on the other; on the phone, the sheet first */
+  .full-cols {
+    display: grid;
+    gap: 14px;
+  }
+  .full-rest {
+    min-width: 0;
+  }
+  .full-memo .panel.memo {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .full-memo .memo-pad {
+    margin: 6px 12px 10px 20px;
+  }
+  .full-memo .memo-leaf {
+    padding-bottom: 22px;
+  }
+  .full-memo .memo-top {
+    min-height: 52px;
+    padding-top: 8px;
+    font-size: 24px;
+  }
+  .full-memo .memo-ink {
+    font-size: 28px;
+    line-height: 36px;
+  }
+  .full-memo .memo-ink.normal {
+    font-size: 19px;
+  }
+  .full-memo .pautado .memo-ink {
+    background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--rule) 35px 36px);
+  }
+  .full-memo .quadriculado .memo-ink,
+  .full-memo .pontilhado .memo-ink {
+    background-size: 36px 36px;
+  }
+  .full-memo .memo-ink .box {
+    width: 23px;
+    height: 23px;
+    vertical-align: -3px;
+  }
+  @media (min-width: 760px) {
+    .full-cols {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: 32px;
+      align-items: start;
+    }
+    /* the sheet stays while the other side goes down; the height of the screen, like a page */
+    .full-memo {
+      position: sticky;
+      top: 12px;
+      max-height: calc(100dvh - 24px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .full-memo .memo-leaf {
+      min-height: calc(100dvh - 220px);
     }
   }
 

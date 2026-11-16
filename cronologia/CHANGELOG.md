@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.88.0
+
+- **Agora › Tela cheia** mais bonita: com uma folha do MemorIA valendo agora, ela fica de um lado, inteira e grande, como uma página do caderno da altura da tela, parada enquanto o outro lado desce. Do outro lado ficam os outros cards. No celular, a folha vem primeiro.
+- Na tela cheia saem também as **tarefas sem prazo** e os **Avisos do GerencIA**. As tarefas com prazo aparecem todas, sem o **Mais**.
+- No computador, a seta de fechar um card não fica mais por cima do texto à direita do título (desde 18:00, 12 atrasadas).
+
 ## 1.87.0
 
 - **Agora › Tela cheia**: o botão à direita do **Hoje** deixa na tela só os cards, para um tablet na parede ou a TV da casa, como no MemorIA. Somem a linha de cima, a busca, o **Evento hoje**, a **Ordem dos cards** e a barra de baixo (no computador, a barra do lado). Quando o navegador deixa, some também a barra do Home Assistant. Os cards continuam funcionando (Tomado, Feito, abrir um evento).

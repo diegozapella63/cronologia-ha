@@ -2195,7 +2195,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       search: html`${this._renderNowSearch()} ${hidden}`,
       meds: medsDone ? nothing : this._renderMedsPanel(),
       bills: this._renderBillsPanel(),
-      gavisos: this._renderGerenciaAvisos(),
+      // Tela cheia: without the Avisos do GerencIA (1.88.0)
+      gavisos: this._fullOn() ? nothing : this._renderGerenciaAvisos(),
       now: hero || nothing,
       day: dayPart,
       memoria: this._renderMemoriaPanel(),
@@ -2205,6 +2206,18 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const order = this._nowOrder();
     const pick = (ids) => order.filter((id) => ids.includes(id)).map((id) => parts[id]);
     const orderBtn = html`<button class="add-line now-order" @click=${() => this._openSheet("nowcards")}>${icon("sliders-horizontal")}Ordem dos cards</button>`;
+    // Tela cheia (1.88.0) with a sheet of the MemorIA now: the sheet, whole and big, on one side (on the phone, first),
+    // and the other cards on the other, in the order of the person
+    const memoFull = this._fullOn() ? this._renderMemoriaPanel(true) : nothing;
+    if (memoFull !== nothing) {
+      return html`<section class="page now-page full-page">
+        ${this._renderHead("Hoje", status)}
+        <div class="full-cols">
+          <div class="full-memo">${memoFull}</div>
+          <div class="full-rest">${order.filter((id) => id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
+        </div>
+      </section>`;
+    }
     // Computador, like the InventarIA: the day on the left (next appointment, Hoje, tasks), doses, bills
     // and the house on the right, each column in the order of the person. Phone: one column, in that order.
     if (this._desk) {
