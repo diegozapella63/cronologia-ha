@@ -7,19 +7,20 @@ import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { html, nothing } from "../../frontend/vendor/lit-all.min.js";
-import { text, render, fakeApi, hostOf } from "../_lit.mjs";
+import { text, render, fire, fakeApi, hostOf } from "../_lit.mjs";
 import { ModelsMixin } from "../../frontend/src/models.js";
 import { TasksMixin } from "../../frontend/src/tasks.js";
+import { RewardsMixin } from "../../frontend/src/rewards.js";
 
 const NOW = at(2026, 11, 16, 12);
 const DAVI = { name: "Davi", person: "person.davi", pet: false, phone: false, care: null, reach: false };
 const ANA = { name: "Ana", person: "person.ana", pet: false, phone: true, care: null, reach: true };
 
-class App extends hostOf(ModelsMixin, TasksMixin) {
-  constructor({ meds = [], full = true, todos = [] } = {}) {
+class App extends hostOf(ModelsMixin, TasksMixin, RewardsMixin) {
+  constructor({ meds = [], full = true, todos = [], score = null, app = {} } = {}) {
     super(fakeApi());
-    this._home = { meds, routines: [], bills: [], maint: [], checks: {}, people: [ANA, DAVI], caregivers: [], gerencia: { ligado: false, contas: [] }, score: null };
-    this._app_ = {};
+    this._home = { meds, routines: [], bills: [], maint: [], checks: {}, people: [ANA, DAVI], caregivers: [], gerencia: { ligado: false, contas: [] }, score };
+    this._app_ = { ...app };
     this._user = { person: "Ana" };
     this._now = NOW.getTime();
     this._dark = false;
@@ -80,5 +81,44 @@ describe("Tela cheia › Remédios de hoje: from 1 h before", () => {
   it("out of the Tela cheia: the whole day, as always", () => {
     const t = text(new App({ meds: MEDS, full: false })._renderMedsPanel());
     for (const n of ["Sinvastatina", "Melatonina", "Gardenal"]) assert.match(t, new RegExp(n), n);
+  });
+});
+
+// 1.90.0: the placar in the Tela cheia (Mais › Recompensas › Na tela cheia da Agora, on unless turned off)
+const SCORE = {
+  enabled: true, period: "semana", participants: ["Ana", "Davi"], leader: "Ana", current: { label: "16 a 22/11", start: "2026-11-16", end: "2026-11-22" },
+  rows: [{ name: "Ana", points: 40, count: 4, demerits: 0 }, { name: "Davi", points: 25, count: 3, demerits: 0 }], entries: [],
+};
+describe("Tela cheia › Placar", () => {
+  it("the points of the week and who is ahead", () => {
+    const t = text(new App({ score: SCORE })._renderPlacarNow());
+    assert.match(t, /Placar/);
+    assert.match(t, /16 a 22\/11/);
+    assert.match(t, /Ana/);
+    assert.match(t, /40/);
+    assert.match(t, /Davi/);
+    assert.match(t, /25/);
+    assert.match(t, /Ana na frente por 15 pontos/);
+  });
+  it("three or more: the ranking; a tie and nobody yet", () => {
+    const three = { ...SCORE, participants: ["Ana", "Davi", "Bia"], rows: [...SCORE.rows, { name: "Bia", points: 10, count: 1, demerits: 0 }] };
+    assert.match(render(new App({ score: three })._renderPlacarNow()).html, /rank-row/);
+    assert.match(text(new App({ score: { ...SCORE, leader: null, rows: [{ name: "Ana", points: 0, count: 0, demerits: 0 }, { name: "Davi", points: 0, count: 0, demerits: 0 }] } })._renderPlacarNow()), /Ninguém pontuou ainda/);
+  });
+  it("not out of the Tela cheia, not with the placar off, not turned off in Mais › Recompensas", () => {
+    assert.equal(new App({ score: SCORE, full: false })._renderPlacarNow(), nothing);
+    assert.equal(new App({ score: { ...SCORE, enabled: false } })._renderPlacarNow(), nothing);
+    assert.equal(new App({ score: null })._renderPlacarNow(), nothing);
+    assert.equal(new App({ score: SCORE, app: { placar_cheia: false } })._renderPlacarNow(), nothing);
+  });
+  it("the switch in Mais › Recompensas: on to begin with; off saves false, on removes it", async () => {
+    const app = new App({ score: SCORE });
+    const view = app._renderScoreSettings();
+    assert.match(text(view), /Na tela cheia da Agora/);
+    assert.match(text(view), /Os pontos e quem está ganhando\./);
+    await fire(view, "Placar na tela cheia da Agora", "change", { target: { checked: false } });
+    assert.deepEqual(app.prefs.at(-1), { placar_cheia: false });
+    await fire(view, "Placar na tela cheia da Agora", "change", { target: { checked: true } });
+    assert.deepEqual(app.prefs.at(-1), { placar_cheia: null });
   });
 });

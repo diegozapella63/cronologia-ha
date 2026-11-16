@@ -3510,7 +3510,8 @@ export const extraStyles = css`
     }
   }
   /* 1.88.0: with a sheet of the MemorIA now, the sheet on one side (whole, big, like a page of the notebook) and the
-     other cards on the other; on the phone, the sheet first */
+     other cards on the other; on the phone and the tablet standing (1.90.0: under 1100 px the side of the cards would be
+     too narrow), the sheet first, the whole width */
   .full-cols {
     display: grid;
     gap: 14px;
@@ -3554,9 +3555,10 @@ export const extraStyles = css`
     height: 23px;
     vertical-align: -3px;
   }
-  @media (min-width: 760px) {
+  @media (min-width: 1100px) {
     .full-cols {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      /* 1.90.0: the bigger part for the sheet */
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
       gap: 32px;
       align-items: start;
     }

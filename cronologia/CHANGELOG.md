@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.90.0
+
+- **Agora › Tela cheia › Placar**: no alto do lado dos cards, os pontos do período e quem está na frente, o mesmo placar de Recompensas. Aparece com as recompensas ligadas. Para tirar, desligue **Mais › Recompensas › Na tela cheia da Agora** (começa ligado).
+- Na tela cheia, a folha do MemorIA fica com o espaço maior (60% da largura). No tablet em pé, ela fica em cima, na largura toda, com os cards embaixo, para eles não ficarem espremidos.
+
 ## 1.89.0
 
 - **Agora › Tela cheia**: a folha do MemorIA é a da casa toda, de qualquer pessoa, como na tela cheia do MemorIA. Fora da tela cheia, continua a folha de quem está olhando.

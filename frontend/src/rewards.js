@@ -258,7 +258,7 @@ export const RewardsMixin = (Base) =>
         ${this._renderLastResult(s)}
         <div class="panel board">
           ${s.rows.length === 2 ? this._renderDuel(s, total) : this._renderRanking(s)}
-          <div class="board-foot">${lead ? html`${icon("crown")}<span><b>${lead}</b> na frente${s.rows[1] ? ` por ${plural(s.rows[0].points - s.rows[1].points, "ponto", "pontos")}` : ""}</span>` : html`<span>${total ? "Empatados" : "Ninguém pontuou ainda"}</span>`}</div>
+          ${this._boardFoot(s, total)}
         </div>
         ${this._renderPrize(s)}
         ${s.manual ? this._renderToScore() : nothing}
@@ -266,6 +266,32 @@ export const RewardsMixin = (Base) =>
         ${this._renderExtrato(s)}
         ${this._renderHistory(s)}
       </section>`;
+    }
+
+    /** Who is ahead (and by how much), a tie, or nobody yet. */
+    _boardFoot(s, total) {
+      const lead = s.leader;
+      return html`<div class="board-foot">${lead ? html`${icon("crown")}<span><b>${lead}</b> na frente${s.rows[1] ? ` por ${plural(s.rows[0].points - s.rows[1].points, "ponto", "pontos")}` : ""}</span>` : html`<span>${total ? "Empatados" : "Ninguém pontuou ainda"}</span>`}</div>`;
+    }
+
+    /** Placar na tela cheia (Mais › Recompensas; on unless turned off): app.placar_cheia false is off. */
+    _placarFullOn() {
+      return this._app("placar_cheia", true) !== false;
+    }
+
+    /**
+     * Agora › Placar (1.90.0): only in the Tela cheia (the screen of the house), with the placar on: the points of the
+     * period and who is ahead, the same board as Recompensas.
+     */
+    _renderPlacarNow() {
+      if (!(this._fullOn && this._fullOn()) || !this._scoreOn() || !this._placarFullOn()) return nothing;
+      const s = this._score();
+      const total = s.rows.reduce((a, r) => a + r.points, 0);
+      return html`<div class="panel board now-board" id="placar-agora">
+        ${this._panelHead("trophy", "gold", "Placar", s.current.label)}
+        ${s.rows.length === 2 ? this._renderDuel(s, total) : this._renderRanking(s)}
+        ${this._boardFoot(s, total)}
+      </div>`;
     }
 
     _renderDuel(s, total) {
@@ -975,6 +1001,10 @@ export const RewardsMixin = (Base) =>
         <div class="row switch-row">
           <div class="grow"><div class="label">Resultado no celular</div><div class="hint">Quem venceu, quando o período fecha.</div></div>
           <label class="switch"><input type="checkbox" role="switch" .checked=${s.notify !== false} @change=${(e) => this._scorePrefs({ notify: e.target.checked })} aria-label="Resultado no celular" /><span class="track"></span></label>
+        </div>
+        <div class="row switch-row">
+          <div class="grow"><div class="label">Na tela cheia da Agora</div><div class="hint">Os pontos e quem está ganhando.</div></div>
+          <label class="switch"><input type="checkbox" role="switch" .checked=${this._placarFullOn()} @change=${(e) => this._saveAppPrefs({ placar_cheia: e.target.checked ? null : false })} aria-label="Placar na tela cheia da Agora" /><span class="track"></span></label>
         </div>
         <div class="row switch-row">
           <div class="grow"><div class="label">Lembrete diário</div><div class="hint">Os pontos e quem está ganhando, no celular.</div></div>

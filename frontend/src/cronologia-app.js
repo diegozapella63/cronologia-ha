@@ -2209,12 +2209,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // Tela cheia (1.88.0) with a sheet of the MemorIA now: the sheet, whole and big, on one side (on the phone, first),
     // and the other cards on the other, in the order of the person
     const memoFull = this._fullOn() ? this._renderMemoriaPanel(true) : nothing;
+    // Tela cheia (1.90.0): the placar, at the top of the side of the cards (Mais › Recompensas › Na tela cheia da Agora)
+    const placar = this._renderPlacarNow();
     if (memoFull !== nothing) {
       return html`<section class="page now-page full-page">
         ${this._renderHead("Hoje", status)}
         <div class="full-cols">
           <div class="full-memo">${memoFull}</div>
-          <div class="full-rest">${order.filter((id) => id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
+          <div class="full-rest">${placar}${order.filter((id) => id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
         </div>
       </section>`;
     }
@@ -2226,13 +2228,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${pick(["away", "search"])}
         <div class="now-cols">
           <div class="now-main">${pick(["now", "day", "memoria", "todos"])}</div>
-          <div class="now-side">${pick(["meds", "bills", "gavisos", "home"])}</div>
+          <div class="now-side">${placar}${pick(["meds", "bills", "gavisos", "home"])}</div>
         </div>
         ${orderBtn}
       </section>`;
     }
     return html`<section class="page">
       ${this._renderHead("Hoje", status)}
+      ${placar}
       ${order.map((id) => parts[id])}
       ${orderBtn}
     </section>`;

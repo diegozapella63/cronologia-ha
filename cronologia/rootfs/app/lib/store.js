@@ -88,6 +88,8 @@ function cleanApp(raw) {
   if ("todo_create_any" in raw) out.todo_create_any = raw.todo_create_any ? true : null;
   // Mais › Placar › Marcar por outras pessoas: Feito asks who did it
   if ("who_pick" in raw) out.who_pick = raw.who_pick ? true : null;
+  // Mais › Recompensas › Na tela cheia da Agora: the placar in the Tela cheia (on unless turned off: false)
+  if ("placar_cheia" in raw) out.placar_cheia = raw.placar_cheia === false ? false : null;
   // Tarefas do ResolvIA: whose each list is ({"todo.tarefas_aurora": "Aurora"}); a list with an owner only shows to them
   if ("todo_owner" in raw) {
     const owners = {};

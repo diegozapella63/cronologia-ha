@@ -164,6 +164,16 @@ describe("Store: app settings", () => {
     assert.deepEqual(set({ ai_entity: "conversation.x", default_calendar: "todo.x", voice_engine: "STT Cloud!" }), {});
     assert.deepEqual(set({ voice_engine: "" }), {}, "empty = the voice assistant's");
   });
+  it("1.90.0: Placar na tela cheia: on unless turned off (false; anything else removes it)", () => {
+    assert.deepEqual(set({ placar_cheia: false }), { placar_cheia: false });
+    assert.deepEqual(set({ placar_cheia: true }), {});
+    assert.deepEqual(set({ placar_cheia: 0 }), {}, "only false turns it off");
+    const s = fresh();
+    s.setApp({ placar_cheia: false });
+    assert.equal(s.data.app.placar_cheia, false);
+    s.setApp({ placar_cheia: null });
+    assert.deepEqual(s.data.app, {});
+  });
   it("on/off switches are true or removed", () => {
     const keys = ["hide_past", "gerencia_hidden", "event_details", "resolvia_on", "gerencia_on", "todo_off_calendar", "todo_undated", "todo_create_any", "who_pick", "ai_off", "sensors_on"];
     const on = set(Object.fromEntries(keys.map((k) => [k, 1])));
