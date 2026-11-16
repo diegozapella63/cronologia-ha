@@ -2090,6 +2090,18 @@ export const calStyles = css`
     height: 16px;
     stroke-width: 3;
   }
+  /* Feito em parte (1.91.1): done in part today, the pie in place of the ✓ */
+  .ev-done.part {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: conic-gradient(currentColor var(--f), transparent 0);
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+  /* in the Calendário, under Rotinas, tarefas e lembretes: the width of the list */
+  .day-sep + .part-pick {
+    margin: 10px 0 6px;
+  }
   /* Modo férias: the banner of Agora, the mark of the days away */
   /* sky to sand, the same every day (not the color of the day): it has to stand out */
   .away-card {

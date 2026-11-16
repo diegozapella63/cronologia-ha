@@ -1,7 +1,8 @@
 # CronologIA 1.91.0: Feito em parte. Agora › Rotina da casa: a faixa 25% · 50% · 75% · Tudo (Tudo de início), 50% e a
 # letra de quem fez: a parte dos pontos, a mensagem com Desfazer, a faixa volta para Tudo, a rotina vai para Concluídas
 # com o círculo pela metade e "50% feito por Davi · o resto amanhã"; o Desfazer volta como era; nada passa da largura em
-# 320 px; no computador, a faixa também. Casa de teste (o HA simulado).
+# 320 px; no computador, a faixa também; no Calendário (1.91.1), embaixo de Rotinas, tarefas e lembretes, também.
+# Casa de teste (o HA simulado).
 import os, sys, asyncio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, summary
@@ -50,6 +51,21 @@ async def main():
         await chk.click(); await A.wait_for_timeout(1200)
         row = casa.locator(".chore:not(.done)", has=A.locator("b", has_text="Lavar a louça")).first
         check(await row.count() == 1 and "falta" not in await row.locator("small").inner_text(), "Desfazer: volta como era")
+        # 1.91.1: no Calendário, a lista de hoje também tem a faixa (embaixo de Rotinas, tarefas e lembretes)
+        await a.locator("nav .tab", has_text="Calendário").click(); await A.wait_for_timeout(1500)
+        sep = a.locator(".day-sep", has_text="Rotinas, tarefas e lembretes").first
+        cstrip = a.locator(".day-sep + .part-pick").first
+        check(await sep.count() == 1 and await cstrip.count() == 1 and await cstrip.locator(".part-opt.on").inner_text() == "Tudo", "Calendário: a faixa, em Tudo")
+        await cstrip.locator(".part-opt", has_text="25%").click(); await A.wait_for_timeout(200)
+        line = a.locator(".ev-line", has=A.locator(".ev-title", has_text="Limpar a caixa de areia")).first
+        await line.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(1300)
+        toast = await a.locator(".toast").first.inner_text()
+        check("Limpar a caixa de areia: 25% por Aurora · +4 · o resto amanhã" in toast, f"Calendário: a mensagem ({toast!r})")
+        check(await cstrip.locator(".part-opt.on").inner_text() == "Tudo", "Calendário: a faixa volta para Tudo")
+        done = a.locator(".ev-row", has=A.locator(".ev-title", has_text="Limpar a caixa de areia")).first
+        pie = done.locator(".ev-done.part")
+        check(await pie.count() == 1 and "--f:25%" in (await pie.get_attribute("style") or ""), "Calendário: feita em parte, a pizza no lugar do ✓")
+        await A.screenshot(path=f"{SP}/shots/crparte-calendario.png")
         await ctx.close()
         # 320 px e o computador
         for w, h in ((320, 640), (1280, 800)):

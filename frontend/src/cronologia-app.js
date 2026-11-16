@@ -14,7 +14,7 @@ import { parentHass, detectDark } from "./api.js";
 import { EventStore, eventsOfDay, layoutDay, onDay } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
-import { ModelsMixin, byPeriod } from "./models.js";
+import { ModelsMixin, byPeriod, partLeft } from "./models.js";
 import { ChatMixin } from "./chat-panel.js";
 import { chatStyles, chatFiles } from "./chat.js";
 import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS } from "../../cronologia/rootfs/app/lib/kinds.js";
@@ -1948,6 +1948,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     return html`${this._sheetHead("Qualquer hora")}
       <p class="sheet-note top">${cap(dayLabel(d, now))} · ${done} de ${plural(list.length, "feita", "feitas")}</p>
       <div class="any-list">
+        ${this._partPickFor(rows, d)}
         ${rows.length ? rows.map((e) => this._renderAnyRow(e, d)) : html`<p class="empty-line">Nada sem horário neste dia.</p>`}
       </div>`;
   }
@@ -1963,7 +1964,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const done = this._rowDone(e);
     const pts = this._scorePoints(e);
     const past = startOfDay(day) <= startOfDay(new Date(this._now));
-    const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0 };
+    // Feito em parte (1.91.1): what was done so far (from Agora's list), for the rest and its points
+    const ixr = kind === "rotina" ? (this._ix().routines || []).find((x) => x.key === e.key) : null;
+    const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0, part: (ixr && ixr.part) || null };
     let mark = null;
     let unmark = null;
     if (e.movedDone && !e.movedDone.item) {
@@ -1982,7 +1985,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       if (m) mark = (by) => this._maintDone(m, by, true);
     }
     const quick = !done && !!mark && this._pickWho() && (kind === "rotina" || kind === "manutencao" || (!!e.todo && pts > 0));
-    return { kind, done, pts, mark, unmark, quick };
+    return { kind, done, pts: it.part ? partLeft(it) : pts, mark, unmark, quick };
   }
 
   /** One line of Qualquer hora: the check (and the initials) where it can be marked here; tap the text to open it. */
@@ -2044,8 +2047,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     rest.splice(0, rest.length, ...this._byPeriod(todo, day), ...rest.filter((e) => this._rowDone(e)));
     const away = this._awayDay(day) ? html`<div class="away-day">${icon("plane")}<span>Férias: rotinas, tarefas e manutenção pausadas</span></div>` : nothing;
     return html`${away}${events.map((e) => this._renderRow(e, day))}${rest.length
-      ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${rest.map((e) => this._renderRow(e, day))}`
+      ? html`<div class="day-sep ${events.length ? "" : "first"}">Rotinas, tarefas e lembretes</div>${this._partPickFor(rest, day)}${rest.map((e) => this._renderRow(e, day))}`
       : nothing}`;
+  }
+
+  /** Feito em parte (1.91.1): the strip 25% · 50% · 75% · Tudo when a routine of this list can be marked here. */
+  _partPickFor(list, day) {
+    const can = list.some((e) => e.kind && e.kind.kind === "rotina" && !this._rowDone(e) && this._markerOf(e, day).mark);
+    return can ? this._renderPartPick() : nothing;
   }
 
   /** One line of an agenda (time, color bar, title, place · calendar). */
@@ -2083,7 +2092,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done ? html`<span class="ev-done ${done.skipped ? "skipped" : ""}" title=${done.skipped ? (e.kind && e.kind.kind === "remedio" ? "Pulado" : "Pulada") : ""}>${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done && done.part ? html`<span class="ev-done part" style="--f:${Math.round(done.part.frac * 100)}%" title="Feita em parte" aria-label="Feita em parte"></span>` : done ? html`<span class="ev-done ${done.skipped ? "skipped" : ""}" title=${done.skipped ? (e.kind && e.kind.kind === "remedio" ? "Pulado" : "Pulada") : ""}>${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;

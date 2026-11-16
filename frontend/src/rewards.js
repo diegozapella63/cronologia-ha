@@ -205,7 +205,7 @@ export const RewardsMixin = (Base) =>
           const r = await this.api.checkPart(it.key, frac, who);
           this._haptic("success");
           const got = r && r.points > 0 && who ? ` por ${who} · +${r.points}` : "";
-          this._showToast(`${clip(it.summary, 22)}: ${Math.round(frac * 100)}%${got} · o resto amanhã`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, "rotina").catch((err) => this._showToast(err.message)) });
+          this._showToast(`${clip(it.summary, 30)}: ${Math.round(frac * 100)}%${got} · o resto amanhã`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, "rotina").catch((err) => this._showToast(err.message)) });
         } catch (err) {
           this._showToast(`Não consegui marcar: ${err.message}`);
         }

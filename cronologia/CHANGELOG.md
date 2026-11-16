@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.91.1
+
+- **Feito em parte no Calendário**: a faixa **25% · 50% · 75% · Tudo** também aparece na lista do dia, embaixo de **Rotinas, tarefas e lembretes**, e na janela **Qualquer hora**. A rotina feita em parte mostra uma pizza no lugar do ✓, com os pontos que faltam.
+- A mensagem mostra nomes de rotina mais longos sem cortar.
+
 ## 1.91.0
 
 - **Feito em parte**: na **Rotina da casa** da Agora e no **Para pontuar hoje**, uma faixa com **25% · 50% · 75% · Tudo** fica acima das rotinas. Ela começa em **Tudo**, então marcar continua igual a antes. Para marcar uma parte, escolha a porcentagem e toque na letra de quem fez (ou no círculo). Depois de cada marcação, a faixa volta para **Tudo**.
