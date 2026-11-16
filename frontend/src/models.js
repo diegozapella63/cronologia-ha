@@ -166,6 +166,20 @@ export const ModelsMixin = (Base) =>
       return r ? { chk: r.done, key: r.key } : { chk: { at: null, by: "", day }, key: null };
     }
 
+    /**
+     * Feito em parte, in the calendar (1.92.0): what was done of a routine so far ({done, points, by}), from Agora's
+     * list. One that comes back N days after done is one event that moves: by its name in its calendar, so the day it
+     * went to (the rest) shows it too.
+     */
+    _partOfEvent(e) {
+      const k = e && e.kind;
+      if (!k || k.kind !== "rotina") return null;
+      if (e.movedDone) return (e.movedDone.item && e.movedDone.item.part) || null;
+      const rs = this._ix().routines || [];
+      const r = rs.find((x) => x.key === e.key) || (k.after && !e.rrule ? rs.find((x) => x.after && x.cal === e.cal && x.summary === e.summary) : null);
+      return (r && r.part) || null;
+    }
+
     _checkOf(e) {
       if (e.gerencia) return e.gerencia.pago ? { at: null, by: "" } : null;
       if (e.todo) return e.todo.done ? { at: null, by: "" } : null;
@@ -555,17 +569,7 @@ export const ModelsMixin = (Base) =>
       const now = new Date(this._now);
       const open = byPeriod(routines.filter((r) => !r.done), now);
       const shut = routines.filter((r) => r.done);
-      const row = (r) => html`<div class="chore ${r.done ? "done" : ""} ${r.done && r.done.skipped ? "skipped" : ""}">
-                  ${this._renderChk(r)}
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${partLeft(r)}</span> · ` : nothing}${routineSub(r, now)}</small></button>
-                  ${!r.done && this._pickWho()
-                    ? this._renderQuickWho(r.summary, partLeft(r), (p) => this._markDone(r, "rotina", p))
-                    : r.points > 0 && this._scoreOn()
-                      ? r.done
-                        ? this._renderWon(this._pointsWho(r.done.part ? r.done.part.entry : r.key, r.done.by), donePoints(r))
-                        : html`<span class="pts">+${partLeft(r)}</span>`
-                      : nothing}
-                </div>`;
+      const row = (r) => this._choreRow(r, now);
       return html`<div class="panel chores" id="casa">
         ${routines.length
           ? html`${this._panelHead("spray-can", "ok", "Rotina da casa", `${done} de ${routines.length}`)}
@@ -584,6 +588,21 @@ export const ModelsMixin = (Base) =>
               ${repeat(maint, (m) => m.key, (m) => this._renderMaintRow(m))}`
           : nothing}
         ${total ? html`<button class="add-line" @click=${() => this._openSheet("maint", {})}>${icon("wrench")}Todas as manutenções (${total})</button>` : nothing}
+      </div>`;
+    }
+
+    /** One routine of today: the circle, the name and how it is, the initials (or the points, or who got them). */
+    _choreRow(r, now) {
+      return html`<div class="chore ${r.done ? "done" : ""} ${r.done && r.done.skipped ? "skipped" : ""}">
+        ${this._renderChk(r)}
+        <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${partLeft(r)}</span> · ` : nothing}${routineSub(r, now)}</small></button>
+        ${!r.done && this._pickWho()
+          ? this._renderQuickWho(r.summary, partLeft(r), (p) => this._markDone(r, "rotina", p))
+          : r.points > 0 && this._scoreOn()
+            ? r.done
+              ? this._renderWon(this._pointsWho(r.done.part ? r.done.part.entry : r.key, r.done.by), donePoints(r))
+              : html`<span class="pts">+${partLeft(r)}</span>`
+            : nothing}
       </div>`;
     }
 

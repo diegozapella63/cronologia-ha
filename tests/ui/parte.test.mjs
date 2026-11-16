@@ -111,3 +111,47 @@ describe("Feito em parte: how a routine shows", () => {
     assert.match(render(app._renderToScore()).html, /part-pick/);
   });
 });
+
+// 1.92.0: Recompensas › Para pontuar hoje › Concluídas (n), as on Agora; and the calendar finds what was done of a routine
+describe("Recompensas › Para pontuar hoje › Concluídas (n)", () => {
+  const done = pano({ key: "k-cama", summary: "Arrumar a cama", points: 5, done: { by: "Ana", at: NOW.toISOString() } });
+  const half = pano({ done: { by: "Ana", at: NOW.toISOString(), part: { frac: 0.5, entry: "k-pano|parte|1" } }, part: { done: 0.5, points: 10, by: ["Ana"] } });
+  it("closed: the count only; open: the same lines as Agora (who got the points, the circle half full)", async () => {
+    const app = new App([pano({ key: "k-lixo", summary: "Levar o lixo" }), done, half]);
+    let t = text(app._renderToScore());
+    assert.match(t, /Concluídas \(2\)/);
+    assert.doesNotMatch(t, /Arrumar a cama/, "closed until tapped");
+    await click(app._renderToScore(), "Concluídas (2)");
+    const h = render(app._renderToScore()).html;
+    t = text(app._renderToScore());
+    assert.match(t, /Arrumar a cama/);
+    assert.match(t, /feito por Ana/);
+    assert.match(t, /50% feito por Ana · o resto amanhã/);
+    assert.match(h, /Ana ganhou 10/, "the points of the part");
+    assert.match(h, /class="chk  part"[^>]*style="--f:50%"/);
+    assert.match(h, /class="chk on /, "the done one: the green circle with the ✓");
+  });
+  it("nothing done today: no Concluídas", () => {
+    assert.doesNotMatch(text(new App([pano()])._renderToScore()), /Concluídas/);
+  });
+});
+
+describe("Calendário: what was done of a routine (_partOfEvent)", () => {
+  const P = { done: 0.5, points: 5, by: ["Ana"] };
+  const app = new App([
+    { key: "k-noite", cal: "calendar.casa", uid: "u1", summary: "Passeio da noite", after: { n: 1, unit: "dias" }, points: 10, done: { by: "Ana" }, part: P },
+    { key: "k-louca", cal: "calendar.casa", uid: "u2", summary: "Lavar a louça", points: 10, done: null, part: { done: 0.25, points: 3, by: ["Davi"] } },
+  ]);
+  it("one that comes back N days after done: the event on the day it went to, by its name", () => {
+    assert.deepEqual(app._partOfEvent({ key: "calendar.casa|u1|amanha", cal: "calendar.casa", summary: "Passeio da noite", kind: { kind: "rotina", after: { n: 1, unit: "dias" } } }), P);
+  });
+  it("of fixed days: only its own occurrence", () => {
+    assert.equal(app._partOfEvent({ key: "k-louca", cal: "calendar.casa", summary: "Lavar a louça", rrule: "FREQ=DAILY", kind: { kind: "rotina" } }).done, 0.25);
+    assert.equal(app._partOfEvent({ key: "k-outro-dia", cal: "calendar.casa", summary: "Lavar a louça", rrule: "FREQ=DAILY", kind: { kind: "rotina" } }), null);
+  });
+  it("the line of the day it was done (moved): from Agora's item; anything else: nothing", () => {
+    assert.deepEqual(app._partOfEvent({ key: "k-noite", kind: { kind: "rotina" }, movedDone: { item: { part: P } } }), P);
+    assert.equal(app._partOfEvent({ key: "x", kind: { kind: "remedio" } }), null);
+    assert.equal(app._partOfEvent({ key: "x" }), null);
+  });
+});

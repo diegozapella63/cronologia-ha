@@ -1965,8 +1965,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const pts = this._scorePoints(e);
     const past = startOfDay(day) <= startOfDay(new Date(this._now));
     // Feito em parte (1.91.1): what was done so far (from Agora's list), for the rest and its points
-    const ixr = kind === "rotina" ? (this._ix().routines || []).find((x) => x.key === e.key) : null;
-    const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0, part: (ixr && ixr.part) || null };
+    const it = { key: e.key, summary: e.summary, points: (k && k.points) || 0, part: this._partOfEvent(e) };
     let mark = null;
     let unmark = null;
     if (e.movedDone && !e.movedDone.item) {
@@ -1985,7 +1984,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       if (m) mark = (by) => this._maintDone(m, by, true);
     }
     const quick = !done && !!mark && this._pickWho() && (kind === "rotina" || kind === "manutencao" || (!!e.todo && pts > 0));
-    return { kind, done, pts: it.part ? partLeft(it) : pts, mark, unmark, quick };
+    return { kind, done, pts: it.part && pts ? (done ? it.part.points : partLeft(it)) : pts, mark, unmark, quick };
   }
 
   /** One line of Qualquer hora: the check (and the initials) where it can be marked here; tap the text to open it. */
@@ -1995,13 +1994,18 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // Pular: the yellow skip mark in place of the check
     const ck = done && !e.todo && !e.gerencia && k ? this._checkOf(e) : null;
     const skipped = !!(ck && ck.skipped);
+    // Feito em parte: the circle filled as much as was done (done in part, or the rest to do), as on Agora
+    const part = kind === "rotina" ? this._partOfEvent(e) : null;
+    const pf = ck && ck.part ? (part && part.done) || ck.part.frac : !done && part ? part.done : null;
+    const full = done && pf == null;
+    const pie = pf != null ? `--f:${Math.round(pf * 100)}%` : "";
     const cal = this._cal(e.cal);
-    const sub = [k && k.who, e.todo ? e.todo.listName : cal ? cal.name : e.gerencia ? "GerencIA" : ""].filter(Boolean).join(" · ");
+    const sub = [k && k.who, !done && part ? `falta ${Math.round((1 - part.done) * 100)}%` : "", e.todo ? e.todo.listName : cal ? cal.name : e.gerencia ? "GerencIA" : ""].filter(Boolean).join(" · ");
     return html`<div class="chore ${done ? "done" : ""} ${skipped ? "skipped" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)}>
       ${mark || (done && unmark)
-        ? html`<button class="chk ${done ? "on" : ""}" aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${done ? icon(skipped ? "skip-forward" : "check") : nothing}</button>`
-        : done
-          ? html`<span class="chk on" aria-label=${skipped ? "Pulada" : "Feito"}>${icon(skipped ? "skip-forward" : "check")}</span>`
+        ? html`<button class="chk ${full ? "on" : ""} ${pie ? "part" : ""}" style=${pie} aria-label="${done ? "Desmarcar" : "Marcar"} ${e.summary}" @click=${() => (done ? unmark && unmark() : mark(null))}>${full ? icon(skipped ? "skip-forward" : "check") : nothing}</button>`
+        : done || pie
+          ? html`<span class="chk ${full ? "on" : ""} ${pie ? "part" : ""}" style=${pie} aria-label=${skipped ? "Pulada" : pie ? "Feita em parte" : "Feito"}>${full ? icon(skipped ? "skip-forward" : "check") : nothing}</span>`
           : html`<span class="chk ro" aria-hidden="true">${icon({ manutencao: "wrench", conta: "receipt", remedio: "pill", rotina: "spray-can", tarefa: "list-checks" }[kind] || "calendar")}</span>`}
       <button class="chore-tx" @click=${() => this._openEvent(e)}><b>${e.summary}</b><small>${quick && pts ? html`<span class="pts-inline">+${pts}</span> · ` : nothing}${sub || { rotina: "Rotina", manutencao: "Manutenção", remedio: "Remédio", conta: "Conta", tarefa: "Tarefa" }[kind]}</small></button>
       ${quick ? this._renderQuickWho(e.summary, pts, (p) => mark(p)) : pts ? html`<span class="pts ${done ? "got" : ""}">+${pts}</span>` : nothing}
@@ -2084,18 +2088,42 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const calName = showCal ? (cal ? cal.name : e.gerencia ? "GerencIA" : e.todo ? `${e.todo.listName} · ResolvIA` : "") : "";
     // Marcar por outras pessoas: the initials on the right, one tap marks it done by that person
     const mk = (k || e.todo) && this._pickWho() ? this._markerOf(e, day) : null;
+    // Feito em parte (1.92.0): the rest of a routine (on the day it went to): what was done and the points left
+    const part = k && k.kind === "rotina" ? this._partOfEvent(e) : null;
     // what it gives on the scoreboard (routines, maintenance, tasks with points)
-    const pts = this._scoreOn() && !done ? (k && (k.kind === "rotina" || k.kind === "manutencao") && k.points > 0 ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0) : 0;
+    const full = this._scoreOn() && !done ? (k && (k.kind === "rotina" || k.kind === "manutencao") && k.points > 0 ? k.points : e.todo && e.todo.points > 0 ? e.todo.points : 0) : 0;
+    const pts = full && part ? partLeft({ points: full, part }) : full;
+    const left = !done && part ? `falta ${Math.round((1 - part.done) * 100)}%` : "";
     // it repeats: by the calendar (rrule), or a routine that comes back N days after done / maintenance every N
     // (one event that moves forward when done: no rrule, but it repeats all the same)
     const rep = e.rrule ? rruleLabel(e.rrule) : k && k.kind === "rotina" && k.after ? `Volta ${everyLabel(k.after)} depois de feita` : k && k.kind === "manutencao" && k.every ? `A cada ${everyLabel(k.every)}` : "";
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
       <span class="ev-time">${time}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${done && done.part ? html`<span class="ev-done part" style="--f:${Math.round(done.part.frac * 100)}%" title="Feita em parte" aria-label="Feita em parte"></span>` : done ? html`<span class="ev-done ${done.skipped ? "skipped" : ""}" title=${done.skipped ? (e.kind && e.kind.kind === "remedio" ? "Pulado" : "Pulada") : ""}>${icon(done.skipped ? "skip-forward" : "check")}</span>` : missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing}</span>${sub || pts || calName ? html`<span class="ev-sub">${pts ? html`<span class="pts-inline">+${pts}</span>${sub || calName ? " · " : ""}` : nothing}${sub}${calName ? html`${sub ? " · " : ""}<span class="ev-cal">${calName}</span>` : nothing}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${this._evMark(e, done, part, missed)}</span>${sub || pts || calName || left ? html`<span class="ev-sub">${[pts ? html`<span class="pts-inline">+${pts}</span>` : "", left, sub, calName ? html`<span class="ev-cal">${calName}</span>` : ""].filter((x) => x !== "").map((x, i) => (i ? html` · ${x}` : x))}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
+  }
+
+  /**
+   * The mark after the title of a line of the calendar, the same circle as Agora's (1.92.0): done, green with the ✓
+   * (a task of the ResolvIA, the square); skipped, the yellow skip; a routine done in part, or the rest of it still to
+   * do, the circle filled as much as was done; a dose of a day that is over, not taken, the X.
+   */
+  _evMark(e, done, part, missed) {
+    const sq = e.todo ? "sq" : "";
+    const pf = done && done.part ? (part && part.done) || done.part.frac : !done && part ? part.done : null;
+    if (pf != null) {
+      const pct = Math.round(pf * 100);
+      const label = done ? `Feita em parte (${pct}%)` : `Feita em parte: falta ${100 - pct}%`;
+      return html`<span class="ev-done part" style="--f:${pct}%" title=${label} aria-label=${label}></span>`;
+    }
+    if (done) {
+      const skip = done.skipped ? (e.kind && e.kind.kind === "remedio" ? "Pulado" : "Pulada") : "";
+      return html`<span class="ev-done ${sq} ${done.skipped ? "skipped" : ""}" title=${skip || "Feito"} aria-label=${skip || "Feito"}>${icon(done.skipped ? "skip-forward" : "check")}</span>`;
+    }
+    return missed ? html`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${icon("x")}</span>` : nothing;
   }
 
   // ---------- Agora

@@ -77,7 +77,9 @@ async def main():
         check("Pilates" not in txt, f"A seguir moves on ({txt.splitlines()[2] if len(txt.splitlines()) > 2 else txt[:30]})")
         row = a.locator(".panel.agenda .ev-row", has_text="Pilates")
         check(await row.count() == 1 and "done" in await row.get_attribute("class") and await row.locator(".ev-done").count() == 1, "the row of Hoje: done, with the green check")
-        check(await row.evaluate("(r) => getComputedStyle(r).opacity") == "0.5", "done: faded")
+        # 1.92.0: faded but the mark (the green circle, as on Agora)
+        fade = await row.evaluate("(r) => [getComputedStyle(r.querySelector('.ev-time')).opacity, getComputedStyle(r.querySelector('.ev-sub')).opacity, getComputedStyle(r.querySelector('.ev-done')).opacity, getComputedStyle(r).opacity]")
+        check(fade == ["0.5", "0.5", "1", "1"], f"done: faded, but the mark ({fade})")
         # reload: still done
         await pg.reload(); await pg.wait_for_timeout(2000)
         await a.locator(".tab", has_text="Calendário").click(); await pg.wait_for_timeout(1000)

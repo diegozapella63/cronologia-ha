@@ -2,13 +2,23 @@
 # letra de quem fez: a parte dos pontos, a mensagem com Desfazer, a faixa volta para Tudo, a rotina vai para Concluídas
 # com o círculo pela metade e "50% feito por Davi · o resto amanhã"; o Desfazer volta como era; nada passa da largura em
 # 320 px; no computador, a faixa também; no Calendário (1.91.1), embaixo de Rotinas, tarefas e lembretes, também.
-# Casa de teste (o HA simulado).
-import os, sys, asyncio
+# 1.92.0: uma rotina que volta 1 dia depois de feita, 50% hoje: em Recompensas › Para pontuar hoje › Concluídas (n),
+# como na Agora; no Calendário, hoje a feita em parte e amanhã o resto (o círculo pela metade, +5 · falta 50%), com o
+# mesmo círculo verde da Agora nas feitas. Casa de teste (o HA simulado).
+import os, sys, asyncio, datetime
+from zoneinfo import ZoneInfo
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from stack_lib import Stack, URL, SP, check, summary
 from playwright.async_api import async_playwright
 
-st = Stack("crparte", data={"app": {"who_pick": True, "score": {"enabled": True, "participants": ["Davi", "Aurora"], "period": "semana"}}})
+st = Stack("crparte", data={"app": {"who_pick": True, "score": {"enabled": True, "manual": True, "participants": ["Davi", "Aurora"], "period": "semana"}}})
+HOJE = datetime.datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+st.create("calendar.casa", {"summary": "Passear com o cachorro", "dtstart": HOJE.isoformat(), "dtend": (HOJE + datetime.timedelta(days=1)).isoformat(), "description": "#rotina\nPontos: 10\nVolta: 1 dia depois de feita"})
+
+# the lines of a routine in the Calendário (the day chosen): the mark after the title and the line below it
+LINES = """(name) => [...document.querySelector('cronologia-app').shadowRoot.querySelectorAll('.day-panel .ev-row')]
+  .filter((r) => r.querySelector('.ev-title').textContent.includes(name))
+  .map((r) => { const m = r.querySelector('.ev-done'); return { done: r.classList.contains('done'), mark: m ? m.className : '', style: m ? m.getAttribute('style') || '' : '', sub: (r.querySelector('.ev-sub') || {}).textContent || '' }; })"""
 
 
 async def main():
@@ -66,6 +76,35 @@ async def main():
         pie = done.locator(".ev-done.part")
         check(await pie.count() == 1 and "--f:25%" in (await pie.get_attribute("style") or ""), "Calendário: feita em parte, a pizza no lugar do ✓")
         await A.screenshot(path=f"{SP}/shots/crparte-calendario.png")
+        # 1.92.0: o mesmo círculo da Agora nas feitas do Calendário (verde, com o ✓), e não apagado como o resto da linha
+        await a.locator(".ev-line", has=A.locator(".ev-title", has_text="Regar as plantas")).first.locator(".qw-btn", has_text="D").click(); await A.wait_for_timeout(1300)
+        okm = await A.evaluate("""() => { const r = [...document.querySelector('cronologia-app').shadowRoot.querySelectorAll('.day-panel .ev-row.done')].find((x) => x.querySelector('.ev-done:not(.part)'));
+          if (!r) return null; const m = r.querySelector('.ev-done'), c = getComputedStyle(m);
+          return { bg: c.backgroundColor, radius: c.borderRadius, w: m.getBoundingClientRect().width, op: getComputedStyle(r).opacity, svg: !!m.querySelector('svg') }; }""")
+        check(okm and okm["radius"] == "50%" and okm["w"] >= 18 and okm["svg"] and okm["bg"] not in ("rgba(0, 0, 0, 0)", "transparent") and okm["op"] == "1", f"Calendário: a feita com o círculo verde e o ✓, como na Agora ({okm})")
+        # 1.92.0: a rotina que volta 1 dia depois de feita, 50% hoje (Aurora)
+        await a.locator("nav .tab", has_text="Agora").click(); await A.wait_for_timeout(1300)
+        await strip.locator(".part-opt", has_text="50%").click(); await A.wait_for_timeout(200)
+        await casa.locator(".chore", has=A.locator("b", has_text="Passear com o cachorro")).first.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(1600)
+        toast = await a.locator(".toast").first.inner_text()
+        check("Passear com o cachorro: 50% por Aurora · +5 · o resto amanhã" in toast, f"a que volta depois de feita: a mensagem ({toast!r})")
+        # Recompensas › Para pontuar hoje › Concluídas (n): fechada; aberta, as linhas da Agora
+        await a.locator("nav .tab", has_text="Recompensas").click(); await A.wait_for_timeout(1300)
+        fold = a.locator(".score-today .score-done-fold")
+        check(await fold.count() == 1 and "Concluídas (" in await fold.inner_text() and await fold.get_attribute("aria-expanded") == "false", "Recompensas: Concluídas (n), fechada")
+        await fold.click(); await A.wait_for_timeout(400)
+        drow = a.locator(".score-today .chore.done", has=A.locator("b", has_text="Passear com o cachorro")).first
+        check(await drow.count() == 1 and "50% feito por Aurora · o resto amanhã" in await drow.inner_text() and "--f:50%" in (await drow.locator(".chk").get_attribute("style") or "") and "+5" in await drow.locator(".won").inner_text(), "Recompensas: a feita em parte, como na Agora (o círculo pela metade, Aurora +5)")
+        await a.locator(".score-today").screenshot(path=f"{SP}/shots/crparte-recompensas.png")
+        # Calendário: hoje, a feita em parte; amanhã (para onde ela foi), o resto
+        await a.locator("nav .tab", has_text="Calendário").click(); await A.wait_for_timeout(1500)
+        hoje = await A.evaluate(LINES, "Passear com o cachorro")
+        check(len(hoje) == 1 and hoje[0]["done"] and "part" in hoje[0]["mark"] and "--f:50%" in hoje[0]["style"], f"Calendário, hoje: feita em parte, o círculo pela metade ({hoje})")
+        await A.evaluate("() => { const app = document.querySelector('cronologia-app'); const n = new Date(); app._cursor = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); app.requestUpdate(); }"); await A.wait_for_timeout(700)
+        amanha = await A.evaluate(LINES, "Passear com o cachorro")
+        check(len(amanha) == 1 and not amanha[0]["done"] and "part" in amanha[0]["mark"] and "--f:50%" in amanha[0]["style"], f"Calendário, amanhã: o resto, com o círculo pela metade ({amanha})")
+        check(amanha and amanha[0]["sub"].startswith("+5 · falta 50%"), f"Calendário, amanhã: +5 · falta 50% ({amanha and amanha[0]['sub']!r})")
+        await a.locator(".day-panel").screenshot(path=f"{SP}/shots/crparte-amanha.png")
         await ctx.close()
         # 320 px e o computador
         for w, h in ((320, 640), (1280, 800)):

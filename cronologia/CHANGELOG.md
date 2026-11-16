@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.92.0
+
+- **Recompensas › Para pontuar hoje**: no fim, **Concluídas (n)**, fechada até tocar, com o que já foi feito hoje, igual à Agora: quem ganhou os pontos, a feita em parte com o círculo pela metade e o círculo para desfazer.
+- **Calendário**: as feitas têm o mesmo círculo verde com ✓ da Agora, e só o resto da linha fica apagado. A feita em parte tem o círculo preenchido até onde foi feito.
+- **Feito em parte**: a rotina que volta N dias depois de feita agora aparece no Calendário, no dia para onde o resto foi, com o círculo pela metade, "falta 50%" e os pontos que faltam (antes aparecia como nova, com todos os pontos).
+
 ## 1.91.1
 
 - **Feito em parte no Calendário**: a faixa **25% · 50% · 75% · Tudo** também aparece na lista do dia, embaixo de **Rotinas, tarefas e lembretes**, e na janela **Qualquer hora**. A rotina feita em parte mostra uma pizza no lugar do ✓, com os pontos que faltam.

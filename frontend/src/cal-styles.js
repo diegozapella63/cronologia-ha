@@ -2079,24 +2079,30 @@ export const calStyles = css`
     width: 15px;
     height: 15px;
   }
+  /* 1.92.0: the same circle as Agora's (.chk.on), a bit smaller: green with the ✓; a task of the ResolvIA, the square */
   .ev-done {
-    display: inline-flex;
-    vertical-align: -2px;
-    margin-left: 6px;
-    color: var(--rv-ok);
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    vertical-align: -4px;
+    margin-left: 8px;
+    background: var(--rv-ok);
+    color: #fff;
+  }
+  .ev-done.sq {
+    border-radius: 6px;
   }
   .ev-done .i {
-    width: 16px;
-    height: 16px;
-    stroke-width: 3;
+    width: 12px;
+    height: 12px;
+    stroke-width: 3.5;
   }
-  /* Feito em parte (1.91.1): done in part today, the pie in place of the ✓ */
+  /* Feito em parte (1.91.1): the circle filled as much as was done (done in part, or the rest still to do), as .chk.part */
   .ev-done.part {
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: conic-gradient(currentColor var(--f), transparent 0);
-    box-shadow: inset 0 0 0 1.5px currentColor;
+    background: conic-gradient(var(--rv-ok) var(--f), transparent 0);
+    box-shadow: inset 0 0 0 2px var(--rv-ok);
   }
   /* in the Calendário, under Rotinas, tarefas e lembretes: the width of the list */
   .day-sep + .part-pick {
@@ -2319,16 +2325,23 @@ export const calStyles = css`
     opacity: 1;
   }
   .ev-done.missed {
+    background: var(--rv-late-soft);
     color: var(--rv-late);
   }
   .ev-done.skipped {
+    background: var(--rv-warn-soft);
     color: var(--rv-warn);
   }
   .ev-row.done .ev-title {
     color: var(--rv-muted);
   }
   /* done or skipped: faded (only these: one whose time passed but is not done stays clear) */
-  .ev-row.done {
+  /* 1.92.0: everything faded but the mark, which stays as on Agora */
+  .ev-row.done > .ev-time,
+  .ev-row.done > .ev-bar,
+  .ev-row.done > .ev-rep,
+  .ev-row.done .ev-sub,
+  .ev-row.done .kind-ic {
     opacity: 0.5;
   }
   /* done in the grid: green (the color comes from the element), a bit faded */

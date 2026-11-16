@@ -502,7 +502,27 @@ export const RewardsMixin = (Base) =>
       }
     }
 
-    /** Today's chores and maintenance that give points. */
+    /**
+     * Para pontuar hoje › Concluídas (n), closed until tapped (1.92.0): the routines and tasks with points done today,
+     * the same lines as Agora's (the circle undoes; who got the points).
+     */
+    _renderScoreDone(chores, tasks, now) {
+      const n = chores.length + tasks.length;
+      if (!n) return nothing;
+      const open = !!this._scoreDoneOpen;
+      return html`<button class="add-line done-fold score-done-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._scoreDoneOpen = !open), this.requestUpdate())}>
+          ${icon(open ? "chevron-down" : "chevron-right")}<span>Concluídas (${n})</span>
+        </button>
+        ${open
+          ? html`${repeat(chores, (r) => r.key, (r) => this._choreRow(r, now))}
+            ${repeat(tasks, (t) => t.key, (t) => html`<div class="chore todo done">
+                <button class="chk sq on" @click=${() => this._todoDone(t, false)} aria-label="Reabrir ${t.summary}">${icon("check")}</button>
+                <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>concluída · ${t.listName} · ResolvIA</small></button>
+                <span class="pts got">+${t.points}</span>
+              </div>`)}`
+          : nothing}`;
+    }
+
     /**
      * Próximas rotinas (closed until tapped): the routines with points that are not for today, to do
      * them earlier and score now. One that comes back N days after done counts from the day it is marked.
@@ -546,7 +566,7 @@ export const RewardsMixin = (Base) =>
       const total = chores.length + tasks.length;
       // Marcar por outras pessoas: the initials on each row, as on the start screen
       const pick = this._pickWho();
-      // only what still gives points: the done ones are on the start screen and in the Extrato
+      // what still gives points; the done ones of today at the end, folded (1.92.0: Concluídas (n), as on Agora)
       const openChores = byPeriod(chores.filter((r) => !r.done), now);
       const openTasks = tasks.filter((t) => !t.done);
       return html`<div class="panel chores score-today">
@@ -572,6 +592,7 @@ export const RewardsMixin = (Base) =>
           </div>`,
         )}
         ${total && !openChores.length && !openTasks.length && !maint.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo pontuado hoje.</p>` : nothing}
+        ${this._renderScoreDone(chores.filter((r) => r.done), tasks.filter((t) => t.done), now)}
         ${away
           ? html`<p class="empty-line away-line">${icon("plane")}<span><b>De férias até ${dayLabel(fromYmd(away.to), now, { long: false, cap: false })}</b>: rotinas, tarefas e manutenção pausadas.</span></p>`
           : html`${this._renderFutureScore(chores, now, pick)}
