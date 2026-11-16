@@ -187,7 +187,23 @@ const merge = (target, changes) => {
   return next;
 };
 
-const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, sent: {}, mirror: {}, kind_cals: [], away_cal: { splits: [], moved: [] }, score: { entries: [], history: [], rewards: {}, prizes: {}, current: null, log: [], log_seq: 0 } });
+const FRACS = [0.25, 0.5, 0.75];
+
+/** One part of a routine: {frac, entry (its points), by, points, at}. */
+function cleanPart(v) {
+  if (!v || typeof v !== "object" || !FRACS.includes(v.frac) || !Number.isFinite(Date.parse(v.at))) return null;
+  return { frac: v.frac, entry: String(v.entry || "").slice(0, 700), by: String(v.by || "").slice(0, 60), points: Math.max(0, Math.min(1000, Math.round(Number(v.points) || 0))), at: v.at };
+}
+
+/** What was done of a routine so far: {done (0.25 to 0.75), list: [parts]}; null when nothing (or all). */
+export function cleanParts(v) {
+  if (!v || typeof v !== "object" || !Array.isArray(v.list)) return null;
+  const list = v.list.map(cleanPart).filter(Boolean).slice(0, 3);
+  const done = list.reduce((a, p) => a + p.frac, 0);
+  return list.length && done < 1 ? { done, list } : null;
+}
+
+const empty = () => ({ version: 1, calendars: {}, app: {}, checks: {}, parts: {}, sent: {}, mirror: {}, kind_cals: [], away_cal: { splits: [], moved: [] }, score: { entries: [], history: [], rewards: {}, prizes: {}, current: null, log: [], log_seq: 0 } });
 
 /**
  * The saved data, checked field by field. `strict` (imports) also runs the
@@ -217,6 +233,11 @@ function normalize(raw, strict = false) {
     out.app = obj(raw.app);
   }
   for (const k of ["checks", "sent", "mirror"]) out[k] = obj(raw[k]);
+  // Feito em parte (1.91.0): a routine done 25, 50 or 75%, until the rest is done
+  for (const [id, v] of Object.entries(obj(raw.parts))) {
+    const p = cleanParts(v);
+    if (p) out.parts[id.slice(0, 600)] = p;
+  }
   // Modo férias nos calendários (1.59.0): the series paused and the events moved, to bring back
   const ac = obj(raw.away_cal);
   out.away_cal = { splits: Array.isArray(ac.splits) ? ac.splits.filter((x) => x && CAL_RE.test(x.cal || "") && Array.isArray(x.starts)) : [], moved: Array.isArray(ac.moved) ? ac.moved.filter((x) => x && CAL_RE.test(x.cal || "") && x.from && x.to) : [] };
@@ -293,7 +314,7 @@ export class Store {
    * vacation changed in the calendars (to bring it back) stay. A copy goes to Versões anteriores first.
    */
   resetAll() {
-    return this.replaceAll({ ...this.data, checks: {}, score: null }, "antes-de-zerar");
+    return this.replaceAll({ ...this.data, checks: {}, parts: {}, score: null }, "antes-de-zerar");
   }
 
   /** Keeps only the newest MAX_VERSIONS copies in /data/versoes. */
@@ -358,9 +379,26 @@ export class Store {
         // recreated: moved by creating a new event and deleting the old one (calendars that can't change events)
         if (m.recreated) c.moved.recreated = true;
       }
+      // Feito em parte (1.91.0): this part ({frac, entry, id}); parts: what was done before the rest (for Desfazer)
+      const pt = value.part;
+      if (pt && typeof pt === "object" && FRACS.includes(pt.frac)) c.part = { frac: pt.frac, entry: String(pt.entry || "").slice(0, 700), id: String(pt.id || "").slice(0, 600) };
+      const ps = cleanParts(value.parts);
+      if (ps) c.parts = { ...ps, id: String(value.parts.id || "").slice(0, 600) };
       this.data.checks[key] = c;
     }
     else delete this.data.checks[key];
+    this.save();
+  }
+
+  /** Feito em parte (1.91.0): what was done of a routine so far, by its id (null: nothing more to do). Old ones go. */
+  setParts(id, value) {
+    if (typeof id !== "string" || !id || id.length > 600) fail("item inválido");
+    const p = cleanParts(value);
+    if (p) this.data.parts[id] = p;
+    else delete this.data.parts[id];
+    // a part nobody finished in 30 days is forgotten
+    const old = Date.now() - 30 * 86400000;
+    for (const [k, v] of Object.entries(this.data.parts)) if (Date.parse(v.list[v.list.length - 1].at) < old) delete this.data.parts[k];
     this.save();
   }
 

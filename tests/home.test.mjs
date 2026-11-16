@@ -375,6 +375,151 @@ describe("Home: routines that come back N days after done", () => {
   });
 });
 
+describe("Home: Feito em parte (1.91.0)", () => {
+  const PANO = "#rotina\nPontos: 20\nVolta: 5 dias depois de feita\nFeito em: 28/10/2026";
+  const pano = (day = "2026-11-02") => ({ uid: "pano", summary: "Passar pano", start: day, end: day.replace(/\d+$/, (d) => String(+d + 1).padStart(2, "0")), description: PANO });
+  const ixOf = (home) => (home.rebuild(), home.index.routines);
+  it("one that comes back N days after done: 50% gives half the points and the rest goes to tomorrow, its history and its 5 days untouched", async () => {
+    const raw = pano();
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    const key = keyOf(raw);
+    const out = await home.part(key, 0.5, "x", "Davi");
+    assert.deepEqual(out, { done: 0.5, points: 10 });
+    const [upd] = sentOf(ha, "calendar/event/update");
+    assert.equal(upd.event.dtstart, "2026-11-03", "the rest: tomorrow");
+    assert.deepEqual(parseKind(upd.event.description).history, ["2026-10-28"], "not done yet: nothing in its history");
+    const c = store.data.checks[key];
+    assert.equal(c.by, "Davi");
+    assert.equal(c.part.frac, 0.5);
+    assert.equal(c.moved.start, "2026-11-02");
+    const e = store.pointsByKey(c.part.entry);
+    assert.deepEqual({ who: e.who, points: e.points, title: e.title }, { who: "Davi", points: 10, title: "Passar pano · 50%" });
+    // today: done (in part)
+    home.tracked.get(CAL).events = [{ ...raw, start: "2026-11-03", end: "2026-11-04" }];
+    let r = ixOf(home)[0];
+    assert.equal(r.done.part.frac, 0.5);
+    assert.deepEqual(r.part, { done: 0.5, points: 10, by: ["Davi"] });
+    // tomorrow: to do, with what is left
+    mock.timers.setTime(at(2026, 11, 3, 9).getTime());
+    r = ixOf(home)[0];
+    assert.equal(r.done, null);
+    assert.deepEqual(r.part, { done: 0.5, points: 10, by: ["Davi"] });
+    // the rest, by Aurora: the other 10, and now it comes back 5 days later, with tomorrow in its history
+    const moved = home.tracked.get(CAL).events[0];
+    await home.check(keyOf(moved), true, "x", "rotina", "Aurora");
+    const done = sentOf(ha, "calendar/event/update")[1];
+    assert.equal(done.event.dtstart, "2026-11-08");
+    assert.deepEqual(parseKind(done.event.description).history, ["2026-11-03", "2026-10-28"]);
+    const rest = store.pointsByKey(keyOf(moved));
+    assert.deepEqual({ who: rest.who, points: rest.points, title: rest.title }, { who: "Aurora", points: 10, title: "Passar pano · o resto" });
+    assert.deepEqual(store.data.parts, {}, "all done: nothing left in part");
+    assert.equal(store.data.checks[keyOf(moved)].parts.done, 0.5, "kept for Desfazer");
+    // Desfazer of the rest: back to tomorrow, the part comes back
+    home.tracked.get(CAL).events = [{ ...moved, start: "2026-11-08", end: "2026-11-09", description: done.event.description }];
+    await home.check(keyOf(moved), false, "x", "rotina");
+    assert.equal(store.pointsByKey(keyOf(moved)), null);
+    assert.equal(store.data.parts[`${CAL}|name:Passar pano`].done, 0.5);
+    assert.equal(store.pointsByKey(c.part.entry).points, 10, "the part keeps its points");
+  });
+  it("Desfazer of a part: back to today, its points go, nothing left in part", async () => {
+    const raw = pano();
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    const key = keyOf(raw);
+    await home.part(key, 0.25, "x", "Aurora");
+    const entry = store.data.checks[key].part.entry;
+    assert.equal(store.pointsByKey(entry).points, 5);
+    home.tracked.get(CAL).events = [{ ...raw, start: "2026-11-03", end: "2026-11-04" }];
+    await home.check(key, false, "x", "rotina");
+    const back = sentOf(ha, "calendar/event/update")[1];
+    assert.equal(back.event.dtstart, "2026-11-02");
+    assert.deepEqual(parseKind(back.event.description).history, ["2026-10-28"]);
+    assert.equal(store.pointsByKey(entry), null);
+    assert.deepEqual(store.data.parts, {});
+    assert.equal(key in store.data.checks, false);
+  });
+  it("parts add up (25% then 50%); what is left or less is the rest, all done", async () => {
+    const raw = pano();
+    const { home, store } = setup({ events: { [CAL]: [raw] } });
+    await home.part(keyOf(raw), 0.25, "x", "Davi");
+    mock.timers.setTime(at(2026, 11, 3, 9).getTime());
+    const t1 = { ...raw, start: "2026-11-03", end: "2026-11-04" };
+    home.tracked.get(CAL).events = [t1];
+    assert.deepEqual(await home.part(keyOf(t1), 0.5, "x", "Aurora"), { done: 0.75, points: 10 });
+    assert.deepEqual(store.data.parts[`${CAL}|name:Passar pano`].list.map((p) => [p.by, p.frac, p.points]), [["Davi", 0.25, 5], ["Aurora", 0.5, 10]]);
+    mock.timers.setTime(at(2026, 11, 4, 9).getTime());
+    const t2 = { ...raw, start: "2026-11-04", end: "2026-11-05" };
+    home.tracked.get(CAL).events = [t2];
+    // 50% more than the 25% left: the rest
+    const out = await home.part(keyOf(t2), 0.5, "x", "Davi");
+    assert.deepEqual(out, { moved: true, next: "2026-11-09" });
+    assert.equal(store.pointsByKey(keyOf(t2)).points, 5);
+    assert.deepEqual(store.data.parts, {});
+  });
+  it("Pular after a part: it ends there (the part keeps its points); Desfazer brings the part back", async () => {
+    const raw = pano();
+    const { home, store } = setup({ events: { [CAL]: [raw] } });
+    await home.part(keyOf(raw), 0.5, "x", "Davi");
+    mock.timers.setTime(at(2026, 11, 3, 9).getTime());
+    const t1 = { ...raw, start: "2026-11-03", end: "2026-11-04" };
+    home.tracked.get(CAL).events = [t1];
+    await home.skip(keyOf(t1), "x");
+    assert.deepEqual(store.data.parts, {});
+    assert.equal(store.data.checks[keyOf(t1)].skipped, true);
+    assert.equal(store.data.score.entries.filter((e) => e.points > 0).length, 1);
+    await home.check(keyOf(t1), false, "x", "rotina");
+    assert.equal(store.data.parts[`${CAL}|name:Passar pano`].done, 0.5);
+  });
+  it("one of fixed days: done in part today, and tomorrow the rest shows (ficou de ontem), for a week", async () => {
+    const raw = lixo();
+    const { home, store } = setup({ events: { [CAL]: [{ ...raw, description: "#rotina\nPontos: 20" }] } });
+    const key = keyOf(raw);
+    assert.deepEqual(await home.part(key, 0.75, "x", "Aurora"), { done: 0.75, points: 15 });
+    let r = ixOf(home)[0];
+    assert.equal(r.done.part.frac, 0.75, "today: done, in part");
+    mock.timers.setTime(at(2026, 11, 3, 9).getTime());
+    r = ixOf(home)[0];
+    assert.equal(r.done, null);
+    assert.equal(r.yesterday, true);
+    assert.deepEqual(r.part, { done: 0.75, points: 15, by: ["Aurora"] });
+    mock.timers.setTime(at(2026, 11, 8, 9).getTime());
+    assert.equal(ixOf(home).length, 1, "still there 6 days later");
+    mock.timers.setTime(at(2026, 11, 10, 9).getTime());
+    assert.equal(ixOf(home).length, 0, "after a week, forgotten in the list");
+    mock.timers.setTime(at(2026, 11, 3, 9).getTime());
+    home.check(key, true, "x", "rotina", "Davi");
+    assert.deepEqual([store.pointsByKey(key).who, store.pointsByKey(key).points, store.pointsByKey(key).title], ["Davi", 5, "Tirar o lixo · o resto"]);
+    assert.equal(ixOf(home).length, 0);
+    // Desfazer of the rest: the part (of yesterday) comes back to do
+    home.check(key, false, "x", "rotina");
+    assert.equal(store.pointsByKey(key), null);
+    r = ixOf(home)[0];
+    assert.equal(r.done, null);
+    assert.equal(r.part.done, 0.75);
+    // Desfazer of the part itself: nothing
+    home.check(key, false, "x", "rotina");
+    assert.deepEqual(store.data.parts, {});
+    assert.equal(key in store.data.checks, false);
+  });
+  it("someone off the placar: the part, no points; a routine already done or not a routine: refused", async () => {
+    const raw = lixo();
+    const { home, store } = setup({ events: { [CAL]: [{ ...raw, description: "#rotina\nPontos: 20" }, dose(9, 0)] } });
+    assert.deepEqual(await home.part(keyOf(raw), 0.5, "x", "Visita"), { done: 0.5, points: 0 });
+    assert.equal(store.data.score.entries.length, 0);
+    await assert.rejects(() => home.part(keyOf(raw), 0.3, "x", "Davi"), /25%, 50% ou 75%/);
+    await assert.rejects(() => home.part(keyOf(dose(9, 0)), 0.5, "x", "Davi"), /Não achei essa rotina/);
+    home.check(keyOf(raw), false, "x", "rotina");
+    home.check(keyOf(raw), true, "x", "rotina", "Davi");
+    await assert.rejects(() => home.part(keyOf(raw), 0.25, "x", "Davi"), /já está feita/);
+  });
+  it("a calendar that can't change events: refused, nothing changes here", async () => {
+    const raw = pano();
+    const { home, store } = setup({ events: { [CAL]: [raw] }, features: 0 });
+    await assert.rejects(() => home.part(keyOf(raw), 0.5, "x", "Davi"), /não deixa mudar/);
+    assert.deepEqual(store.data.parts, {});
+    assert.equal(store.data.score.entries.length, 0);
+  });
+});
+
 describe("Home: a routine the calendar left on the day it was done (1.86.0)", () => {
   const LIXO = (h) => `#rotina\nPontos: 5\nVolta: 1 dia depois de feita\nFeito em: ${h}`;
   const stuck = (extra = {}) => ({ uid: "lixo2", summary: "Esvaziar lixos", start: "2026-11-02", end: "2026-11-03", description: LIXO("02/11/2026, 25/10/2026"), ...extra });

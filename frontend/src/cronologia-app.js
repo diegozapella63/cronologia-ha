@@ -728,6 +728,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   async _go(path, replace = false) {
     path = canonPath(path);
+    // Feito em parte: back to Tudo on another screen
+    this._part = 1;
     if (this._sheet) this._closeSheet();
     if (this._popping) await this._popping;
     const st = history.state || {};

@@ -1962,6 +1962,44 @@ export const calStyles = css`
     height: 17px;
     stroke-width: 3;
   }
+  /* Feito em parte (1.91.0): the circle filled as much as was done */
+  .chk.part {
+    border-color: var(--rv-ok);
+    background: conic-gradient(var(--rv-ok) var(--f), transparent 0);
+  }
+  .part-pick {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 2px 16px 8px;
+  }
+  .part-opt {
+    min-height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--rv-line-strong);
+    background: transparent;
+    color: var(--rv-text);
+    font: 600 13px/1 var(--rv-body, inherit);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 6px;
+    white-space: nowrap;
+  }
+  .part-opt.on {
+    background: var(--rv-accent-soft);
+    border-color: var(--rv-accent);
+    color: var(--rv-accent-ink);
+  }
+  .part-opt .pie {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
+    background: conic-gradient(currentColor var(--f), transparent 0);
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
   .chore-tx {
     flex: 1;
     min-width: 0;

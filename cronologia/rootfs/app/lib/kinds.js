@@ -411,7 +411,19 @@ export function afterCopies(occurrences) {
 /** A day (YYYY-MM-DD) inside the vacation. */
 export const awayOn = (away, day) => !!(away && day >= away.from && day <= away.to);
 
-export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = true, features = () => 7, reach = () => false, now = Date.now(), away = null }) {
+/**
+ * Feito em parte (1.91.0): where what was done of a routine is kept. One that comes back N days after done moves to the
+ * next day with each part: by its name in its calendar (a calendar that can't change events gives it a new uid); one of
+ * fixed days: by the occurrence.
+ */
+export function partIdOf(cal, raw, k, key) {
+  return k && k.kind === "rotina" && k.after && !raw.rrule ? `${cal}|name:${raw.summary || raw.uid || ""}` : key;
+}
+
+/** What the screen shows of the parts: how much was done, the points so far and who. */
+const partInfo = (p) => (p ? { done: p.done, points: p.list.reduce((a, x) => a + x.points, 0), by: [...new Set(p.list.map((x) => x.by).filter(Boolean))] } : null);
+
+export function buildIndex({ occurrences, checks = {}, parts = {}, late = 30, alertsOn = true, features = () => 7, reach = () => false, now = Date.now(), away = null }) {
   const today = new Date(now);
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const t1 = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).getTime();
@@ -472,7 +484,7 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       const dueMs = stuck ? dateOf(due).getTime() : start;
       let doneToday = movedToday.get(id) || movedToday.get(`${cal}|name:${raw.summary || ""}`);
       if (!doneToday && stuck === todayYmd) doneToday = [key, { by: "", kind: "rotina", at: null }];
-      const common = { kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false };
+      const common = { kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", after: k.after, history: k.history || [], time: allDay ? "" : hmOf(start), next: due, yesterday: false, part: partInfo(parts[partIdOf(cal, raw, k, key)]) };
       // skipped (Pular) and its next time is already today: it is today's, to do
       const skippedToToday = doneToday && doneToday[1].skipped && dueMs < t1;
       if (doneToday && !skippedToToday) out.routines.push({ ...base, ...common, key: doneToday[0], done: doneToday[1], late: 0 });
@@ -485,9 +497,14 @@ export function buildIndex({ occurrences, checks = {}, late = 30, alertsOn = tru
       // today's, plus yesterday's that were not done (they can still be marked)
       if (pausedToday) continue;
       const todays = start < t1 && end > t0;
-      const yesterday = !todays && !yesterdayAway && start >= t0 - DAY && start < t0 && !checks[key];
-      if (!todays && !yesterday) continue;
-      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: checks[key] || null, yesterday, rooms: k.rooms || [], equips: k.equips || [] });
+      const ck = checks[key];
+      const yesterday = !todays && !yesterdayAway && start >= t0 - DAY && start < t0 && !ck;
+      // Feito em parte (1.91.0): the rest goes to the next day (done in part today: done today; on an earlier day: to do), for a week
+      const pc = parts[key];
+      const rest = !todays && !!pc && !!ck && !!ck.part && start >= t0 - 7 * DAY && start < t0;
+      if (!todays && !yesterday && !rest) continue;
+      const partOld = !!ck && !!ck.part && Date.parse(ck.at) < t0;
+      out.routines.push({ ...base, kind: "rotina", who: k.who, points: k.points || 0, period: k.period || "", time: allDay ? "" : hmOf(start), done: ck && !partOld ? ck : null, yesterday: yesterday || rest, part: partInfo(pc), rooms: k.rooms || [], equips: k.equips || [] });
     } else if (k.kind === "conta") {
       const paid = checks[key] || null;
       // open ones from the last 2 months and the next 8 days; paid ones around today or paid today

@@ -79,17 +79,34 @@ function maintLabel(m, now) {
 /** rrule -> how the form shows it. */
 /** Second line of a routine that comes back N days after done ("atrasada há 2 dias · volta 2 dias depois"). */
 export function afterSub(r, now) {
+  if (r.done && r.done.part) return partSub(r);
   if (r.done) return `${r.done.skipped ? "pulada" : `feito por ${r.done.by || "alguém"}`} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
   const per = periodInfo(r.period);
   const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || (per ? per.when : "hoje");
-  return [when, r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
+  return [when, r.part ? partLeftText(r) : "", r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
+}
+
+/** Feito em parte (1.91.0): the points still to get of a routine (all of them, when nothing was done). */
+export const partLeft = (r) => Math.max(0, (r.points || 0) - ((r.part && r.part.points) || 0));
+
+/** The points a done routine gave: a part (its share), the rest (what was left) or all. */
+export const donePoints = (r) => (r.done && r.done.part ? Math.round((r.points || 0) * r.done.part.frac) : r.done && r.done.parts ? Math.max(0, (r.points || 0) - r.done.parts.list.reduce((a, p) => a + p.points, 0)) : r.points || 0);
+
+/** Feito em parte (1.91.0): what is left ("falta 50%"). */
+const partLeftText = (r) => `falta ${Math.round((1 - r.part.done) * 100)}%`;
+
+/** Done in part today: "50% feito por Ana · o resto amanhã" (all that was done so far). */
+function partSub(r) {
+  const pct = Math.round(((r.part && r.part.done) || r.done.part.frac) * 100);
+  return `${pct}% feito${r.done.by ? ` por ${r.done.by}` : ""} · o resto amanhã`;
 }
 
 /** Second line of a routine in today's lists ("de manhã · Davi", "ficou de ontem", "feito por Ana"). */
 export function routineSub(r, now) {
   if (r.after) return afterSub(r, now);
+  if (r.done && r.done.part) return partSub(r);
   const per = periodInfo(r.period);
-  return [r.yesterday ? "ficou de ontem" : r.time || (per && !r.done ? per.when : ""), r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje";
+  return [r.yesterday ? "ficou de ontem" : r.time || (per && !r.done ? per.when : ""), !r.done && r.part ? partLeftText(r) : "", r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje";
 }
 
 /** The part of the day of a routine: the one chosen, or the one of its time. */
@@ -539,19 +556,20 @@ export const ModelsMixin = (Base) =>
       const open = byPeriod(routines.filter((r) => !r.done), now);
       const shut = routines.filter((r) => r.done);
       const row = (r) => html`<div class="chore ${r.done ? "done" : ""} ${r.done && r.done.skipped ? "skipped" : ""}">
-                  <button class="chk ${r.done ? "on" : ""}" @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${r.done ? icon(r.done.skipped ? "skip-forward" : "check") : nothing}</button>
-                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${routineSub(r, now)}</small></button>
+                  ${this._renderChk(r)}
+                  <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${!r.done && this._pickWho() && r.points > 0 ? html`<span class="pts-inline">+${partLeft(r)}</span> · ` : nothing}${routineSub(r, now)}</small></button>
                   ${!r.done && this._pickWho()
-                    ? this._renderQuickWho(r.summary, r.points || 0, (p) => this._markDone(r, "rotina", p))
+                    ? this._renderQuickWho(r.summary, partLeft(r), (p) => this._markDone(r, "rotina", p))
                     : r.points > 0 && this._scoreOn()
                       ? r.done
-                        ? this._renderWon(this._pointsWho(r.key, r.done.by), r.points)
-                        : html`<span class="pts">+${r.points}</span>`
+                        ? this._renderWon(this._pointsWho(r.done.part ? r.done.part.entry : r.key, r.done.by), donePoints(r))
+                        : html`<span class="pts">+${partLeft(r)}</span>`
                       : nothing}
                 </div>`;
       return html`<div class="panel chores" id="casa">
         ${routines.length
           ? html`${this._panelHead("spray-can", "ok", "Rotina da casa", `${done} de ${routines.length}`)}
+              ${open.length ? this._renderPartPick() : nothing}
               ${repeat(open, (r) => r.key, row)}
               ${!open.length ? html`<p class="empty-line all-done">${icon("circle-check")}Tudo feito hoje.</p>` : nothing}
               ${shut.length

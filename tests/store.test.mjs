@@ -257,6 +257,41 @@ describe("Store: app settings", () => {
   });
 });
 
+describe("Store: Feito em parte (1.91.0)", () => {
+  const iso = (d = NOW) => new Date(d).toISOString();
+  it("setParts keeps 25/50/75% parts, adds them up; all done or nothing: gone", () => {
+    const s = fresh();
+    s.setParts("calendar.casa|name:Pano", { list: [{ frac: 0.25, entry: "e1", by: "Ana", points: 5, at: iso(), x: 1 }, { frac: 0.3, at: iso() }] });
+    assert.deepEqual(s.data.parts["calendar.casa|name:Pano"], { done: 0.25, list: [{ frac: 0.25, entry: "e1", by: "Ana", points: 5, at: iso() }] });
+    s.setParts("calendar.casa|name:Pano", { list: [{ frac: 0.5, at: iso() }, { frac: 0.5, at: iso() }] });
+    assert.equal("calendar.casa|name:Pano" in s.data.parts, false, "100%: nothing left in part");
+    s.setParts("x", { list: [{ frac: 0.75, at: iso() }] });
+    s.setParts("x", null);
+    assert.deepEqual(s.data.parts, {});
+    assert.throws(() => s.setParts("", { list: [] }), /inválido/);
+  });
+  it("a part nobody finished in 30 days is forgotten", () => {
+    const s = fresh();
+    s.setParts("old", { list: [{ frac: 0.5, at: iso(NOW - 31 * 86400000) }] });
+    s.setParts("new", { list: [{ frac: 0.5, at: iso() }] });
+    assert.deepEqual(Object.keys(s.data.parts), ["new"]);
+  });
+  it("setCheck keeps the part and the parts (for Desfazer); a saved file brings them back; Começar do zero takes them", () => {
+    const s = fresh();
+    s.setCheck("k1", { by: "Ana", kind: "rotina", part: { frac: 0.5, entry: "k1|parte|1", id: "k1", x: 2 } });
+    assert.deepEqual(s.data.checks.k1.part, { frac: 0.5, entry: "k1|parte|1", id: "k1" });
+    s.setCheck("k2", { by: "Ana", kind: "rotina", part: { frac: 0.4 }, parts: { id: "k2", list: [{ frac: 0.75, entry: "e", by: "Ana", points: 15, at: iso() }] } });
+    assert.equal("part" in s.data.checks.k2, false);
+    assert.deepEqual(s.data.checks.k2.parts, { done: 0.75, list: [{ frac: 0.75, entry: "e", by: "Ana", points: 15, at: iso() }], id: "k2" });
+    s.setParts("k1", { list: [{ frac: 0.5, entry: "k1|parte|1", by: "Ana", points: 10, at: iso() }] });
+    s.flush();
+    const again = fresh();
+    assert.equal(again.data.parts.k1.done, 0.5);
+    again.resetAll();
+    assert.deepEqual(again.data.parts, {});
+  });
+});
+
 describe("Store: checks, alerts sent, calendars with models", () => {
   it("setCheck keeps at/by/kind, Pular (skipped) and where a routine was (moved)", () => {
     const s = fresh();

@@ -266,6 +266,11 @@ export class Api {
     return this.call("cronologia/check/set", { key, done, kind, ...(who ? { who } : {}) });
   }
 
+  /** Feito em parte (1.91.0): 25, 50 or 75% of a routine; the rest goes to the next day. */
+  checkPart(key, frac, who) {
+    return this.call("cronologia/check/part", { key, frac, ...(who ? { who } : {}) });
+  }
+
   maintDone(entityId, uid, who) {
     return this.call("cronologia/maint/done", { entity_id: entityId, uid, ...(who ? { who } : {}) });
   }

@@ -5,7 +5,7 @@ import { ICONS } from "./icons.js";
 import { foldText, everyLabel, PERIODS as PERIODS_DAY, periodOfHour } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { PERIODS, periodLabel } from "../../cronologia/rootfs/app/lib/score.js";
 import { colorById, colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, dateShort, dayLabel, WEEKDAYS } from "./util.js";
-import { routineSub, routineLate, byPeriod } from "./models.js";
+import { routineSub, routineLate, byPeriod, partLeft } from "./models.js";
 import { timeField } from "./whenpick.js";
 
 const icon = (name, cls = "") =>
@@ -136,6 +136,16 @@ export const RewardsMixin = (Base) =>
       return html`<div class="chores-head sec-head ${cls}"><span class="sec-ic ${tone}">${icon(ic)}</span><span class="overline">${title}</span>${small ? html`<small class=${smallCls}>${small}</small>` : nothing}</div>`;
     }
 
+    /**
+     * The circle of a routine: Marcar (Desmarcar when done). Feito em parte (1.91.0): filled as much as was done (done
+     * today in part: the circle shows it, without the ✓).
+     */
+    _renderChk(r) {
+      const part = r.part ? r.part.done : null;
+      const full = !!r.done && !r.done.part;
+      return html`<button class="chk ${full ? "on" : ""} ${part != null ? "part" : ""}" style=${part != null ? `--f:${Math.round(part * 100)}%` : ""} @click=${() => (r.done ? this._undoCheck(r, "rotina") : this._markDone(r, "rotina"))} aria-label="${r.done ? "Desmarcar" : "Marcar"} ${r.summary}">${full ? icon(r.done.skipped ? "skip-forward" : "check") : nothing}</button>`;
+    }
+
     _renderQuickWho(title, points, go) {
       const s = this._score() || { participants: [] };
       const people = s.participants.slice(0, 4);
@@ -167,8 +177,45 @@ export const RewardsMixin = (Base) =>
       } else this._showToast(text, undo ? { label: "Desfazer", run: undo } : null);
     }
 
+    /** Feito em parte (1.91.0): how much of the next routine marked was done; Tudo (1) by default and after each mark. */
+    _partFrac() {
+      return this._part || 1;
+    }
+
+    /** 25% · 50% · 75% · Tudo, above the routines to do; then the person (or the circle) marks that much. */
+    _renderPartPick() {
+      const cur = this._partFrac();
+      const opt = (f, label) =>
+        html`<button class="part-opt ${cur === f ? "on" : ""}" aria-pressed=${cur === f ? "true" : "false"} @click=${() => ((this._part = f), this.requestUpdate())}><span class="pie" style="--f:${f * 100}%" aria-hidden="true"></span><span>${label}</span></button>`;
+      return html`<div class="part-pick" role="group" aria-label="Quanto foi feito">${opt(0.25, "25%")}${opt(0.5, "50%")}${opt(0.75, "75%")}${opt(1, "Tudo")}</div>`;
+    }
+
+    /**
+     * Feito em parte: that part of the points to who did it, the rest to the next day (Desfazer in the message). More
+     * than what is left: the rest, all done.
+     */
+    _markPart(it, frac, by = null) {
+      this._part = 1;
+      if (this._view().name === "now") this._choresHold = true;
+      if (((it.part && it.part.done) || 0) + frac > 0.99) return this._markDone(it, "rotina", by);
+      const points = it.points > 0 ? Math.round(it.points * frac) : 0;
+      return this._withWho(points, it.summary, async (who) => {
+        if (this._sheet === "who") await this._closeSheet();
+        try {
+          const r = await this.api.checkPart(it.key, frac, who);
+          this._haptic("success");
+          const got = r && r.points > 0 && who ? ` por ${who} · +${r.points}` : "";
+          this._showToast(`${clip(it.summary, 22)}: ${Math.round(frac * 100)}%${got} · o resto amanhã`, { label: "Desfazer", run: () => this.api.setCheck(it.key, false, "rotina").catch((err) => this._showToast(err.message)) });
+        } catch (err) {
+          this._showToast(`Não consegui marcar: ${err.message}`);
+        }
+      }, by);
+    }
+
     /** Chore (or repeating maintenance) done; `by`: the person chosen on the sheet. */
     _markDone(it, kind, by = null) {
+      // Feito em parte: 25, 50 or 75% chosen above the routines
+      if (kind === "rotina" && this._partFrac() < 1) return this._markPart(it, this._partFrac(), by);
       // the last routine done here: Rotina da casa stays until you leave Agora (then all done = it leaves)
       if (kind === "rotina" && this._view().name === "now") this._choresHold = true;
       return this._withWho(it.points || 0, it.summary, async (who) => {
@@ -504,10 +551,11 @@ export const RewardsMixin = (Base) =>
       const openTasks = tasks.filter((t) => !t.done);
       return html`<div class="panel chores score-today">
         ${this._panelHead("star", "ok", "Para pontuar hoje", total ? `${done} de ${total}` : "")}
+        ${openChores.length ? this._renderPartPick() : nothing}
         ${repeat(openChores, (r) => r.key, (r) => html`<div class="chore">
-            <button class="chk" @click=${() => this._markDone(r, "rotina")} aria-label="Marcar ${r.summary}"></button>
-            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${pick ? html`<span class="pts-inline">+${r.points}</span> · ` : nothing}${routineSub(r, now)}</small></button>
-            ${pick ? this._renderQuickWho(r.summary, r.points, (p) => this._markDone(r, "rotina", p)) : html`<span class="pts">+${r.points}</span>`}
+            ${this._renderChk(r)}
+            <button class="chore-tx" @click=${() => this._openIndexItem(r)}><b>${r.summary}</b><small class=${routineLate(r, now) ? "late" : ""}>${pick ? html`<span class="pts-inline">+${partLeft(r)}</span> · ` : nothing}${routineSub(r, now)}</small></button>
+            ${pick ? this._renderQuickWho(r.summary, partLeft(r), (p) => this._markDone(r, "rotina", p)) : html`<span class="pts">+${partLeft(r)}</span>`}
           </div>`)}
         ${repeat(openTasks, (t) => t.key, (t) => html`<div class="chore">
             <button class="chk sq" @click=${() => this._todoDone(t, true)} aria-label="Concluir ${t.summary}"></button>

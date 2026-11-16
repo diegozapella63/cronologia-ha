@@ -373,6 +373,12 @@ class Session {
         return this.result(id);
       }
 
+      // Feito em parte (1.91.0): 25, 50 or 75% of a routine; the rest goes to the next day
+      case "cronologia/check/part": {
+        if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
+        return this.result(id, await home.part(msg.key, Number(msg.frac), this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));
+      }
+
       case "cronologia/maint/done": {
         if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
         return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));

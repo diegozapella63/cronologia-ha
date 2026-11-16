@@ -3298,6 +3298,10 @@ export const extraStyles = css`
       margin-left: 0;
       margin-right: 0;
     }
+    .page:not(.cal-page) .panel .part-pick {
+      margin-left: 0;
+      margin-right: 0;
+    }
     .page:not(.cal-page) .panel .chore,
     .page:not(.cal-page) .panel .demerit,
     .page:not(.cal-page) .panel.demerits-set > .mais-head,

@@ -146,8 +146,8 @@ export const FERRAMENTAS = [
     titulo: "Marcar como feito",
     grava: true,
     descricao:
-      "Marca um remédio como tomado, uma rotina ou manutenção como feita ou uma conta como paga (o id de cronologia_resumo; contas do GerencIA também). Com feito false, desfaz. quem: quem fez (ganha os pontos do placar); sem quem, a pessoa que está usando.",
-    entrada: obj({ id: ID, feito: { type: "boolean", description: "Padrão: true." }, quem: { type: "string" } }, ["id"]),
+      "Marca um remédio como tomado, uma rotina ou manutenção como feita ou uma conta como paga (o id de cronologia_resumo; contas do GerencIA também). Com feito false, desfaz. quem: quem fez (ganha os pontos do placar); sem quem, a pessoa que está usando. parte (só rotina): feita em parte, 25, 50 ou 75% (ganha essa parte dos pontos; o resto vai para o dia seguinte); o que falta ou menos: o resto, feita.",
+    entrada: obj({ id: ID, feito: { type: "boolean", description: "Padrão: true." }, quem: { type: "string" }, parte: { type: "integer", enum: [25, 50, 75], description: "Feita em parte (só rotina): a porcentagem." } }, ["id"]),
   },
   {
     nome: "pular",
@@ -491,7 +491,9 @@ export class Ferramentas {
       if (x.who) r.quem = x.who;
       if (st && x.points) r.pontos = x.points;
       if (x.after) r.volta = `${everyLabel(x.after)} depois de feita`;
-      r.situacao = x.done ? (x.done.skipped ? "pulada" : "feita") : x.yesterday ? "de ontem, não feita" : x.late > 0 ? `atrasada ${plural(x.late, "dia", "dias")}` : "a fazer";
+      r.situacao = x.done ? (x.done.skipped ? "pulada" : x.done.part ? `feita em parte hoje (${Math.round(((x.part && x.part.done) || x.done.part.frac) * 100)}%), o resto amanhã` : "feita") : x.yesterday ? "de ontem, não feita" : x.late > 0 ? `atrasada ${plural(x.late, "dia", "dias")}` : "a fazer";
+      // Feito em parte: what is left to do (and its points)
+      if (!x.done && x.part) r.falta = `${Math.round((1 - x.part.done) * 100)}%${st && x.points ? ` (+${Math.max(0, x.points - x.part.points)})` : ""}`;
       if (x.done && x.done.by && !x.done.skipped) r.feita_por = x.done.by;
       return r;
     });
@@ -859,7 +861,18 @@ export class Ferramentas {
       }
       throw erro(`${nome} não foi feita agora há pouco: só dá para desfazer até 30 minutos depois. Para mudar a data, use cronologia_editar_compromisso.`);
     }
-    if (feito && c && !c.skipped) return `Já estava ${feitoTxt}: ${nome}.`;
+    // Feito em parte (1.91.0): 25, 50 or 75% of a routine; the rest goes to the next day
+    if (a.parte != null) {
+      if (![25, 50, 75].includes(a.parte)) throw erro("parte: 25, 50 ou 75.");
+      if (kind !== "rotina") throw erro(`Só rotina se faz em parte; este é ${KINDS[kind].label.toLowerCase()}.`);
+      if (!feito) throw erro("Para desfazer, use feito false sem parte.");
+      if (c && !c.skipped && !c.part) return `Já estava feita: ${nome}.`;
+      const r = await this.home.part(o.key, a.parte / 100, by, quem);
+      // what was left or less: the rest, done
+      if (!r || r.moved !== undefined) return `Feita por ${(this.store.data.checks[o.key] || {}).by || quem || by}: ${nome} (era o que faltava)${r && r.next ? `; volta em ${dm(r.next)}` : ""}${this.pontosDe(o.key)}.`;
+      return `Feita em parte (${a.parte}%) por ${quem || by}: ${nome}${r.points > 0 ? ` · +${r.points}` : ""}; o resto (${Math.round((1 - r.done) * 100)}%) fica para amanhã.`;
+    }
+    if (feito && c && !c.skipped && !c.part) return `Já estava ${feitoTxt}: ${nome}.`;
     if (!feito && !c) return `${nome} já estava ${kind === "remedio" ? "por tomar" : kind === "conta" ? "a pagar" : "a fazer"}.`;
     const r = await this.home.check(o.key, feito, by, kind, quem);
     if (!feito) return `Desfeito: ${nome} voltou para ${kind === "remedio" ? "por tomar" : kind === "conta" ? "a pagar" : "a fazer"}.`;

@@ -671,6 +671,22 @@ describe("marcar_feito and pular", () => {
     assert.equal(r.texto, "Feita por Beto: Tirar o lixo; +10 pontos para Beto.");
     await refused("marcar_feito", { id: "calendar.casa|lixo|20261102", quem: "Carla", feito: true }, /./);
   });
+  it("1.91.0: feita em parte (25, 50 ou 75%): that part of the points, the rest tomorrow; what is left: the rest, done", async () => {
+    const { call, store, refused } = setup();
+    let r = await call("marcar_feito", { id: "calendar.casa|lixo|20261102", parte: 50, quem: "Beto" });
+    assert.equal(r.texto, "Feita em parte (50%) por Beto: Tirar o lixo · +5; o resto (50%) fica para amanhã.");
+    r = await call("resumo", {});
+    const lixo = JSON.parse(r.texto.slice(r.texto.indexOf("{"))).rotinas_hoje.find((x) => x.nome === "Tirar o lixo");
+    assert.equal(lixo.situacao, "feita em parte hoje (50%), o resto amanhã");
+    r = await call("marcar_feito", { id: "calendar.casa|lixo|20261102", parte: 75 });
+    assert.equal(r.texto, "Feita por Ana: Tirar o lixo (era o que faltava); +5 pontos para Ana.");
+    assert.deepEqual(store.data.parts, {});
+    r = await call("marcar_feito", { id: "calendar.casa|lixo|20261102", parte: 25 });
+    assert.equal(r.texto, "Já estava feita: Tirar o lixo.");
+    await refused("marcar_feito", { id: "calendar.casa|vitd|20261102T080000", parte: 50 }, /Só rotina se faz em parte/);
+    await refused("marcar_feito", { id: "calendar.casa|lixo|20261102", parte: 50, feito: false }, /feito false sem parte/);
+    await refused("marcar_feito", { id: "calendar.casa|lixo|20261102", parte: 30 }, /./);
+  });
   it("the person who connected: by the person of Home Assistant (its id), else the name sent, else nobody", async () => {
     const s = setup();
     let r = await s.f.chamar("marcar_feito", { id: "calendar.casa|lixo|20261102" }, { pessoa: { id: "person.ana", nome: "Ana Maria" }, cliente: "Gemini" });

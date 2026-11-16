@@ -8,7 +8,7 @@
 //   (from automations and NFC tags).
 import crypto from "node:crypto";
 import os from "node:os";
-import { parseKind, occurrenceKey, maintDone, maintSkip, skipNext, toTomorrow, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway, afterStuck, afterCopies, movedTo, addEvery } from "./kinds.js";
+import { parseKind, occurrenceKey, partIdOf, maintDone, maintSkip, skipNext, toTomorrow, foldText, buildIndex, buildDescription, isoWithOffset, awayOn, ymdOf, cleanAway, afterStuck, afterCopies, movedTo, addEvery } from "./kinds.js";
 import { toHAEvent } from "./events.js";
 import { scoreSettings, periodOf, tally, winnerOf } from "./score.js";
 import { asActor } from "./actor.js";
@@ -51,6 +51,12 @@ export function ingressUrl(h = process.env.CRONOLOGIA_HOST || os.hostname()) {
 function rewardsUrl() {
   const u = ingressUrl();
   return u ? `${u}?aba=recompensas` : null;
+}
+
+/** The points of the rest of a routine done in part (all of them, when nothing was done before). */
+function partsRest(points, pc) {
+  const p = points > 0 ? points : 0;
+  return pc ? Math.max(0, p - pc.list.reduce((a, x) => a + x.points, 0)) : p;
 }
 
 export class Home {
@@ -299,7 +305,7 @@ export class Home {
     const now = Date.now();
     const { late, meds: alertsOn, caregivers } = this.settings();
     const occs = [...this.occurrences()];
-    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, late, alertsOn, features: (cal) => this.features(cal), reach: (n) => this.phonesOf(n).length > 0, now, away: this.store.data.app.away || null });
+    const out = buildIndex({ occurrences: occs, checks: this.store.data.checks, parts: this.store.data.parts || {}, late, alertsOn, features: (cal) => this.features(cal), reach: (n) => this.phonesOf(n).length > 0, now, away: this.store.data.app.away || null });
     // Alert buttons find their dose by a short hash (doses of yesterday, today and tomorrow).
     this.byHash.clear();
     const t0 = startOfDay(new Date(now)).getTime();
@@ -712,16 +718,107 @@ export class Home {
       const o = this.findOccurrence(key);
       if (o && o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterDone(o, key, by, who);
     }
+    // Feito em parte: Desfazer of a part (the one before comes back) or of the rest (the parts come back)
+    if (!done && c && (c.part || c.parts)) return this.partUndo(key, c);
     const person = this.participant(who);
-    this.store.setCheck(key, done ? { by: person || who || by, kind } : null);
+    const o = done ? this.findOccurrence(key) : null;
+    // the rest of a routine done in part: the points that are left, and the parts kept for Desfazer
+    const pid = o && o.k.kind === "rotina" ? this.partId(o) : "";
+    const pc = pid ? this.store.data.parts[pid] : null;
+    this.store.setCheck(key, done ? { by: person || who || by, kind, ...(pc ? { parts: { ...pc, id: pid } } : {}) } : null);
+    if (pc) this.store.setParts(pid, null);
     if (done) {
       this.clearAlert(key).catch(() => {});
-      const o = this.findOccurrence(key);
-      const points = o && o.k.points;
-      if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: o.raw.summary, kind: o.k.kind });
+      const points = o ? partsRest(o.k.points, pc) : 0;
+      if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: pc ? `${o.raw.summary} · o resto` : o.raw.summary, kind: o.k.kind });
       else this.store.removePoints(key);
     } else this.store.removePoints(key);
     this.changed();
+  }
+
+  // ---------------------------------------------------------------- Feito em parte (1.91.0)
+
+  /** Where what was done of this routine is kept (by its name, for one that moves; by the occurrence, otherwise). */
+  partId(o) {
+    return partIdOf(o.cal, o.raw, o.k, o.key);
+  }
+
+  /**
+   * Feito em parte: 25, 50 or 75% of a routine (Rotina da casa › 25% · 50% · 75% · Tudo, then who did it). The person
+   * gets that part of the points; the rest goes to the next day: one that comes back N days after done moves to
+   * tomorrow (its history and its N days only when it is all done); one of fixed days shows again tomorrow ("ficou de
+   * ontem"), for a week. What is left or less: the rest, all done (check).
+   */
+  async part(key, frac, by, who = "") {
+    if (![0.25, 0.5, 0.75].includes(frac)) throw coded("invalid_format", "Escolha 25%, 50% ou 75%");
+    const o = this.findOccurrence(key);
+    if (!o || o.k.kind !== "rotina") throw coded("not_found", "Não achei essa rotina");
+    const id = this.partId(o);
+    const cur = this.store.data.parts[id] || { done: 0, list: [] };
+    if (cur.done + frac > 0.99) return this.check(key, true, by, "rotina", who);
+    const c = this.store.data.checks[key];
+    if (c && !c.part) throw coded("invalid_format", "Essa rotina já está feita");
+    const person = this.participant(who);
+    const points = o.k.points > 0 && person ? Math.round(o.k.points * frac) : 0;
+    const entry = `${key}|parte|${Date.now()}`;
+    const pct = Math.round(frac * 100);
+    const moving = !!o.k.after && !o.raw.rrule;
+    // the event first (a calendar that refuses: nothing changes here)
+    let moved = null;
+    if (moving) {
+      this.lastMove = Date.now();
+      const recreated = await this.moveRaw(o.cal, o.raw, toTomorrow(o.raw, new Date()));
+      moved = { cal: o.cal, uid: o.raw.uid, start: o.raw.start, end: o.raw.end, day: ymd(new Date()), summary: o.raw.summary || "", ...(recreated ? { recreated: true } : {}) };
+    }
+    if (points > 0) this.store.addPoints({ key: entry, who: person, points, title: `${o.raw.summary} · ${pct}%`, kind: "rotina" });
+    this.store.setParts(id, { list: [...cur.list, { frac, entry, by: person || who || by, points, at: new Date().toISOString() }] });
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", part: { frac, entry, id }, ...(moved ? { moved } : {}) });
+    this.log.info(`Rotina feita em parte (${pct}%): ${o.raw.summary} (${person || who || by}); o resto amanhã`);
+    if (moving) this.refreshCalendar(o.cal);
+    this.changed();
+    return { done: cur.done + frac, points };
+  }
+
+  /** Desfazer of a part or of the rest, for a routine of fixed days (the one that moves: afterUndo). */
+  partUndo(key, c) {
+    if (c.parts) {
+      // the rest (or Pular) undone: the parts come back, the last one marked as before
+      const id = c.parts.id || key;
+      this.store.setParts(id, c.parts);
+      const last = c.parts.list[c.parts.list.length - 1];
+      this.store.setCheck(key, { by: last.by, kind: "rotina", at: last.at, part: { frac: last.frac, entry: last.entry, id } });
+      this.store.removePoints(key);
+    } else {
+      // a part undone: its points go; the one before comes back (or nothing)
+      const last = this.dropPart(c.part);
+      this.store.setCheck(key, last ? { by: last.by, kind: "rotina", at: last.at, part: { frac: last.frac, entry: last.entry, id: c.part.id || key } } : null);
+    }
+    this.changed();
+    return null;
+  }
+
+  /** Takes a part out (its points too); returns the one before it, if any. */
+  dropPart(part) {
+    const id = part.id || "";
+    const cur = id ? this.store.data.parts[id] : null;
+    const list = cur ? cur.list.filter((p) => p.entry !== part.entry) : [];
+    this.store.removePoints(part.entry);
+    if (id) this.store.setParts(id, list.length ? { list } : null);
+    return list[list.length - 1] || null;
+  }
+
+  /** An event to its new date: changed, or (a calendar that can't change events) recreated; returns whether recreated. */
+  async moveRaw(cal, raw, event) {
+    const feat = this.features(cal);
+    if (feat & F.UPDATE) {
+      await this.ha.send({ type: "calendar/event/update", entity_id: cal, uid: raw.uid, event: toHAEvent(event) });
+      return false;
+    }
+    if (feat & F.CREATE && feat & F.DELETE) {
+      await this.recreate(cal, raw, event);
+      return true;
+    }
+    throw coded("not_supported", "Esse calendário não deixa mudar eventos");
   }
 
   /**
@@ -741,7 +838,11 @@ export class Home {
     if (!o || !["rotina", "manutencao"].includes(o.k.kind)) throw coded("not_found", "Não achei essa rotina");
     if (o.k.kind === "manutencao" && !o.raw.rrule) return this.maintSkip(o.cal, o.raw.uid, by);
     if (o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterSkip(o, key, by);
-    this.store.setCheck(key, { by, kind: o.k.kind, skipped: true });
+    // done in part: Pular ends it with the parts done (their points stay)
+    const pid = o.k.kind === "rotina" ? this.partId(o) : "";
+    const pc = pid ? this.store.data.parts[pid] : null;
+    this.store.setCheck(key, { by, kind: o.k.kind, skipped: true, ...(pc ? { parts: { ...pc, id: pid } } : {}) });
+    if (pc) this.store.setParts(pid, null);
     this.store.removePoints(key);
     this.changed();
     return { skipped: true };
@@ -759,7 +860,10 @@ export class Home {
       await this.recreate(cal, raw, event);
       recreated = true;
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
-    this.store.setCheck(key, { by, kind: "rotina", skipped: true, moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) } });
+    const pid = this.partId(o);
+    const pc = this.store.data.parts[pid];
+    this.store.setCheck(key, { by, kind: "rotina", skipped: true, moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) }, ...(pc ? { parts: { ...pc, id: pid } } : {}) });
+    if (pc) this.store.setParts(pid, null);
     this.store.removePoints(key);
     this.log.info(`Rotina pulada: ${raw.summary}; volta em ${event.start.slice(0, 10)}`);
     this.refreshCalendar(cal);
@@ -1044,8 +1148,13 @@ export class Home {
       recreated = true;
     } else throw coded("not_supported", "Esse calendário não deixa mudar eventos");
     const person = this.participant(who);
-    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) } });
-    if (k.points > 0 && person) this.store.addPoints({ key, who: person, points: k.points, title: raw.summary, kind: "rotina" });
+    // the rest of one done in part: the points that are left; the parts kept for Desfazer
+    const pid = this.partId(o);
+    const pc = this.store.data.parts[pid];
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) }, ...(pc ? { parts: { ...pc, id: pid } } : {}) });
+    if (pc) this.store.setParts(pid, null);
+    const points = partsRest(k.points, pc);
+    if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: pc ? `${raw.summary} · o resto` : raw.summary, kind: "rotina" });
     else this.store.removePoints(key);
     this.log.info(`Rotina feita: ${raw.summary} (${person || who || by}); volta em ${event.start.slice(0, 10)}`);
     this.refreshCalendar(cal);
@@ -1088,7 +1197,8 @@ export class Home {
     if (raw) {
       const k = parseKind(raw.description);
       // (a skipped one did not touch its history)
-      const description = k && k.kind === "rotina" && !c.skipped ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
+      // (a skipped one and a part did not touch its history)
+      const description = k && k.kind === "rotina" && !c.skipped && !c.part ? buildDescription({ ...k, history: (k.history || []).filter((d) => d !== m.day) }) : raw.description || "";
       const event = { summary: raw.summary, start: m.start, end: m.end, description, ...(raw.location ? { location: raw.location } : {}) };
       if (m.recreated) await this.recreate(m.cal, raw, event);
       else await this.ha.send({ type: "calendar/event/update", entity_id: m.cal, uid: raw.uid, event: toHAEvent(event) });
@@ -1096,6 +1206,9 @@ export class Home {
     }
     this.store.setCheck(key, null);
     this.store.removePoints(key);
+    // Feito em parte: a part undone takes its points; the rest (or Pular) undone brings the parts back
+    if (c.part) this.dropPart(c.part);
+    if (c.parts && c.parts.id) this.store.setParts(c.parts.id, c.parts);
     this.changed();
     return { moved: false };
   }

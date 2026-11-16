@@ -1,5 +1,15 @@
 # Mudanças
 
+## 1.91.0
+
+- **Feito em parte**: na **Rotina da casa** da Agora e no **Para pontuar hoje**, uma faixa com **25% · 50% · 75% · Tudo** fica acima das rotinas. Ela começa em **Tudo**, então marcar continua igual a antes. Para marcar uma parte, escolha a porcentagem e toque na letra de quem fez (ou no círculo). Depois de cada marcação, a faixa volta para **Tudo**.
+- Quem fez ganha só aquela parte dos pontos: 50% do Passar pano (+20) dá +10. O resto vai sozinho para o dia seguinte. A rotina sai da lista de hoje com o círculo preenchido até onde foi feito e "50% feito por Davi · o resto amanhã".
+- No dia seguinte ela aparece com "falta 50%" e os pontos que faltam, que vão para quem terminar (pode ser outra pessoa).
+  - A que volta N dias depois de feita só recomeça a contar quando termina, e só esse dia entra no "Feito em".
+  - A de dia fixo fica como "ficou de ontem" por até uma semana.
+- **Pular** encerra assim mesmo: os pontos da parte feita ficam. O **Desfazer** vale para cada parte.
+- No **CorrerIA** (WhatsApp, Claude e Gemini), também dá para marcar uma rotina feita em parte: "Davi passou pano pela metade".
+
 ## 1.90.0
 
 - **Agora › Tela cheia › Placar**: no alto do lado dos cards, os pontos do período e quem está na frente, o mesmo placar de Recompensas. Aparece com as recompensas ligadas. Para tirar, desligue **Mais › Recompensas › Na tela cheia da Agora** (começa ligado).
