@@ -125,7 +125,8 @@ describe("Integrações › MemorIA", () => {
     const app = new App({ app: {} });
     await fire(app._renderMemoriaSettings(), "Trechos do MemorIA no Agora", "change", { target: { checked: true } });
     assert.deepEqual(app.prefs.at(-1), { memoria_on: true });
-    assert.deepEqual(app.api.calls.at(-1), ["memoriaNow", true]);
+    const last = app.api.calls.at(-1);
+    assert.deepEqual([last[0], last[1], last[3]], ["memoriaNow", true, false], "fresh; the person's (not the house's of the Tela cheia)");
     const t = text(app._renderMemoriaSettings());
     assert.match(t, /A folha de agora, de cada pessoa\./);
     assert.match(t, /Conectado ao MemorIA 1\.13\.0/);

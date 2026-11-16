@@ -413,10 +413,12 @@ class Session {
       // Agora › MemorIA: the sheet of now (and the next times), of the person of this screen, at the clock of their
       // phone (hora, dia: like the Agora of the MemorIA, also in another time zone); Configurações: fresh
       case "cronologia/memoria/agora": {
-        const usuario = this.user.id && /^[A-Za-z0-9_-]{1,80}$/.test(this.user.id) ? this.user.id : "";
+        // casa (1.89.0, the Tela cheia, the screen of the house): every block, like the Tela cheia of the MemorIA (no user, no person)
+        const casa = msg.casa === true;
+        const usuario = !casa && this.user.id && /^[A-Za-z0-9_-]{1,80}$/.test(this.user.id) ? this.user.id : "";
         const hora = typeof msg.hora === "string" ? msg.hora : "";
         const dia = typeof msg.dia === "string" ? msg.dia : "";
-        return this.result(id, await memoria.agora({ usuario, pessoa: home.personOfUser(this.user.id, this.user.name) || "", hora, dia }, { fresh: !!msg.fresh }));
+        return this.result(id, await memoria.agora({ usuario, pessoa: casa ? "" : home.personOfUser(this.user.id, this.user.name) || "", hora, dia }, { fresh: !!msg.fresh }));
       }
 
       case "cronologia/score/reassign":

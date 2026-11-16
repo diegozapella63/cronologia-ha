@@ -15,10 +15,12 @@ def T(inicio, **kw):
     t.update(kw)
     return t
 STATE = {"agora": True}
+ASKED = []
 
 class Fake(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
+        ASKED.append(self.path)
         trechos = [T("18:00", agora=True), T("07:00", amanha=True, texto="Manhã")] if STATE["agora"] else [T("07:00", amanha=True, texto="Manhã")]
         body = json.dumps({"versao": "1.15.1", "pessoa": "Ana", "trechos": trechos}).encode()
         self.send_response(200)
@@ -55,6 +57,8 @@ async def main():
             memo, rest = a.locator(".full-cols > .full-memo"), a.locator(".full-cols > .full-rest")
             check(await memo.count() == 1 and await rest.count() == 1 and await a.locator(".panel.memo").count() == 1, f"{tag}: a folha de um lado, os outros cards do outro (a folha uma vez só)")
             check(await a.locator(".memo-more").count() == 0 and "Comprar pão integral e frutas." in await memo.inner_text(), f"{tag}: a folha inteira, sem o Ver mais")
+            # 1.89.0: as folhas da casa toda, como a Tela cheia do MemorIA (sem o usuário e sem a pessoa)
+            check("usuario=" not in ASKED[-1] and "pessoa=" not in ASKED[-1] and "hora=" in ASKED[-1], f"{tag}: pede as folhas da casa ({ASKED[-1]})")
             check(await rest.locator(".home-search").count() == 0 and await rest.locator(".panel").count() >= 2, f"{tag}: do outro lado, os cards sem a busca")
             tarefas = await a.locator("#tarefas").inner_text()
             check(await a.locator("#gerencia-avisos").count() == 0 and tarefas.lower().startswith("tarefas com prazo") and "Sem prazo" not in tarefas and "Café" not in tarefas and "Das listas do ResolvIA" not in tarefas,
@@ -84,6 +88,8 @@ async def main():
             # saindo, a Agora volta como era
             await A.keyboard.press("Escape"); await A.wait_for_timeout(500)
             check(not await A.evaluate(FULL) and await a.locator(".full-cols").count() == 0 and await a.locator(".panel.memo .memo-more").count() == 1, f"{tag}: saindo, a folha volta dobrada no lugar dela")
+            # the person's again (the server may answer from its cache, without asking the MemorIA)
+            check(await A.evaluate("() => document.querySelector('cronologia-app')._memoCasa") is False, f"{tag}: saindo, volta para as folhas da pessoa")
             check(await a.locator("#gerencia-avisos").count() == 1 and (await a.locator("#tarefas").inner_text()).split("\n")[0].lower() == "tarefas", f"{tag}: saindo, voltam os avisos e as tarefas sem prazo")
             await ctx.close()
         # sem folha agora: a tela cheia de sempre

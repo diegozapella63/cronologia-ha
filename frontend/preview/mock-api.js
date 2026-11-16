@@ -372,7 +372,7 @@ export class MockApi {
   }
 
   /** Agora › MemorIA: an invented notebook with sheets at set times (the MemorIA answers this way since 1.13.0). */
-  async memoriaNow() {
+  async memoriaNow(fresh = false, now = new Date(), casa = false) {
     await wait(80);
     if (!this.prefs.app.memoria_on) return { ligado: false, encontrado: true, erro: null, trechos: [] };
     const sheets = [

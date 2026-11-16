@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.89.0
+
+- **Agora › Tela cheia**: a folha do MemorIA é a da casa toda, de qualquer pessoa, como na tela cheia do MemorIA. Fora da tela cheia, continua a folha de quem está olhando.
+- Na tela cheia, cada remédio só aparece a partir de 1 hora antes do horário: ao meio-dia, o das 21h ainda não aparece. Os atrasados, os da hora e os do dia todo continuam, e quem já tomou todos fica numa linha. A contagem do dia (0 de 5 tomados) continua a mesma. Sem nada perto, o card some.
+- Também saem da tela cheia o **Tomados (n)** e o aviso "Sem celular para…".
+
 ## 1.88.0
 
 - **Agora › Tela cheia** mais bonita: com uma folha do MemorIA valendo agora, ela fica de um lado, inteira e grande, como uma página do caderno da altura da tela, parada enquanto o outro lado desce. Do outro lado ficam os outros cards. No celular, a folha vem primeiro.

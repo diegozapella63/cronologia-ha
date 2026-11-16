@@ -61,6 +61,16 @@ describe("MemorIA", () => {
     assert.equal(asked.at(-1).url, "/api/integracao/agora?usuario=u-davi&pessoa=Davi&hora=12%3A09&dia=2026-11-09", "1.62.0: the clock of the phone goes along");
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(stack.dirs.data, "cronologia.json"), "utf8")).app.memoria_on === true, { what: "the switch kept in cronologia.json" });
   });
+  it("1.89.0: the Tela cheia asks the house's (every block, like the Tela cheia of the MemorIA): no user, no person", async () => {
+    await c.call("cronologia/memoria/agora", { casa: true, hora: "18:05", dia: "2026-11-09" });
+    assert.equal(asked.at(-1).url, "/api/integracao/agora?hora=18%3A05&dia=2026-11-09");
+    const n = asked.length;
+    await c.call("cronologia/memoria/agora", { hora: "18:05", dia: "2026-11-09" });
+    assert.equal(asked.length, n + 1, "the person's is another answer (not the house's from the cache)");
+    assert.equal(asked.at(-1).url, "/api/integracao/agora?usuario=u-davi&pessoa=Davi&hora=18%3A05&dia=2026-11-09");
+    await c.call("cronologia/memoria/agora", { casa: "sim", hora: "18:05", dia: "2026-11-09" });
+    assert.equal(asked.length, n + 1, "casa only when true: the person's, from the cache");
+  });
   it("a refused key: the reason, no trechos; off again: nothing asked", async () => {
     key = "outra";
     const out = await c.call("cronologia/memoria/agora", { fresh: true });

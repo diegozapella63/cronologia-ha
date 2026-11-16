@@ -390,11 +390,17 @@ export const ModelsMixin = (Base) =>
       // all undone: folded again for the next one taken
       if (!doneN && this._medsDoneN) this._medsDoneOpen = false;
       this._medsDoneN = doneN;
-      const open = !!this._medsDoneOpen;
-      const left = (g) => g.list.filter((m) => !m.taken);
-      const ready = groups.filter((g) => !left(g).length);
+      // Tela cheia (1.89.0): a dose shows from 1 h before its time (the late ones and the ones of now stay); no
+      // Tomados (n) and no line about who takes care
+      const full = !!(this._fullOn && this._fullOn());
+      const soon = (m) => !full || m.allDay || m.state !== "depois" || new Date(m.start).getTime() - this._now <= 3600000;
+      const open = !full && !!this._medsDoneOpen;
+      const untaken = (g) => g.list.filter((m) => !m.taken);
+      const left = (g) => untaken(g).filter(soon);
+      const ready = groups.filter((g) => !untaken(g).length);
       const pet = (who) => (this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(who));
       const shown = open ? groups : groups.filter((g) => left(g).length);
+      if (full && !shown.length && !ready.length) return nothing;
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
         <div class="meds-head">
           <span class="meds-ic">${icon("pill")}</span>
@@ -420,12 +426,12 @@ export const ModelsMixin = (Base) =>
               return html`<span class="ready-who ${took && !skipped ? "" : "skipped"}">${g.who ? html`<span class="avatar">${pet(g.who) ? icon("paw-print") : initial(g.who)}</span><b>${g.who}</b>` : nothing}<span>${what}</span>${icon(took && !skipped ? "check" : "skip-forward")}</span>`;
             })}</div>`
           : nothing}
-        ${doneN
+        ${doneN && !full
           ? html`<button class="add-line done-fold" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._medsDoneOpen = !open), this.requestUpdate())}>
               ${icon(open ? "chevron-down" : "chevron-right")}<span>Tomados (${doneN})</span>
             </button>`
           : nothing}
-        ${this._alertsHint(meds)}
+        ${full ? nothing : this._alertsHint(meds)}
       </div>`;
     }
 

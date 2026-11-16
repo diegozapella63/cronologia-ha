@@ -380,9 +380,9 @@ export class Api {
 
   /** Agora › MemorIA: the trecho of now and the next two, of the person of this screen (fresh: past the cache). */
   /** The sheet of now of the MemorIA, at the clock of this phone (like the Agora of the MemorIA, in any time zone). */
-  memoriaNow(fresh = false, now = new Date()) {
+  memoriaNow(fresh = false, now = new Date(), casa = false) {
     const two = (n) => String(n).padStart(2, "0");
-    return this.call("cronologia/memoria/agora", { fresh, hora: `${two(now.getHours())}:${two(now.getMinutes())}`, dia: `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}` });
+    return this.call("cronologia/memoria/agora", { fresh, ...(casa ? { casa: true } : {}), hora: `${two(now.getHours())}:${two(now.getMinutes())}`, dia: `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}` });
   }
 
   /** Mais › Configurações › Integrações › Uso da IA. */

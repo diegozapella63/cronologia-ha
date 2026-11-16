@@ -49,13 +49,18 @@ export const MemoriaMixin = (Base) =>
       return colorById(id) || EXTRA[id] || this._accent();
     }
 
-    /** Asks the server again (the trechos of this person); fresh: past its cache (Configurações). */
+    /**
+     * Asks the server again (the trechos of this person; in the Tela cheia, 1.89.0, the house's, every block, like the
+     * Tela cheia of the MemorIA); fresh: past its cache (Configurações).
+     */
     async _loadMemoria(fresh = false) {
       if (!this.api || !this.api.memoriaNow) return;
       this._memoBusy = true;
       this._memoAt = Date.now();
+      const casa = !!this._full;
       try {
-        this._memo = await this.api.memoriaNow(fresh);
+        this._memo = await this.api.memoriaNow(fresh, new Date(), casa);
+        this._memoCasa = casa;
       } catch (err) {
         this._memo = { ligado: true, encontrado: true, erro: err.message || String(err), trechos: [] };
       }
@@ -68,7 +73,9 @@ export const MemoriaMixin = (Base) =>
     _memoriaTick() {
       if (!this._ready || !this._memoriaOn() || this._memoBusy || this._view().name !== "now") return;
       const now = Date.now();
-      if (this._memoAt && now - this._memoAt < 60000 && now < (this._memoUntil || Infinity)) return;
+      // the Tela cheia turned on or off: the house's sheets or the person's, right away
+      const same = !!this._memoCasa === !!this._full;
+      if (same && this._memoAt && now - this._memoAt < 60000 && now < (this._memoUntil || Infinity)) return;
       this._loadMemoria();
     }
 
