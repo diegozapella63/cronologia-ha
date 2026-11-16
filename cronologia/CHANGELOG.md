@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.87.0
+
+- **Agora › Tela cheia**: o botão à direita do **Hoje** deixa na tela só os cards, para um tablet na parede ou a TV da casa, como no MemorIA. Somem a linha de cima, a busca, o **Evento hoje**, a **Ordem dos cards** e a barra de baixo (no computador, a barra do lado). Quando o navegador deixa, some também a barra do Home Assistant. Os cards continuam funcionando (Tomado, Feito, abrir um evento).
+- Para sair: o mesmo botão (**Sair da tela cheia**), o Voltar do celular ou Esc. Uma janela aberta por cima fecha primeiro.
+- Uma data longa embaixo do título (com os remédios atrasados) não deixa mais o pontinho sozinho numa linha.
+
 ## 1.86.2
 
 - **Adicionar**: **Quando** ficou só o dia. Embaixo vem **Horário**, com o **Dia todo**: primeiro as escolhas (Manhã, Tarde e Noite em cima; 15 min, 30 min e 1 h embaixo, todas do mesmo tamanho) e depois a hora de começar e de terminar. Saiu a duração de 2 h.

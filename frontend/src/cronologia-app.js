@@ -169,6 +169,7 @@ const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encode
 class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))) {
   static properties = {
     _desk: { state: true },
+    _full: { state: true },
     api: { attribute: false },
     env: { attribute: false },
     _ready: { state: true },
@@ -237,6 +238,16 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     this._deskMq = window.matchMedia ? window.matchMedia("(min-width: 1000px)") : null;
     this._desk = !!(this._deskMq && this._deskMq.matches);
     this._onDesk = () => (this._desk = !!this._deskMq.matches);
+    // 1.87.0: Tela cheia of Agora; leaving the fullscreen of the browser (its own Esc, the Voltar of the phone) leaves it too
+    this._full = false;
+    this._onFsChange = () => {
+      const d = this._fsDoc;
+      if (d && d.fullscreenElement) this._fsOn = true;
+      else if (this._fsOn) {
+        this._fsOn = false;
+        if (this._full) this._setFull(false);
+      }
+    };
   }
 
   // ------------------------------------------------------------ lifecycle
@@ -262,6 +273,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     document.removeEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.removeEventListener) this._mql.removeEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.removeEventListener) this._deskMq.removeEventListener("change", this._onDesk);
+    if (this._fsDoc) this._fsDoc.removeEventListener("fullscreenchange", this._onFsChange);
     clearInterval(this._tick);
     clearInterval(this._themeTimer);
     clearTimeout(this._toastTimer);
@@ -275,7 +287,13 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   /** "/" opens the search (Calendário › Lista) with the cursor in it, unless something is being typed. */
   _onKey = (e) => {
-    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || this._sheet) return;
+    // Tela cheia: Esc leaves it (a window open over it closes first, by its own Esc)
+    if (e.key === "Escape" && this._full && !this._sheet && !this._cam) {
+      const t = (e.composedPath && e.composedPath()[0]) || e.target;
+      if (!(t && t.closest && t.closest(".sheet"))) this._setFull(false);
+      return;
+    }
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || this._sheet || this._fullOn()) return;
     const t = (e.composedPath && e.composedPath()[0]) || e.target;
     if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
     e.preventDefault();
@@ -386,6 +404,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
+    this.toggleAttribute("full", this._fullOn());
+    // left Agora (a link in a card): the Tela cheia ends there
+    if (this._full && this._ready && this._shownView().name !== "now") this._setFull(false, true);
     this._markTabs();
     this._labelIcons();
     this._applyFolds();
@@ -736,7 +757,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
   // Arrastar para o lado: Agora ⇄ Calendário ⇄ Recompensas ⇄ Mais (a grade do mês segue trocando o mês);
   // numa tela de Mais (Calendários… Configurações), para a direita volta ao menu
   _onSwipeStart(e) {
-    this._sw = this._sheet || this._cam ? null : swipeStart(e, ".month");
+    // Tela cheia: no going to the other tabs by swiping (the bar is hidden)
+    this._sw = this._sheet || this._cam || this._fullOn() ? null : swipeStart(e, ".month");
   }
 
   _onSwipeEnd(e) {
@@ -820,6 +842,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   _onPopState() {
     if (this._cam && !(history.state && history.state.rvCam)) this._closeCamera(true);
+    // the Voltar of the phone leaves the Tela cheia (a window open over it closes first)
+    if (this._full && !this._sheet && !(history.state && history.state.rvFull)) this._setFull(false, true);
     if (this._sheet && !(history.state && history.state.rvSheet)) {
       this._releaseImages();
       this._sheet = null;
@@ -1807,7 +1831,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     return html`<header class="brand-head">
       <div class="head-row"><p class="eyebrow"><span class="brand">${appIcon()}Cronolog<span>IA</span></span>${name ? html`<span class="sep"> · </span>Olá, ${name}` : ""}</p>${this._renderChatBtn()}${this._renderMicBtn()}${this._renderTopActs()}</div>
       ${up ? html`<button class="uplink" @click=${() => this._goMenu()}>${icon("chevron-left")}<span>Mais</span></button>` : nothing}
-      <h1 class="page-title">${PAGE_IC[title] ? html`<span class="mais-ic page-ic" aria-hidden="true">${icon(PAGE_IC[title])}</span>` : nothing}${title}</h1>
+      ${this._withFullBtn(html`<h1 class="page-title">${PAGE_IC[title] ? html`<span class="mais-ic page-ic" aria-hidden="true">${icon(PAGE_IC[title])}</span>` : nothing}${title}</h1>`)}
       ${st ? html`<p class="status"><span class="dot ${st.tone || ""}" aria-hidden="true"></span><span>${st.text}</span></p>` : nothing}
       ${extra}
     </header>`;
@@ -1822,6 +1846,58 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       ${ai ? html`<button class="btn outline sm" @click=${() => this._openImport("pick")}>${icon("scan-text")}Ler com IA</button>` : nothing}
       <button class="btn primary sm" @click=${() => this._openForm({ date: onCal ? this._cursor : null })}>${icon("plus")}Adicionar</button>
     </div>`;
+  }
+
+  // ---------- Tela cheia (1.87.0), like the MemorIA: Agora only, for the tablet on the wall or the TV of the house
+
+  /** Tela cheia is on and Agora is on screen. */
+  _fullOn() {
+    return !!this._full && this._shownView().name === "now";
+  }
+
+  /** Agora: the title with the button of the Tela cheia at its right (on, the same place leaves it). */
+  _withFullBtn(h1) {
+    if (this._view().name !== "now" || !this._cals().length) return h1;
+    const on = this._fullOn();
+    const label = on ? "Sair da tela cheia" : "Tela cheia";
+    return html`<div class="title-row">${h1}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;
+  }
+
+  /**
+   * Tela cheia: only the cards of Agora (the top row, the search, Ordem dos cards and the bar at the bottom go away;
+   * Sair da tela cheia at the top right, Esc and the Voltar of the phone leave it) and, when the browser lets, the
+   * whole screen (without the bar of the Home Assistant). popped: the Voltar of the phone already took its entry.
+   */
+  _setFull(on, popped = false) {
+    if (!!this._full === on) return;
+    this._haptic("light");
+    this._full = on;
+    if (on) {
+      try {
+        history.pushState({ ...(history.state || {}), rvFull: true }, "");
+      } catch (e) {
+        /* ignore */
+      }
+    } else if (!popped && history.state && history.state.rvFull) history.back();
+    let el = document.documentElement;
+    try {
+      // inside the Home Assistant, the frame of the app (the same origin): the whole screen is the app
+      if (window.frameElement) el = window.frameElement;
+    } catch {
+      // another origin around: only this page
+    }
+    const doc = el.ownerDocument;
+    if (this._fsDoc !== doc) {
+      if (this._fsDoc) this._fsDoc.removeEventListener("fullscreenchange", this._onFsChange);
+      this._fsDoc = doc;
+      doc.addEventListener("fullscreenchange", this._onFsChange);
+    }
+    try {
+      if (on && !doc.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      if (!on && doc.fullscreenElement && doc.exitFullscreen) doc.exitFullscreen().catch(() => {});
+    } catch {
+      // the browser doesn't let: only the app without its top and its bar
+    }
   }
 
   _colorOfEvent(e) {

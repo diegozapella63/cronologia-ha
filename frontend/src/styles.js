@@ -2000,6 +2000,10 @@ export const styles = css`
     color: var(--rv-muted);
     font-size: 14px;
   }
+  .status > .dot + span:last-child {
+    flex: 1 1 0;
+    min-width: 0;
+  }
   .status .dot {
     width: 8px;
     height: 8px;
@@ -3456,6 +3460,50 @@ export const extraStyles = css`
   }
   .mic-top:active {
     transform: scale(0.94);
+  }
+  /* ---------- Tela cheia (1.87.0): only the cards of Agora, for the tablet on the wall or the TV ---------- */
+  :host([full]) .topbar,
+  :host([full]) nav,
+  :host([full]) .side,
+  :host([full]) .brand-head .head-row,
+  :host([full]) .home-search,
+  :host([full]) .add-line {
+    display: none !important;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .title-row > .page-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .full-btn {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    margin-top: 4px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--rv-accent-soft);
+    color: var(--rv-accent-ink);
+  }
+  .full-btn .i {
+    width: 22px;
+    height: 22px;
+  }
+  .full-btn:active {
+    transform: scale(0.94);
+  }
+  @media (min-width: 1000px) {
+    :host([full]) .app {
+      padding-left: 0;
+    }
+    :host([full]) .page {
+      max-width: 1400px;
+    }
   }
 
   /* the box of Agora: typing opens the search (Calendário › Lista) */
