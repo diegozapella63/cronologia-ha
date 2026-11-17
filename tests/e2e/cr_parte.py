@@ -4,7 +4,7 @@
 # 320 px; no computador, a faixa também; no Calendário (1.91.1), embaixo de Rotinas, tarefas e lembretes, também.
 # 1.92.0: uma rotina que volta 1 dia depois de feita, 50% hoje: em Recompensas › Para pontuar hoje › Concluídas (n),
 # como na Agora; no Calendário, hoje a feita em parte e amanhã o resto (o círculo pela metade, +5 · falta 50%), com o
-# mesmo círculo verde da Agora nas feitas. Casa de teste (o HA simulado).
+# mesmo círculo verde da Agora nas feitas (1.92.1: embaixo do horário). Casa de teste (o HA simulado).
 import os, sys, asyncio, datetime
 from zoneinfo import ZoneInfo
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -80,8 +80,10 @@ async def main():
         await a.locator(".ev-line", has=A.locator(".ev-title", has_text="Regar as plantas")).first.locator(".qw-btn", has_text="D").click(); await A.wait_for_timeout(1300)
         okm = await A.evaluate("""() => { const r = [...document.querySelector('cronologia-app').shadowRoot.querySelectorAll('.day-panel .ev-row.done')].find((x) => x.querySelector('.ev-done:not(.part)'));
           if (!r) return null; const m = r.querySelector('.ev-done'), c = getComputedStyle(m);
-          return { bg: c.backgroundColor, radius: c.borderRadius, w: m.getBoundingClientRect().width, op: getComputedStyle(r).opacity, svg: !!m.querySelector('svg') }; }""")
+          const t = r.querySelector('.ev-time small').getBoundingClientRect(), mb = m.getBoundingClientRect();
+          return { bg: c.backgroundColor, radius: c.borderRadius, w: mb.width, op: getComputedStyle(r).opacity, svg: !!m.querySelector('svg'), under: m.parentElement.classList.contains('ev-time') && mb.top >= t.bottom - 1 && Math.abs(mb.right - t.right) < 2, title: !r.querySelector('.ev-title .ev-done') }; }""")
         check(okm and okm["radius"] == "50%" and okm["w"] >= 18 and okm["svg"] and okm["bg"] not in ("rgba(0, 0, 0, 0)", "transparent") and okm["op"] == "1", f"Calendário: a feita com o círculo verde e o ✓, como na Agora ({okm})")
+        check(okm and okm["under"] and okm["title"], "Calendário (1.92.1): o círculo embaixo do Qualquer hora, não no fim do título")
         # 1.92.0: a rotina que volta 1 dia depois de feita, 50% hoje (Aurora)
         await a.locator("nav .tab", has_text="Agora").click(); await A.wait_for_timeout(1300)
         await strip.locator(".part-opt", has_text="50%").click(); await A.wait_for_timeout(200)

@@ -139,7 +139,7 @@ Tomar em jejum
 
 Por isso ele aparece no Google, no Outlook ou no cartão de calendário do Home Assistant, e qualquer aparelho com o CronologIA reconhece. Dá para criar um modelo à mão, escrevendo `#remédio`, `#conta`, `#rotina` ou `#manutenção` na primeira linha da descrição. **Quem toma** pode ser uma pessoa do Home Assistant, outro nome ou um pet.
 
-Os modelos não entram na lista de compromissos da tela Agora, porque têm os cards deles. No calendário eles aparecem com o ícone do modelo e, quando feitos, com o mesmo círculo verde com ✓ da tela Agora (feitos em parte, o círculo preenchido até onde foi feito). **Editar** abre o formulário do modelo; em itens que se repetem, você escolhe só este ou este e os próximos.
+Os modelos não entram na lista de compromissos da tela Agora, porque têm os cards deles. No calendário eles aparecem com o ícone do modelo e, quando feitos, com o mesmo círculo verde com ✓ da tela Agora, embaixo do horário (Manhã, Qualquer hora, 18:00); feitos em parte, o círculo preenchido até onde foi feito. **Editar** abre o formulário do modelo; em itens que se repetem, você escolhe só este ou este e os próximos.
 
 ### Pular uma rotina
 

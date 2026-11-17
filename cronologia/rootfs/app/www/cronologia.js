@@ -6034,15 +6034,16 @@ dialog.ss-wrap::backdrop{background:transparent}
     width: 15px;
     height: 15px;
   }
-  /* 1.92.0: the same circle as Agora's (.chk.on), a bit smaller: green with the ✓; a task of the ResolvIA, the square */
+  /* 1.92.0: the same circle as Agora's (.chk.on), a bit smaller: green with the ✓; a task of the ResolvIA, the square.
+     1.92.1: under the time (Manhã, Qualquer hora, 18:00), not after the title */
   .ev-done {
-    display: inline-grid;
+    display: grid;
     place-items: center;
+    flex: none;
     width: 20px;
     height: 20px;
+    margin-top: 5px;
     border-radius: 50%;
-    vertical-align: -4px;
-    margin-left: 8px;
     background: var(--rv-ok);
     color: #fff;
   }
@@ -6292,7 +6293,8 @@ dialog.ss-wrap::backdrop{background:transparent}
   }
   /* done or skipped: faded (only these: one whose time passed but is not done stays clear) */
   /* 1.92.0: everything faded but the mark, which stays as on Agora */
-  .ev-row.done > .ev-time,
+  .ev-row.done > .ev-time > b,
+  .ev-row.done > .ev-time > small,
   .ev-row.done > .ev-bar,
   .ev-row.done > .ev-rep,
   .ev-row.done .ev-sub,
@@ -9558,9 +9560,9 @@ ${s}`:e.join(`
       <span class="dh-label">${J(e,s)}</span>
       <span class="dh-count">${t}</span>
     </button>`}_renderDayRows(e,t){let a=d=>(!d.kind||d.kind.kind==="remedio")&&!d.todo&&!d.gerencia,s=(d,p)=>Number(d.allDay)-Number(p.allDay)||d.start-p.start,o=e.filter(a).sort(s),r=e.filter(d=>!a(d)).sort(s),l=r.filter(d=>!this._rowDone(d));r.splice(0,r.length,...this._byPeriod(l,t),...r.filter(d=>this._rowDone(d)));let c=this._awayDay(t)?n`<div class="away-day">${y("plane")}<span>Férias: rotinas, tarefas e manutenção pausadas</span></div>`:u;return n`${c}${o.map(d=>this._renderRow(d,t))}${r.length?n`<div class="day-sep ${o.length?"":"first"}">Rotinas, tarefas e lembretes</div>${this._partPickFor(r,t)}${r.map(d=>this._renderRow(d,t))}`:u}`}_partPickFor(e,t){return e.some(s=>s.kind&&s.kind.kind==="rotina"&&!this._rowDone(s)&&this._markerOf(s,t).mark)?this._renderPartPick():u}_renderRow(e,t,{showCal:a=!0}={}){let s=this._now,o=e.end.getTime()<=s,r=this._cal(e.cal),l;if(e.allDay){let _=K(e.end,e.start),x=_<=1&&this._anyTime(e)&&e.kind&&ve(e.kind.period);l=x?n`<b class="any">${x.label}</b><small class="per">${y(x.icon)}</small>`:_<=1&&this._anyTime(e)?n`<b class="any">Qualquer</b><small>hora</small>`:n`<b>Dia</b><small>${_>1?`${K(t,e.start)+1}/${_}`:"todo"}</small>`}else{let _=oe(e.start,t),x=oe(e.end,t)||e.end.getHours()===0&&e.end.getMinutes()===0&&K(e.end,t)===1;l=n`<b>${_?W(e.start):"\u2026"}</b><small>${x?W(e.end):"segue"}</small>`}let c=e.kind,d=e.todo?e.todo.done:c?c.kind!=="manutencao"&&this._checkOf(e):this._checkOf(e),p=!d&&e.start.getTime()<=s&&e.end.getTime()>s&&!e.allDay,h=!d&&c&&c.kind==="remedio"&&H(e.start)<H(new Date(s)),f=[...c?c.kind==="remedio"?[c.dose,c.who]:c.kind==="conta"&&c.value!=null?[this._money(c.value)]:[c.who]:[],e.location].filter(Boolean).join(" \xB7 "),b=a?r?r.name:e.gerencia?"GerencIA":e.todo?`${e.todo.listName} \xB7 ResolvIA`:"":"",k=(c||e.todo)&&this._pickWho()?this._markerOf(e,t):null,w=c&&c.kind==="rotina"?this._partOfEvent(e):null,A=this._scoreOn()&&!d?c&&(c.kind==="rotina"||c.kind==="manutencao")&&c.points>0?c.points:e.todo&&e.todo.points>0?e.todo.points:0:0,v=A&&w?Te({points:A,part:w}):A,D=!d&&w?`falta ${Math.round((1-w.done)*100)}%`:"",g=e.rrule?He(e.rrule):c&&c.kind==="rotina"&&c.after?`Volta ${le(c.after)} depois de feita`:c&&c.kind==="manutencao"&&c.every?`A cada ${le(c.every)}`:"",$=n`<button class="ev-row ${o?"past":""} ${p?"live":""} ${d?"done":""}" style=${B(this._colorOfEvent(e),this._dark)} @click=${()=>this._openEvent(e)}>
-      <span class="ev-time">${l}</span>
+      <span class="ev-time">${l}${this._evMark(e,d,w,h)}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo?n`<span class="kind-ic">${y("list-checks")}</span>`:this._kindIcon(e)}${e.summary}${this._evMark(e,d,w,h)}</span>${f||v||b||D?n`<span class="ev-sub">${[v?n`<span class="pts-inline">+${v}</span>`:"",D,f,b?n`<span class="ev-cal">${b}</span>`:""].filter(_=>_!=="").map((_,x)=>x?n` · ${_}`:_)}</span>`:u}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo?n`<span class="kind-ic">${y("list-checks")}</span>`:this._kindIcon(e)}${e.summary}</span>${f||v||b||D?n`<span class="ev-sub">${[v?n`<span class="pts-inline">+${v}</span>`:"",D,f,b?n`<span class="ev-cal">${b}</span>`:""].filter(_=>_!=="").map((_,x)=>x?n` · ${_}`:_)}</span>`:u}</span>
       ${g&&!(k&&k.quick)?n`<span class="ev-rep" title=${g}>${y("repeat")}</span>`:u}
     </button>`;return k&&k.quick?n`<div class="ev-line">${$}${this._renderQuickWho(e.summary,k.pts,_=>k.mark(_))}</div>`:$}_evMark(e,t,a,s){let o=e.todo?"sq":"",r=t&&t.part?a&&a.done||t.part.frac:!t&&a?a.done:null;if(r!=null){let l=Math.round(r*100),c=t?`Feita em parte (${l}%)`:`Feita em parte: falta ${100-l}%`;return n`<span class="ev-done part" style="--f:${l}%" title=${c} aria-label=${c}></span>`}if(t){let l=t.skipped?e.kind&&e.kind.kind==="remedio"?"Pulado":"Pulada":"";return n`<span class="ev-done ${o} ${t.skipped?"skipped":""}" title=${l||"Feito"} aria-label=${l||"Feito"}>${y(t.skipped?"skip-forward":"check")}</span>`}return s?n`<span class="ev-done missed" title="Não tomado" aria-label="Não tomado">${y("x")}</span>`:u}_renderNow(){let e=new Date(this._now),t=H(e),a=this._events(z(t,-1),z(t,2)).filter(E=>!E.kind&&!E.todo),s=this._store.loading(z(t,-1),z(t,2)),o=this._ix().meds.filter(E=>E.state==="atrasado"),r=qe(a,t),l=E=>E.end-E.start>=12*36e5,c=r.filter(E=>(E.allDay||l(E))&&!this._checkOf(E)),d=r.filter(E=>!E.allDay&&!l(E)),p=d.filter(E=>E.start<=e&&E.end>e&&!this._checkOf(E)).sort((E,de)=>de.start-E.start),h=z(t,1),f=a.filter(E=>!E.allDay&&E.start>e&&E.start<h&&!l(E)&&!this._checkOf(E)).sort((E,de)=>E.start-de.start)[0],b=this._visible();if(!this._cals().length)return this._renderNoCalendars();let k=r.filter(E=>!this._checkOf(E)),w=d.filter(E=>!this._checkOf(E)),A=w.filter(E=>E.end>e).length,v=this._awayNow()?"de f\xE9rias":r.length?k.length?`${N(k.length,"evento","eventos")} hoje${A&&A<w.length?` \xB7 ${A} pela frente`:""}`:"tudo feito hoje":"nada hoje",D=o.length?{text:`${X(Ra(e))} \xB7 ${o.length===1?`${o[0].summary} atrasado`:`${o.length} rem\xE9dios atrasados`}`,tone:"late"}:{text:`${X(Ra(e))} \xB7 ${v}`},g,$=null;if(p.length){$=p[0];let E=p[0],de=this._cal(E.cal);g=this._ticket(E,{label:"Agora",pill:`termina ${Kt(E.end-e)}`,when:n`<b>${W(E.start)}</b> – <b>${W(E.end)}</b> · ${Ha(E.end-E.start)}`,stub:f?n`<span class="tk-next">Depois <b>${W(f.start)}</b> ${f.summary}</span>`:n`<span class="dot"></span><span>${[de&&de.name,E.location].filter(Boolean).join(" \xB7 ")}</span>`,now:e,live:!0})}else if(f){$=f;let E=this._cal(f.cal);g=this._ticket(f,{label:"A seguir",pill:Kt(f.start-e),when:n`<b>${W(f.start)}</b> – ${W(f.end)} · hoje`,stub:n`<span class="dot"></span><span>${[E&&E.name,f.location].filter(Boolean).join(" \xB7 ")}</span>`,now:e})}let _=$&&d.length===1&&d[0]===$||!d.some(E=>E.end>e&&!this._checkOf(E)),x=this._showAllDay||c.length<=3?c:c.slice(0,2),M=n`<div class="now-line"><span>${W(e)}</span></div>`,T=!1,I=this._ix().meds||[],j=I.length>0&&I.every(E=>E.taken)&&!this._medsHold,L=b.length?u:n`<div class="hint-card">${y("eye-off")}<span>Todos os calendários estão ocultos.</span><button class="text-btn" @click=${()=>this._go("/mais/calendarios")}>${y("eye")}Mostrar</button></div>`,Z=n`${j?u:this._renderMedsPanel()} ${this._renderBillsPanel()}`,he=E=>{let de=z(new Date(E.end),E.allDay?-1:0);return E.end-E.start>864e5&&K(de,t)>=1?` \xB7 at\xE9 ${te(de,e)}`:""},ae=c.length?n`<div class="allday" aria-label="O dia todo">
           ${x.map(E=>n`<button class="ad-chip" style=${B(this._colorOfEvent(E),this._dark)} @click=${()=>this._openEvent(E)}><span class="dot"></span><span>${E.summary}<small>${he(E)}</small></span></button>`)}

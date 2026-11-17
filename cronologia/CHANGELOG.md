@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.92.1
+
+- **Calendário**: o círculo de feita (e o da feita em parte) fica embaixo do horário (**Manhã**, **Qualquer hora**, **18:00**), e não mais no fim do nome.
+
 ## 1.92.0
 
 - **Recompensas › Para pontuar hoje**: no fim, **Concluídas (n)**, fechada até tocar, com o que já foi feito hoje, igual à Agora: quem ganhou os pontos, a feita em parte com o círculo pela metade e o círculo para desfazer.

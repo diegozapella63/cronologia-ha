@@ -2079,15 +2079,16 @@ export const calStyles = css`
     width: 15px;
     height: 15px;
   }
-  /* 1.92.0: the same circle as Agora's (.chk.on), a bit smaller: green with the ✓; a task of the ResolvIA, the square */
+  /* 1.92.0: the same circle as Agora's (.chk.on), a bit smaller: green with the ✓; a task of the ResolvIA, the square.
+     1.92.1: under the time (Manhã, Qualquer hora, 18:00), not after the title */
   .ev-done {
-    display: inline-grid;
+    display: grid;
     place-items: center;
+    flex: none;
     width: 20px;
     height: 20px;
+    margin-top: 5px;
     border-radius: 50%;
-    vertical-align: -4px;
-    margin-left: 8px;
     background: var(--rv-ok);
     color: #fff;
   }
@@ -2337,7 +2338,8 @@ export const calStyles = css`
   }
   /* done or skipped: faded (only these: one whose time passed but is not done stays clear) */
   /* 1.92.0: everything faded but the mark, which stays as on Agora */
-  .ev-row.done > .ev-time,
+  .ev-row.done > .ev-time > b,
+  .ev-row.done > .ev-time > small,
   .ev-row.done > .ev-bar,
   .ev-row.done > .ev-rep,
   .ev-row.done .ev-sub,

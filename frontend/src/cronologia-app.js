@@ -2098,16 +2098,17 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // (one event that moves forward when done: no rrule, but it repeats all the same)
     const rep = e.rrule ? rruleLabel(e.rrule) : k && k.kind === "rotina" && k.after ? `Volta ${everyLabel(k.after)} depois de feita` : k && k.kind === "manutencao" && k.every ? `A cada ${everyLabel(k.every)}` : "";
     const row = html`<button class="ev-row ${past ? "past" : ""} ${live ? "live" : ""} ${done ? "done" : ""}" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
-      <span class="ev-time">${time}</span>
+      <span class="ev-time">${time}${this._evMark(e, done, part, missed)}</span>
       <span class="ev-bar"></span>
-      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}${this._evMark(e, done, part, missed)}</span>${sub || pts || calName || left ? html`<span class="ev-sub">${[pts ? html`<span class="pts-inline">+${pts}</span>` : "", left, sub, calName ? html`<span class="ev-cal">${calName}</span>` : ""].filter((x) => x !== "").map((x, i) => (i ? html` · ${x}` : x))}</span>` : nothing}</span>
+      <span class="ev-main"><span class="ev-title">${e.todo ? html`<span class="kind-ic">${icon("list-checks")}</span>` : this._kindIcon(e)}${e.summary}</span>${sub || pts || calName || left ? html`<span class="ev-sub">${[pts ? html`<span class="pts-inline">+${pts}</span>` : "", left, sub, calName ? html`<span class="ev-cal">${calName}</span>` : ""].filter((x) => x !== "").map((x, i) => (i ? html` · ${x}` : x))}</span>` : nothing}</span>
       ${rep && !(mk && mk.quick) ? html`<span class="ev-rep" title=${rep}>${icon("repeat")}</span>` : nothing}
     </button>`;
     return mk && mk.quick ? html`<div class="ev-line">${row}${this._renderQuickWho(e.summary, mk.pts, (p) => mk.mark(p))}</div>` : row;
   }
 
   /**
-   * The mark after the title of a line of the calendar, the same circle as Agora's (1.92.0): done, green with the ✓
+   * The mark of a line of the calendar, under its time (Manhã, Qualquer hora, 18:00; 1.92.1), the same circle as
+   * Agora's (1.92.0): done, green with the ✓
    * (a task of the ResolvIA, the square); skipped, the yellow skip; a routine done in part, or the rest of it still to
    * do, the circle filled as much as was done; a dose of a day that is over, not taken, the X.
    */
