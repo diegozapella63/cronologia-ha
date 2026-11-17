@@ -1,7 +1,8 @@
 # CronologIA 1.87.0: Tela cheia na Agora (como no MemorIA): o botão à direita do Hoje, só na Agora; ligada, somem a linha
 # de cima, a busca, os "+" (Evento hoje, Ordem dos cards) e a barra de baixo (no computador, a barra do lado), e o mesmo
 # botão vira o Sair da tela cheia; Esc, o Voltar do celular e o Sair saem dela; uma janela aberta por cima
-# fecha primeiro; arrastar não troca de aba; nada passa da largura em 320 px.
+# fecha primeiro; arrastar não troca de aba; nada passa da largura em 320 px. 1.92.2: só em tela grande (1100 px ou mais,
+# como no MemorIA): no celular e no tablet em pé, sem o botão; a tela que fica estreita sai da tela cheia.
 import os as _os
 CRONOLOGIA = _os.environ.get("E2E_CRONOLOGIA", "")
 import asyncio, json, os, subprocess, time, shutil
@@ -36,21 +37,26 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         errs = []
-        for w, h in ((390, 844), (320, 640), (1280, 820)):
+        for w, h in ((390, 844), (320, 640), (820, 1180), (1099, 800), (1100, 800), (1280, 820)):
             ctx = await b.new_context(viewport={"width": w, "height": h}, timezone_id="America/Sao_Paulo", locale="pt-BR", device_scale_factor=2)
             A = await ctx.new_page()
             A.on("pageerror", lambda e: errs.append(str(e)))
             await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1800)
             a = A.locator("cronologia-app")
             btn = a.locator(".full-btn")
+            over = await A.evaluate("() => { const r = document.querySelector('cronologia-app').shadowRoot.querySelector('main'); return r.scrollWidth - r.clientWidth; }")
+            check(over <= 0, f"{w} px: nada passa da largura ({over})")
+            if w < 1100:
+                # 1.92.2: no celular e no tablet em pé, sem a tela cheia (como no MemorIA)
+                check(await btn.count() == 0 and await shown(a.locator("h1.page-title", has_text="Hoje")), f"{w} px: sem o botão Tela cheia")
+                await A.evaluate("() => { const el = document.querySelector('cronologia-app'); el._full = true; el.requestUpdate(); }"); await A.wait_for_timeout(300)
+                check(not await A.evaluate(FULL), f"{w} px: nem ligada por fora ela vale")
+                if w == 390:
+                    await a.locator(".brand-head").screenshot(path=f"{SP}/shots/crcheia-390-topo.png")
+                await ctx.close(); continue
             check(await btn.count() == 1 and await btn.get_attribute("aria-label") == "Tela cheia" and await btn.locator("svg").count() == 1, f"{w} px: o botão Tela cheia, com o ícone")
             tb, hb = await btn.bounding_box(), await a.locator("h1.page-title").bounding_box()
             check(tb["x"] > hb["x"] + hb["width"] - 1 and abs((tb["y"] + tb["height"] / 2) - (hb["y"] + hb["height"] / 2)) < 12, f"{w} px: à direita do Hoje, na altura dele")
-            over = await A.evaluate("() => { const r = document.querySelector('cronologia-app').shadowRoot.querySelector('main'); return r.scrollWidth - r.clientWidth; }")
-            check(over <= 0, f"{w} px: nada passa da largura ({over})")
-            if w == 320:
-                await a.locator(".brand-head").screenshot(path=f"{SP}/shots/crcheia-320-topo.png")
-                await ctx.close(); continue
             await btn.click(); await A.wait_for_timeout(500)
             check(await A.evaluate(FULL) and await A.evaluate(STATE), f"{w} px: ligada (com a entrada no histórico)")
             hidden = {"a linha de cima": ".brand-head .head-row", "a busca": ".home-search", "os +": ".add-line", "a barra de baixo": "nav", "a barra do lado": ".side"}
@@ -59,20 +65,25 @@ async def main():
             check(await shown(a.locator("h1.page-title", has_text="Hoje")) and await shown(a.locator(".brand-head .status")), f"{w} px: ficam o Hoje e a data")
             sair = a.locator(".full-btn")
             check(await shown(sair) and await sair.get_attribute("aria-label") == "Sair da tela cheia", f"{w} px: o mesmo botão vira o Sair da tela cheia")
-            if w == 1280:
-                pad = await A.evaluate("() => getComputedStyle(document.querySelector('cronologia-app').shadowRoot.querySelector('.app')).paddingLeft")
-                check(pad == "0px", f"computador: a página ocupa o lugar da barra do lado ({pad})")
+            pad = await A.evaluate("() => getComputedStyle(document.querySelector('cronologia-app').shadowRoot.querySelector('.app')).paddingLeft")
+            check(pad == "0px", f"{w} px: a página ocupa o lugar da barra do lado ({pad})")
             await A.screenshot(path=f"{SP}/shots/crcheia-{w}.png")
             # Esc sai
             await A.keyboard.press("Escape"); await A.wait_for_timeout(400)
             check(not await A.evaluate(FULL) and not await A.evaluate(STATE), f"{w} px: Esc sai (e tira a entrada do histórico)")
-            check(await shown(a.locator(".brand-head .head-row")) and (w >= 1000 or await shown(a.locator("nav"))), f"{w} px: volta tudo")
-            if w == 1280:
+            check(await shown(a.locator(".brand-head .head-row")) and await shown(a.locator(".side")), f"{w} px: volta tudo")
+            if w == 1100:
                 await ctx.close(); continue
+            # 1.92.2: a tela que fica estreita (o tablet que vira em pé) sai da tela cheia
+            await btn.click(); await A.wait_for_timeout(400)
+            await A.set_viewport_size({"width": 900, "height": 1200}); await A.wait_for_timeout(500)
+            check(not await A.evaluate(FULL) and not await A.evaluate(STATE) and await a.locator(".full-btn").count() == 0, "estreita: sai da tela cheia, e o botão some")
+            await A.set_viewport_size({"width": w, "height": h}); await A.wait_for_timeout(500)
+            check(not await A.evaluate(FULL) and await a.locator(".full-btn").count() == 1, "larga de novo: o botão volta, sem ligar sozinha")
             # o Voltar do celular sai, e fica na Agora
             await btn.click(); await A.wait_for_timeout(400)
             await A.go_back(); await A.wait_for_timeout(500)
-            check(not await A.evaluate(FULL) and await shown(a.locator("nav .tab.on", has_text="Agora")), "Voltar do celular: sai e fica na Agora")
+            check(not await A.evaluate(FULL) and await A.evaluate("() => document.querySelector('cronologia-app')._view().name") == "now", "Voltar: sai e fica na Agora")
             # uma janela por cima: o Voltar fecha a janela e fica na tela cheia; Esc dentro da janela também só fecha ela
             await btn.click(); await A.wait_for_timeout(400)
             await A.evaluate("() => document.querySelector('cronologia-app')._openSheet('nowcards')"); await A.wait_for_timeout(500)
@@ -96,7 +107,7 @@ async def main():
             await sair.click(); await A.wait_for_timeout(500)
             check(not await A.evaluate(FULL) and not await A.evaluate(STATE), "o Sair da tela cheia sai")
             # só na Agora
-            await a.locator(".tab", has_text="Calendário").click(); await A.wait_for_timeout(900)
+            await A.evaluate("() => document.querySelector('cronologia-app')._go('/calendario')"); await A.wait_for_timeout(900)
             check(await a.locator(".full-btn").count() == 0, "no Calendário, sem o botão")
             await ctx.close()
         check(not errs, f"sem erros na página {errs[:2]}")

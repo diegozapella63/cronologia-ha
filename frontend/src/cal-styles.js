@@ -2405,6 +2405,15 @@ export const calStyles = css`
   .kind-state > span {
     flex: 1;
   }
+  /* Feito em parte (1.92.2): the circle filled as much as was done, in place of the icon */
+  .kind-state > .kind-pie {
+    flex: none;
+    margin-top: 0;
+  }
+  .fact > .kind-pie {
+    flex: none;
+    margin-top: 1px;
+  }
   .btn.kind-act {
     width: 100%;
     margin: 12px 0 2px;

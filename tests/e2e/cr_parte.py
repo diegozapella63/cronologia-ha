@@ -4,7 +4,7 @@
 # 320 px; no computador, a faixa também; no Calendário (1.91.1), embaixo de Rotinas, tarefas e lembretes, também.
 # 1.92.0: uma rotina que volta 1 dia depois de feita, 50% hoje: em Recompensas › Para pontuar hoje › Concluídas (n),
 # como na Agora; no Calendário, hoje a feita em parte e amanhã o resto (o círculo pela metade, +5 · falta 50%), com o
-# mesmo círculo verde da Agora nas feitas (1.92.1: embaixo do horário). Casa de teste (o HA simulado).
+# mesmo círculo verde da Agora nas feitas (1.92.1: embaixo do horário); a janela do evento com o quanto foi feito (1.92.2). Casa de teste (o HA simulado).
 import os, sys, asyncio, datetime
 from zoneinfo import ZoneInfo
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -102,6 +102,13 @@ async def main():
         await a.locator("nav .tab", has_text="Calendário").click(); await A.wait_for_timeout(1500)
         hoje = await A.evaluate(LINES, "Passear com o cachorro")
         check(len(hoje) == 1 and hoje[0]["done"] and "part" in hoje[0]["mark"] and "--f:50%" in hoje[0]["style"], f"Calendário, hoje: feita em parte, o círculo pela metade ({hoje})")
+        # 1.92.2: a janela do evento diz quanto foi feito, com o círculo pela metade
+        await a.locator(".day-panel .ev-row", has=A.locator(".ev-title", has_text="Passear com o cachorro")).first.click(); await A.wait_for_timeout(700)
+        ks = a.locator(".sheet .kind-state.part")
+        kst = await ks.inner_text() if await ks.count() else ""
+        check("50% feito hoje às" in kst and "Aurora · o resto amanhã" in kst and "Desfazer" in kst and await ks.locator(".kind-pie").count() == 1 and (await ks.locator(".kind-pie").bounding_box())["width"] < 24, f"a janela do evento: 50% feito hoje · Aurora · o resto amanhã ({kst!r})")
+        await a.locator(".sheet").screenshot(path=f"{SP}/shots/crparte-janela.png")
+        await a.locator(".sheet .icon-btn[aria-label='Fechar']").first.click(); await A.wait_for_timeout(500)
         await A.evaluate("() => { const app = document.querySelector('cronologia-app'); const n = new Date(); app._cursor = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); app.requestUpdate(); }"); await A.wait_for_timeout(700)
         amanha = await A.evaluate(LINES, "Passear com o cachorro")
         check(len(amanha) == 1 and not amanha[0]["done"] and "part" in amanha[0]["mark"] and "--f:50%" in amanha[0]["style"], f"Calendário, amanhã: o resto, com o círculo pela metade ({amanha})")

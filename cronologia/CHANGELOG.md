@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.92.2
+
+- **Tela cheia** só em tela grande (1100 px ou mais), como no MemorIA: no celular e no tablet em pé o botão não aparece. Se a tela ficar estreita (o tablet virado em pé), ela sai da tela cheia.
+- **Feito em parte na janela da rotina**: em vez de "Feito hoje", aparece quanto foi feito, com o círculo preenchido ("50% feito hoje às 20:00 · Ana · o resto amanhã"). No dia do resto, as letras de quem termina vêm com os pontos que faltam.
+
 ## 1.92.1
 
 - **Calendário**: o círculo de feita (e o da feita em parte) fica embaixo do horário (**Manhã**, **Qualquer hora**, **18:00**), e não mais no fim do nome.

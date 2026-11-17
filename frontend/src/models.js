@@ -782,6 +782,14 @@ export const ModelsMixin = (Base) =>
         if (k.history && k.history.length) facts.push(["check", `Feito em ${k.history.slice(0, 4).map((d) => dateShort(fromYmd(d), now)).join(", ")}`]);
       }
       const ui = KIND_UI[k.kind];
+      // Feito em parte (1.92.2): how much was done, with the circle filled that much; the rest, for whoever finishes it
+      const part = k.kind === "rotina" ? this._partOfEvent(e) : null;
+      const pf = chk && chk.part ? (part && part.done) || chk.part.frac : !chk && part ? part.done : 0;
+      const pct = Math.round(pf * 100);
+      const pie = html`<span class="ev-done part kind-pie" style="--f:${pct}%" aria-hidden="true"></span>`;
+      const restToday = chk && chk.part && chk.at && dayDiff(new Date(chk.at), now) === 0;
+      const pts = pf && k.points ? partLeft({ points: k.points, part: part || { done: pf, points: Math.round(k.points * pf) } }) : k.points || 0;
+      if (pf && !chk) facts.push(["", html`${pct}% feito${part.by && part.by.length ? ` por ${part.by.join(" e ")}` : ""} · falta ${100 - pct}%`, pie]);
       // 1.81.0: Amanhã, ao lado do Pular: esta vez fica para amanhã (não para a próxima), sem pontos. Numa rotina ou
       // manutenção de hoje ou atrasada que a agenda não repete (a que se repete já tem a próxima na agenda)
       const tomorrow = (k.kind === "rotina" || k.kind === "manutencao") && !e.rrule && e.start < addDays(startOfDay(now), 1)
@@ -800,15 +808,20 @@ export const ModelsMixin = (Base) =>
         const skip = later(k.kind === "rotina" || k.kind === "remedio" ? html`<button class="btn outline kind-skip" @click=${() => this._closeSheet().then(() => this._skip(it, k.kind))}>${icon("skip-forward")}Pular</button>` : nothing);
         action = chk && chk.skipped
           ? html`<div class="kind-state skipped">${icon("skip-forward")}<span>${k.kind === "remedio" ? "Pulado" : "Pulada"}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>`
+          : chk && chk.part
+          ? html`<div class="kind-state part">${pie}<span>${pct}% feito${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : ""}${chk.by ? ` · ${chk.by}` : ""} · ${restToday ? "o resto amanhã" : `falta ${100 - pct}%`}</span><button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button></div>
+              ${restToday ? nothing : this._pickWho()
+                ? this._renderWhoButtons(pts, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0, part }, k.kind, p)))
+                : html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0, part }, k.kind))}>${icon("check")}${ui.verb}${pts > 0 && this._scoreOn() ? ` · +${pts}` : ""}</button>`}`
           : chk
           ? html`<div class="kind-state">${icon("circle-check")}<span>${cap(ui.done)}${chk.at ? ` ${dayDiff(new Date(chk.at), now) === 0 ? "hoje" : dateShort(new Date(chk.at), now)} às ${hm(new Date(chk.at))}` : chk.day ? ` ${dayDiff(fromYmd(chk.day), now) === 0 ? "hoje" : `em ${dateShort(fromYmd(chk.day), now)}`}` : ""}${chk.by ? ` · ${chk.by}` : ""}</span>${chk.day ? nothing : html`<button class="text-btn" @click=${() => this._undoCheck(it, k.kind)}>${icon("undo-2")}Desfazer</button>`}</div>`
           : (k.kind === "rotina" || k.kind === "manutencao") && this._pickWho()
-            ? html`${this._renderWhoButtons(k.points || 0, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind, p)))}${skip}`
+            ? html`${this._renderWhoButtons(pts, (p) => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0, part }, k.kind, p)))}${skip}`
           : k.kind === "rotina" || k.kind === "manutencao"
-            ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0 }, k.kind))}>${icon("check")}${ui.verb}${k.points > 0 && this._scoreOn() ? ` · +${k.points}` : ""}</button>${skip}`
+            ? html`<button class="btn primary kind-act" @click=${() => this._closeSheet().then(() => this._markDone({ ...it, points: k.points || 0, part }, k.kind))}>${icon("check")}${ui.verb}${pts > 0 && this._scoreOn() ? ` · +${pts}` : ""}</button>${skip}`
             : html`<button class="btn primary kind-act" @click=${() => this._check(it, k.kind).then(() => this._closeSheet())}>${icon("check")}${k.kind === "remedio" ? this._doseVerb(k.who, true) : ui.verb}</button>${skip}`;
       }
-      return html`${facts.map(([ic, t]) => html`<div class="fact">${icon(ic)}<span>${t}</span></div>`)}
+      return html`${facts.map(([ic, t, mark]) => html`<div class="fact">${mark || icon(ic)}<span>${t}</span></div>`)}
         ${k.notes ? html`<div class="fact notes">${icon("file-text")}<span>${k.notes}</span></div>` : nothing}
         ${action}`;
     }

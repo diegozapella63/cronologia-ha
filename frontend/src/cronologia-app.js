@@ -68,6 +68,8 @@ const MODE_KEY = "cronologia.mode";
 const F = { CREATE: 1, DELETE: 2, UPDATE: 4 };
 const has = (features, bit) => (Number(features) & bit) === bit;
 const HOUR_H = 48;
+// 1.92.2: the Tela cheia only from this width on (the same as the MemorIA, and where the sheet goes beside the cards)
+const FULL_MIN = 1100;
 
 const PLATFORMS = {
   local_calendar: { label: "Calendário local", icon: "calendar" },
@@ -169,6 +171,7 @@ const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encode
 class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))) {
   static properties = {
     _desk: { state: true },
+    _wide: { state: true },
     _full: { state: true },
     api: { attribute: false },
     env: { attribute: false },
@@ -238,8 +241,15 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     this._deskMq = window.matchMedia ? window.matchMedia("(min-width: 1000px)") : null;
     this._desk = !!(this._deskMq && this._deskMq.matches);
     this._onDesk = () => (this._desk = !!this._deskMq.matches);
-    // 1.87.0: Tela cheia of Agora; leaving the fullscreen of the browser (its own Esc, the Voltar of the phone) leaves it too
+    // 1.87.0: Tela cheia of Agora; leaving the fullscreen of the browser (its own Esc, the Voltar of the phone) leaves it too.
+    // 1.92.2: only on a big screen (1100 px or more, like the MemorIA): the button, and a screen that gets narrow leaves it
     this._full = false;
+    this._wideMq = window.matchMedia ? window.matchMedia(`(min-width: ${FULL_MIN}px)`) : null;
+    this._wide = !!(this._wideMq && this._wideMq.matches);
+    this._onWide = () => {
+      this._wide = !!this._wideMq.matches;
+      if (!this._wide && this._full) this._setFull(false);
+    };
     this._onFsChange = () => {
       const d = this._fsDoc;
       if (d && d.fullscreenElement) this._fsOn = true;
@@ -260,6 +270,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     document.addEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.addEventListener) this._mql.addEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.addEventListener) this._deskMq.addEventListener("change", this._onDesk);
+    if (this._wideMq && this._wideMq.addEventListener) this._wideMq.addEventListener("change", this._onWide);
     this._tick = setInterval(() => (this._now = Date.now()), 30000);
     this._themeTimer = setInterval(() => this._syncDark(), 3000);
     this._syncDark();
@@ -273,6 +284,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     document.removeEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.removeEventListener) this._mql.removeEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.removeEventListener) this._deskMq.removeEventListener("change", this._onDesk);
+    if (this._wideMq && this._wideMq.removeEventListener) this._wideMq.removeEventListener("change", this._onWide);
     if (this._fsDoc) this._fsDoc.removeEventListener("fullscreenchange", this._onFsChange);
     clearInterval(this._tick);
     clearInterval(this._themeTimer);
@@ -1852,14 +1864,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
 
   // ---------- Tela cheia (1.87.0), like the MemorIA: Agora only, for the tablet on the wall or the TV of the house
 
-  /** Tela cheia is on and Agora is on screen. */
+  /** Tela cheia is on, on a big screen, and Agora is on screen. */
   _fullOn() {
-    return !!this._full && this._shownView().name === "now";
+    return !!this._full && !!this._wide && this._shownView().name === "now";
   }
 
-  /** Agora: the title with the button of the Tela cheia at its right (on, the same place leaves it). */
+  /** Agora, on a big screen (1.92.2, like the MemorIA): the title with the button of the Tela cheia at its right (on, the same place leaves it). */
   _withFullBtn(h1) {
-    if (this._view().name !== "now" || !this._cals().length) return h1;
+    if (this._view().name !== "now" || !this._cals().length || !this._wide) return h1;
     const on = this._fullOn();
     const label = on ? "Sair da tela cheia" : "Tela cheia";
     return html`<div class="title-row">${h1}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;

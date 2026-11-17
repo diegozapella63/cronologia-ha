@@ -155,3 +155,38 @@ describe("Calendário: what was done of a routine (_partOfEvent)", () => {
     assert.equal(app._partOfEvent({ key: "x" }), null);
   });
 });
+
+// 1.92.2: the sheet of the event: how much was done (the circle filled that much), and the rest for whoever finishes it
+describe("the sheet of a routine done in part", () => {
+  const ev = (over = {}) => ({ key: "k-pano", cal: "calendar.casa", uid: "u-pano", rrule: "FREQ=DAILY", summary: "Passar pano", start: at(2026, 11, 16), end: at(2026, 11, 17), allDay: true, kind: { kind: "rotina", points: 20 }, ...over });
+  const withCheck = (chk, part) => {
+    const app = new App([pano({ key: "k-pano", cal: "calendar.casa", uid: "u-pano", after: null, part })]);
+    app._home.checks = { "k-pano": chk };
+    return app;
+  };
+  it("done in part today: 50% feito hoje às 20:00 · Ana · o resto amanhã, the half circle, Desfazer", () => {
+    const app = withCheck({ at: at(2026, 11, 16, 20).toISOString(), by: "Ana", part: { frac: 0.5, entry: "k-pano|parte|1" } }, { done: 0.5, points: 10, by: ["Ana"] });
+    const v = app._renderKindFacts(ev());
+    assert.match(text(v), /50% feito hoje às 20:00 · Ana · o resto amanhã/);
+    assert.match(text(v), /Desfazer/);
+    assert.match(render(v).html, /kind-pie" style="--f:50%"/);
+    assert.doesNotMatch(text(v), /Feito hoje/, "not as if all done");
+  });
+  it("two parts: what was done in all (75%)", () => {
+    const app = withCheck({ at: at(2026, 11, 16, 20).toISOString(), by: "Davi", part: { frac: 0.25, entry: "k-pano|parte|2" } }, { done: 0.75, points: 15, by: ["Ana", "Davi"] });
+    assert.match(text(app._renderKindFacts(ev())), /75% feito hoje às 20:00 · Davi · o resto amanhã/);
+  });
+  it("done in part yesterday: falta 50%, and the letters of who finishes it with the points left", () => {
+    const app = withCheck({ at: at(2026, 11, 15, 20).toISOString(), by: "Ana", part: { frac: 0.5, entry: "k-pano|parte|1" } }, { done: 0.5, points: 10, by: ["Ana"] });
+    const v = app._renderKindFacts(ev({ start: at(2026, 11, 15), end: at(2026, 11, 16) }));
+    assert.match(text(v), /50% feito .* às 20:00 · Ana · falta 50%/);
+    assert.match(render(v).html, /qw-btn|who-btn|\+10/);
+  });
+  it("the rest still to do (no check on this event): the line of what was done and the points left", () => {
+    const app = new App([pano({ key: "k-novo", cal: "calendar.casa", uid: "u-pano", part: { done: 0.5, points: 10, by: ["Ana"] } })]);
+    const v = app._renderKindFacts(ev({ key: "k-novo", rrule: null, kind: { kind: "rotina", points: 20, after: { n: 1, unit: "dias" } } }));
+    assert.match(text(v), /50% feito por Ana · falta 50%/);
+    assert.match(text(v), /\+10/);
+    assert.doesNotMatch(text(v), /\+20/);
+  });
+});

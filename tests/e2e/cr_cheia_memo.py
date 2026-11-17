@@ -1,6 +1,6 @@
 # CronologIA 1.88.0: Tela cheia da Agora com uma folha do MemorIA agora: a folha de um lado, inteira e grande (sem o
 # Ver mais, da altura da tela, parada enquanto o outro lado desce) e os outros cards do outro, na ordem da pessoa (sem a
-# busca e sem a folha repetida); no celular, a folha primeiro; sem folha agora, a tela cheia de sempre; saindo, a Agora
+# busca e sem a folha repetida); só em tela grande (1.92.2: no celular e no tablet em pé, sem o botão); sem folha agora, a tela cheia de sempre; saindo, a Agora
 # volta como era (a folha dobrada, com o Ver mais). Na tela cheia também saem as tarefas sem prazo e os Avisos do
 # GerencIA. Um MemorIA de mentira, como no cr_memoria.
 import os, sys, asyncio, json, threading
@@ -43,7 +43,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         errs = []
-        for w, h, scheme in ((1280, 800, "light"), (1280, 800, "dark"), (820, 1180, "light"), (390, 844, "light")):
+        for w, h, scheme in ((1280, 800, "light"), (1280, 800, "dark"), (1100, 800, "light"), (820, 1180, "light"), (390, 844, "light")):
             tag = f"{w} px {scheme}"
             ctx = await b.new_context(viewport={"width": w, "height": h}, device_scale_factor=2 if w < 1000 else 1, color_scheme=scheme, timezone_id="America/Sao_Paulo", locale="pt-BR")
             A = await ctx.new_page()
@@ -53,6 +53,10 @@ async def main():
             check(await a.locator(".panel.memo .memo-more").count() == 1, f"{tag}: antes, a folha dobrada com o Ver mais")
             await A.evaluate(AVISOS); await A.wait_for_timeout(300)
             check(await a.locator("#gerencia-avisos").count() == 1 and (await a.locator("#tarefas").inner_text()).split("\n")[0].lower() == "tarefas", f"{tag}: antes, os Avisos do GerencIA e as tarefas sem prazo (o título é Tarefas)")
+            if w < 1100:
+                # 1.92.2: no celular e no tablet em pé, sem a tela cheia (como no MemorIA)
+                check(await a.locator(".full-btn").count() == 0, f"{tag}: sem o botão Tela cheia")
+                await ctx.close(); continue
             await a.locator(".full-btn").click(); await A.wait_for_timeout(700)
             memo, rest = a.locator(".full-cols > .full-memo"), a.locator(".full-cols > .full-rest")
             check(await memo.count() == 1 and await rest.count() == 1 and await a.locator(".panel.memo").count() == 1, f"{tag}: a folha de um lado, os outros cards do outro (a folha uma vez só)")
@@ -72,7 +76,7 @@ async def main():
             mb, rb = await memo.bounding_box(), await rest.bounding_box()
             fs = await a.evaluate("(el) => parseFloat(getComputedStyle(el.renderRoot.querySelector('.full-memo .memo-ink')).fontSize)")
             check(fs >= 28, f"{tag}: a letra grande ({fs})")
-            if w >= 1100:
+            if True:
                 check(rb["x"] >= mb["x"] + mb["width"] and abs(rb["y"] - mb["y"]) < 4, f"{tag}: lado a lado ({mb}, {rb})")
                 check(mb["width"] > rb["width"] * 1.3, f"{tag}: o espaço maior para a folha ({mb['width']:.0f} × {rb['width']:.0f})")
                 leaf = await a.locator(".full-memo .memo-leaf").bounding_box()
@@ -88,9 +92,6 @@ async def main():
                     scrolled = await A.evaluate("() => document.querySelector('cronologia-app').shadowRoot.querySelector('main').scrollTop")
                     top1 = (await memo.bounding_box())["y"]
                     check(scrolled > 100 and top1 >= 0 and top1 < top0, f"{tag}: descendo, a folha fica na tela ({top0:.0f} → {top1:.0f}, rolou {scrolled})")
-            else:
-                check(mb["y"] + mb["height"] <= rb["y"] + 1 and mb["width"] >= rb["width"] - 1, f"{tag}: no celular e no tablet em pé, a folha primeiro, na largura toda")
-                await A.screenshot(path=f"{SP}/shots/crcheiamemo-{w}.png", full_page=False)
             # saindo, a Agora volta como era
             await A.keyboard.press("Escape"); await A.wait_for_timeout(500)
             check(not await A.evaluate(FULL) and await a.locator(".full-cols").count() == 0 and await a.locator(".panel.memo .memo-more").count() == 1, f"{tag}: saindo, a folha volta dobrada no lugar dela")
