@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.96.1
+
+- **Tela cheia com a folha do MemorIA**: a coluna do **A seguir** ficou mais 10% estreita.
+
 ## 1.96.0
 
 - **Feito em parte**: com 25%, 50% ou 75% escolhido, ao tocar em quem fez o app pergunta o que fazer com o resto. **O resto amanhã** funciona como antes. **Concluir com 50%** marca a rotina como feita agora, só com essa parte dos pontos e sem nada para o dia seguinte.

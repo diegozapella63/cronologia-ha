@@ -39,6 +39,9 @@ async def main():
         errs = []
         for w, h in ((390, 844), (320, 640), (820, 1180), (1099, 800), (1100, 800), (1280, 820)):
             ctx = await b.new_context(viewport={"width": w, "height": h}, timezone_id="America/Sao_Paulo", locale="pt-BR", device_scale_factor=2)
+            # 1.96.0: o monitor todo do navegador fica de mentira (o Chromium novo não muda o tamanho da janela nele, e
+            # este teste muda): só conta os pedidos
+            await ctx.add_init_script("window.__fs = 0; Element.prototype.requestFullscreen = function () { window.__fs++; return Promise.resolve(); };")
             A = await ctx.new_page()
             A.on("pageerror", lambda e: errs.append(str(e)))
             await A.goto("http://127.0.0.1:8099/"); await A.wait_for_timeout(1800)

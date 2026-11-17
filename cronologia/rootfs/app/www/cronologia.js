@@ -9797,9 +9797,9 @@ ${s}`:e.join(`
   }
   @media (min-width: 1100px) {
     /* each column goes down on its own; the sheet fits the screen (1.93.0) */
-    /* 1.96.0: with the sheet, the column of A seguir 20% narrower and the sheet 20% wider */
+    /* 1.96.0: with the sheet, the column of A seguir narrower (30% less than in 1.94.0) and the sheet 20% wider */
     .full-page > .pn-cols.three {
-      grid-template-columns: minmax(0, 0.96fr) minmax(0, 1fr) minmax(0, 1.2fr);
+      grid-template-columns: minmax(0, 0.86fr) minmax(0, 1fr) minmax(0, 1.2fr);
       gap: 24px;
     }
     .full-page > .pn-cols.two {
