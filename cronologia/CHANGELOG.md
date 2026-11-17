@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.99.1
+
+- **Equipamento** escolhido numa rotina ou manutenção: um nome comprido não passa mais da borda da direita. Ele termina em "…" dentro do cartão.
+
 ## 1.99.0
 
 - **De quem**: um compromisso novo agora é de uma pessoa, não de um calendário. No **Adicionar**, em **De quem**, aparecem as pessoas da casa, cada uma com o seu calendário, e depois os calendários que não são de ninguém (Casa, Família…).
