@@ -422,16 +422,16 @@ export const ModelsMixin = (Base) =>
       if (!doneN && this._medsDoneN) this._medsDoneOpen = false;
       this._medsDoneN = doneN;
       // Tela cheia (1.89.0): a dose shows from 1 h before its time (the late ones and the ones of now stay); no
-      // Tomados (n) and no line about who takes care
+      // Tomados (n) and no line about who takes care; 1.93.0: only the doses to take (no "tomou todos"), none: no card
       const full = !!(this._fullOn && this._fullOn());
       const soon = (m) => !full || m.allDay || m.state !== "depois" || new Date(m.start).getTime() - this._now <= 3600000;
       const open = !full && !!this._medsDoneOpen;
       const untaken = (g) => g.list.filter((m) => !m.taken);
       const left = (g) => untaken(g).filter(soon);
-      const ready = groups.filter((g) => !untaken(g).length);
+      const ready = full ? [] : groups.filter((g) => !untaken(g).length);
       const pet = (who) => (this._ix().people || []).some((p) => p.pet && foldText(p.name) === foldText(who));
       const shown = open ? groups : groups.filter((g) => left(g).length);
-      if (full && !shown.length && !ready.length) return nothing;
+      if (full && !shown.length) return nothing;
       return html`<div class="panel meds ${late.length ? "alert" : ""} ${all ? "all" : ""}" id="remedios-hoje">
         <div class="meds-head">
           <span class="meds-ic">${icon("pill")}</span>

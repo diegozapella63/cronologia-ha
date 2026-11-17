@@ -3,7 +3,7 @@
 import { at, isoLocal, flushPromises } from "./helpers.mjs";
 import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { toEvent, EventStore, eventsOfDay, layoutDay, multiDay, onDay } from "../frontend/src/events.js";
+import { toEvent, EventStore, eventsOfDay, layoutDay, multiDay, onDay, atSameStart } from "../frontend/src/events.js";
 import { searchEquips, renderEquipPicker } from "../frontend/src/equip-picker.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "../frontend/src/voice.js";
 
@@ -93,6 +93,17 @@ describe("events: eventsOfDay / layoutDay", () => {
         ["b", 1],
       ],
     );
+  });
+});
+
+describe("events: atSameStart (1.93.0, A seguir)", () => {
+  it("the next one and every other starting at the same minute, from any calendar", () => {
+    const ev = (summary, h, m, cal, s = 0) => ({ summary, cal, start: new Date(2026, 10, 17, h, m, s), end: new Date(2026, 10, 17, h + 1, m) });
+    const list = [ev("Teste", 18, 0, "calendar.diego"), ev("Teste2", 18, 0, "calendar.andressa", 30), ev("Jantar", 19, 0, "calendar.diego")];
+    assert.deepEqual(atSameStart(list).map((e) => e.summary), ["Teste", "Teste2"]);
+    assert.deepEqual(atSameStart(list.slice(2)).map((e) => e.summary), ["Jantar"]);
+    assert.deepEqual(atSameStart([]), []);
+    assert.deepEqual(atSameStart(undefined), []);
   });
 });
 

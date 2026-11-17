@@ -34,6 +34,9 @@ export function cleanTrecho(t) {
     letra: t.letra === "normal" ? "normal" : "mao",
     outros: Number.isInteger(t.outros) && t.outros > 0 ? Math.min(t.outros, 99) : 0,
   };
+  // MemorIA 1.32.0: the text with the marks of the bold, the bigger and the colors (**x**, ++x++, {cor:x}); too long, none
+  // (cutting it could split a mark): the plain texto
+  if (typeof t.texto_formatado === "string" && t.texto_formatado.trim() && t.texto_formatado.length <= 4000) out.texto_formatado = t.texto_formatado;
   if (out.tipo === "periodo") out.periodo = str(t.periodo, 30).trim();
   // MemorIA 1.14.0: until when the one of now holds (its Fica no Agora)
   if (out.agora && HM.test(t.fim || "")) out.fim = t.fim;

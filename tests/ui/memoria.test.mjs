@@ -7,7 +7,7 @@ import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { text, render, fire, click, fakeApi, hostOf } from "../_lit.mjs";
-import { MemoriaMixin, memoLong, memoNextChange } from "../../frontend/src/memoria-card.js";
+import { MemoriaMixin, memoLong, memoNextChange, memoParts } from "../../frontend/src/memoria-card.js";
 
 const NOW = at(2026, 11, 8, 20, 50);
 const T = (inicio, extra = {}) => ({ inicio, agora: false, ontem: false, amanha: false, bloco: "Diário", bloco_id: "b1", cor: "lilas", folha_id: `f${inicio}`, titulo: "Noite", texto: "Noite\n☐ Ler 20 páginas\n☑ Conferir a agenda", tipo: "trecho", outros: 0, ...extra });
@@ -72,6 +72,33 @@ describe("Agora › MemorIA", () => {
     assert.match(render(app._renderMemoriaPanel()).html, /class="memo-ink\s+open"/);
     click(app._renderMemoriaPanel(), "Ver menos");
     assert.doesNotMatch(render(app._renderMemoriaPanel()).html, /memo-ink\s+open/);
+  });
+  it("MemorIA 1.32.0: the bold, the bigger and the colors, as there, without the marks", () => {
+    const texto_formatado = "++{verde:Café da Tarde}++\n**Opção 1**\n☐ Iogurte {azul:zero lactose}\nAveia {sol:x} **";
+    const view = new App({ memo: OK([T("15:30", { agora: true, texto: "Café da Tarde\nOpção 1\n☐ Iogurte zero lactose\nAveia {sol:x} **", texto_formatado })]) })._renderMemoriaPanel();
+    const h = render(view).html;
+    assert.match(h, /class="fmt\s+big\s+c-verde"[^>]*>Café da Tarde</, "bigger and green");
+    assert.match(h, /class="fmt b\s+"[^>]*>Opção 1</, "bold");
+    assert.match(h, /class="fmt\s+c-azul"[^>]*>zero lactose</, "a color inside a box line");
+    assert.match(h, /class="ck /, "the box stays");
+    const t = text(view);
+    assert.doesNotMatch(t, /\+\+|\{verde:|\*\*Opção/, "the marks don't show");
+    assert.match(t, /Aveia \{sol:x\} \*\*/, "not a mark of the MemorIA: as written");
+    // an old MemorIA: the plain text
+    assert.doesNotMatch(render(new App({ memo: OK([T("15:30", { agora: true })]) })._renderMemoriaPanel()).html, /class="fmt/);
+    assert.deepEqual(memoParts("**a {lilas:b}** c"), [{ text: "a ", bold: true, big: false, color: "" }, { text: "b", bold: true, big: false, color: "lilas" }, { text: " c", bold: false, big: false, color: "" }]);
+  });
+  it("1.93.0: in the Tela cheia, only the sheet (no heading MemorIA), the whole text", () => {
+    const long = Array.from({ length: 10 }, (_, i) => `☐ Item ${i + 1}`).join("\n");
+    const view = new App({ memo: OK([T("18:00", { agora: true, fim: "20:00", texto: long })]) })._renderMemoriaPanel(true);
+    const h = render(view).html;
+    assert.match(h, /class="panel memo memo-full"/);
+    assert.doesNotMatch(h, /sec-head|memo-ic/, "no heading");
+    assert.doesNotMatch(text(view), /MemorIA|Ver mais/);
+    assert.match(text(view), /Diário/, "the sheet says the block");
+    assert.match(text(view), /18:00/, "and the time");
+    assert.match(h, /aria-label="Diário: a folha de agora, desde 18:00 até 20:00"/);
+    assert.match(h, /class="memo-ink\s+open"/);
   });
   it("an empty sheet: Folha em branco", () => {
     assert.match(text(new App({ memo: OK([T("18:00", { agora: true, texto: "", titulo: "", folha_id: null })]) })._renderMemoriaPanel()), /Folha em branco\./);

@@ -198,6 +198,17 @@ export function eventsOfDay(events, d) {
 }
 
 /**
+ * 1.93.0: A seguir: the first of a list in order of start and every other one starting at the same minute (all the
+ * calendars: two people with something at 18:00 are both A seguir).
+ */
+export function atSameStart(sorted) {
+  const first = sorted && sorted[0];
+  if (!first) return [];
+  const min = (d) => Math.floor(+d / 60000);
+  return sorted.filter((e) => min(e.start) === min(first.start));
+}
+
+/**
  * An event of several days (a hotel stay, a trip): Feito is marked day by day. Only plain events (not a model,
  * a task of the ResolvIA or a bill), all day or 24 hours or more; one that just crosses midnight is one thing.
  */

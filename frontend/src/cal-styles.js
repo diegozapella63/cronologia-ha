@@ -553,6 +553,65 @@ export const calStyles = css`
     color: var(--rv-text-2);
     margin: 0 2px;
   }
+  /* 1.93.0: A seguir with more than one appointment at the same time: one line each, with its color */
+  .tk-list {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    padding: 6px 8px 8px;
+  }
+  .tk-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    text-align: left;
+  }
+  .tk-row:active {
+    background: var(--cs);
+  }
+  .tk-row > .kind-ic .i {
+    width: 18px;
+    height: 18px;
+  }
+  .tk-row-tx {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .tk-row-tx b {
+    font-family: var(--rv-display);
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--rv-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tk-row-tx small {
+    font-size: 14px;
+    color: var(--rv-muted);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tk-row > .i {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--rv-faint);
+  }
+  @media (hover: hover) {
+    .tk-row:hover {
+      background: var(--cs);
+    }
+  }
   .hero-ev.ticket.empty .tk-main {
     padding-bottom: 16px;
   }

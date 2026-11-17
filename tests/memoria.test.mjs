@@ -168,6 +168,14 @@ describe("cleanTrecho", () => {
     assert.equal(cleanTrecho(T("18:00", { papel: "<b>", letra: "x" })).papel, "pautado");
     assert.equal(cleanTrecho(T("18:00", { letra: "x" })).letra, "mao");
   });
+  it("MemorIA 1.32.0: the text with the marks of the bold, the bigger and the colors; too long or odd: none", () => {
+    const f = "++{verde:Café da Tarde}++\n**Opção 1**";
+    assert.equal(cleanTrecho(T("18:00", { texto_formatado: f })).texto_formatado, f);
+    assert.equal("texto_formatado" in cleanTrecho(T("18:00")), false, "an old MemorIA");
+    assert.equal("texto_formatado" in cleanTrecho(T("18:00", { texto_formatado: "x".repeat(4001) })), false, "cutting could split a mark");
+    assert.equal("texto_formatado" in cleanTrecho(T("18:00", { texto_formatado: 42 })), false);
+    assert.equal("texto_formatado" in cleanTrecho(T("18:00", { texto_formatado: "  " })), false);
+  });
 });
 
 describe("nextChange", () => {

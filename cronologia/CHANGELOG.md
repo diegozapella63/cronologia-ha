@@ -1,5 +1,12 @@
 # Mudanças
 
+## 1.93.0
+
+- **A seguir**: quando mais de um compromisso começa no mesmo horário (de qualquer agenda, como os de duas pessoas às 18:00), o card mostra todos, um em cada linha, com a cor da agenda, até quando vai e o nome da agenda. Um toque numa linha abre aquele compromisso.
+- **Tela cheia com a folha do MemorIA**: fica só a folha, sem o título **MemorIA** em cima. A folha cabe sempre na tela, sem barra de rolagem do lado; quando o texto é comprido, ele rola dentro da folha. O lado dos cards rola sozinho.
+- **Folha do MemorIA**: o **negrito**, o **maior** e as **cores** aparecem como no MemorIA (precisa do MemorIA 1.32.0 ou mais novo).
+- **Tela cheia**: o **A seguir** (ou o **Agora**) e os **Remédios de hoje** vêm acima do placar. Nos remédios, só os que falta tomar: quem já tomou todos não aparece, e sem nenhum para tomar o card some.
+
 ## 1.92.2
 
 - **Tela cheia** só em tela grande (1100 px ou mais), como no MemorIA: no celular e no tablet em pé o botão não aparece. Se a tela ficar estreita (o tablet virado em pé), ela sai da tela cheia.

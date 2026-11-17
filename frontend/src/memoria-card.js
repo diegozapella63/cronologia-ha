@@ -16,7 +16,33 @@ const EXTRA = { framboesa: { id: "framboesa", fill: "#E8508A", ink: "#A3124F" } 
 const CHECK = /^\s*(☐|☑|\[ \]|\[[xX]\])/;
 const DONE = /^\s*(☑|\[[xX]\])/;
 const SHOWN_LINES = 6;
+// MemorIA 1.32.0 (texto_formatado): **negrito**, ++maior++ and {cor:texto}, as in its lib/format.js (one line each, no
+// braces inside); the colors are the five of its bar of the writing
+const FORMAT_COLORS = ["vermelho", "laranja", "verde", "azul", "lilas"];
+const FMT = () => new RegExp(`\\*\\*(?=\\S)([^\\n]*?\\S)\\*\\*|\\+\\+(?=\\S)([^\\n]*?\\S)\\+\\+|\\{(${FORMAT_COLORS.join("|")}):([^{}\\n]+)\\}`, "g");
 const RINGS = Array.from({ length: 7 }, () => html`<i></i>`);
+
+/** The parts of a line of the MemorIA without the marks: [{text, bold, big, color}] (a part can be bold and colored). */
+export function memoParts(s, inherit = {}) {
+  const src = String(s || "");
+  const out = [];
+  const re = FMT();
+  let at = 0;
+  let m;
+  const plain = (to) => to > at && out.push({ text: src.slice(at, to), bold: !!inherit.bold, big: !!inherit.big, color: inherit.color || "" });
+  while ((m = re.exec(src))) {
+    plain(m.index);
+    if (m[1] != null) out.push(...memoParts(m[1], { ...inherit, bold: true }));
+    else if (m[2] != null) out.push(...memoParts(m[2], { ...inherit, big: true }));
+    else out.push(...memoParts(m[4], { ...inherit, color: m[3] }));
+    at = m.index + m[0].length;
+  }
+  plain(src.length);
+  return out;
+}
+
+const inked = (line) =>
+  memoParts(line).map((p) => (p.bold || p.big || p.color ? html`<span class="fmt ${p.bold ? "b" : ""} ${p.big ? "big" : ""} ${p.color ? `c-${p.color}` : ""}">${p.text}</span>` : p.text));
 
 /** Whether a text takes more than the lines shown folded (about 36 letters per line on a phone). */
 export const memoLong = (text) => String(text || "").split("\n").reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 36)), 0) > SHOWN_LINES;
@@ -88,9 +114,11 @@ export const MemoriaMixin = (Base) =>
       const cur = m.trechos[0].agora ? m.trechos[0] : null;
       if (!cur) return nothing;
       const text = cur.texto || "";
+      // MemorIA 1.32.0: with the bold, the bigger and the colors (the plain text only says how long it is)
+      const ink = cur.texto_formatado || text;
       const long = !full && memoLong(text);
       const open = full || (!!this._memoOpen && long);
-      const lines = text.split("\n");
+      const lines = ink.split("\n");
       const since = `desde ${cur.ontem ? "ontem às " : ""}${cur.inicio}${cur.fim ? ` até ${cur.fim}` : ""}`;
       // like the sheet of the Agora of the MemorIA: the cover in the color of the block, the spiral, its paper and letters
       const sheet = html`<span class="memo-cover"></span><span class="memo-stack"></span>
@@ -100,18 +128,23 @@ export const MemoriaMixin = (Base) =>
             ? html`<span class="memo-ink ${cur.letra === "normal" ? "normal" : ""} ${open ? "open" : ""}">${lines.map((l, i) => {
                 const ck = CHECK.test(l);
                 const body = ck ? l.replace(CHECK, "").trimStart() : l;
-                return html`${ck ? html`<span class="ck ${DONE.test(l) ? "done" : ""}"><span class="box">${icon("check")}</span><span>${body}</span></span>` : html`<span>${body}</span>`}${i < lines.length - 1 ? "\n" : ""}`;
+                return html`${ck ? html`<span class="ck ${DONE.test(l) ? "done" : ""}"><span class="box">${icon("check")}</span><span>${inked(body)}</span></span>` : html`<span>${inked(body)}</span>`}${i < lines.length - 1 ? "\n" : ""}`;
               })}</span>`
             : html`<span class="memo-ink empty">Folha em branco.</span>`}
         </span>
         <span class="memo-spiral" aria-hidden="true">${RINGS}</span>`;
       // tapping opens the MemorIA (its address in Home Assistant), from the page around this one
       const label = `${cur.bloco}: a folha de agora, ${since}`;
-      return html`<div class="panel memo" id="memoria" style=${colorVars(this._memoColor(cur.cor), this._dark)}>
+      const pad = m.painel
+        ? html`<a class="memo-pad" href=${m.painel} target="_top" aria-label=${label}>${sheet}</a>`
+        : html`<div class="memo-pad" role="group" aria-label=${label}>${sheet}</div>`;
+      const style = colorVars(this._memoColor(cur.cor), this._dark);
+      // Tela cheia (1.93.0): only the sheet, no heading (the sheet says the block and the time), the height of the
+      // screen; what doesn't fit scrolls inside the sheet
+      if (full) return html`<div class="panel memo memo-full" id="memoria" style=${style}>${pad}</div>`;
+      return html`<div class="panel memo" id="memoria" style=${style}>
         <div class="chores-head sec-head"><span class="sec-ic memo-ic">${icon("notebook-pen")}</span><span class="overline">MemorIA</span><small>${since}</small></div>
-        ${m.painel
-          ? html`<a class="memo-pad" href=${m.painel} target="_top" aria-label=${label}>${sheet}</a>`
-          : html`<div class="memo-pad" role="group" aria-label=${label}>${sheet}</div>`}
+        ${pad}
         ${long ? html`<button class="text-btn memo-more" aria-expanded=${open ? "true" : "false"} @click=${() => ((this._memoOpen = !open), this.requestUpdate())}>${icon(open ? "chevron-up" : "chevron-down")}${open ? "Ver menos" : "Ver mais"}</button>` : nothing}
       </div>`;
     }
@@ -319,6 +352,26 @@ export const memoriaStyles = css`
     border-color: var(--ci);
     color: var(--paper);
   }
+  /* MemorIA 1.32.0: a part in bold, bigger (for a title, in the same line of the paper) or in a color, as there */
+  .memo-ink .fmt.b {
+    font-weight: 700;
+  }
+  .memo-ink .fmt.big {
+    font-size: 1.35em;
+  }
+  .memo-ink .fmt[class*="c-"] {
+    color: var(--fc);
+  }
+  .memo-ink .c-vermelho { --fc: #c42a1f; }
+  .memo-ink .c-laranja { --fc: #b45309; }
+  .memo-ink .c-verde { --fc: #3f7a17; }
+  .memo-ink .c-azul { --fc: #0b67a8; }
+  .memo-ink .c-lilas { --fc: #6d3fd6; }
+  :host([dark]) .memo-ink .c-vermelho { --fc: #ff7a70; }
+  :host([dark]) .memo-ink .c-laranja { --fc: #ffa23e; }
+  :host([dark]) .memo-ink .c-verde { --fc: #8bd45f; }
+  :host([dark]) .memo-ink .c-azul { --fc: #62b5ff; }
+  :host([dark]) .memo-ink .c-lilas { --fc: #b99bff; }
   .memo-ink .ck.done .box ~ span {
     text-decoration: line-through;
     opacity: 0.55;

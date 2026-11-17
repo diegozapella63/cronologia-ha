@@ -70,13 +70,16 @@ describe("Tela cheia › Remédios de hoje: from 1 h before", () => {
     assert.match(out, /Tomados \(1\)/);
     assert.match(out, /Sem celular para Davi/);
   });
-  it("whoever took all is still one line; nothing near and nothing taken: no card", () => {
-    const tookAll = [dose("Losartana", 8, 0, { state: "tomado", taken: { at: iso(8, 5), by: "Ana" } }), dose("Melatonina", 21, 0, { who: "Davi" })];
+  it("1.93.0: only the doses to take (no line of whoever took all); nothing to take near: no card", () => {
+    const tookAll = [dose("Losartana", 8, 0, { state: "tomado", taken: { at: iso(8, 5), by: "Ana" } }), dose("Gardenal", 12, 30, { who: "Davi" })];
     const t = text(new App({ meds: tookAll })._renderMedsPanel());
-    assert.match(t, /Ana/);
-    assert.match(t, /tomou todos/);
-    assert.doesNotMatch(t, /Melatonina/);
+    assert.match(t, /Gardenal/);
+    assert.match(t, /1 de 2 tomados/, "the count of the day stays");
+    assert.doesNotMatch(t, /tomou todos|Losartana/);
+    const later = [dose("Losartana", 8, 0, { state: "tomado", taken: { at: iso(8, 5), by: "Ana" } }), dose("Melatonina", 21, 0, { who: "Davi" })];
+    assert.equal(new App({ meds: later })._renderMedsPanel(), nothing, "Ana took all and Davi's is at 21:00: no card");
     assert.equal(new App({ meds: [dose("Melatonina", 21, 0)] })._renderMedsPanel(), nothing);
+    assert.match(text(new App({ meds: later, full: false })._renderMedsPanel()), /tomou todos/, "out of the Tela cheia, as always");
   });
   it("out of the Tela cheia: the whole day, as always", () => {
     const t = text(new App({ meds: MEDS, full: false })._renderMedsPanel());

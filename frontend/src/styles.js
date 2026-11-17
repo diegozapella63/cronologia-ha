@@ -3566,16 +3566,74 @@ export const extraStyles = css`
       gap: 32px;
       align-items: start;
     }
-    /* the sheet stays while the other side goes down; the height of the screen, like a page */
+    /* 1.93.0: the page the height of the screen: the sheet always fits whole (no scrollbar beside it; what doesn't fit
+       scrolls inside the sheet) and the side of the cards goes down on its own */
+    :host([full]) main {
+      display: flex;
+      flex-direction: column;
+    }
+    :host([full]) main > .page {
+      width: 100%;
+      flex: none;
+    }
+    :host([full]) main > .full-page {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 14px;
+    }
+    .full-page > .brand-head {
+      flex: none;
+    }
+    .full-page > .full-cols {
+      flex: 1 1 0;
+      min-height: 0;
+      grid-template-rows: minmax(0, 1fr);
+      align-items: stretch;
+    }
     .full-memo {
-      position: sticky;
-      top: 12px;
-      max-height: calc(100dvh - 24px);
-      overflow-y: auto;
-      scrollbar-width: thin;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .full-memo .panel.memo {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      padding: 0;
+    }
+    .full-memo .memo-pad {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
     .full-memo .memo-leaf {
-      min-height: calc(100dvh - 220px);
+      flex: 1 1 0;
+      min-height: 0;
+    }
+    .full-memo .memo-top {
+      flex: none;
+    }
+    .full-memo .memo-ink {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      /* the lines of the paper go with the text */
+      background-attachment: local;
+      scrollbar-width: thin;
+      scrollbar-color: var(--ink-soft) transparent;
+    }
+    .full-rest {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 6px;
+      scrollbar-width: thin;
     }
   }
 

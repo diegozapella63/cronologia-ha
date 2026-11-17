@@ -11,7 +11,7 @@ import { swipeStart, swipeEnd, slideIn } from "./swipe.js";
 import { styles, extraStyles } from "./styles.js";
 import { calStyles } from "./cal-styles.js";
 import { parentHass, detectDark } from "./api.js";
-import { EventStore, eventsOfDay, layoutDay, onDay } from "./events.js";
+import { EventStore, eventsOfDay, layoutDay, onDay, atSameStart } from "./events.js";
 import { parseICS } from "./ics.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod, partLeft } from "./models.js";
@@ -2161,6 +2161,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const tomorrow = addDays(today, 1);
     const upcoming = events.filter((e) => !e.allDay && e.start > now && e.start < tomorrow && !long(e) && !this._checkOf(e)).sort((a, b) => a.start - b.start);
     const next = upcoming[0];
+    // 1.93.0: every appointment that starts at the same time as the next one, from all the calendars
+    const nexts = atSameStart(upcoming);
     const cals = this._visible();
     if (!this._cals().length) return this._renderNoCalendars();
     // the ones marked Feito don't count: "1 evento hoje" is what is still to do
@@ -2181,10 +2183,13 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         label: "Agora",
         pill: `termina ${untilLabel(e.end - now)}`,
         when: html`<b>${hm(e.start)}</b> – <b>${hm(e.end)}</b> · ${durationLabel(e.end - e.start)}`,
-        stub: next ? html`<span class="tk-next">Depois <b>${hm(next.start)}</b> ${next.summary}</span>` : html`<span class="dot"></span><span>${[cal && cal.name, e.location].filter(Boolean).join(" · ")}</span>`,
+        stub: next ? html`<span class="tk-next">Depois <b>${hm(next.start)}</b> ${nexts.map((x) => x.summary).join(", ")}</span>` : html`<span class="dot"></span><span>${[cal && cal.name, e.location].filter(Boolean).join(" · ")}</span>`,
         now,
         live: true,
       });
+    } else if (nexts.length > 1) {
+      heroEv = next;
+      hero = this._ticketMany(nexts, { label: "A seguir", pill: untilLabel(next.start - now), now });
     } else if (next) {
       heroEv = next;
       const cal = this._cal(next.cal);
@@ -2264,11 +2269,14 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     // Tela cheia (1.90.0): the placar, at the top of the side of the cards (Mais › Recompensas › Na tela cheia da Agora)
     const placar = this._renderPlacarNow();
     if (memoFull !== nothing) {
+      // 1.93.0: what comes next (Agora / A seguir) and the doses above the placar (the banner of the Férias too), in the
+      // order of the person; then the other cards
+      const top = ["away", "now", "meds"];
       return html`<section class="page now-page full-page">
         ${this._renderHead("Hoje", status)}
         <div class="full-cols">
           <div class="full-memo">${memoFull}</div>
-          <div class="full-rest">${placar}${order.filter((id) => id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
+          <div class="full-rest">${pick(top)}${placar}${order.filter((id) => !top.includes(id) && id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
         </div>
       </section>`;
     }
@@ -2280,7 +2288,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
         ${pick(["away", "search"])}
         <div class="now-cols">
           <div class="now-main">${pick(["now", "day", "memoria", "todos"])}</div>
-          <div class="now-side">${placar}${pick(["meds", "bills", "gavisos", "home"])}</div>
+          <div class="now-side">${pick(["meds"])}${placar}${pick(["bills", "gavisos", "home"])}</div>
         </div>
         ${orderBtn}
       </section>`;
@@ -2381,6 +2389,33 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
       <span class="tk-cut" aria-hidden="true"></span>
       <span class="tk-stub">${stub}</span>
     </button>`;
+  }
+
+  /**
+   * 1.93.0: A seguir with more than one appointment at the same time (all the calendars): the time once, then each one
+   * on its line (its color, until when, its calendar), each opening its own. The clock: the first one.
+   */
+  _ticketMany(list, { label, pill, now }) {
+    const first = list[0];
+    return html`<div class="hero-ev ticket many" role="group" aria-label="${label}: ${plural(list.length, "compromisso", "compromissos")} às ${hm(first.start)}" style=${colorVars(this._colorOfEvent(first), this._dark)}>
+      <span class="tk-main">
+        <span class="tk-clock">${this._clock(first, now)}</span>
+        <span class="tk-info">
+          <span class="tk-top"><span class="overline">${label}</span><span class="tk-pill">${icon("clock", "sm")}${pill}</span></span>
+          <span class="hero-title">${plural(list.length, "compromisso", "compromissos")}</span>
+          <span class="tk-when"><b>${hm(first.start)}</b> · hoje</span>
+        </span>
+      </span>
+      <span class="tk-cut" aria-hidden="true"></span>
+      <span class="tk-list">
+        ${list.map((e) => {
+          const cal = this._cal(e.cal);
+          return html`<button class="tk-row" style=${colorVars(this._colorOfEvent(e), this._dark)} @click=${() => this._openEvent(e)}>
+            ${this._kindIcon(e)}<span class="tk-row-tx"><b>${e.summary}</b><small>${[`até ${hm(e.end)}`, cal && cal.name, e.location].filter(Boolean).join(" · ")}</small></span>${icon("chevron-right")}
+          </button>`;
+        })}
+      </span>
+    </div>`;
   }
 
   /**
