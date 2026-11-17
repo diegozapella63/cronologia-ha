@@ -42,7 +42,11 @@ async def main():
         row = casa.locator(".chore", has=A.locator("b", has_text="Lavar a louça")).first
         await strip.locator(".part-opt", has_text="50%").click(); await A.wait_for_timeout(200)
         check(await strip.locator(".part-opt.on").inner_text() == "50%", "50% escolhido")
-        await row.locator(".qw-btn", has_text="D").click(); await A.wait_for_timeout(1200)
+        await row.locator(".qw-btn", has_text="D").click(); await A.wait_for_timeout(500)
+        # 1.96.0: antes de marcar, o que fazer com o resto
+        ask = a.locator(".sheet .part-ask")
+        check(await ask.count() == 1 and [t.strip() for t in await ask.locator("button").all_inner_texts()] == ["O resto amanhã", "Concluir com 50%"], "1.96.0: pergunta O resto amanhã ou Concluir com 50%")
+        await ask.locator("button", has_text="O resto amanhã").click(); await A.wait_for_timeout(1200)
         toast = await a.locator(".toast").first.inner_text()
         check("Lavar a louça: 50% por Davi · +5 · o resto amanhã" in toast and "Desfazer" in toast, f"a mensagem ({toast!r})")
         check(await strip.locator(".part-opt.on").inner_text() == "Tudo", "a faixa volta para Tudo")
@@ -68,7 +72,8 @@ async def main():
         check(await sep.count() == 1 and await cstrip.count() == 1 and await cstrip.locator(".part-opt.on").inner_text() == "Tudo", "Calendário: a faixa, em Tudo")
         await cstrip.locator(".part-opt", has_text="25%").click(); await A.wait_for_timeout(200)
         line = a.locator(".ev-line", has=A.locator(".ev-title", has_text="Limpar a caixa de areia")).first
-        await line.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(1300)
+        await line.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(500)
+        await a.locator(".sheet .part-ask button", has_text="O resto amanhã").click(); await A.wait_for_timeout(1300)
         toast = await a.locator(".toast").first.inner_text()
         check("Limpar a caixa de areia: 25% por Aurora · +4 · o resto amanhã" in toast, f"Calendário: a mensagem ({toast!r})")
         check(await cstrip.locator(".part-opt.on").inner_text() == "Tudo", "Calendário: a faixa volta para Tudo")
@@ -87,7 +92,8 @@ async def main():
         # 1.92.0: a rotina que volta 1 dia depois de feita, 50% hoje (Aurora)
         await a.locator("nav .tab", has_text="Agora").click(); await A.wait_for_timeout(1300)
         await strip.locator(".part-opt", has_text="50%").click(); await A.wait_for_timeout(200)
-        await casa.locator(".chore", has=A.locator("b", has_text="Passear com o cachorro")).first.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(1600)
+        await casa.locator(".chore", has=A.locator("b", has_text="Passear com o cachorro")).first.locator(".qw-btn", has_text="A").click(); await A.wait_for_timeout(500)
+        await a.locator(".sheet .part-ask button", has_text="O resto amanhã").click(); await A.wait_for_timeout(1600)
         toast = await a.locator(".toast").first.inner_text()
         check("Passear com o cachorro: 50% por Aurora · +5 · o resto amanhã" in toast, f"a que volta depois de feita: a mensagem ({toast!r})")
         # Recompensas › Para pontuar hoje › Concluídas (n): fechada; aberta, as linhas da Agora

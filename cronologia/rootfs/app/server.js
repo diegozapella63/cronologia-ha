@@ -373,7 +373,8 @@ class Session {
         if (typeof msg.key !== "string" || !msg.key) return this.error(id, "invalid_format", "Item inválido");
         // Pular: not done this time (a routine)
         if (msg.skip) return this.result(id, await home.skip(msg.key, this.user.name || ""));
-        await home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""));
+        // frac (1.96.0): Concluir com 25, 50 or 75% (a routine done with only that part, no rest for tomorrow)
+        await home.check(msg.key, !!msg.done, this.user.name || "", String(msg.kind || ""), String(msg.who || home.personOfUser(this.user.id, this.user.name) || ""), Number(msg.frac) || 0);
         return this.result(id);
       }
 

@@ -53,6 +53,12 @@ function rewardsUrl() {
   return u ? `${u}?aba=recompensas` : null;
 }
 
+/** Feito em parte (1.91.0) and Concluir com uma parte (1.96.0): 25, 50 or 75%. */
+export const FRACS = [0.25, 0.5, 0.75];
+
+/** Concluir com uma parte (1.96.0): that part of the points of a routine. */
+const fracPoints = (points, frac) => (points > 0 ? Math.round(points * frac) : 0);
+
 /** The points of the rest of a routine done in part (all of them, when nothing was done before). */
 function partsRest(points, pc) {
   const p = points > 0 ? points : 0;
@@ -705,9 +711,11 @@ export class Home {
 
   /**
    * Marks (or unmarks) an occurrence as done. `who` is the person who did it:
-   * a chore or maintenance with points gives them to that person.
+   * a chore or maintenance with points gives them to that person. frac (1.96.0, a routine: 0.25, 0.5 or 0.75): done,
+   * but with only that part ("Concluir com 50%"): that part of the points, and no rest for the next day.
    */
-  check(key, done, by, kind, who = "") {
+  check(key, done, by, kind, who = "", frac = 0) {
+    frac = done && FRACS.includes(frac) ? frac : 0;
     const c = this.store.data.checks[key];
     if (c && c.moved) {
       // a routine that already moved to its next date: Desfazer moves it back; a late "Quem fez?" only changes who
@@ -716,7 +724,7 @@ export class Home {
     }
     if (done) {
       const o = this.findOccurrence(key);
-      if (o && o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterDone(o, key, by, who);
+      if (o && o.k.kind === "rotina" && o.k.after && !o.raw.rrule) return this.afterDone(o, key, by, who, frac);
     }
     // Feito em parte: Desfazer of a part (the one before comes back) or of the rest (the parts come back)
     if (!done && c && (c.part || c.parts)) return this.partUndo(key, c);
@@ -725,12 +733,12 @@ export class Home {
     // the rest of a routine done in part: the points that are left, and the parts kept for Desfazer
     const pid = o && o.k.kind === "rotina" ? this.partId(o) : "";
     const pc = pid ? this.store.data.parts[pid] : null;
-    this.store.setCheck(key, done ? { by: person || who || by, kind, ...(pc ? { parts: { ...pc, id: pid } } : {}) } : null);
+    this.store.setCheck(key, done ? { by: person || who || by, kind, ...(frac ? { frac } : {}), ...(pc ? { parts: { ...pc, id: pid } } : {}) } : null);
     if (pc) this.store.setParts(pid, null);
     if (done) {
       this.clearAlert(key).catch(() => {});
-      const points = o ? partsRest(o.k.points, pc) : 0;
-      if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: pc ? `${o.raw.summary} · o resto` : o.raw.summary, kind: o.k.kind });
+      const points = o ? (frac ? fracPoints(o.k.points, frac) : partsRest(o.k.points, pc)) : 0;
+      if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: frac ? `${o.raw.summary} · ${Math.round(frac * 100)}%` : pc ? `${o.raw.summary} · o resto` : o.raw.summary, kind: o.k.kind });
       else this.store.removePoints(key);
     } else this.store.removePoints(key);
     this.changed();
@@ -750,7 +758,7 @@ export class Home {
    * ontem"), for a week. What is left or less: the rest, all done (check).
    */
   async part(key, frac, by, who = "") {
-    if (![0.25, 0.5, 0.75].includes(frac)) throw coded("invalid_format", "Escolha 25%, 50% ou 75%");
+    if (!FRACS.includes(frac)) throw coded("invalid_format", "Escolha 25%, 50% ou 75%");
     const o = this.findOccurrence(key);
     if (!o || o.k.kind !== "rotina") throw coded("not_found", "Não achei essa rotina");
     const id = this.partId(o);
@@ -1131,7 +1139,7 @@ export class Home {
    * the event moves to today + N (only the next one is ever in the calendar), with today
    * in its history; the check keeps where it was, for Desfazer.
    */
-  async afterDone(o, key, by, who = "") {
+  async afterDone(o, key, by, who = "", frac = 0) {
     this.lastMove = Date.now();
     const { cal, raw, k } = o;
     const today = new Date();
@@ -1151,10 +1159,10 @@ export class Home {
     // the rest of one done in part: the points that are left; the parts kept for Desfazer
     const pid = this.partId(o);
     const pc = this.store.data.parts[pid];
-    this.store.setCheck(key, { by: person || who || by, kind: "rotina", moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) }, ...(pc ? { parts: { ...pc, id: pid } } : {}) });
+    this.store.setCheck(key, { by: person || who || by, kind: "rotina", ...(frac ? { frac } : {}), moved: { cal, uid: raw.uid, start: raw.start, end: raw.end, day: ymd(today), summary: raw.summary || "", ...(recreated ? { recreated: true } : {}) }, ...(pc ? { parts: { ...pc, id: pid } } : {}) });
     if (pc) this.store.setParts(pid, null);
-    const points = partsRest(k.points, pc);
-    if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: pc ? `${raw.summary} · o resto` : raw.summary, kind: "rotina" });
+    const points = frac ? fracPoints(k.points, frac) : partsRest(k.points, pc);
+    if (points > 0 && person) this.store.addPoints({ key, who: person, points, title: frac ? `${raw.summary} · ${Math.round(frac * 100)}%` : pc ? `${raw.summary} · o resto` : raw.summary, kind: "rotina" });
     else this.store.removePoints(key);
     this.log.info(`Rotina feita: ${raw.summary} (${person || who || by}); volta em ${event.start.slice(0, 10)}`);
     this.refreshCalendar(cal);

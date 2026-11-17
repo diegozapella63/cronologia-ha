@@ -6,6 +6,7 @@ import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { text, render, click, fakeApi, hostOf } from "../_lit.mjs";
+import { html } from "../../frontend/vendor/lit-all.min.js";
 import { ModelsMixin, routineSub, partLeft, donePoints } from "../../frontend/src/models.js";
 import { TasksMixin } from "../../frontend/src/tasks.js";
 import { RewardsMixin } from "../../frontend/src/rewards.js";
@@ -31,6 +32,9 @@ class App extends hostOf(ModelsMixin, TasksMixin, RewardsMixin) {
   _cals() {
     return [];
   }
+  _sheetHead(t) {
+    return html`<h3>${t}</h3>`;
+  }
 }
 
 const pano = (over = {}) => ({ key: "k-pano", kind: "rotina", summary: "Passar pano", points: 20, period: "", time: "", after: { n: 5, unit: "dias" }, history: [], next: "2026-11-16", late: 0, yesterday: false, done: null, part: null, who: "", ...over });
@@ -50,11 +54,18 @@ describe("Feito em parte: the strip and the marking", () => {
     await app._markDone(pano(), "rotina", "Ana");
     assert.deepEqual(app.api.calls[0], ["setCheck", "k-pano", true, "rotina", "Ana"]);
   });
-  it("50% then the letter: that part to Ana, the message with Desfazer, and back to Tudo", async () => {
+  it("50% then the letter: 1.96.0 asks first; O resto amanhã: that part to Ana, the message with Desfazer, and back to Tudo", async () => {
     const app = new App([pano()]);
     await click(app._renderHomePanel(), "50%");
     assert.equal(app._partFrac(), 0.5);
     await app._markDone(pano(), "rotina", "Ana");
+    assert.equal(app._sheet, "parte");
+    assert.deepEqual(app.api.calls, [], "nothing marked before the answer");
+    const sheet = app._renderPartSheet();
+    assert.match(text(sheet), /Passar pano · 50% por Ana · \+10/);
+    assert.match(text(sheet), /O resto amanhã[\s\S]*Concluir com 50%/);
+    await click(sheet, "O resto amanhã");
+    await new Promise((r) => setImmediate(r));
     assert.deepEqual(app.api.calls[0], ["checkPart", "k-pano", 0.5, "Ana"]);
     assert.equal(app.toasts.at(-1), "Passar pano: 50% por Ana · +10 · o resto amanhã");
     assert.equal(app._partFrac(), 1, "back to Tudo");
@@ -68,10 +79,25 @@ describe("Feito em parte: the strip and the marking", () => {
     await app._markDone(pano({ part: { done: 0.5, points: 10, by: ["Ana"] } }), "rotina", "Davi");
     assert.deepEqual(app.api.calls[0], ["setCheck", "k-pano", true, "rotina", "Davi"]);
   });
+  it("1.96.0: Concluir com 50%: done now with half the points, nothing for tomorrow", async () => {
+    const app = new App([pano()]);
+    app._part = 0.5;
+    await app._markDone(pano(), "rotina", "Ana");
+    await click(app._renderPartSheet(), "Concluir com 50%");
+    await new Promise((r) => setImmediate(r));
+    assert.deepEqual(app.api.calls[0], ["setCheck", "k-pano", true, "rotina", "Ana", 0.5]);
+    assert.equal(app.toasts.at(-1), "Feito por Ana · +10");
+    assert.equal(app._partFrac(), 1, "back to Tudo");
+    // how it shows: done 50%, with half the points
+    const r = pano({ done: { by: "Ana", frac: 0.5 } });
+    assert.equal(donePoints(r), 10);
+    assert.match(routineSub(r, NOW), /^feito 50% por Ana · volta/);
+    assert.equal(routineSub(pano({ after: null, done: { by: "Ana", frac: 0.5 } }), NOW), "feito 50% por Ana");
+  });
   it("a refusal says so", async () => {
     const app = new App([pano()], fakeApi({ checkPart: new Error("Esse calendário não deixa mudar eventos") }));
     app._part = 0.25;
-    await app._markDone(pano(), "rotina", "Ana");
+    await app._markPart(pano(), 0.25, "Ana");
     assert.equal(app.toasts.at(-1), "Não consegui marcar: Esse calendário não deixa mudar eventos");
   });
 });

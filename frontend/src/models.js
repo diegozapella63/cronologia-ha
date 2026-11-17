@@ -80,7 +80,7 @@ function maintLabel(m, now) {
 /** Second line of a routine that comes back N days after done ("atrasada há 2 dias · volta 2 dias depois"). */
 export function afterSub(r, now) {
   if (r.done && r.done.part) return partSub(r);
-  if (r.done) return `${r.done.skipped ? "pulada" : `feito por ${r.done.by || "alguém"}`} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
+  if (r.done) return `${r.done.skipped ? "pulada" : `feito${r.done.frac ? ` ${Math.round(r.done.frac * 100)}%` : ""} por ${r.done.by || "alguém"}`} · volta ${r.next ? dayLabel(fromYmd(r.next), now, { long: false, cap: false }) : `em ${everyLabel(r.after)}`}`;
   const per = periodInfo(r.period);
   const when = r.late > 0 ? (r.late === 1 ? "venceu ontem" : `atrasada há ${r.late} dias`) : r.time || (per ? per.when : "hoje");
   return [when, r.part ? partLeftText(r) : "", r.who, `volta ${everyLabel(r.after)} depois`].filter(Boolean).join(" · ");
@@ -90,7 +90,7 @@ export function afterSub(r, now) {
 export const partLeft = (r) => Math.max(0, (r.points || 0) - ((r.part && r.part.points) || 0));
 
 /** The points a done routine gave: a part (its share), the rest (what was left) or all. */
-export const donePoints = (r) => (r.done && r.done.part ? Math.round((r.points || 0) * r.done.part.frac) : r.done && r.done.parts ? Math.max(0, (r.points || 0) - r.done.parts.list.reduce((a, p) => a + p.points, 0)) : r.points || 0);
+export const donePoints = (r) => (r.done && r.done.part ? Math.round((r.points || 0) * r.done.part.frac) : r.done && r.done.frac ? Math.round((r.points || 0) * r.done.frac) : r.done && r.done.parts ? Math.max(0, (r.points || 0) - r.done.parts.list.reduce((a, p) => a + p.points, 0)) : r.points || 0);
 
 /** Feito em parte (1.91.0): what is left ("falta 50%"). */
 const partLeftText = (r) => `falta ${Math.round((1 - r.part.done) * 100)}%`;
@@ -106,7 +106,7 @@ export function routineSub(r, now) {
   if (r.after) return afterSub(r, now);
   if (r.done && r.done.part) return partSub(r);
   const per = periodInfo(r.period);
-  return [r.yesterday ? "ficou de ontem" : r.time || (per && !r.done ? per.when : ""), !r.done && r.part ? partLeftText(r) : "", r.done ? (r.done.skipped ? "pulada" : `feito${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje";
+  return [r.yesterday ? "ficou de ontem" : r.time || (per && !r.done ? per.when : ""), !r.done && r.part ? partLeftText(r) : "", r.done ? (r.done.skipped ? "pulada" : `feito${r.done.frac ? ` ${Math.round(r.done.frac * 100)}%` : ""}${r.done.by ? ` por ${r.done.by}` : ""}`) : r.who].filter(Boolean).join(" · ") || "hoje";
 }
 
 /** The part of the day of a routine: the one chosen, or the one of its time. */
@@ -181,6 +181,11 @@ export const ModelsMixin = (Base) =>
     }
 
     _checkOf(e) {
+      // 1.96.0: the day a routine stuck on the day it was done is due again: as Agora has it (to do, or done today)
+      if (e.afterDue) {
+        const r = (this._ix().routines || []).find((x) => x.after && x.cal === e.cal && x.summary === e.summary);
+        return (r && r.done) || null;
+      }
       if (e.gerencia) return e.gerencia.pago ? { at: null, by: "" } : null;
       if (e.todo) return e.todo.done ? { at: null, by: "" } : null;
       const c = this._ix().checks[e.key];
@@ -251,6 +256,25 @@ export const ModelsMixin = (Base) =>
           allDay = false;
         }
         out.push({ key, cal: m.cal, uid: null, rid: null, rrule: null, summary, description: "", location: "", allDay, start: s, end: e, raw: {}, kind: { kind: "rotina", points: (r && r.points) || 0, who: (r && r.who) || "" }, movedDone: { item: r, by: c.by || "", day } });
+      }
+      return out;
+    }
+
+    /**
+     * 1.96.0: a routine that comes back N days after done whose event stayed on the day it was done (the calendar did not
+     * move it, 1.86.0) is due N days after that day: Agora counts it from there ("venceu ontem"), so the calendar shows
+     * it on that day too, to do (the event keeps showing it done on the day it was done). byQuery(from, to): the events.
+     */
+    _afterDueEvents(start, end, byQuery) {
+      const out = [];
+      for (const e of byQuery(addDays(start, -62), end)) {
+        const k = e.kind;
+        const doneOn = this._afterDoneOn(e);
+        if (!doneOn || !k || !k.after) continue;
+        const due = startOfDay(addEvery(fromYmd(doneOn), k.after));
+        if (!(due < end && addDays(due, 1) > start) || ymd(due) === ymd(e.start)) continue;
+        const s = e.allDay ? due : new Date(due.getFullYear(), due.getMonth(), due.getDate(), e.start.getHours(), e.start.getMinutes());
+        out.push({ ...e, start: s, end: e.allDay ? addDays(due, 1) : new Date(s.getTime() + Math.max(0, e.end - e.start)), afterDue: true });
       }
       return out;
     }

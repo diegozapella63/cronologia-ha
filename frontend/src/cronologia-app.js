@@ -105,7 +105,7 @@ const PAGE_IC = { Hoje: "clock-3", Agora: "clock-3", Recompensas: "trophy", Roti
 /** The icon of a window, by its title. */
 export const sheetIc = (t = "") =>
   /^Apagar/.test(t) ? "trash" : /^Mudar|^Editar/.test(t) ? "pencil" : /^Adicionar|^Novo|^Nova/.test(t) ? "plus" : /^Prêmio/.test(t) ? "gift" : /^Extrato|^Pontos/.test(t) ? "trophy" :
-  /^Versões/.test(t) ? "archive-restore" : /^Trazer|^Revisar/.test(t) ? "list-checks" : /^Quem fez/.test(t) ? "users" : /^Qualquer hora/.test(t) ? "clock" : /^Personalizar/.test(t) ? "sliders-horizontal" :
+  /^Versões/.test(t) ? "archive-restore" : /^Trazer|^Revisar/.test(t) ? "list-checks" : /^Quem fez/.test(t) ? "users" : /^Feito em parte/.test(t) ? "circle-pause" : /^Qualquer hora/.test(t) ? "clock" : /^Personalizar/.test(t) ? "sliders-horizontal" :
   /Outlook|^Exportar/.test(t) ? "external-link" : /^Ordem/.test(t) ? "layers" : /calendário/i.test(t) ? "calendar-days" : /^Manutenção/.test(t) ? "wrench" : /^Lendo/.test(t) ? "scan-text" :
   /^Falar|disse/.test(t) ? "mic" : /^Colar/.test(t) ? "clipboard-paste" : /^Tarefa/.test(t) ? "list-checks" : /^Conversa/.test(t) ? "message-circle" : "calendar";
 /** The icon of the title of an option or of a field, by its words (when its template brings none). */
@@ -657,7 +657,9 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     // a routine done that day whose event stayed there (the calendar did not move it): the event shows it, no copy
     const stuck = new Set(list.filter((e) => this._afterDoneOn(e) === ymd(e.start)).map((e) => `${e.cal}|${e.summary}|${ymd(e.start)}`));
     const moved = this._movedDoneEvents(start, end).filter((e) => !stuck.has(`${e.cal}|${e.summary}|${ymd(e.start)}`));
-    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...moved];
+    // 1.96.0: and on the day it is due again (Agora's "venceu ontem"), to do
+    const due = this._afterDueEvents(start, end, (a, b) => (this._store.ensure(a, b), this._store.query(a, b)));
+    const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...moved, ...due];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }
 
@@ -3163,6 +3165,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     else if (this._sheet === "anyday") body = this._renderAnyDaySheet();
     else if (this._sheet === "versions") body = this._renderVersions();
     else if (this._sheet === "who") body = this._renderWhoSheet();
+    else if (this._sheet === "parte") body = this._renderPartSheet();
     else if (this._sheet === "periodlog") body = this._renderPeriodLogSheet();
     else if (this._sheet === "todo") {
       body = this._renderTodoSheet();

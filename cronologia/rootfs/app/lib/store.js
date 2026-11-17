@@ -384,6 +384,8 @@ export class Store {
       if (pt && typeof pt === "object" && FRACS.includes(pt.frac)) c.part = { frac: pt.frac, entry: String(pt.entry || "").slice(0, 700), id: String(pt.id || "").slice(0, 600) };
       const ps = cleanParts(value.parts);
       if (ps) c.parts = { ...ps, id: String(value.parts.id || "").slice(0, 600) };
+      // Concluir com uma parte (1.96.0): done with only 25, 50 or 75% (no rest for the next day)
+      if (FRACS.includes(value.frac)) c.frac = value.frac;
       this.data.checks[key] = c;
     }
     else delete this.data.checks[key];

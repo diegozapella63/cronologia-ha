@@ -421,6 +421,35 @@ describe("Home: Feito em parte (1.91.0)", () => {
     assert.equal(store.data.parts[`${CAL}|name:Passar pano`].done, 0.5);
     assert.equal(store.pointsByKey(c.part.entry).points, 10, "the part keeps its points");
   });
+  it("1.96.0: Concluir com 50%: done now with half the points, it comes back 5 days later, nothing left for tomorrow", async () => {
+    const raw = pano();
+    const { home, store, ha } = setup({ events: { [CAL]: [raw] } });
+    const key = keyOf(raw);
+    await home.check(key, true, "x", "rotina", "Davi", 0.5);
+    const [upd] = sentOf(ha, "calendar/event/update");
+    assert.equal(upd.event.dtstart, "2026-11-07", "done: back 5 days later");
+    assert.deepEqual(parseKind(upd.event.description).history, ["2026-11-02", "2026-10-28"]);
+    const e = store.pointsByKey(key);
+    assert.deepEqual({ who: e.who, points: e.points, title: e.title }, { who: "Davi", points: 10, title: "Passar pano · 50%" });
+    assert.equal(store.data.checks[key].frac, 0.5);
+    assert.deepEqual(store.data.parts, {}, "nothing for tomorrow");
+    // a fraction that is not 25, 50 or 75%: all of it, as always
+    const b = setup({ events: { [CAL]: [pano()] } });
+    await b.home.check(key, true, "x", "rotina", "Davi", 0.3);
+    assert.equal(b.store.pointsByKey(key).points, 20);
+    assert.equal("frac" in b.store.data.checks[key], false);
+  });
+  it("1.96.0: Concluir com 25% on a routine of fixed days: a quarter of the points, done", async () => {
+    const raw = { uid: "louca", summary: "Lavar a louça", start: "2026-11-02", end: "2026-11-03", rrule: "FREQ=DAILY", description: "#rotina\nPontos: 20" };
+    const { home, store } = setup({ events: { [CAL]: [raw] } });
+    home.rebuild();
+    const r = home.index.routines.find((x) => x.summary === "Lavar a louça");
+    await home.check(r.key, true, "x", "rotina", "Davi", 0.25);
+    assert.equal(store.pointsByKey(r.key).points, 5);
+    assert.equal(store.pointsByKey(r.key).title, "Lavar a louça · 25%");
+    home.rebuild();
+    assert.equal(home.index.routines.find((x) => x.summary === "Lavar a louça").done.frac, 0.25);
+  });
   it("Desfazer of a part: back to today, its points go, nothing left in part", async () => {
     const raw = pano();
     const { home, store, ha } = setup({ events: { [CAL]: [raw] } });

@@ -1,5 +1,13 @@
 # Mudanças
 
+## 1.96.0
+
+- **Feito em parte**: com 25%, 50% ou 75% escolhido, ao tocar em quem fez o app pergunta o que fazer com o resto. **O resto amanhã** funciona como antes. **Concluir com 50%** marca a rotina como feita agora, só com essa parte dos pontos e sem nada para o dia seguinte.
+- **Calendário**: uma rotina que volta alguns dias depois de feita e ficou no dia em que foi feita (o calendário não a moveu) agora aparece também no dia em que vence de novo, para fazer. Assim ela bate com o "venceu ontem" do Agora.
+- **Tela cheia**: o alto do painel ficou numa linha só, com a metade da altura (Hoje e a data à esquerda, o relógio à direita).
+- **Tela cheia com a folha do MemorIA**: a folha ficou 20% mais larga e a coluna do **A seguir**, 20% mais estreita.
+- **Barras de rolagem** finas e arredondadas, sem as setinhas, em todo o app.
+
 ## 1.95.0
 
 - **Painel da tela cheia no CorrerIA**: o CorrerIA 1.2.0 ganhou a mesma tela cheia, com este painel e a Conversa dele ao lado, para pedir qualquer coisa aos apps a qualquer momento. Para aparecer lá, abra a CronologIA uma vez depois de atualizar.

@@ -280,8 +280,9 @@ export class Api {
     return this.call("cronologia/check/set", { key, done: true, kind: "rotina", skip: true });
   }
 
-  setCheck(key, done, kind, who) {
-    return this.call("cronologia/check/set", { key, done, kind, ...(who ? { who } : {}) });
+  /** frac (1.96.0): a routine concluded with only that part (0.25, 0.5, 0.75), no rest for tomorrow. */
+  setCheck(key, done, kind, who, frac) {
+    return this.call("cronologia/check/set", { key, done, kind, ...(who ? { who } : {}), ...(frac ? { frac } : {}) });
   }
 
   /** Feito em parte (1.91.0): 25, 50 or 75% of a routine; the rest goes to the next day. */

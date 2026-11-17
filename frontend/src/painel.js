@@ -346,6 +346,49 @@ export const PainelMixin = (Base) =>
   };
 
 export const painelStyles = css`
+  /* 1.96.0: the top of the panel in one line, half the height: Hoje and the date on the left, the clock on the right */
+  .painel > .brand-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 2px 14px;
+  }
+  .painel > .brand-head > .title-row {
+    display: contents;
+  }
+  .painel > .brand-head .page-title {
+    order: 1;
+    flex: none;
+    margin: 0;
+    font-size: 30px;
+  }
+  .painel > .brand-head .page-title > .page-ic {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .painel > .brand-head .page-title > .page-ic .i {
+    width: 19px;
+    height: 19px;
+  }
+  .painel > .brand-head > .status {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    margin: 4px 0 0;
+    font-size: 15px;
+  }
+  .painel > .brand-head .full-clock {
+    order: 3;
+    margin: 0;
+    font-size: 44px;
+  }
+  .painel > .brand-head .full-btn {
+    order: 4;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+  }
   /* the columns: the time (A seguir, Depois), the day (Tarefas do dia, the placar) and the sheet of the MemorIA */
   .pn-col {
     min-width: 0;
@@ -625,8 +668,9 @@ export const painelStyles = css`
   }
   @media (min-width: 1100px) {
     /* each column goes down on its own; the sheet fits the screen (1.93.0) */
+    /* 1.96.0: with the sheet, the column of A seguir 20% narrower and the sheet 20% wider */
     .full-page > .pn-cols.three {
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 0.96fr) minmax(0, 1fr) minmax(0, 1.2fr);
       gap: 24px;
     }
     .full-page > .pn-cols.two {
@@ -635,6 +679,7 @@ export const painelStyles = css`
     }
     :host([full]) .page.painel {
       max-width: 1880px;
+      padding-top: 12px;
     }
     /* A seguir and the placar always in view: the lists (Depois, Tarefas do dia) go down inside their cards */
     .pn-cols > .pn-col {
@@ -654,7 +699,6 @@ export const painelStyles = css`
       min-height: 120px;
       overflow-y: auto;
       overscroll-behavior: contain;
-      scrollbar-width: thin;
       padding-right: 6px;
     }
     .painel .pn-col > .panel:last-child,

@@ -212,10 +212,49 @@ export const RewardsMixin = (Base) =>
       }, by);
     }
 
+    /**
+     * 1.96.0: Feito em parte, after who did it: O resto amanhã (the part now, the rest goes to the next day) or Concluir
+     * com 50% (done now with only that part of the points; nothing for tomorrow).
+     */
+    _renderPartSheet() {
+      const { it, frac, by } = this._form;
+      const pct = Math.round(frac * 100);
+      const pts = it.points > 0 && this._scoreOn() ? Math.round(it.points * frac) : 0;
+      const go = (fn) => Promise.resolve(this._closeSheet()).then(fn);
+      return html`${this._sheetHead("Feito em parte")}
+        <p class="sheet-note top">${clip(it.summary, 40)} · <b>${pct}%</b>${by ? ` por ${by}` : ""}${pts ? html` · <b>+${pts}</b>` : nothing}</p>
+        <div class="sheet-actions part-ask">
+          <button class="btn outline" @click=${() => go(() => this._markPart(it, frac, by))}>${icon("calendar-clock")}O resto amanhã</button>
+          <button class="btn primary" @click=${() => go(() => this._finishPart(it, frac, by))}>${icon("circle-check")}Concluir com ${pct}%</button>
+        </div>`;
+    }
+
+    /** Concluir com uma parte (1.96.0): done now, with only that part of the points; no rest for the next day. */
+    _finishPart(it, frac, by = null) {
+      this._part = 1;
+      if (this._view().name === "now") this._choresHold = true;
+      const points = it.points > 0 ? Math.round(it.points * frac) : 0;
+      return this._withWho(points, it.summary, async (who) => {
+        if (this._sheet === "who") await this._closeSheet();
+        try {
+          await this.api.setCheck(it.key, true, "rotina", who, frac);
+          this._haptic("success");
+          this._doneToast(it, who, points, { reassignKey: it.key, undo: () => this.api.setCheck(it.key, false, "rotina").catch((err) => this._showToast(err.message)) });
+        } catch (err) {
+          this._showToast(`Não consegui marcar: ${err.message}`);
+        }
+      }, by);
+    }
+
     /** Chore (or repeating maintenance) done; `by`: the person chosen on the sheet. */
     _markDone(it, kind, by = null) {
-      // Feito em parte: 25, 50 or 75% chosen above the routines
-      if (kind === "rotina" && this._partFrac() < 1) return this._markPart(it, this._partFrac(), by);
+      // Feito em parte: 25, 50 or 75% chosen above the routines; 1.96.0: first, whether the rest stays for tomorrow or
+      // it ends with that part (what is left or less: the rest, all done, nothing to ask)
+      if (kind === "rotina" && this._partFrac() < 1) {
+        const frac = this._partFrac();
+        if (((it.part && it.part.done) || 0) + frac > 0.99) return this._markPart(it, frac, by);
+        return this._openSheet("parte", { it, frac, by });
+      }
       // the last routine done here: Rotina da casa stays until you leave Agora (then all done = it leaves)
       if (kind === "rotina" && this._view().name === "now") this._choresHold = true;
       return this._withWho(it.points || 0, it.summary, async (who) => {

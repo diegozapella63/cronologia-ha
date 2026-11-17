@@ -101,6 +101,40 @@ export const styles = css`
     white-space: nowrap;
   }
 
+  /* 1.96.0: barras de rolagem finas e arredondadas, sem as setas (no Windows, o Chrome desenhava as antigas, com as
+     setas). Onde há ::-webkit-scrollbar (Chrome, Edge, Safari), ele; no Firefox, a fina dele. Nada de scrollbar-width
+     nos elementos: no Chrome, ele passa por cima destas. */
+  @supports selector(::-webkit-scrollbar) {
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--rv-muted) 40%, transparent);
+      border: 3px solid transparent;
+      border-radius: 10px;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: color-mix(in srgb, var(--rv-muted) 70%, transparent);
+    }
+    ::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--rv-muted) 45%, transparent) transparent;
+    }
+  }
+
   /* ---------- shell ---------- */
   .root {
     display: contents;
@@ -3082,7 +3116,6 @@ export const extraStyles = css`
       overflow-y: auto;
       border-right: 1px solid var(--rv-line);
       background: var(--rv-bg);
-      scrollbar-width: thin;
     }
     nav {
       display: none;
@@ -3634,15 +3667,15 @@ export const extraStyles = css`
       overscroll-behavior: contain;
       /* the lines of the paper go with the text */
       background-attachment: local;
-      scrollbar-width: thin;
-      scrollbar-color: var(--ink-soft) transparent;
+    }
+    .full-memo .memo-ink::-webkit-scrollbar-thumb {
+      background-color: color-mix(in srgb, var(--ink-soft) 55%, transparent);
     }
     .full-rest {
       min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
       padding-right: 6px;
-      scrollbar-width: thin;
     }
   }
 
