@@ -4,6 +4,7 @@ import { at, ymd, isoLocal } from "./helpers.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  personCalendar,
   NOW_CARDS,
   nowOrder,
   KINDS,
@@ -675,5 +676,19 @@ describe("nowOrder: the cards of Agora in the order of the person", () => {
   it("1.79.0: the Avisos do GerencIA go right after the Contas, wherever the person put them", () => {
     const o = nowOrder(["todos", "bills", "home"]);
     assert.equal(o[o.indexOf("bills") + 1], "gavisos");
+  });
+});
+
+describe("personCalendar (1.99.0)", () => {
+  const CALS = [{ id: "calendar.casa", name: "Casa" }, { id: "calendar.trabalho_ana", name: "Trabalho (Ana)" }, { id: "calendar.ana", name: "Pessoal (Ana)" }, { id: "calendar.beto", name: "Agenda do Beto" }, { id: "calendar.ananias", name: "Ananias" }];
+  it("chosen; else the one with the first name (a personal one first); none: false", () => {
+    assert.deepEqual(personCalendar("Ana Souza", {}, CALS), { id: "calendar.ana", auto: true }, "the personal one of the two with Ana (not Ananias)");
+    assert.deepEqual(personCalendar("beto", {}, CALS), { id: "calendar.beto", auto: true });
+    assert.deepEqual(personCalendar("Ana", { ana: { cal: "calendar.casa" } }, CALS), { id: "calendar.casa", auto: false });
+    assert.deepEqual(personCalendar("Ana", { Ana: { cal: "calendar.sumiu" } }, CALS), { id: "calendar.ana", auto: true }, "gone: by the name again");
+    assert.equal(personCalendar("Ana", { Ana: { cal: false } }, CALS), null);
+    assert.equal(personCalendar("Davi", {}, CALS), null);
+    assert.equal(personCalendar("", {}, CALS), null);
+    assert.equal(personCalendar("Ana", {}, null), null);
   });
 });

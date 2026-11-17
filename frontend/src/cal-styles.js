@@ -2618,6 +2618,10 @@ export const calStyles = css`
     width: 100%;
     max-width: 100%;
   }
+  /* 1.99.0: the calendar of the person, under the line of who gets the alerts */
+  .person-row > .select.sm.p-cal {
+    grid-row: auto;
+  }
   .person-row > .p-acts {
     grid-column: 3;
     grid-row: 1;

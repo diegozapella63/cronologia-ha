@@ -1,5 +1,13 @@
 # Mudanças
 
+## 1.99.0
+
+- **De quem**: um compromisso novo agora é de uma pessoa, não de um calendário. No **Adicionar**, em **De quem**, aparecem as pessoas da casa, cada uma com o seu calendário, e depois os calendários que não são de ninguém (Casa, Família…).
+- **O calendário de cada pessoa** fica em **Mais › Avisos › Pessoas e pets**. Sem escolha, vale o calendário com o nome da pessoa, como "Pessoal (Ana)".
+- **Pelo CorrerIA** (WhatsApp, a Conversa, o Claude): "marca jantar às 21h10 para a Ana" vai para o calendário da Ana. Antes, a resposta era "Não deu: quem só vale para…".
+- **Tela cheia**: o **Acontecendo agora** ganhou um ícone grande e redondo, do tamanho do relógio do A seguir, que pulsa.
+- **Integrações › MemorIA › Voltar para a folha de agora**: quanto tempo uma folha dos próximos horários fica na tela cheia antes de voltar para a de agora (1, 3, 5 ou 10 minutos; 3 de início).
+
 ## 1.98.0
 
 - **Tela cheia com a folha do MemorIA**: as setas **‹** e **›** ao lado do horário da folha (ou as setas **←** e **→** do teclado) mostram as folhas dos próximos horários, amanhã também, sem sair da tela cheia. Depois de 3 minutos sem mexer, volta sozinha para a folha de agora. Na tela cheia, tocar na folha não abre mais o MemorIA (isso tirava da tela cheia). Para ver mais de dois horários adiante, atualize o MemorIA para a 1.33.0.

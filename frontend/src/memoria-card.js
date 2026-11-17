@@ -16,8 +16,10 @@ const EXTRA = { framboesa: { id: "framboesa", fill: "#E8508A", ink: "#A3124F" } 
 const CHECK = /^\s*(☐|☑|\[ \]|\[[xX]\])/;
 const DONE = /^\s*(☑|\[[xX]\])/;
 const SHOWN_LINES = 6;
-// 1.98.0: in the Tela cheia, a next sheet shown goes back to the one of now by itself after this (no touch)
+// 1.98.0: in the Tela cheia, a next sheet shown goes back to the one of now by itself after this (no touch); 1.99.0:
+// Integrações › MemorIA › Voltar para a folha de agora (memo_back: 1, 5 or 10 minutes; 3 by default)
 export const MEMO_BACK_MS = 3 * 60 * 1000;
+export const MEMO_BACK = [1, 3, 5, 10];
 /** A time of the MemorIA, the same across the answers of the minute (to keep the one shown). */
 export const memoKey = (t) => `${t.bloco_id}|${t.inicio}|${t.amanha ? 1 : 0}`;
 // MemorIA 1.32.0 (texto_formatado): **negrito**, ++maior++ and {cor:texto}, as in its lib/format.js (one line each, no
@@ -109,7 +111,8 @@ export const MemoriaMixin = (Base) =>
       if (to === at) return false;
       this._memoPick = to ? memoKey(list[to]) : null;
       clearTimeout(this._memoBack);
-      if (to) this._memoBack = setTimeout(() => ((this._memoPick = null), this._memoTop()), MEMO_BACK_MS);
+      const mins = Number(this._app ? this._app("memo_back", null) : null);
+      if (to) this._memoBack = setTimeout(() => ((this._memoPick = null), this._memoTop()), MEMO_BACK.includes(mins) ? mins * 60000 : MEMO_BACK_MS);
       this._memoTop();
       return true;
     }
@@ -207,10 +210,20 @@ export const MemoriaMixin = (Base) =>
           <span>${!m.encontrado ? "Instale o MemorIA 1.13.0 ou mais novo no mesmo Home Assistant." : m.erro ? m.erro : n && m.trechos[0].agora ? `Agora: ${m.trechos[0].bloco}, desde ${m.trechos[0].inicio}.` : "Nada agora."}</span>
         </div></div></div></div>`;
       }
+      // 1.99.0: on, in the Tela cheia: how long a next sheet stays before the one of now comes back
+      const back = Number(this._app("memo_back", null)) || 3;
+      const backRow = on
+        ? html`<div class="sub-op"><div class="sub-box"><div class="field" id="memoria-volta">
+            <span class="flabel">Voltar para a folha de agora</span>
+            <div class="chip-row">${MEMO_BACK.map((n) => html`<button class="pick ${back === n ? "on" : ""}" aria-pressed=${back === n ? "true" : "false"} @click=${() => this._saveAppPrefs({ memo_back: n === 3 ? null : n })}>${icon("hourglass")}<span>${n} min</span></button>`)}</div>
+            <span class="field-hint">${icon("info")}<span>Na tela cheia, depois de ver os próximos horários.</span></span>
+          </div></div></div>`
+        : nothing;
       return html`<div class="panel" id="memoria-config">
         ${this._secHead("notebook-pen", "MemorIA")}
         ${toggle}
         ${state}
+        ${backRow}
       </div>`;
     }
 

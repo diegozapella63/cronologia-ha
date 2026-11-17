@@ -572,3 +572,26 @@ export function buildIndex({ occurrences, checks = {}, parts = {}, late = 30, al
   out.names = [...names];
   return out;
 }
+
+/**
+ * 1.99.0: the calendar of a person (Mais › Avisos › Pessoas e pets): the one chosen (people[name].cal), none (cal
+ * false), or, not chosen, the one with the first name of the person (Pessoal (Diego), Agenda da Ana); of two with it,
+ * a personal one. A new appointment of someone goes there (the screen's De quem, the tools' quem).
+ * cals: the calendars that take new events, [{id, name}]. → {id, auto} or null.
+ */
+export function personCalendar(name, people, cals) {
+  const list = cals || [];
+  const key = Object.keys(people || {}).find((n) => foldText(n) === foldText(name));
+  const p = (key && people[key]) || {};
+  if (p.cal === false) return null;
+  if (typeof p.cal === "string" && p.cal) {
+    const c = list.find((x) => x.id === p.cal);
+    if (c) return { id: c.id, auto: false };
+  }
+  const first = foldText(name).split(/\s+/)[0].replace(/[^a-z0-9]/g, "");
+  if (first.length < 2) return null;
+  const word = new RegExp(`(^|[^a-z0-9])${first}([^a-z0-9]|$)`);
+  const hits = list.filter((c) => word.test(foldText(c.name)));
+  const c = hits.find((x) => /pessoa|agenda|particular/.test(foldText(x.name))) || hits[0];
+  return c ? { id: c.id, auto: true } : null;
+}

@@ -167,7 +167,7 @@ describe("the panel on the screen", () => {
   it("Acontecendo agora: big, with the live dot and how much of the appointment went by (1.97.0)", () => {
     const h = render(view()).html;
     assert.match(h, /class="pn-now" role="group" aria-label="Acontecendo agora"/);
-    assert.match(h, /class="pn-live"/);
+    assert.match(h, /class="pn-now-badge"/, "the big round icon (1.99.0)");
     assert.match(h, /class="pn-went" aria-hidden="true"><i style="width:53%"/, "Plantão 16:00–18:30 at 17:20: 53%");
     assert.equal((h.match(/class="pn-went"/g) || []).length, 1, "only the appointment (not the dose)");
   });

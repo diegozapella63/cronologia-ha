@@ -66,6 +66,8 @@ function cleanApp(raw) {
   if ("correria_on" in raw) out.correria_on = raw.correria_on ? true : null;
   // MemorIA: the trechos of now (and the next two) in Agora, of whoever is looking (off by default)
   if ("memoria_on" in raw) out.memoria_on = raw.memoria_on ? true : null;
+  // 1.99.0: Tela cheia, the minutes a next sheet of the MemorIA stays before the one of now comes back (3 by default)
+  if ("memo_back" in raw) out.memo_back = [1, 5, 10].includes(raw.memo_back) ? raw.memo_back : null;
   if ("todo_hidden" in raw) {
     // to-do lists left out of the agenda (ResolvIA lists)
     const ids = [...new Set((Array.isArray(raw.todo_hidden) ? raw.todo_hidden : []).filter((id) => /^todo\.[a-z0-9_]+$/.test(id)))].slice(0, 100);
@@ -132,6 +134,9 @@ function cleanApp(raw) {
       if (care) people[n].care = care;
       // a pet: takes medicines, but does not do chores nor play in the placar
       if (v && v.pet === true) people[n].pet = true;
+      // 1.99.0: the calendar of the person (a new appointment of theirs goes there); false: none (not the one by name)
+      if (v && typeof v.cal === "string" && /^calendar\.[a-z0-9_]{1,120}$/.test(v.cal)) people[n].cal = v.cal;
+      else if (v && v.cal === false) people[n].cal = false;
     }
     out.people = Object.keys(people).length ? people : null;
   }

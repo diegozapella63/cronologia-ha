@@ -205,9 +205,13 @@ export const PainelMixin = (Base) =>
     _pnNow(p, now) {
       if (!p.current.length) return nothing;
       // 1.97.0: Acontecendo agora, the first thing (above A seguir), big, with the live dot and how much of it went by
+      // 1.99.0: with its big round icon at the side (that pulses), like the clock of A seguir
       return html`<div class="pn-now" role="group" aria-label="Acontecendo agora" style=${colorVars(this._pnColor(p.current[0]), this._dark)}>
-        <div class="pn-now-head"><span class="pn-live" aria-hidden="true"></span><span class="overline">Acontecendo agora</span></div>
-        ${repeat(p.current, (x) => this._pnKey(x), (x) => this._pnLine(x, now, { live: true }))}
+        <span class="pn-now-badge" aria-hidden="true">${icon("activity")}</span>
+        <div class="pn-now-body">
+          <div class="pn-now-head"><span class="overline">Acontecendo agora</span></div>
+          ${repeat(p.current, (x) => this._pnKey(x), (x) => this._pnLine(x, now, { live: true }))}
+        </div>
       </div>`;
     }
 
@@ -491,8 +495,11 @@ export const painelStyles = css`
   }
   /* 1.97.0: Acontecendo agora, the first thing (above A seguir): what goes on now */
   .pn-now {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 14px;
-    padding: 8px 8px 8px;
+    padding: 12px 8px 10px 16px;
     border-radius: 22px;
     background: color-mix(in srgb, var(--c) 12%, var(--rv-surface));
     border: 1.5px solid color-mix(in srgb, var(--c) 50%, var(--rv-line));
@@ -512,26 +519,48 @@ export const painelStyles = css`
   :host([dark]) .pn-now-head .overline {
     color: var(--c);
   }
-  .pn-live {
-    width: 11px;
-    height: 11px;
+  /* the big round icon, the size of the clock of A seguir, with its ring and a pulse around it */
+  .pn-now-badge {
     flex: none;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    background: var(--c);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent);
-    animation: pn-live 2s ease-out infinite;
+    display: grid;
+    place-items: center;
+    background: var(--rv-surface);
+    color: var(--ci);
+    box-shadow:
+      inset 0 0 0 6px color-mix(in srgb, var(--c) 75%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--c) 50%, transparent);
+    animation: pn-live 2.2s ease-out infinite;
+  }
+  :host([dark]) .pn-now-badge {
+    color: var(--c);
+  }
+  .pn-now-badge .i {
+    width: 40px;
+    height: 40px;
+    stroke-width: 2.4;
+  }
+  .pn-now-body {
+    flex: 1;
+    min-width: 0;
   }
   @keyframes pn-live {
     0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent);
+      box-shadow:
+        inset 0 0 0 6px color-mix(in srgb, var(--c) 75%, transparent),
+        0 0 0 0 color-mix(in srgb, var(--c) 50%, transparent);
     }
     70%,
     100% {
-      box-shadow: 0 0 0 10px transparent;
+      box-shadow:
+        inset 0 0 0 6px color-mix(in srgb, var(--c) 75%, transparent),
+        0 0 0 14px transparent;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .pn-live {
+    .pn-now-badge {
       animation: none;
     }
   }

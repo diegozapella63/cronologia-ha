@@ -366,7 +366,7 @@ describe("cadastros and placar", () => {
     assert.equal(cad["Vitamina D"].dose, "1 gota");
     assert.equal(cad["Internet"].valor, 119.9);
     assert.equal(cad["Consulta do Beto"].repete, "uma vez");
-    assert.ok(r.pessoas.includes("Ana"));
+    assert.ok(r.pessoas.includes("Ana (calendário Pessoal da Ana)"), "1.99.0: with the calendar, by the name");
     assert.deepEqual(r.placar, { participantes: ["Ana", "Beto"], demeritos: [{ nome: "Toalha molhada", pontos: 5 }] });
   });
   it("cadastros with the placar off; a pet is said", async () => {
@@ -424,6 +424,21 @@ describe("criar_compromisso", () => {
     assert.deepEqual(calls[0], ["create", "calendar.casa", { summary: "Reunião da escola", description: "Levar o boletim", location: "Escola", start: "2026-11-03T09:00:00-03:00", end: "2026-11-03T10:00:00-03:00" }]);
     assert.equal(r.texto, "Criado: Reunião da escola · 03/11/2026 (terça) 09:00–10:00 · Casa. id: calendar.casa|novo-1|2026-11-03T09:00:00-03:00");
     assert.ok((await read("agenda", { busca: "escola" })).eventos.length === 1);
+  });
+  it("1.99.0: an appointment of a person (quem) goes to the calendar of the person: chosen, or the one with the name", async () => {
+    let s = setup();
+    let r = await s.call("criar_compromisso", { titulo: "Jantar", data: "2026-11-02", inicio: "21:10", quem: "ana" });
+    assert.equal(s.calls[0][1], "calendar.pessoal", "Pessoal da Ana, by the name");
+    assert.match(r.texto, /Pessoal da Ana/);
+    await assert.rejects(s.call("criar_compromisso", { titulo: "Jantar", inicio: "21:10", quem: "Beto" }), /Beto não tem calendário \(escolha em Mais › Avisos › Pessoas e pets\) ou mande calendario\. Os que aceitam eventos novos: .*Casa \(calendar\.casa\)/);
+    // chosen in Mais › Avisos (it wins over the name); calendario wins over quem; none: not by the name
+    s = setup({ app: { people: { Beto: { cal: "calendar.familia" }, Ana: { cal: false } } } });
+    await s.call("criar_compromisso", { titulo: "Futebol", data: "2026-11-02", inicio: "19:00", quem: "beto" });
+    assert.equal(s.calls[0][1], "calendar.familia");
+    await s.call("criar_compromisso", { titulo: "Futebol", data: "2026-11-02", inicio: "19:00", quem: "Beto", calendario: "Casa" });
+    assert.equal(s.calls[1][1], "calendar.casa");
+    await assert.rejects(s.call("criar_compromisso", { titulo: "Jantar", inicio: "21:10", quem: "Ana" }), /Ana não tem calendário/);
+    await assert.rejects(s.call("criar_compromisso", { titulo: "Conta", tipo: "conta", valor: 10, quem: "Ana" }), /quem só vale para tipo compromisso ou remedio ou rotina ou manutencao/);
   });
   it("in a calendar by name; an end after midnight goes to the next day; several days of all day", async () => {
     const { call, calls } = setup();

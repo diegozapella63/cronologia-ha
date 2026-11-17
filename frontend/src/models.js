@@ -3,7 +3,7 @@
 // app and the "Avisos" settings. Mixed into <cronologia-app>.
 import { html, svg, nothing, unsafeSVG, repeat } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed, afterStuck } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { buildDescription, parseMoney, formatMoney, everyLabel, UNITS, addEvery, foldText, namesOf, PERIODS, periodInfo, periodOfHour, periodRank, periodPassed, afterStuck, personCalendar } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { toEvent } from "./events.js";
 import { placeTags, roomsShown } from "./place-tags.js";
 import { timeField } from "./whenpick.js";
@@ -1410,6 +1410,21 @@ export const ModelsMixin = (Base) =>
         if (pet && s && (s.participants || []).some((x) => foldText(x) === foldText(name))) this._scorePrefs({ participants: s.participants.filter((x) => foldText(x) !== foldText(name)) });
         return this._saveAppPrefs({ people: { ...manual, [name]: next } });
       };
+      // 1.99.0: the calendar of a person (a new appointment of theirs goes there); not chosen: the one with the name
+      const writable = this._writable ? this._writable() : [];
+      const setCal = (name, v) => {
+        const next = { ...(manual[name] || {}) };
+        next.cal = v === "" ? false : v;
+        return this._saveAppPrefs({ people: { ...manual, [name]: next } });
+      };
+      const calSelect = (p) => {
+        const pc = personCalendar(p.name, manual, writable.map((c) => ({ id: c.id, name: c.name })));
+        const cur = pc ? pc.id : "";
+        return html`<select class="select sm p-cal" aria-label="Calendário de ${p.name}" @change=${(e) => setCal(p.name, e.target.value)}>
+          <option value="" ?selected=${!cur}>Sem calendário</option>
+          ${writable.map((c) => html`<option value=${c.id} ?selected=${cur === c.id}>Calendário: ${c.name}</option>`)}
+        </select>`;
+      };
       const dropPerson = (name) => {
         const next = { ...manual };
         delete next[name];
@@ -1472,6 +1487,7 @@ export const ModelsMixin = (Base) =>
                   <span class="avatar">${p.pet ? icon("paw-print") : initial(p.name)}</span>
                   <span class="grow"><b>${p.name}</b><small>${sub(p)}</small></span>
                   ${on && !p.phone && phoned.length ? careSelect(p) : nothing}
+                  ${!p.pet && writable.length ? calSelect(p) : nothing}
                   <span class="p-acts">
                     ${!p.person
                       ? html`<button class="icon-btn pet-btn ${p.pet ? "on" : ""}" aria-pressed=${p.pet ? "true" : "false"} aria-label="${p.name} é um pet" title=${p.pet ? "Pet" : "Marcar como pet"} @click=${() => setPet(p.name, !p.pet)}>${icon("paw-print")}</button>`

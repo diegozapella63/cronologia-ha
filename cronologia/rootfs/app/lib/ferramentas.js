@@ -4,7 +4,7 @@
 // funções da tela e do servidor (criar, mudar e apagar eventos pelo Home Assistant; Feito, Pular, Desfazer,
 // manutenção feita e pontos pelo Home), e a tela se atualiza como quando outra pessoa muda algo.
 // Each tool: {nome, titulo, descricao, entrada (JSON Schema), grava, apaga}. chamar() -> {texto, grava}.
-import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, everyLabel, parseEvery, parseMoney, addEvery, isoWithOffset, ymdOf, periodInfo, cleanAway, PERIODS } from "./kinds.js";
+import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, everyLabel, parseEvery, parseMoney, addEvery, isoWithOffset, ymdOf, periodInfo, cleanAway, PERIODS, personCalendar } from "./kinds.js";
 import { scoreSettings } from "./score.js";
 import { asActor } from "./actor.js";
 
@@ -83,7 +83,7 @@ export const FERRAMENTAS = [
     titulo: "Criar compromisso",
     grava: true,
     descricao:
-      "Cria um evento num calendário: um compromisso ou lembrete (padrão) ou um modelo: remedio (precisa do horário; um horário por chamada), rotina da casa, conta a pagar (dia todo, com valor) ou manutencao (a cada X; a próxima vem da última vez). Sem inicio, fica no dia todo. Sem calendario, o padrão (ou um com o nome do modelo, como Remédios ou Casa).",
+      "Cria um evento num calendário: um compromisso ou lembrete (padrão) ou um modelo: remedio (precisa do horário; um horário por chamada), rotina da casa, conta a pagar (dia todo, com valor) ou manutencao (a cada X; a próxima vem da última vez). Sem inicio, fica no dia todo. O compromisso de uma pessoa: quem (vai para o calendário dela). Sem quem nem calendario, o padrão (ou um com o nome do modelo, como Remédios ou Casa).",
     entrada: obj(
       {
         titulo: { type: "string" },
@@ -97,7 +97,7 @@ export const FERRAMENTAS = [
         calendario: { type: "string", description: "Id ou nome do calendário." },
         local: { type: "string" },
         notas: { type: "string" },
-        quem: { type: "string", description: "remedio: quem toma; rotina e manutencao: quem faz." },
+        quem: { type: "string", description: "compromisso: de quem é (vai para o calendário da pessoa); remedio: quem toma; rotina e manutencao: quem faz." },
         dose: { type: "string", description: "remedio: a dose (ex.: 1 comprimido)." },
         pontos: { type: "integer", minimum: 0, maximum: 1000, description: "rotina e manutencao: pontos no placar." },
         periodo: { type: "string", enum: PERIODS.map((p) => p.id), description: "rotina sem horário: a parte do dia." },
@@ -324,6 +324,14 @@ export class Ferramentas {
     const pref = this.store.data.app.default_calendar;
     const vis = w.filter((c) => !c.oculto);
     return w.find((c) => c.id === pref) || vis.find((c) => c.edita && c.apaga) || vis.find((c) => c.apaga) || vis[0] || w[0] || null;
+  }
+
+  /** 1.99.0: the calendar of a person (chosen in Mais › Avisos › Pessoas e pets, or the one with the name). */
+  daPessoa(nome) {
+    const w = this.calendarios().filter((c) => c.cria && !c.fora);
+    const pc = personCalendar(nome, this.store.data.app.people || {}, w.map((c) => ({ id: c.id, name: c.nome })));
+    if (!pc) throw erro(`${nome} não tem calendário (escolha em Mais › Avisos › Pessoas e pets) ou mande calendario. Os que aceitam eventos novos: ${w.map((c) => `${c.nome} (${c.id})`).join(", ") || "nenhum"}.`);
+    return w.find((c) => c.id === pc.id);
   }
 
   /** A calendar for a model: one named like it (Remédios, Casa…), else the default one. */
@@ -566,7 +574,14 @@ export class Ferramentas {
       r.calendario = nomeCal.get(c.cal) || c.cal;
       return r;
     });
-    const out = { calendarios, cadastrados, pessoas: (ix.people || []).map((x) => (x.pet ? `${x.name} (pet)` : x.name)) };
+    // 1.99.0: each person with their calendar (where an appointment of theirs goes)
+    const w = this.calendarios().filter((c) => c.cria && !c.fora);
+    const calDe = (n) => {
+      const pc = personCalendar(n, this.store.data.app.people || {}, w.map((c) => ({ id: c.id, name: c.nome })));
+      const c = pc && w.find((x) => x.id === pc.id);
+      return c ? ` (calendário ${c.nome})` : "";
+    };
+    const out = { calendarios, cadastrados, pessoas: (ix.people || []).map((x) => (x.pet ? `${x.name} (pet)` : `${x.name}${calDe(x.name)}`)) };
     out.placar = st ? { participantes: st.participants, demeritos: (this.store.data.app.demerits || []).map((d) => ({ nome: d.title, pontos: d.points })) } : "desligado";
     return json(out);
   }
@@ -611,7 +626,7 @@ export class Ferramentas {
     const titulo = linha(a.titulo, 200);
     if (!titulo) throw erro("Falta o titulo.");
     // fields of other models: a wrong call says so instead of losing them
-    const so = { dose: ["remedio"], quem: ["remedio", "rotina", "manutencao"], pontos: ["rotina", "manutencao"], periodo: ["rotina"], volta_dias: ["rotina"], valor: ["conta"], a_cada: ["manutencao"], ultima_vez: ["manutencao"] };
+    const so = { dose: ["remedio"], quem: ["compromisso", "remedio", "rotina", "manutencao"], pontos: ["rotina", "manutencao"], periodo: ["rotina"], volta_dias: ["rotina"], valor: ["conta"], a_cada: ["manutencao"], ultima_vez: ["manutencao"] };
     for (const [campo, tipos] of Object.entries(so)) if (a[campo] != null && a[campo] !== "" && !tipos.includes(tipo)) throw erro(`${campo} só vale para tipo ${tipos.join(" ou ")}.`);
     const hoje = startOfDay(now);
     const dia = parseDia(a.data, hoje, "data");
@@ -619,7 +634,8 @@ export class Ferramentas {
     const fim = a.fim ? parseHora(a.fim, "fim") : null;
     if (fim && !inicio) throw erro("fim sem inicio: mande o inicio também (ou nenhum dos dois, para o dia todo).");
     if (a.data_fim && inicio) throw erro("data_fim é só para o dia todo; com horário, use fim (passando da meia-noite, termina no dia seguinte).");
-    const cal = a.calendario ? this.calendario(a.calendario, true) : tipo === "compromisso" ? this.padrao() : this.doModelo(tipo);
+    // 1.99.0: the appointment of a person goes to the calendar of the person
+    const cal = a.calendario ? this.calendario(a.calendario, true) : tipo === "compromisso" ? (linha(a.quem) ? this.daPessoa(linha(a.quem, 40)) : this.padrao()) : this.doModelo(tipo);
     if (!cal) throw erro("Nenhum calendário do Home Assistant aceita eventos novos.");
     let k = null;
     if (tipo !== "compromisso") {

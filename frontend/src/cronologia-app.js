@@ -17,7 +17,7 @@ import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ModelsMixin, byPeriod, partLeft } from "./models.js";
 import { ChatMixin } from "./chat-panel.js";
 import { chatStyles, chatFiles } from "./chat.js";
-import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS, personCalendar } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
@@ -124,7 +124,7 @@ const LABEL_IC = [
   [/Trechos no Agora/, "notebook-pen"], [/^Fala/, "mic"], [/^Usar a integração/, "blocks"], [/^Mostrar n[oa] (calendário|agenda)/, "calendar-check"],
   [/^Mostrar na tela inicial/, "smartphone"], [/Tarefas|^Lista|^Tarefa/, "list-checks"], [/^Local e notas|^Local/, "map-pin"], [/^De férias/, "plane"],
   [/recompensas|^Marcar|pontos|^Pontos|placar|ganha|^Quantos pontos/i, "trophy"], [/^Se .* vencer/, "crown"], [/^Resultado|^Lembrete|^Avisar|^Aviso/, "bell"],
-  [/^Pessoas|^Quem|participa/, "users"], [/^Calendário|^Adicionar em|^Onde guardar/, "calendar-days"], [/^Notas|^Observações|^O que foi feito/, "notebook-pen"],
+  [/^Pessoas|^Quem|^De quem|participa/, "users"], [/^Voltar para a folha/, "hourglass"], [/^Calendário|^Adicionar em|^Onde guardar/, "calendar-days"], [/^Notas|^Observações|^O que foi feito/, "notebook-pen"],
   [/^Título|^Nome|^O que foi/, "pencil"], [/^Quando/, "calendar-clock"], [/^Horário/, "clock"], [/^Até|^Período/, "calendar-range"], [/^Repet|^A cada/, "repeat"],
   [/^Dose/, "pill"], [/^Valor/, "wallet"], [/^Categoria/, "layers"], [/^Caminho/, "smartphone"], [/^Mensagem/, "message-square-text"],
   [/^Cômodo/, "door-open"], [/^Equipamento|^Bem/, "package"], [/^Calendários/, "layers"],
@@ -693,6 +693,22 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
 
   _writable() {
     return this._cals().filter((c) => c.canCreate && !c.unavailable);
+  }
+
+  /**
+   * 1.99.0: the people with a calendar (chosen in Mais › Avisos › Pessoas e pets, or the one with the name), among
+   * cals (the writable ones): [{name, cal, auto}], one per calendar. A new appointment is of someone: De quem.
+   */
+  _peopleCals(cals = this._writable()) {
+    const prefs = this._app("people", null) || {};
+    const list = cals.map((c) => ({ id: c.id, name: c.name }));
+    const out = [];
+    for (const p of (this._ix && this._ix().people) || []) {
+      if (p.pet) continue;
+      const pc = personCalendar(p.name, prefs, list);
+      if (pc && !out.some((x) => x.cal === pc.id)) out.push({ name: p.name, cal: pc.id, auto: pc.auto });
+    }
+    return out;
   }
 
   _defaultCal() {
@@ -3319,6 +3335,24 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     return html`<button class="btn outline kind-act ev-done-btn" @click=${() => this._check(it, "evento").then(() => this._closeSheet())}>${icon("check")}Feito</button>`;
   }
 
+  /**
+   * 1.99.0: De quem: the people (their calendar: Mais › Avisos › Pessoas e pets), then the calendars of no one (Casa,
+   * Família…) by their names; nobody with a calendar: Calendário, as before. The calendar chosen shows at the side.
+   */
+  _renderWhoseField(f, targets) {
+    const people = this._peopleCals(targets);
+    const owned = new Set(people.map((x) => x.cal));
+    const chip = (id, label) => {
+      const c = this._cal(id);
+      return html`<button class="pick list ${f.cal === id ? "on" : ""}" style=${c ? colorVars(c.color, this._dark) : ""} @click=${() => this._setForm({ cal: id })}><span class="dot"></span><span>${clip(label, 24)}</span></button>`;
+    };
+    const label = people.length ? (f.mode === "edit" ? "De quem (mover)" : "De quem") : f.mode === "edit" ? "Calendário (mover)" : "Calendário";
+    return html`<div class="field whose-field">
+      <span class="flabel">${label}${this._cal(f.cal) ? html`<span class="fl-val">· ${clip(this._cal(f.cal).name, 24)}</span>` : nothing}</span>
+      <div class="chip-row">${people.map((x) => chip(x.cal, x.name))}${targets.filter((c) => !owned.has(c.id)).map((c) => chip(c.id, c.name))}</div>
+    </div>`;
+  }
+
   _renderFormSheet() {
     const f = this._form;
     if (f.kind) return this._renderKindForm();
@@ -3358,12 +3392,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
         <span class="flabel">Título</span>
         <textarea class="ev-title-input grow" rows="1" .value=${f.title} placeholder="Ex.: Dentista, Reunião, Aniversário" @input=${(e) => this._setForm({ title: e.target.value })} @keydown=${(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), this._saveForm())}></textarea>
       </label>
-      ${targets.length > 1
-        ? html`<div class="field">
-            <span class="flabel">${f.mode === "edit" ? "Calendário (mover)" : "Calendário"}${this._cal(f.cal) ? html`<span class="fl-val">· ${clip(this._cal(f.cal).name, 24)}</span>` : nothing}</span>
-            <div class="chip-row">${targets.map((c) => html`<button class="pick list ${f.cal === c.id ? "on" : ""}" style=${colorVars(c.color, this._dark)} @click=${() => this._setForm({ cal: c.id })}><span class="dot"></span><span>${clip(c.name, 24)}</span></button>`)}</div>
-          </div>`
-        : nothing}
+      ${targets.length > 1 ? this._renderWhoseField(f, targets) : nothing}
       <div class="field">
         <span class="flabel">Quando</span>
         <date-pick .value=${f.date} kind="futuro" .weekStart=${weekStart} .bid=${"cr-date"} .label=${"Data"} @pick=${(e) => e.detail.value && setDate(e.detail.value)}></date-pick>

@@ -210,6 +210,9 @@ describe("Store: app settings", () => {
       Rex: {},
     });
     assert.deepEqual(set({ people: {} }), {});
+    // 1.99.0: the calendar of the person (or false: none)
+    assert.deepEqual(set({ people: { Ana: { cal: "calendar.pessoal_ana" }, Beto: { cal: false }, Davi: { cal: "sensor.x" }, Mimi: { cal: true } } }).people, { Ana: { cal: "calendar.pessoal_ana" }, Beto: { cal: false }, Davi: {}, Mimi: {} });
+    assert.deepEqual([1, 3, 5, 10, "5", 0].map((n) => set({ memo_back: n }).memo_back), [1, undefined, 5, 10, undefined, undefined], "the minutes of a next sheet (3: by default)");
   });
   it("score: participants, period, anchor, notify (on by default), manual", () => {
     const sc = set({ score: { enabled: 1, participants: [" Davi ", "Aurora", "Davi", "", ...Array.from({ length: 12 }, (_, i) => `P${i}`)], period: "quinzena", anchor: "2026-10-26", manual: 1 } }).score;
