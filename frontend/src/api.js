@@ -124,15 +124,21 @@ class AppConnection {
   }
 }
 
-/** The Home Assistant frontend around us (same origin under ingress), if reachable. */
+/**
+ * The Home Assistant frontend around us (same origin under ingress), if reachable: the page around the app or, inside
+ * another app of the family (1.95.0: the panel in the CorrerIA), the top one.
+ */
 function parentHass() {
-  try {
-    if (window.parent === window) return null;
-    const el = window.parent.document.querySelector("home-assistant");
-    return (el && el.hass) || null;
-  } catch (e) {
-    return null;
+  for (const w of [window.parent, window.top]) {
+    try {
+      if (!w || w === window) continue;
+      const el = w.document.querySelector("home-assistant");
+      if (el && el.hass) return el.hass;
+    } catch (e) {
+      /* another origin */
+    }
   }
+  return null;
 }
 
 const mql = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -143,13 +149,25 @@ function detectDark() {
   return !!(mql && mql.matches);
 }
 
+/** The window of the Home Assistant around us (the parent, or the top one inside another app), or the parent. */
+function haWindow() {
+  for (const w of [window.parent, window.top]) {
+    try {
+      if (w && w !== window && w.document.querySelector("home-assistant")) return w;
+    } catch (e) {
+      /* another origin */
+    }
+  }
+  return window.parent;
+}
+
 export function appEnv() {
   const embedded = window.parent !== window;
   return {
     topbar: !embedded,
     haptic(type) {
       try {
-        const p = window.parent;
+        const p = haWindow();
         if (p !== window) p.dispatchEvent(new p.CustomEvent("haptic", { detail: type }));
       } catch (e) {
         /* not same origin */
@@ -157,7 +175,7 @@ export function appEnv() {
     },
     openInHA(path) {
       try {
-        const p = window.parent;
+        const p = haWindow();
         if (p !== window && p.document) {
           p.history.pushState(null, "", path);
           p.dispatchEvent(new p.CustomEvent("location-changed", { detail: { replace: false } }));

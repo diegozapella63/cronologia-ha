@@ -3,6 +3,8 @@
 import { startStack, day, isoAt, waitFor } from "./harness.mjs";
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { parseICS } from "../../frontend/src/ics.js";
 
 let stack;
@@ -32,6 +34,17 @@ describe("HTTP", () => {
     assert.equal((await fetch(`${stack.url}/`, { method: "POST" })).status, 404);
     assert.equal((await fetch(`${stack.url}/fonts/barlow-400.woff2`)).status, 200);
     assert.equal((await fetch(`${stack.url}/fonts/nada.woff2`)).status, 404);
+  });
+  it("1.95.0: the address in the browser (X-Ingress-Path) goes to share/cronologia/integracao.json, for the CorrerIA", async () => {
+    const file = path.join(stack.dirs.share, "cronologia", "integracao.json");
+    await fetch(`${stack.url}/`, { headers: { "x-ingress-path": "/api/hassio_ingress/../../x" } });
+    await fetch(`${stack.url}/`, { headers: { "x-ingress-path": "/api/hassio_ingress/AbC123_-xyz/" } });
+    const j = await waitFor(() => {
+      const x = JSON.parse(fs.readFileSync(file, "utf8"));
+      return x.tela && x;
+    }, { what: "the address in the integration file" });
+    assert.equal(j.tela, "/api/hassio_ingress/AbC123_-xyz");
+    assert.equal(fs.readFileSync(path.join(stack.dirs.data, "tela.txt"), "utf8"), "/api/hassio_ingress/AbC123_-xyz", "kept for the restarts");
   });
   it("the WebSocket only on /ws", async () => {
     const ws = new WebSocket(`ws://127.0.0.1:${stack.appPort}/outro`);

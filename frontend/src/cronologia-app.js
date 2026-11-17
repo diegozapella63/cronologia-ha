@@ -71,6 +71,15 @@ const has = (features, bit) => (Number(features) & bit) === bit;
 const HOUR_H = 48;
 // 1.92.2: the Tela cheia only from this width on (the same as the MemorIA, and where the sheet goes beside the cards)
 const FULL_MIN = 1100;
+// 1.95.0: ?painel=1, the panel of the Tela cheia inside another app (the CorrerIA, beside its Conversa): always in the
+// Tela cheia, at any width, without the button to leave it (the app around it has its own)
+const EMBED = (() => {
+  try {
+    return typeof location !== "undefined" && new URLSearchParams(location.search).has("painel");
+  } catch {
+    return false;
+  }
+})();
 
 const PLATFORMS = {
   local_calendar: { label: "Calendário local", icon: "calendar" },
@@ -244,12 +253,13 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     this._onDesk = () => (this._desk = !!this._deskMq.matches);
     // 1.87.0: Tela cheia of Agora; leaving the fullscreen of the browser (its own Esc, the Voltar of the phone) leaves it too.
     // 1.92.2: only on a big screen (1100 px or more, like the MemorIA): the button, and a screen that gets narrow leaves it
-    this._full = false;
+    this._embed = EMBED;
+    this._full = EMBED;
     this._wideMq = window.matchMedia ? window.matchMedia(`(min-width: ${FULL_MIN}px)`) : null;
     this._wide = !!(this._wideMq && this._wideMq.matches);
     this._onWide = () => {
       this._wide = !!this._wideMq.matches;
-      if (!this._wide && this._full) this._setFull(false);
+      if (!this._wide && this._full && !this._embed) this._setFull(false);
     };
     this._onFsChange = () => {
       const d = this._fsDoc;
@@ -301,7 +311,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
   /** "/" opens the search (Calendário › Lista) with the cursor in it, unless something is being typed. */
   _onKey = (e) => {
     // Tela cheia: Esc leaves it (a window open over it closes first, by its own Esc)
-    if (e.key === "Escape" && this._full && !this._sheet && !this._cam) {
+    if (e.key === "Escape" && this._full && !this._embed && !this._sheet && !this._cam) {
       const t = (e.composedPath && e.composedPath()[0]) || e.target;
       if (!(t && t.closest && t.closest(".sheet"))) this._setFull(false);
       return;
@@ -419,7 +429,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     this.toggleAttribute("dark", this._dark);
     this.toggleAttribute("full", this._fullOn());
     // left Agora (a link in a card): the Tela cheia ends there
-    if (this._full && this._ready && this._shownView().name !== "now") this._setFull(false, true);
+    if (this._full && !this._embed && this._ready && this._shownView().name !== "now") this._setFull(false, true);
     this._markTabs();
     this._labelIcons();
     this._applyFolds();
@@ -858,7 +868,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
   _onPopState() {
     if (this._cam && !(history.state && history.state.rvCam)) this._closeCamera(true);
     // the Voltar of the phone leaves the Tela cheia (a window open over it closes first)
-    if (this._full && !this._sheet && !(history.state && history.state.rvFull)) this._setFull(false, true);
+    if (this._full && !this._embed && !this._sheet && !(history.state && history.state.rvFull)) this._setFull(false, true);
     if (this._sheet && !(history.state && history.state.rvSheet)) {
       this._releaseImages();
       this._sheet = null;
@@ -1867,13 +1877,15 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
 
   /** Tela cheia is on, on a big screen, and Agora is on screen. */
   _fullOn() {
-    return !!this._full && !!this._wide && this._shownView().name === "now";
+    return !!this._full && (!!this._wide || !!this._embed) && this._shownView().name === "now";
   }
 
   /** Agora, on a big screen (1.92.2, like the MemorIA): the title with the button of the Tela cheia at its right (on, the same place leaves it). */
   _withFullBtn(h1) {
-    if (this._view().name !== "now" || !this._cals().length || !this._wide) return h1;
+    if (this._view().name !== "now" || !this._cals().length || (!this._wide && !this._embed)) return h1;
     const on = this._fullOn();
+    // inside the CorrerIA: the clock only (the CorrerIA has its own Sair da tela cheia)
+    if (this._embed) return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}</div>`;
     const label = on ? "Sair da tela cheia" : "Tela cheia";
     // 1.94.0: in the Tela cheia, the clock, big (for the TV)
     return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;

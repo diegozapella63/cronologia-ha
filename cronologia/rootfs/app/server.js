@@ -44,6 +44,10 @@ const DATA_DIR = process.env.DATA_DIR || "/data";
 const MEDIA_DIR = process.env.MEDIA_DIR || "/media";
 const SHARE_DIR = process.env.SHARE_DIR || "/share";
 const INGRESS_IPS = new Set(["172.30.32.2"]);
+// 1.95.0: the address of this app in the browser, inside the Home Assistant (/api/hassio_ingress/<token>), from the
+// header the ingress sends (X-Ingress-Path); it goes to share/cronologia/integracao.json (tela), so the CorrerIA shows
+// the panel of the Tela cheia beside its Conversa. Kept in /data, for the restarts.
+const INGRESS_PATH = /^\/api\/hassio_ingress\/[A-Za-z0-9_-]{8,128}$/;
 const MAX_UPLOAD = 30 * 1024 * 1024;
 const MAX_RANGE_DAYS = 800;
 
@@ -923,6 +927,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(403).end("Forbidden");
     return;
   }
+  noteIngress(req);
   const url = new URL(req.url, "http://x");
   if (url.pathname === "/api/extract" && req.method === "POST") return handleExtract(req, res);
   if (url.pathname === "/api/chat" && req.method === "POST") return handleChat(req, res);
@@ -979,6 +984,27 @@ server.on("upgrade", (req, socket, head) => {
 let presenceLast = "";
 let presenceAt = 0;
 let presenceWarned = false;
+const TELA_FILE = path.join(DATA_DIR, "tela.txt");
+let telaPath = (() => {
+  try {
+    const t = fs.readFileSync(TELA_FILE, "utf8").trim();
+    return INGRESS_PATH.test(t) ? t : "";
+  } catch {
+    return "";
+  }
+})();
+/** A request through the ingress: its address in the browser (X-Ingress-Path), kept and told to the other apps. */
+function noteIngress(req) {
+  const p = String(req.headers["x-ingress-path"] || "").replace(/\/+$/, "");
+  if (!INGRESS_PATH.test(p) || p === telaPath) return;
+  telaPath = p;
+  try {
+    fs.writeFileSync(TELA_FILE, p);
+  } catch {
+    /* only after a restart it is missing until the app is opened again */
+  }
+  publishPresence();
+}
 function publishPresence() {
   const placar = home.placarInfo();
   const espelho = mirror.published();
@@ -986,7 +1012,9 @@ function publishPresence() {
   const resolvia = resolviaOn();
   // donos_listas: whose each list was here (De quem é, before 1.53.0), so the ResolvIA takes it once; it is chosen there now
   const donos_listas = store.data.app.todo_owner || {};
-  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas });
+  // tela (1.95.0): the address of this app in the browser (the CorrerIA opens the panel of the Tela cheia with ?painel=1)
+  const tela = telaPath || null;
+  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas, tela });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
   try {
     const dir = path.join(SHARE_DIR, "cronologia");
@@ -995,7 +1023,7 @@ function publishPresence() {
     // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
     // the start is the same in every app of the family (app, nome, versao, gravado_em); app is still the name here, for the
     // ResolvIA of before 2.55 (it checks it): the id ("cronologia") comes in a next version, the readers already take both
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", nome: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas }, null, 1));
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", nome: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas, tela }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.95.0
+
+- **Painel da tela cheia no CorrerIA**: o CorrerIA 1.2.0 ganhou a mesma tela cheia, com este painel e a Conversa dele ao lado, para pedir qualquer coisa aos apps a qualquer momento. Para aparecer lá, abra a CronologIA uma vez depois de atualizar.
+
 ## 1.94.0
 
 - **Tela cheia** virou o painel da casa (para a TV ou o tablet na parede), com o relógio grande no alto e tudo o que precisa ser feito nas próximas horas num lugar só:
