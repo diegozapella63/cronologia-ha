@@ -69,6 +69,11 @@ async def main():
         txt = await a.locator(".panel.todos").inner_text()
         check("Pagar o IPVA" in txt and "venceu há 2 dias" in txt and "Casa" in txt, "Tarefas com prazo lists late tasks with the list name")
         check("Café" not in txt and "Passar pano" not in txt and "Relatório mensal" not in txt, "tasks without a due date or done earlier stay out")
+        # 1.99.2: late and due today in a tag, as in the ResolvIA (red, yellow)
+        tags = await a.evaluate("(el) => [...el.renderRoot.querySelectorAll('.panel.todos .due-tag')].map((t) => [t.className.replace('due-tag', '').trim(), t.textContent.trim(), getComputedStyle(t).backgroundColor])")
+        check(any(c == "late" and x.startswith("venceu") for c, x, _ in tags) and all(bg not in ("", "rgba(0, 0, 0, 0)") for _, _, bg in tags), f"late in a red tag ({tags[:3]})")
+        today = [x for c, x, _ in tags if c == "today"]
+        check(hm_now >= "18:00" or any(x.startswith("hoje às") or x == "vence hoje" for x in today), f"due today in a yellow tag ({today})")
         # hide the Problem List
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
         await open_more(a, "Integrações"); await A.wait_for_timeout(400)

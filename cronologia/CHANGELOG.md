@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.99.2
+
+- **Tarefas** do ResolvIA no Agora: o que vence hoje ganhou uma etiqueta amarela e o que está atrasado, uma vermelha, como no ResolvIA.
+
 ## 1.99.1
 
 - **Equipamento** escolhido numa rotina ou manutenção: um nome comprido não passa mais da borda da direita. Ele termina em "…" dentro do cartão.

@@ -2075,6 +2075,30 @@ export const calStyles = css`
     font-size: 13.5px;
     color: var(--rv-muted);
   }
+  /* 1.99.2: late or due today, in a tag as in the ResolvIA */
+  .due-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    vertical-align: 1px;
+  }
+  .due-tag .i {
+    width: 13px;
+    height: 13px;
+  }
+  .due-tag.today {
+    background: var(--rv-today-soft);
+    color: var(--rv-today);
+  }
+  .due-tag.late {
+    background: color-mix(in srgb, var(--rv-late) 16%, transparent);
+    color: var(--rv-late);
+  }
   .chore.done .chore-tx b {
     color: var(--rv-muted);
     text-decoration: line-through;

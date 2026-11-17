@@ -36,6 +36,13 @@ function dueText(t, now) {
   return `${dayLabel(d, now, { long: false, cap: false })}${time}`;
 }
 
+/** 1.99.2: the tone of the due, as the tag of the ResolvIA: late (red) or today (yellow); else nothing. */
+export function dueTone(t, now) {
+  if (t.done || t.undated) return "";
+  if (t.overdue) return "late";
+  return dayDiff(dueDate(t), now) === 0 ? "today" : "";
+}
+
 /** "todo dia", "a cada 2 dias", "toda semana"… as in the ResolvIA (empty when it doesn't repeat). */
 const everyLabel = (days) => (!days ? "" : days === 1 ? "todo dia" : days === 7 ? "toda semana" : days === 14 ? "a cada 2 semanas" : days === 30 ? "todo mês" : `a cada ${days} dias`);
 
@@ -141,7 +148,12 @@ export const TasksMixin = (Base) =>
         const quick = t.points > 0 && !t.done && people.length && people.length <= 3;
         const eqs = t.equips && t.equips.length ? t.equips : t.equip ? [t.equip] : [];
         const rms = t.rooms && t.rooms.length ? t.rooms : t.room ? [t.room] : [];
-        const sub = [t.undated ? "" : dueText(t, now), everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
+        // 1.99.2: what is late or due today in a tag, in the colors of the ResolvIA
+        const tone = dueTone(t, now);
+        const rest = [everyLabel(t.every), t.listName].filter(Boolean).join(" · ");
+        const sub = tone
+          ? html`<span class="due-tag ${tone}">${icon(tone === "late" ? "circle-alert" : "clock")}${dueText(t, now)}</span>${rest ? ` · ${rest}` : ""}`
+          : [t.undated ? "" : dueText(t, now), rest].filter(Boolean).join(" · ");
         return html`<div class="chore todo ${t.done ? "done" : ""} ${t.overdue ? "late" : ""}">
           <button class="chk sq ${t.done ? "on" : ""}" @click=${() => this._todoDone(t, !t.done)} aria-label="${t.done ? "Reabrir" : "Concluir"} ${t.summary}">${t.done ? icon("check") : nothing}</button>
           <button class="chore-tx" @click=${() => this._openSheet("todo", { key: t.key })}><b>${t.summary}</b><small>${quick ? html`<span class="pts-inline">+${t.points}</span> · ${sub}` : sub}</small>${placeTags(rms.map((r) => r.nome), eqs.map((e) => e.nome), this._roomNamesAll())}</button>
