@@ -201,11 +201,11 @@ export function eventsOfDay(events, d) {
  * 1.93.0: A seguir: the first of a list in order of start and every other one starting at the same minute (all the
  * calendars: two people with something at 18:00 are both A seguir).
  */
-export function atSameStart(sorted) {
+export function atSameStart(sorted, startOf = (e) => e.start) {
   const first = sorted && sorted[0];
   if (!first) return [];
-  const min = (d) => Math.floor(+d / 60000);
-  return sorted.filter((e) => min(e.start) === min(first.start));
+  const min = (e) => Math.floor(+startOf(e) / 60000);
+  return sorted.filter((e) => min(e) === min(first));
 }
 
 /**

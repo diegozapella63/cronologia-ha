@@ -3502,6 +3502,15 @@ export const extraStyles = css`
     width: 22px;
     height: 22px;
   }
+  .full-clock {
+    flex: none;
+    font-family: var(--rv-display);
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
   .full-btn:active {
     transform: scale(0.94);
   }

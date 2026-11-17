@@ -21,6 +21,7 @@ import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS } fr
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
+import { PainelMixin, painelStyles } from "./painel.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
 import { timeField, dateField } from "./whenpick.js";
@@ -168,7 +169,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))) {
+class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement))))))) {
   static properties = {
     _desk: { state: true },
     _wide: { state: true },
@@ -193,7 +194,7 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(calendarStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles];
+  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(calendarStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles, painelStyles];
 
   constructor() {
     super();
@@ -1874,7 +1875,8 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     if (this._view().name !== "now" || !this._cals().length || !this._wide) return h1;
     const on = this._fullOn();
     const label = on ? "Sair da tela cheia" : "Tela cheia";
-    return html`<div class="title-row">${h1}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;
+    // 1.94.0: in the Tela cheia, the clock, big (for the TV)
+    return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;
   }
 
   /**
@@ -2268,18 +2270,9 @@ class CronologiaApp extends ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsM
     const memoFull = this._fullOn() ? this._renderMemoriaPanel(true) : nothing;
     // Tela cheia (1.90.0): the placar, at the top of the side of the cards (Mais › Recompensas › Na tela cheia da Agora)
     const placar = this._renderPlacarNow();
-    if (memoFull !== nothing) {
-      // 1.93.0: what comes next (Agora / A seguir) and the doses above the placar (the banner of the Férias too), in the
-      // order of the person; then the other cards
-      const top = ["away", "now", "meds"];
-      return html`<section class="page now-page full-page">
-        ${this._renderHead("Hoje", status)}
-        <div class="full-cols">
-          <div class="full-memo">${memoFull}</div>
-          <div class="full-rest">${pick(top)}${placar}${order.filter((id) => !top.includes(id) && id !== "memoria" && id !== "search").map((id) => parts[id])}</div>
-        </div>
-      </section>`;
-    }
+    // 1.94.0: the Tela cheia is the panel of the house (painel.js): A seguir and Depois, Tarefas do dia and the placar,
+    // the sheet of the MemorIA
+    if (this._fullOn()) return this._renderPainel({ head: this._renderHead("Hoje", status), events, memo: memoFull, top: parts.away, placar });
     // Computador, like the InventarIA: the day on the left (next appointment, Hoje, tasks), doses, bills
     // and the house on the right, each column in the order of the person. Phone: one column, in that order.
     if (this._desk) {

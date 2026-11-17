@@ -1,5 +1,13 @@
 # Mudanças
 
+## 1.94.0
+
+- **Tela cheia** virou o painel da casa (para a TV ou o tablet na parede), com o relógio grande no alto e tudo o que precisa ser feito nas próximas horas num lugar só:
+  - **A seguir**, sempre primeiro: a próxima coisa com horário, de qualquer agenda ou app (compromisso de qualquer pessoa, remédio, rotina com horário, tarefa do ResolvIA com hora). Quando ele passa, o próximo sobe. Logo abaixo, o que está acontecendo **Agora**.
+  - **Depois**: o resto com horário até o fim do dia, em ordem, com o botão de cada um (**Tomei**, as iniciais de quem fez). No fim, **Amanhã cedo** e os compromissos do dia todo.
+  - **Tarefas do dia**: o que não tem horário, pelo prazo. Primeiro as **Atrasadas**, depois a parte do dia de agora (com quanto falta), a próxima e **Qualquer hora** (rotinas, manutenção e tarefas do ResolvIA de hoje). Por último, as **Contas a pagar** do GerencIA, com o **Paguei**.
+  - O **placar**, do mesmo jeito, embaixo das tarefas, e a folha do MemorIA à direita.
+
 ## 1.93.0
 
 - **A seguir**: quando mais de um compromisso começa no mesmo horário (de qualquer agenda, como os de duas pessoas às 18:00), o card mostra todos, um em cada linha, com a cor da agenda, até quando vai e o nome da agenda. Um toque numa linha abre aquele compromisso.

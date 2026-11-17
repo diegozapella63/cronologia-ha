@@ -6,6 +6,8 @@
 # 1.93.0: na tela cheia, só a folha (sem o cabeçalho MemorIA), da altura da tela, com o texto rolando dentro dela (a
 # página não rola; o lado dos cards rola sozinho), com o negrito, o maior e as cores do MemorIA 1.32.0; o A seguir e os
 # remédios acima do placar.
+# 1.94.0: a tela cheia é o painel da casa: A seguir e Depois (o que tem horário), Tarefas do dia (o que não tem, pelo
+# prazo) com o placar embaixo e a folha do MemorIA à direita; sem folha agora, as duas primeiras colunas.
 import os, sys, asyncio, json, threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -62,8 +64,10 @@ async def main():
                 check(await a.locator(".full-btn").count() == 0, f"{tag}: sem o botão Tela cheia")
                 await ctx.close(); continue
             await a.locator(".full-btn").click(); await A.wait_for_timeout(700)
-            memo, rest = a.locator(".full-cols > .full-memo"), a.locator(".full-cols > .full-rest")
-            check(await memo.count() == 1 and await rest.count() == 1 and await a.locator(".panel.memo").count() == 1, f"{tag}: a folha de um lado, os outros cards do outro (a folha uma vez só)")
+            memo, tcol, rest = a.locator(".pn-cols.three > .full-memo"), a.locator(".pn-cols > .pn-time"), a.locator(".pn-cols > .pn-day")
+            check(await memo.count() == 1 and await tcol.count() == 1 and await rest.count() == 1 and await a.locator(".panel.memo").count() == 1, f"{tag}: as três colunas do painel (a folha uma vez só)")
+            first = await tcol.evaluate("(el) => { const c = [...el.children].find((x) => x.matches('.hero-ev, .panel, .pn-now')); return c ? c.className : ''; }")
+            check("hero-ev" in first, f"{tag}: o A seguir é a primeira coisa ({first})")
             check(await a.locator(".memo-more").count() == 0 and "Comprar pão integral e frutas." in await memo.inner_text(), f"{tag}: a folha inteira, sem o Ver mais")
             check(await memo.locator(".sec-head").count() == 0 and "MemorIA" not in await memo.inner_text(), f"{tag}: só a folha, sem o cabeçalho MemorIA")
             green = await a.evaluate("(el) => { const f = el.renderRoot.querySelector('.full-memo .memo-ink .fmt.c-verde.big'); return f ? [f.textContent, getComputedStyle(f).color] : null; }")
@@ -71,23 +75,24 @@ async def main():
             check(await memo.locator(".memo-ink .fmt.b", has_text="Opção 1").count() == 1 and "++" not in await memo.inner_text() and "{verde:" not in await memo.inner_text(), f"{tag}: o negrito, sem as marcas")
             # 1.89.0: as folhas da casa toda, como a Tela cheia do MemorIA (sem o usuário e sem a pessoa)
             check("usuario=" not in ASKED[-1] and "pessoa=" not in ASKED[-1] and "hora=" in ASKED[-1], f"{tag}: pede as folhas da casa ({ASKED[-1]})")
-            check(await rest.locator(".home-search").count() == 0 and await rest.locator(".panel").count() >= 2, f"{tag}: do outro lado, os cards sem a busca")
-            # 1.90.0: o placar no lado dos cards, com quem está na frente; 1.93.0: depois do A seguir e dos remédios
+            check(await a.locator(".home-search").count() == 0 and await a.locator("#remedios-hoje, #casa, #contas, #tarefas").count() == 0, f"{tag}: sem a busca e sem os cards de sempre (tudo junto no painel)")
+            # 1.90.0: o placar, com quem está na frente; 1.94.0: embaixo das Tarefas do dia, como era
             pl = rest.locator(":scope > #placar-agora")
-            before = await rest.evaluate("(el) => { const out = []; for (const c of el.children) { if (c.id === 'placar-agora') break; if (c.matches('.panel, .hero-ev')) out.push(c.id || c.className); } return out; }")
-            check(await pl.count() == 1 and all("hero-ev" in x or x == "remedios-hoje" for x in before), f"{tag}: o placar depois do A seguir e dos remédios ({before})")
+            kids = await rest.evaluate("(el) => [...el.children].map((c) => c.id)")
+            check(await pl.count() == 1 and kids[-1] == "placar-agora" and "tarefas-do-dia" in kids, f"{tag}: o placar embaixo das Tarefas do dia ({kids})")
             pt = await pl.inner_text()
             check("Davi" in pt and "Aurora" in pt and ("na frente" in pt or "Empatados" in pt or "Ninguém pontuou" in pt), f"{tag}: os pontos e quem está ganhando")
-            tarefas = await a.locator("#tarefas").inner_text()
-            check(await a.locator("#gerencia-avisos").count() == 0 and tarefas.lower().startswith("tarefas com prazo") and "Sem prazo" not in tarefas and "Café" not in tarefas and "Das listas do ResolvIA" not in tarefas,
+            tarefas = await a.locator("#tarefas-do-dia").inner_text()
+            check(await a.locator("#gerencia-avisos").count() == 0 and tarefas.lower().startswith("tarefas do dia") and "Sem prazo" not in tarefas and "Café" not in tarefas and "Das listas do ResolvIA" not in tarefas,
                   f"{tag}: sem os Avisos do GerencIA e sem as tarefas sem prazo")
-            check("Dispositivo sem resposta 10" in tarefas, f"{tag}: as tarefas com prazo todas (sem o Mais)")
-            mb, rb = await memo.bounding_box(), await rest.bounding_box()
+            check("Dispositivo sem resposta 10" in tarefas and "ATRASADAS" in tarefas.upper(), f"{tag}: as tarefas atrasadas todas (sem o Mais)")
+            mb, rb, tb = await memo.bounding_box(), await rest.bounding_box(), await tcol.bounding_box()
             fs = await a.evaluate("(el) => parseFloat(getComputedStyle(el.renderRoot.querySelector('.full-memo .memo-ink')).fontSize)")
             check(fs >= 28, f"{tag}: a letra grande ({fs})")
             if True:
-                check(rb["x"] >= mb["x"] + mb["width"] and abs(rb["y"] - mb["y"]) < 4, f"{tag}: lado a lado ({mb}, {rb})")
-                check(mb["width"] > rb["width"] * 1.3, f"{tag}: o espaço maior para a folha ({mb['width']:.0f} × {rb['width']:.0f})")
+                check(rb["x"] >= tb["x"] + tb["width"] and mb["x"] >= rb["x"] + rb["width"] and abs(rb["y"] - mb["y"]) < 4 and abs(tb["y"] - mb["y"]) < 4, f"{tag}: lado a lado, a folha à direita ({tb}, {rb}, {mb})")
+                pb = await pl.bounding_box()
+                check(pb["y"] + pb["height"] <= h, f"{tag}: o placar à vista, mesmo com muitas tarefas ({pb['y']:.0f} + {pb['height']:.0f} de {h})")
                 leaf = await a.locator(".full-memo .memo-leaf").bounding_box()
                 check(leaf["height"] >= h - 240 and leaf["y"] + leaf["height"] <= h, f"{tag}: a folha da altura da tela, inteira nela ({leaf['y']:.0f} + {leaf['height']:.0f} de {h})")
                 ink = await a.evaluate("(el) => { const i = el.renderRoot.querySelector('.full-memo .memo-ink'); const m = el.renderRoot.querySelector('main'); return [i.scrollHeight - i.clientHeight, getComputedStyle(i).overflowY, m.scrollHeight - m.clientHeight]; }")
@@ -96,12 +101,12 @@ async def main():
                 check(over <= 0, f"{tag}: nada passa da largura ({over})")
                 await A.screenshot(path=f"{SP}/shots/crcheiamemo-{w}-{scheme}.png")
                 if w == 1280 and scheme == "light":
-                    # o lado dos cards desce sozinho; a folha fica onde está
-                    top0 = (await memo.bounding_box())["y"]
-                    scrolled = await A.evaluate("() => { const r = document.querySelector('cronologia-app').shadowRoot.querySelector('.full-rest'); r.scrollTop = 400; return r.scrollTop; }")
+                    # as Tarefas do dia descem dentro do card; a folha, o A seguir e o placar ficam onde estão
+                    tops0 = [(await x.bounding_box())["y"] for x in (memo, pl, a.locator(".pn-time > .hero-ev"))]
+                    scrolled = await A.evaluate("() => { const r = document.querySelector('cronologia-app').shadowRoot.querySelector('#tarefas-do-dia'); r.scrollTop = 400; return r.scrollTop; }")
                     await A.wait_for_timeout(300)
-                    top1 = (await memo.bounding_box())["y"]
-                    check(scrolled > 100 and abs(top1 - top0) < 1, f"{tag}: descendo os cards, a folha fica parada ({top0:.0f} → {top1:.0f}, rolou {scrolled})")
+                    tops1 = [(await x.bounding_box())["y"] for x in (memo, pl, a.locator(".pn-time > .hero-ev"))]
+                    check(scrolled > 100 and all(abs(x - y) < 1 for x, y in zip(tops0, tops1)), f"{tag}: descendo as tarefas, o resto fica parado ({tops0} → {tops1}, rolou {scrolled})")
             # saindo, a Agora volta como era
             await A.keyboard.press("Escape"); await A.wait_for_timeout(500)
             check(not await A.evaluate(FULL) and await a.locator(".full-cols").count() == 0 and await a.locator(".panel.memo .memo-more").count() == 1, f"{tag}: saindo, a folha volta dobrada no lugar dela")
@@ -136,8 +141,8 @@ async def main():
         a = A.locator("cronologia-app")
         await A.evaluate("() => document.querySelector('cronologia-app')._loadMemoria(true)"); await A.wait_for_timeout(600)  # past the cache of the server
         await a.locator(".full-btn").click(); await A.wait_for_timeout(600)
-        check(await A.evaluate(FULL) and await a.locator(".full-cols").count() == 0 and await a.locator(".now-cols").count() == 1, "sem folha agora: as duas colunas de sempre")
-        check(await a.locator(".now-side > #placar-agora").count() == 1, "sem folha agora: o placar no alto da coluna dos remédios")
+        check(await A.evaluate(FULL) and await a.locator(".pn-cols.two").count() == 1 and await a.locator(".full-memo").count() == 0, "sem folha agora: as duas colunas do painel")
+        check(await a.locator(".pn-day > #placar-agora").count() == 1, "sem folha agora: o placar embaixo das Tarefas do dia")
         await A.screenshot(path=f"{SP}/shots/crcheiamemo-sem-folha.png")
         await ctx.close()
         check(not errs, f"sem erros na página {errs[:2]}")

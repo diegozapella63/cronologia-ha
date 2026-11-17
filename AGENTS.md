@@ -22,7 +22,8 @@ cronologia/DOCS.md                manual do usuário (aba Documentação no HA)
 cronologia/rootfs/app/server.js   servidor (Node 22, sem dependências: só módulos do Node)
 cronologia/rootfs/app/lib/        regras: kinds.js (modelos e a tela Agora), home.js, store.js, mirror.js, todos.js, ferramentas.js e correria.js (CorrerIA)...
 cronologia/rootfs/app/www/        interface já gerada (não editar à mão)
-frontend/src/                     código da interface (Lit, sem framework além disso); whenpick.js: horário e data no visual
+frontend/src/                     código da interface (Lit, sem framework além disso); painel.js: a Tela cheia da Agora como
+                                  o painel da casa (A seguir, Depois, Tarefas do dia, o placar, a folha do MemorIA); whenpick.js: horário e data no visual
                                   do app; offfold.js: a seção dos inativos no fim, recolhida
 preview/cronologia-preview.html   prévia gerada pelo build, abre sem servidor
 dev/fake-ha.mjs                   Home Assistant simulado para desenvolver e testar
