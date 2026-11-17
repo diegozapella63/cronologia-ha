@@ -429,7 +429,8 @@ class Session {
         const usuario = !casa && this.user.id && /^[A-Za-z0-9_-]{1,80}$/.test(this.user.id) ? this.user.id : "";
         const hora = typeof msg.hora === "string" ? msg.hora : "";
         const dia = typeof msg.dia === "string" ? msg.dia : "";
-        return this.result(id, await memoria.agora({ usuario, pessoa: casa ? "" : home.personOfUser(this.user.id, this.user.name) || "", hora, dia }, { fresh: !!msg.fresh }));
+        // 1.98.0: the Tela cheia steps through the next sheets: 8 times ahead
+        return this.result(id, await memoria.agora({ usuario, pessoa: casa ? "" : home.personOfUser(this.user.id, this.user.name) || "", hora, dia, proximos: casa ? 8 : 0 }, { fresh: !!msg.fresh }));
       }
 
       case "cronologia/score/reassign":

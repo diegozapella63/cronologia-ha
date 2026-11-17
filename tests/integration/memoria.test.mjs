@@ -63,7 +63,7 @@ describe("MemorIA", () => {
   });
   it("1.89.0: the Tela cheia asks the house's (every block, like the Tela cheia of the MemorIA): no user, no person", async () => {
     await c.call("cronologia/memoria/agora", { casa: true, hora: "18:05", dia: "2026-11-09" });
-    assert.equal(asked.at(-1).url, "/api/integracao/agora?hora=18%3A05&dia=2026-11-09");
+    assert.equal(asked.at(-1).url, "/api/integracao/agora?hora=18%3A05&dia=2026-11-09&proximos=8", "and the times ahead, for ‹ and › (1.98.0)");
     const n = asked.length;
     await c.call("cronologia/memoria/agora", { hora: "18:05", dia: "2026-11-09" });
     assert.equal(asked.length, n + 1, "the person's is another answer (not the house's from the cache)");

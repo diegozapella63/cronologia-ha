@@ -326,6 +326,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     clearInterval(this._tick);
     clearInterval(this._themeTimer);
     clearTimeout(this._toastTimer);
+    clearTimeout(this._memoBack);
     this._stopStream();
     if (this._store) this._store.dispose();
   }
@@ -362,6 +363,13 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     if (e.key === "Escape" && this._full && !this._embed && !this._sheet && !this._cam) {
       const t = (e.composedPath && e.composedPath()[0]) || e.target;
       if (!(t && t.closest && t.closest(".sheet"))) this._setFull(false);
+      return;
+    }
+    // 1.98.0: Tela cheia, → and ← step through the next sheets of the MemorIA (unless something is being typed)
+    if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && this._fullOn() && !this._sheet && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      const t = (e.composedPath && e.composedPath()[0]) || e.target;
+      if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
+      if (this._memoStep(e.key === "ArrowRight" ? 1 : -1)) e.preventDefault();
       return;
     }
     if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || this._sheet || this._fullOn()) return;

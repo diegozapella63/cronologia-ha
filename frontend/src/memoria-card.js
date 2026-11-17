@@ -16,6 +16,10 @@ const EXTRA = { framboesa: { id: "framboesa", fill: "#E8508A", ink: "#A3124F" } 
 const CHECK = /^\s*(☐|☑|\[ \]|\[[xX]\])/;
 const DONE = /^\s*(☑|\[[xX]\])/;
 const SHOWN_LINES = 6;
+// 1.98.0: in the Tela cheia, a next sheet shown goes back to the one of now by itself after this (no touch)
+export const MEMO_BACK_MS = 3 * 60 * 1000;
+/** A time of the MemorIA, the same across the answers of the minute (to keep the one shown). */
+export const memoKey = (t) => `${t.bloco_id}|${t.inicio}|${t.amanha ? 1 : 0}`;
 // MemorIA 1.32.0 (texto_formatado): **negrito**, ++maior++ and {cor:texto}, as in its lib/format.js (one line each, no
 // braces inside); the colors are the five of its bar of the writing
 const FORMAT_COLORS = ["vermelho", "laranja", "verde", "azul", "lilas"];
@@ -95,6 +99,30 @@ export const MemoriaMixin = (Base) =>
       this.requestUpdate();
     }
 
+    /** 1.98.0: the Tela cheia, one time ahead (1) or back (-1); after 3 minutes without a step, the one of now again. */
+    _memoStep(d) {
+      const m = this._memo;
+      const list = (m && m.trechos) || [];
+      if (!list.length || !list[0].agora) return false;
+      const at = this._memoPick ? Math.max(0, list.findIndex((t) => memoKey(t) === this._memoPick)) : 0;
+      const to = Math.max(0, Math.min(list.length - 1, at + d));
+      if (to === at) return false;
+      this._memoPick = to ? memoKey(list[to]) : null;
+      clearTimeout(this._memoBack);
+      if (to) this._memoBack = setTimeout(() => ((this._memoPick = null), this._memoTop()), MEMO_BACK_MS);
+      this._memoTop();
+      return true;
+    }
+
+    /** Draws the sheet again, from its top (another time: its text starts at the beginning). */
+    _memoTop() {
+      this.requestUpdate();
+      Promise.resolve(this.updateComplete).then(() => {
+        const ink = this.renderRoot && this.renderRoot.querySelector && this.renderRoot.querySelector(".memo-full .memo-ink");
+        if (ink) ink.scrollTop = 0;
+      });
+    }
+
     /** From updated(): while Agora is open, once a minute and when the next start time comes. */
     _memoriaTick() {
       if (!this._ready || !this._memoriaOn() || this._memoBusy || this._view().name !== "now") return;
@@ -111,8 +139,13 @@ export const MemoriaMixin = (Base) =>
       if (!this._memoriaOn() || !m || !m.ligado || m.erro || !(m.trechos || []).length) return nothing;
       // only the sheet that holds now (the MemorIA 1.14.0 may have none: the time of the one before is over); the next
       // ones only say when to ask again (memoNextChange)
-      const cur = m.trechos[0].agora ? m.trechos[0] : null;
-      if (!cur) return nothing;
+      const now = m.trechos[0].agora ? m.trechos[0] : null;
+      if (!now) return nothing;
+      // 1.98.0: in the Tela cheia, ‹ and › (or the arrows of the keyboard) step through the next times without leaving
+      // it; after 3 minutes, back to the one of now
+      const list = full ? m.trechos : [now];
+      const at = full && this._memoPick ? Math.max(0, list.findIndex((t) => memoKey(t) === this._memoPick)) : 0;
+      const cur = list[at];
       const text = cur.texto || "";
       // MemorIA 1.32.0: with the bold, the bigger and the colors (the plain text only says how long it is)
       const ink = cur.texto_formatado || text;
@@ -123,7 +156,13 @@ export const MemoriaMixin = (Base) =>
       // like the sheet of the Agora of the MemorIA: the cover in the color of the block, the spiral, its paper and letters
       const sheet = html`<span class="memo-cover"></span><span class="memo-stack"></span>
         <span class="memo-leaf ${cur.papel || "pautado"}">
-          <span class="memo-top"><span class="memo-name">${cur.bloco}${cur.outros ? html` <small>+${cur.outros}</small>` : nothing}</span><span class="memo-pin">${icon("clock")}${cur.inicio}</span></span>
+          <span class="memo-top"><span class="memo-name">${cur.bloco}${cur.outros ? html` <small>+${cur.outros}</small>` : nothing}</span>${full
+            ? html`<span class="memo-nav">
+                <button class="memo-step" ?hidden=${at === 0} aria-label="Horário anterior" title="Horário anterior" @click=${() => this._memoStep(-1)}>${icon("chevron-left")}</button>
+                <span class="memo-pin ${at ? "next" : ""}">${icon("clock")}${cur.amanha ? "amanhã " : ""}${cur.inicio}</span>
+                <button class="memo-step" ?hidden=${at >= list.length - 1} aria-label="Próximo horário" title="Próximo horário" @click=${() => this._memoStep(1)}>${icon("chevron-right")}</button>
+              </span>`
+            : html`<span class="memo-pin">${icon("clock")}${cur.inicio}</span>`}</span>
           ${text.trim()
             ? html`<span class="memo-ink ${cur.letra === "normal" ? "normal" : ""} ${open ? "open" : ""}">${lines.map((l, i) => {
                 const ck = CHECK.test(l);
@@ -133,15 +172,17 @@ export const MemoriaMixin = (Base) =>
             : html`<span class="memo-ink empty">Folha em branco.</span>`}
         </span>
         <span class="memo-spiral" aria-hidden="true">${RINGS}</span>`;
-      // tapping opens the MemorIA (its address in Home Assistant), from the page around this one
-      const label = `${cur.bloco}: a folha de agora, ${since}`;
-      const pad = m.painel
-        ? html`<a class="memo-pad" href=${m.painel} target="_top" aria-label=${label}>${sheet}</a>`
-        : html`<div class="memo-pad" role="group" aria-label=${label}>${sheet}</div>`;
+      // tapping opens the MemorIA (its address in Home Assistant), from the page around this one; not in the Tela cheia
+      // (1.98.0: it would leave it), where the sheet stays here
+      const label = at ? `${cur.bloco}: a folha de ${cur.amanha ? "amanhã às " : ""}${cur.inicio}` : `${cur.bloco}: a folha de agora, ${since}`;
+      const pad =
+        m.painel && !full
+          ? html`<a class="memo-pad" href=${m.painel} target="_top" aria-label=${label}>${sheet}</a>`
+          : html`<div class="memo-pad" role="group" aria-label=${label}>${sheet}</div>`;
       const style = colorVars(this._memoColor(cur.cor), this._dark);
       // Tela cheia (1.93.0): only the sheet, no heading (the sheet says the block and the time), the height of the
-      // screen; what doesn't fit scrolls inside the sheet
-      if (full) return html`<div class="panel memo memo-full" id="memoria" style=${style}>${pad}</div>`;
+      // screen; what doesn't fit scrolls inside the sheet (another time starts at the top: _memoTop)
+      if (full) return html`<div class="panel memo memo-full${at ? " memo-ahead" : ""}" id="memoria" style=${style}>${pad}</div>`;
       return html`<div class="panel memo" id="memoria" style=${style}>
         <div class="chores-head sec-head"><span class="sec-ic memo-ic">${icon("notebook-pen")}</span><span class="overline">MemorIA</span><small>${since}</small></div>
         ${pad}
@@ -290,6 +331,41 @@ export const memoriaStyles = css`
   .memo-pin .i {
     width: 15px;
     height: 15px;
+  }
+  /* 1.98.0: the Tela cheia: ‹ the time › (a next one: in the color of the ink, not of now) */
+  .memo-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+  }
+  .memo-pin.next {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .memo-step {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--ink-soft);
+    background: color-mix(in srgb, var(--ink-soft) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ink-soft) 25%, transparent);
+    font: inherit;
+    cursor: pointer;
+  }
+  .memo-step[hidden] {
+    display: grid;
+    visibility: hidden;
+  }
+  .memo-step:hover {
+    background: color-mix(in srgb, var(--ink-soft) 22%, transparent);
+  }
+  .memo-step .i {
+    width: 22px;
+    height: 22px;
   }
   .memo-ink {
     display: -webkit-box;

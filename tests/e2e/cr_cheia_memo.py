@@ -101,6 +101,24 @@ async def main():
                 over = await A.evaluate("() => { const m = document.querySelector('cronologia-app').shadowRoot.querySelector('main'); return m.scrollWidth - m.clientWidth; }")
                 check(over <= 0, f"{tag}: nada passa da largura ({over})")
                 await A.screenshot(path=f"{SP}/shots/crcheiamemo-{w}-{scheme}.png")
+                if w == 1280 and scheme == "dark":
+                    # 1.98.0: › e ‹ (e as setas do teclado) passam pelos próximos horários, sem sair da tela cheia
+                    check(any("proximos=8" in q for q in ASKED), f"{tag}: pede os próximos horários ao MemorIA")
+                    check(await memo.locator("a.memo-pad").count() == 0, f"{tag}: a folha não leva para fora da tela cheia")
+                    nxt, prv = memo.locator("button[aria-label='Próximo horário']"), memo.locator("button[aria-label='Horário anterior']")
+                    check(await nxt.is_visible() and not await prv.is_visible(), f"{tag}: agora: só o ›")
+                    await A.evaluate("() => { const i = document.querySelector('cronologia-app').shadowRoot.querySelector('.full-memo .memo-ink'); i.scrollTop = 200; }")
+                    await nxt.click(); await A.wait_for_timeout(300)
+                    pin = (await memo.locator(".memo-pin").inner_text()).strip()
+                    top = await a.evaluate("(el) => el.renderRoot.querySelector('.full-memo .memo-ink').scrollTop")
+                    check(pin == "amanhã 07:00" and "Manhã" in await memo.inner_text() and top == 0, f"{tag}: o próximo horário, do começo ({pin}, {top})")
+                    check(await A.evaluate(FULL) and await prv.is_visible() and not await nxt.is_visible(), f"{tag}: continua na tela cheia, com o ‹ (e sem o ›: era o último)")
+                    await A.screenshot(path=f"{SP}/shots/crcheiamemo-proximo.png")
+                    await A.keyboard.press("ArrowLeft"); await A.wait_for_timeout(300)
+                    check((await memo.locator(".memo-pin").inner_text()).strip() == "18:00", f"{tag}: ← volta para agora")
+                    await A.keyboard.press("ArrowRight"); await A.wait_for_timeout(300)
+                    check((await memo.locator(".memo-pin").inner_text()).strip() == "amanhã 07:00", f"{tag}: → vai para o próximo")
+                    await A.keyboard.press("ArrowLeft"); await A.wait_for_timeout(300)
                 if w == 1280 and scheme == "light":
                     # as Tarefas do dia descem dentro do card; a folha, o A seguir e o placar ficam onde estão
                     tops0 = [(await x.bounding_box())["y"] for x in (memo, pl, a.locator(".pn-time > .hero-ev"))]
@@ -142,6 +160,7 @@ async def main():
         a = A.locator("cronologia-app")
         await A.evaluate("() => document.querySelector('cronologia-app')._loadMemoria(true)"); await A.wait_for_timeout(600)  # past the cache of the server
         await a.locator(".full-btn").click(); await A.wait_for_timeout(600)
+        await A.evaluate("() => document.querySelector('cronologia-app')._loadMemoria(true)"); await A.wait_for_timeout(600)  # the Tela cheia asks apart (proximos)
         check(await A.evaluate(FULL) and await a.locator(".pn-cols.two").count() == 1 and await a.locator(".full-memo").count() == 0, "sem folha agora: as duas colunas do painel")
         check(await a.locator(".pn-day > #placar-agora").count() == 1, "sem folha agora: o placar embaixo das Tarefas do dia")
         await A.screenshot(path=f"{SP}/shots/crcheiamemo-sem-folha.png")

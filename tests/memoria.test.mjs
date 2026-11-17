@@ -60,6 +60,23 @@ describe("Memoria", () => {
     assert.equal(out.pessoa, "Ana");
     assert.deepEqual(out.trechos.map((t) => [t.inicio, t.agora, t.amanha, t.bloco]), [["18:00", true, false, "Diário"], ["07:00", false, true, "Diário"], ["12:00", false, true, "Cozinha"]]);
   });
+  it("1.98.0: proximos (the Tela cheia): asked of the MemorIA and kept apart; 2 or less, as before", async () => {
+    writeInfo(INFO);
+    const many = { ...ANSWER, trechos: Array.from({ length: 12 }, (_, i) => ({ ...ANSWER.trechos[0], agora: i === 0, inicio: `${String(10 + i).padStart(2, "0")}:00` })) };
+    const f = mock.method(globalThis, "fetch", async () => reply(200, many));
+    const m = new Memoria({ shareDir: share, log: makeLog(), enabled: () => true });
+    let out = await m.agora({ proximos: 8 });
+    assert.equal(f.mock.calls[0].arguments[0], "http://a1b2c3d4-memoria:8099/api/integracao/agora?proximos=8");
+    assert.equal(out.trechos.length, 9);
+    out = await m.agora({});
+    assert.equal(f.mock.callCount(), 2, "not the same answer");
+    assert.equal(f.mock.calls[1].arguments[0], "http://a1b2c3d4-memoria:8099/api/integracao/agora");
+    assert.equal(out.trechos.length, 3);
+    await m.agora({ proximos: 2 });
+    assert.equal(f.mock.callCount(), 2, "2: the same as without");
+    await m.agora({ proximos: 99 });
+    assert.match(f.mock.calls[2].arguments[0], /proximos=12$/);
+  });
   it("without a person: no query", async () => {
     writeInfo(INFO);
     const f = mock.method(globalThis, "fetch", async () => reply(200, { trechos: [] }));

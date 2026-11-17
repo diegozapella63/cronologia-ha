@@ -106,7 +106,7 @@ export class Memoria {
    * The trechos of now for the person of a screen: {ligado, encontrado, erro, versao, painel, pessoa, trechos}.
    * Off or not installed: nothing is asked. A person's answer is kept until the next start time (at most ttl).
    */
-  async agora({ usuario = "", pessoa = "", hora = "", dia = "" } = {}, { fresh = false } = {}) {
+  async agora({ usuario = "", pessoa = "", hora = "", dia = "", proximos = 0 } = {}, { fresh = false } = {}) {
     if (!this.enabled()) return { ligado: false, encontrado: !!this.info(), erro: null, trechos: [] };
     const info = this.info();
     if (!info) {
@@ -115,7 +115,9 @@ export class Memoria {
     }
     // the clock of the phone (hora, dia): one answer per minute of it; without it, the server's (until the next change)
     const clock = HM.test(hora) && DIA.test(dia) ? `${dia} ${hora}` : "";
-    const key = `${usuario}|${pessoa}|${clock}`;
+    // 1.98.0: the Tela cheia asks for more times ahead (it steps through them; a MemorIA before 1.33.0 sends 2)
+    const more = Number.isInteger(proximos) && proximos > 2 ? Math.min(proximos, 12) : 0;
+    const key = `${usuario}|${pessoa}|${clock}|${more}`;
     const hit = this.cache.get(key);
     if (!fresh && hit && Date.now() < hit.until) return hit.out;
     if (this.busy.has(key)) return this.busy.get(key);
@@ -124,11 +126,12 @@ export class Memoria {
       if (usuario) q.set("usuario", usuario);
       if (pessoa) q.set("pessoa", pessoa);
       if (clock) (q.set("hora", hora), q.set("dia", dia));
+      if (more) q.set("proximos", String(more));
       const route = /^\/api\/integracao\/[a-z]+$/.test(info.agora || "") ? info.agora : "/api/integracao/agora";
       let out;
       try {
         const res = await this.request(info, `${route}${q.toString() ? `?${q}` : ""}`);
-        const trechos = (Array.isArray(res.trechos) ? res.trechos : []).map(cleanTrecho).filter(Boolean).slice(0, 3);
+        const trechos = (Array.isArray(res.trechos) ? res.trechos : []).map(cleanTrecho).filter(Boolean).slice(0, 1 + (more || 2));
         out = { ligado: true, encontrado: true, erro: null, versao: str(res.versao, 20) || null, painel: cleanPainel(info.painel), pessoa: str(res.pessoa, 80), trechos };
         if (this.lastLog !== "ok") this.log.info(`MemorIA ${out.versao || ""} conectado`);
         this.lastLog = "ok";

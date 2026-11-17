@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.98.0
+
+- **Tela cheia com a folha do MemorIA**: as setas **‹** e **›** ao lado do horário da folha (ou as setas **←** e **→** do teclado) mostram as folhas dos próximos horários, amanhã também, sem sair da tela cheia. Depois de 3 minutos sem mexer, volta sozinha para a folha de agora. Na tela cheia, tocar na folha não abre mais o MemorIA (isso tirava da tela cheia). Para ver mais de dois horários adiante, atualize o MemorIA para a 1.33.0.
+
 ## 1.97.0
 
 - **Tela cheia**: o que está **Acontecendo agora** (um compromisso em andamento, um remédio na hora) vem em primeiro lugar, acima do **A seguir**, em destaque: o ponto que pisca e, nos compromissos, uma barrinha com quanto já passou.

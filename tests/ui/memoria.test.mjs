@@ -7,7 +7,8 @@ import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { text, render, fire, click, fakeApi, hostOf } from "../_lit.mjs";
-import { MemoriaMixin, memoLong, memoNextChange, memoParts } from "../../frontend/src/memoria-card.js";
+import { MemoriaMixin, memoLong, memoNextChange, memoParts, memoKey, MEMO_BACK_MS } from "../../frontend/src/memoria-card.js";
+import { mock } from "node:test";
 
 const NOW = at(2026, 11, 8, 20, 50);
 const T = (inicio, extra = {}) => ({ inicio, agora: false, ontem: false, amanha: false, bloco: "Diário", bloco_id: "b1", cor: "lilas", folha_id: `f${inicio}`, titulo: "Noite", texto: "Noite\n☐ Ler 20 páginas\n☑ Conferir a agenda", tipo: "trecho", outros: 0, ...extra });
@@ -99,6 +100,48 @@ describe("Agora › MemorIA", () => {
     assert.match(text(view), /18:00/, "and the time");
     assert.match(h, /aria-label="Diário: a folha de agora, desde 18:00 até 20:00"/);
     assert.match(h, /class="memo-ink\s+open"/);
+  });
+  it("1.98.0: in the Tela cheia, › and ‹ step through the next times (not a link: it would leave it); 3 minutes, back to now", () => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+    try {
+      const app = new App({ memo: OK(THREE) });
+      let h = render(app._renderMemoriaPanel(true)).html;
+      assert.doesNotMatch(h, /<a class="memo-pad"/, "no link in the Tela cheia");
+      assert.match(h, /aria-label="Horário anterior"[^>]*hidden|hidden[^>]*aria-label="Horário anterior"/, "now: no ‹");
+      assert.match(render(app._renderMemoriaPanel(false)).html, /<a class="memo-pad"/, "the card of Agora still opens the MemorIA");
+      assert.equal(app._memoStep(-1), false, "nothing before now");
+      assert.equal(app._memoStep(1), true);
+      assert.equal(app._memoPick, memoKey(THREE[1]));
+      let view = app._renderMemoriaPanel(true);
+      h = render(view).html;
+      assert.match(text(view), /amanhã 07:00/);
+      assert.match(h, /class="memo-pin next"/);
+      assert.match(h, /aria-label="Diário: a folha de amanhã às 07:00"/);
+      assert.match(h, /memo-full memo-ahead/);
+      app._memoStep(1);
+      view = app._renderMemoriaPanel(true);
+      assert.match(text(view), /Cozinha[\s\S]*amanhã 12:00/);
+      assert.match(render(view).html, /aria-label="Próximo horário"[^>]*hidden|hidden[^>]*aria-label="Próximo horário"/, "the last: no ›");
+      assert.equal(app._memoStep(1), false);
+      app._memoStep(-1);
+      assert.equal(app._memoPick, memoKey(THREE[1]));
+      mock.timers.tick(MEMO_BACK_MS - 1000);
+      assert.equal(app._memoPick, memoKey(THREE[1]), "a step counts the time again");
+      mock.timers.tick(1000);
+      assert.equal(app._memoPick, null, "3 minutes: back to now");
+      assert.match(text(app._renderMemoriaPanel(true)), /Diário[\s\S]*18:00/);
+      // the one shown is gone from the answer (its time came): the one of now
+      app._memoStep(1);
+      app._memo = OK([T("07:00", { agora: true })]);
+      assert.match(text(app._renderMemoriaPanel(true)), /07:00/);
+      assert.doesNotMatch(text(app._renderMemoriaPanel(true)), /amanhã/);
+      // the card of Agora (not the Tela cheia) always shows now
+      app._memo = OK(THREE);
+      app._memoStep(1);
+      assert.doesNotMatch(text(app._renderMemoriaPanel(false)), /amanhã/);
+    } finally {
+      mock.timers.reset();
+    }
   });
   it("an empty sheet: Folha em branco", () => {
     assert.match(text(new App({ memo: OK([T("18:00", { agora: true, texto: "", titulo: "", folha_id: null })]) })._renderMemoriaPanel()), /Folha em branco\./);
