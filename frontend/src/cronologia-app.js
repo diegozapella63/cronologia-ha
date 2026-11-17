@@ -80,6 +80,16 @@ const EMBED = (() => {
     return false;
   }
 })();
+// 1.97.0: ?conversa=1 (the CorrerIA 1.4.0): the buttons of its Conversa and of its Sair da tela cheia in the top of the
+// panel, in place of its strip at the side; they tell the page around (postMessage {painel: "conversa" | "sair"}), and it
+// tells back whether its Conversa is open or has a new answer ({conversa: {aberta, novidade}})
+const EMBED_CHAT = (() => {
+  try {
+    return EMBED && new URLSearchParams(location.search).has("conversa");
+  } catch {
+    return false;
+  }
+})();
 
 const PLATFORMS = {
   local_calendar: { label: "Calendário local", icon: "calendar" },
@@ -183,6 +193,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     _desk: { state: true },
     _wide: { state: true },
     _full: { state: true },
+    _conv: { state: true },
     api: { attribute: false },
     env: { attribute: false },
     _ready: { state: true },
@@ -254,6 +265,16 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     // 1.87.0: Tela cheia of Agora; leaving the fullscreen of the browser (its own Esc, the Voltar of the phone) leaves it too.
     // 1.92.2: only on a big screen (1100 px or more, like the MemorIA): the button, and a screen that gets narrow leaves it
     this._embed = EMBED;
+    this._conv = null; // {aberta, novidade}: the Conversa of the CorrerIA around, for its button (1.97.0)
+    this._embedChat = EMBED_CHAT;
+    this._onSlotResize = () => this._tellChatSlot && this._tellChatSlot();
+    this._onParentMsg = (ev) => {
+      if (!EMBED_CHAT || ev.origin !== location.origin || ev.source !== window.parent) return;
+      const c = ev.data && ev.data.conversa;
+      if (!c || typeof c !== "object") return;
+      const now = { aberta: !!c.aberta, novidade: !!c.novidade };
+      if (!this._conv || this._conv.aberta !== now.aberta || this._conv.novidade !== now.novidade) this._conv = now;
+    };
     this._full = EMBED;
     this._wideMq = window.matchMedia ? window.matchMedia(`(min-width: ${FULL_MIN}px)`) : null;
     this._wide = !!(this._wideMq && this._wideMq.matches);
@@ -278,6 +299,9 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     ensureFonts();
     window.addEventListener("popstate", this._onPopState);
     window.addEventListener("keydown", this._onKey);
+    window.addEventListener("message", this._onParentMsg);
+    window.addEventListener("resize", this._onSlotResize);
+    if (EMBED_CHAT) this._tellParent("pronto"); // the CorrerIA tells back whether its Conversa is open
     document.addEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.addEventListener) this._mql.addEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.addEventListener) this._deskMq.addEventListener("change", this._onDesk);
@@ -292,6 +316,8 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     super.disconnectedCallback();
     window.removeEventListener("popstate", this._onPopState);
     window.removeEventListener("keydown", this._onKey);
+    window.removeEventListener("message", this._onParentMsg);
+    window.removeEventListener("resize", this._onSlotResize);
     document.removeEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.removeEventListener) this._mql.removeEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.removeEventListener) this._deskMq.removeEventListener("change", this._onDesk);
@@ -308,8 +334,30 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     if (changed.has("api") && this.api && !this._started && this.isConnected) this._start();
   }
 
+  /** 1.97.0: to the CorrerIA around (?painel=1&conversa=1): "conversa" (open or close its Conversa) or "sair". */
+  _tellParent(acao) {
+    try {
+      window.parent.postMessage({ painel: acao }, location.origin);
+    } catch {
+      /* nothing around */
+    }
+  }
+
+  /** 1.97.0: Ctrl+Espaço opens the Conversa, and closes it when open (inside the CorrerIA, its Conversa). */
+  _toggleChatKey() {
+    if (EMBED_CHAT) return this._tellParent("conversa"), true;
+    if (this._sheet === "chat") return this._closeSheet(), true;
+    if (this._sheet || !this._aiOn() || !(this._ai && this._ai.ready)) return false;
+    this._openChat();
+    return true;
+  }
+
   /** "/" opens the search (Calendário › Lista) with the cursor in it, unless something is being typed. */
   _onKey = (e) => {
+    if (e.ctrlKey && !e.altKey && !e.metaKey && (e.code === "Space" || e.key === " ")) {
+      if (this._toggleChatKey()) e.preventDefault();
+      return;
+    }
     // Tela cheia: Esc leaves it (a window open over it closes first, by its own Esc)
     if (e.key === "Escape" && this._full && !this._embed && !this._sheet && !this._cam) {
       const t = (e.composedPath && e.composedPath()[0]) || e.target;
@@ -428,6 +476,8 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
   updated(changed) {
     this.toggleAttribute("dark", this._dark);
     this.toggleAttribute("full", this._fullOn());
+    // 1.97.0: inside the CorrerIA, where its Conversa goes (after the layout of this render)
+    if (this._embedChat) requestAnimationFrame(() => this._tellChatSlot());
     // left Agora (a link in a card): the Tela cheia ends there
     if (this._full && !this._embed && this._ready && this._shownView().name !== "now") this._setFull(false, true);
     this._markTabs();
@@ -1887,7 +1937,16 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     if (this._view().name !== "now" || !this._cals().length || (!this._wide && !this._embed)) return h1;
     const on = this._fullOn();
     // inside the CorrerIA: the clock only (the CorrerIA has its own Sair da tela cheia)
-    if (this._embed) return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}</div>`;
+    if (this._embed) {
+      // 1.97.0: inside the CorrerIA, its Conversa and its Sair da tela cheia here at the top (no strip at its side)
+      const tell = (acao) => this._tellParent(acao);
+      const c = this._conv || {};
+      const chat = EMBED_CHAT
+        ? html`<button class="full-btn conv ${c.aberta ? "on" : ""} ${c.novidade ? "novo" : ""}" aria-pressed=${c.aberta ? "true" : "false"} @click=${() => tell("conversa")} aria-label="Conversa" title="Conversa">${icon("message-circle")}</button>
+            <button class="full-btn" @click=${() => tell("sair")} aria-label="Sair da tela cheia" title="Sair da tela cheia">${icon("minimize")}</button>`
+        : nothing;
+      return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}${chat}</div>`;
+    }
     const label = on ? "Sair da tela cheia" : "Tela cheia";
     // 1.94.0: in the Tela cheia, the clock, big (for the TV)
     return html`<div class="title-row">${h1}${on ? html`<span class="full-clock">${hm(new Date(this._now))}</span>` : nothing}<button class="full-btn" @click=${() => this._setFull(!on)} aria-label=${label} title=${label}>${icon(on ? "minimize" : "maximize")}</button></div>`;

@@ -153,15 +153,37 @@ export const PainelMixin = (Base) =>
     _renderPainel({ head, events, memo, top = nothing, placar = nothing }) {
       const now = new Date(this._now);
       const p = this._painelPlan(events);
-      const has = memo !== nothing;
+      // 1.97.0: inside the CorrerIA, its Conversa open takes the place of the sheet (the rest stays where it was): an
+      // empty column here, where the page around puts it (_tellChatSlot)
+      const chat = !!(this._embedChat && this._conv && this._conv.aberta);
+      const has = memo !== nothing || chat;
       return html`<section class="page now-page full-page painel">
         ${head}
         <div class="full-cols pn-cols ${has ? "three" : "two"}">
-          <div class="pn-col pn-time">${top}${this._pnHero(p, now)}${this._pnNow(p, now)}${this._pnLater(p, now)}</div>
+          <div class="pn-col pn-time">${top}${this._pnNow(p, now)}${this._pnHero(p, now)}${this._pnLater(p, now)}</div>
           <div class="pn-col pn-day">${this._pnTasks(p, now)}${placar}</div>
-          ${has ? html`<div class="full-memo">${memo}</div>` : nothing}
+          ${chat ? html`<div class="pn-chat-slot" id="lugar-conversa" aria-hidden="true"></div>` : has ? html`<div class="full-memo">${memo}</div>` : nothing}
         </div>
       </section>`;
+    }
+
+    /**
+     * 1.97.0: where the Conversa of the CorrerIA goes (the place of the sheet), told to the page around when it changes
+     * ({painel: "lugar", x, y, w, h}, in the pixels of this page, which fills the frame).
+     */
+    _tellChatSlot() {
+      if (!this._embedChat) return;
+      const el = this.renderRoot && this.renderRoot.querySelector("#lugar-conversa");
+      const r = el ? el.getBoundingClientRect() : null;
+      const box = r ? { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) } : null;
+      const key = JSON.stringify(box);
+      if (key === this._slotSent) return;
+      this._slotSent = key;
+      try {
+        window.parent.postMessage({ painel: "lugar", ...(box || { w: 0, h: 0, x: 0, y: 0 }) }, location.origin);
+      } catch {
+        /* nothing around */
+      }
     }
 
     /** The appointments of the whole day (a birthday, a trip), at the end of Depois: a few, then +N. */
@@ -182,9 +204,10 @@ export const PainelMixin = (Base) =>
     /** Agora, under A seguir: what goes on now (an appointment, a dose whose time came). */
     _pnNow(p, now) {
       if (!p.current.length) return nothing;
-      return html`<div class="pn-now" style=${colorVars(this._pnColor(p.current[0]), this._dark)}>
-        <div class="pn-now-head"><span class="overline">Agora</span></div>
-        ${repeat(p.current, (x) => this._pnKey(x), (x) => this._pnLine(x, now))}
+      // 1.97.0: Acontecendo agora, the first thing (above A seguir), big, with the live dot and how much of it went by
+      return html`<div class="pn-now" role="group" aria-label="Acontecendo agora" style=${colorVars(this._pnColor(p.current[0]), this._dark)}>
+        <div class="pn-now-head"><span class="pn-live" aria-hidden="true"></span><span class="overline">Acontecendo agora</span></div>
+        ${repeat(p.current, (x) => this._pnKey(x), (x) => this._pnLine(x, now, { live: true }))}
       </div>`;
     }
 
@@ -282,7 +305,7 @@ export const PainelMixin = (Base) =>
      * One line of the panel: the time (in Depois), the icon of what it is in the color of its calendar, the title and
      * how it is, who, and its button (Tomei, Feito, the initials of who did it, Concluir). A tap on the text opens it.
      */
-    _pnLine(x, now, { time = false, hero = false, soon = false, late = false } = {}) {
+    _pnLine(x, now, { time = false, hero = false, soon = false, late = false, live = false } = {}) {
       const it = x.ref;
       const title = it.summary;
       let meta = [];
@@ -322,10 +345,13 @@ export const PainelMixin = (Base) =>
         if (!q) who = it.who;
       }
       const sub = meta.filter(Boolean).join(" · ");
-      return html`<div class="pn-line ${x.kind} ${late ? "late" : ""} ${soon ? "soon" : ""} ${hero ? "big" : ""}" style=${colorVars(this._pnColor(x), this._dark)}>
+      // going on now: how much of it went by (an appointment)
+      const span = live && x.kind === "evento" ? it.end - it.start : 0;
+      const went = span > 0 ? Math.min(100, Math.max(0, Math.round(((now - it.start) / span) * 100))) : -1;
+      return html`<div class="pn-line ${x.kind} ${late ? "late" : ""} ${soon ? "soon" : ""} ${hero || live ? "big" : ""}" style=${colorVars(this._pnColor(x), this._dark)}>
         ${time ? html`<span class="pn-t">${hm(x.at)}</span><span class="pn-dot" aria-hidden="true"></span>` : nothing}
         <span class="pn-ic" aria-hidden="true">${icon(KIND_IC[x.kind])}</span>
-        <button class="pn-tx" @click=${open}><b>${title}</b>${sub ? html`<small>${sub}</small>` : nothing}</button>
+        <button class="pn-tx" @click=${open}><b>${title}</b>${sub ? html`<small>${sub}</small>` : nothing}${went >= 0 ? html`<span class="pn-went" aria-hidden="true"><i style="width:${went}%"></i></span>` : nothing}</button>
         ${who ? this._pnWho(who) : nothing}
         ${act}
       </div>`;
@@ -389,11 +415,38 @@ export const painelStyles = css`
     height: 40px;
     margin: 0;
   }
+  /* 1.97.0: the Conversa of the CorrerIA around (open: pressed; a new answer: the dot) */
+  .painel > .brand-head .full-btn.conv {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    background: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  .painel > .brand-head .full-btn.conv.on {
+    box-shadow: 0 0 0 3px var(--rv-accent-soft);
+  }
+  .painel > .brand-head .full-btn.conv.novo::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--rv-late);
+    border: 2px solid var(--rv-bg);
+  }
   /* the columns: the time (A seguir, Depois), the day (Tarefas do dia, the placar) and the sheet of the MemorIA */
   .pn-col {
     min-width: 0;
     display: flex;
     flex-direction: column;
+  }
+  /* 1.97.0: the place of the Conversa of the CorrerIA (it draws it over this, in its own page) */
+  .pn-chat-slot {
+    min-height: 300px;
+    border-radius: 20px;
   }
   .pn-col > .panel {
     margin-bottom: 16px;
@@ -436,23 +489,69 @@ export const painelStyles = css`
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* Agora, above A seguir: what goes on now */
+  /* 1.97.0: Acontecendo agora, the first thing (above A seguir): what goes on now */
   .pn-now {
-    margin-bottom: 12px;
-    padding: 6px 8px 6px;
-    border-radius: 18px;
-    background: var(--rv-surface);
-    border: 1px solid var(--rv-line);
+    margin-bottom: 14px;
+    padding: 8px 8px 8px;
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--c) 12%, var(--rv-surface));
+    border: 1.5px solid color-mix(in srgb, var(--c) 50%, var(--rv-line));
+    box-shadow: var(--rv-shadow);
   }
   .pn-now-head {
-    padding: 4px 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 10px 2px;
   }
   .pn-now-head .overline {
     color: var(--ci);
     font-weight: 700;
+    font-size: 15px;
   }
   :host([dark]) .pn-now-head .overline {
     color: var(--c);
+  }
+  .pn-live {
+    width: 11px;
+    height: 11px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent);
+    animation: pn-live 2s ease-out infinite;
+  }
+  @keyframes pn-live {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 10px transparent;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pn-live {
+      animation: none;
+    }
+  }
+  .pn-now .pn-line.big .pn-tx b {
+    font-size: 30px;
+  }
+  .pn-went {
+    display: block;
+    width: 100%;
+    height: 5px;
+    margin-top: 7px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--c) 18%, transparent);
+    overflow: hidden;
+  }
+  .pn-went i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--c);
   }
   .pn-big {
     display: flex;

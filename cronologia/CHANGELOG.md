@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.97.0
+
+- **Tela cheia**: o que está **Acontecendo agora** (um compromisso em andamento, um remédio na hora) vem em primeiro lugar, acima do **A seguir**, em destaque: o ponto que pisca e, nos compromissos, uma barrinha com quanto já passou.
+- **Ctrl+Espaço** abre a Conversa e, aberta, fecha.
+- **Tela cheia dentro do CorrerIA** (1.4.0 ou mais novo): os botões da Conversa e do **Sair da tela cheia** ficam no alto do painel, ao lado do relógio, e a Conversa aberta toma o lugar da folha do MemorIA (o resto fica onde estava). Ctrl+Espaço abre e recolhe a Conversa também aqui.
+
 ## 1.96.1
 
 - **Tela cheia com a folha do MemorIA**: a coluna do **A seguir** ficou mais 10% estreita.

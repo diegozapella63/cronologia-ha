@@ -142,11 +142,11 @@ class App extends hostOf(PainelMixin, TasksMixin, RewardsMixin, ModelsMixin) {
 
 describe("the panel on the screen", () => {
   const view = () => new App()._renderPainel({ head: html`<h1>Hoje</h1>`, events: EVENTS, memo: html`<div class="panel memo">Folha</div>`, placar: html`<div class="panel board" id="placar-agora">Placar</div>` });
-  it("A seguir first, with both at 18:00; Agora under it; Depois in order with the times", () => {
+  it("Acontecendo agora first (1.97.0), then A seguir with both at 18:00; Depois in order with the times", () => {
     const t = text(view());
     const i = (s) => t.indexOf(s);
-    assert.ok(i("A seguir") < i("Agora") && i("Agora") < i("Depois"), "A seguir first");
-    assert.ok(i("Treino") < i("Dentista") && i("Dentista") < i("Agora"), "both at 18:00 in A seguir");
+    assert.ok(i("Acontecendo agora") >= 0 && i("Acontecendo agora") < i("A seguir") && i("A seguir") < i("Depois"), "Acontecendo agora first");
+    assert.ok(i("A seguir") < i("Treino") && i("Treino") < i("Dentista") && i("Dentista") < i("Depois"), "both at 18:00 in A seguir");
     assert.match(t, /18:00\s*2 compromissos/);
     assert.ok(i("Ligar para o banco") < i("Reunião da escola") && i("Reunião da escola") < i("Vitamina D") && i("Vitamina D") < i("Lixo"));
     assert.ok(i("Amanhã cedo") < i("Revisão do carro"));
@@ -163,6 +163,29 @@ describe("the panel on the screen", () => {
     assert.doesNotMatch(t, /Aluguel|Sem prazo|Caixa d'água|Varrer|Ômega 3/);
     assert.match(h, /class="full-cols pn-cols three"/);
     assert.ok(h.indexOf("pn-day") < h.indexOf("full-memo"), "the sheet on the right");
+  });
+  it("Acontecendo agora: big, with the live dot and how much of the appointment went by (1.97.0)", () => {
+    const h = render(view()).html;
+    assert.match(h, /class="pn-now" role="group" aria-label="Acontecendo agora"/);
+    assert.match(h, /class="pn-live"/);
+    assert.match(h, /class="pn-went" aria-hidden="true"><i style="width:53%"/, "Plantão 16:00–18:30 at 17:20: 53%");
+    assert.equal((h.match(/class="pn-went"/g) || []).length, 1, "only the appointment (not the dose)");
+  });
+  it("inside the CorrerIA, its Conversa open takes the place of the sheet; closed, the sheet is back (1.97.0)", () => {
+    const app = new App();
+    app._embedChat = true;
+    app._conv = { aberta: true };
+    let h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: html`<div class="panel memo">Folha</div>` })).html;
+    assert.match(h, /class="full-cols pn-cols three"/);
+    assert.match(h, /class="pn-chat-slot" id="lugar-conversa"/);
+    assert.doesNotMatch(h, /full-memo|Folha/, "the sheet hidden");
+    assert.ok(h.indexOf("pn-day") < h.indexOf("pn-chat-slot"), "in the place of the sheet");
+    h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: nothing })).html;
+    assert.match(h, /pn-cols three[\s\S]*pn-chat-slot/, "no sheet: the Conversa as the third column");
+    app._conv = { aberta: false };
+    h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: html`<div class="panel memo">Folha</div>` })).html;
+    assert.match(h, /full-memo/);
+    assert.doesNotMatch(h, /pn-chat-slot/);
   });
   it("the buttons: Tomei for whoever uses it, Tomado for a pet, Paguei, the initials of who did it", () => {
     const app = new App();

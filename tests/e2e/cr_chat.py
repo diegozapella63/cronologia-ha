@@ -46,6 +46,11 @@ async def main():
         btn = a.locator(".chat-top").first
         check(await btn.count() == 1 and await btn.get_attribute("aria-label") == "Conversar com a IA", "Agora: Conversar com a IA beside the microphone")
         await a.locator(".brand-head").first.screenshot(path=f"{SP}/shots/crh-head.png")
+        # 1.97.0: Ctrl+Espaço abre a Conversa e, aberta, fecha
+        await pg.keyboard.press("Control+Space"); await pg.wait_for_timeout(400)
+        check(await sheet.locator(".chat").count() == 1, "Ctrl+Espaço abre a Conversa")
+        await pg.keyboard.press("Control+Space"); await pg.wait_for_timeout(500)
+        check(await sheet.locator(".chat").count() == 0, "Ctrl+Espaço de novo fecha")
         await btn.click(); await pg.wait_for_timeout(400)
         chat = sheet.locator(".chat")
         ex = [t.strip() for t in await chat.locator(".chat-ex .pick").all_inner_texts()]
