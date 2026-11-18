@@ -51,6 +51,8 @@ function cleanApp(raw) {
   if ("week_start" in raw) out.week_start = raw.week_start === 1 ? 1 : raw.week_start === 0 ? 0 : null;
   if ("view" in raw) out.view = VIEWS.includes(raw.view) ? raw.view : null;
   if ("ai_entity" in raw) out.ai_entity = AI_RE.test(raw.ai_entity || "") ? raw.ai_entity : null;
+  // 1.100.0: the AI for photos and PDFs (none: the one for conversing)
+  if ("ai_photos" in raw) out.ai_photos = AI_RE.test(raw.ai_photos || "") ? raw.ai_photos : null;
   // Mais › Configurações › Integrações › Falar: the speech-to-text (stt.* or an engine of a voice assistant); null = the voice assistant's
   if ("voice_engine" in raw) out.voice_engine = /^[a-z0-9_.]{1,80}$/.test(raw.voice_engine || "") ? raw.voice_engine : null;
   if ("default_calendar" in raw) out.default_calendar = CAL_RE.test(raw.default_calendar || "") ? raw.default_calendar : null;

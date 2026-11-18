@@ -52,7 +52,7 @@ async def main():
             # ---- folding a card of Mais, kept on the device
             card = a.locator("#leitura-ia")
             head = card.locator(":scope > .fold-head")
-            check(await head.get_attribute("aria-expanded") == "true", f"{w}px: IA do Home Assistant folds, open at first")
+            check(await head.get_attribute("aria-expanded") == "true", f"{w}px: IA folds, open at first")
             await head.click(); await A.wait_for_timeout(300)
             check(await head.get_attribute("aria-expanded") == "false" and not await card.locator(".sub-box").is_visible(), f"{w}px: a tap closes it")
             await A.reload(); await A.wait_for_timeout(1500)

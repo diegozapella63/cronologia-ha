@@ -30,7 +30,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Avisos**: avisos de remédio no celular, as pessoas e pets e quem cuida.
   - **Férias**: de quando até quando as rotinas, as tarefas, os deméritos e a manutenção da casa ficam pausados (os remédios continuam).
   - **Configurações**, em quatro abas no alto, as mesmas de todos os apps da família (ficam presas no topo ao rolar; abre em Integrações):
-    - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, **trechos do MemorIA no Agora**, **CorrerIA**, **IA do Home Assistant** (o **Usar IA**), Falar, uso da IA e sensores.
+    - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, **trechos do MemorIA no Agora**, **CorrerIA**, **IA** (o **Usar IA** e a IA de cada uso), Falar, uso da IA e sensores.
     - **Dados**: exportar, backup na pasta share, importar, versões anteriores, onde ficam os dados e começar do zero.
     - **Aparência**: tema (Sistema, Claro ou Escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
     - **Opções**: **Local e notas** no Adicionar (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
@@ -388,9 +388,9 @@ No botão **Adicionar**:
 
 Você revisa título, data e horário de cada evento e escolhe o calendário antes de adicionar.
 
-### IA do Home Assistant
+### IA
 
-**Usar IA** (em **Mais › Configurações › Integrações › IA do Home Assistant**) liga ou desliga tudo o que usa IA. Desligada, somem do **Adicionar** o **Colar mensagem**, o **Escolher fotos ou PDF** e o **Digitalizar com IA**, e o app não chama a IA. O **arquivo .ics** continua em **Mais › Configurações › Dados**. Começa ligada.
+**Usar IA** (em **Mais › Configurações › Integrações › IA**) liga ou desliga tudo o que usa IA. Ligada, dá para escolher uma IA do Home Assistant **Para conversar** (a Conversa, o Falar e as mensagens coladas) e outra **Para ler fotos e PDFs** (Escolher fotos ou PDF, Digitalizar com IA e a Conversa com uma foto ou um PDF; começa **Igual à de conversar**). Assim uma IA mais barata, como o Claude Haiku, responde as perguntas, e uma mais caprichada, como o Claude Sonnet, lê as fotos. No Home Assistant, cada uma é uma tarefa de IA da integração (por exemplo, Anthropic › Adicionar tarefa de IA), com o seu modelo. Desligada, somem do **Adicionar** o **Colar mensagem**, o **Escolher fotos ou PDF** e o **Digitalizar com IA**, e o app não chama a IA. O **arquivo .ics** continua em **Mais › Configurações › Dados**. Começa ligada.
 
 **Uso da IA** (logo abaixo, em Mais › Configurações › Integrações): cada mensagem ou foto lida é uma chamada para a IA do Home Assistant. Como o Home Assistant não informa tokens nem custo, o CronologIA conta as chamadas e estima os tokens pelo tamanho do texto (uns 4 caracteres por token). Mostra hoje, os últimos 7 dias e o mês, um gráfico por dia (toque numa barra para ver o dia), os tipos de chamada e as últimas chamadas, com o link para o consumo exato no painel do provedor (Google, OpenAI ou Anthropic). O sensor `sensor.cronologia_ia_hoje` traz as chamadas de hoje, com erros, cota e tokens estimados, para um painel ou uma automação. Os números ficam em `/data/uso_ia.json` (120 dias).
 

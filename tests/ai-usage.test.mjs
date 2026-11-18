@@ -170,6 +170,14 @@ describe("ai: AI (with a fake Home Assistant)", () => {
     assert.equal(await errCode(mk("", [ENTS[0]]).resolve(true)), "no_vision");
     assert.equal(await errCode(mk("", [ENTS[2]]).resolve(false)), "unavailable");
   });
+  it("1.100.0: photos and PDFs go to the AI chosen for them; none chosen, to the one for conversing", async () => {
+    const mk = (sel, photos) => new AI({ ha: fakeHA({}), log: makeLog(), mediaDir: newDir(), selected: () => sel, selectedPhotos: () => photos });
+    assert.deepEqual([(await mk("ai_task.ollama", "ai_task.google").resolve(false)).id, (await mk("ai_task.ollama", "ai_task.google").resolve(true)).id], ["ai_task.ollama", "ai_task.google"]);
+    assert.equal((await mk("ai_task.google", "").resolve(true)).id, "ai_task.google", "none: the one for conversing");
+    assert.equal(await errCode(mk("", "ai_task.ollama").resolve(true)), "no_vision", "one that doesn't read photos says so");
+    const st = await mk("ai_task.ollama", "ai_task.google").status();
+    assert.deepEqual([st.selected, st.selected_photos, st.using.id, st.photos.id], ["ai_task.ollama", "ai_task.google", "ai_task.ollama", "ai_task.google"]);
+  });
   it("status: ready, which AI reads messages and which reads photos", async () => {
     const st = await new AI({ ha: fakeHA({ preferred: "ai_task.ollama" }), log: makeLog(), mediaDir: newDir() }).status();
     assert.equal(st.ready, true);

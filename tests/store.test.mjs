@@ -162,6 +162,7 @@ describe("Store: app settings", () => {
       voice_engine: "stt.home_assistant_cloud",
     });
     assert.deepEqual(set({ ai_entity: "conversation.x", default_calendar: "todo.x", voice_engine: "STT Cloud!" }), {});
+    assert.deepEqual([set({ ai_photos: "ai_task.claude_leitura" }).ai_photos, set({ ai_photos: "conversation.x" }).ai_photos], ["ai_task.claude_leitura", undefined], "1.100.0: the AI for photos and PDFs");
     assert.deepEqual(set({ voice_engine: "" }), {}, "empty = the voice assistant's");
   });
   it("1.90.0: Placar na tela cheia: on unless turned off (false; anything else removes it)", () => {

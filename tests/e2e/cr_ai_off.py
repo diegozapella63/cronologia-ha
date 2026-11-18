@@ -58,7 +58,7 @@ async def main():
         # 1.85.0: the settings under Placar (so the card folds), then the deméritos
         check(heads["Recompensas"] == ["Placar", "Deméritos"], f"Mais › Recompensas: Placar (the settings) and Deméritos ({heads['Recompensas']})")
         # 1.60.0: the CorrerIA with the apps of the family, before the AI; 1.61.0: the MemorIA before it
-        check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "MemorIA", "CorrerIA", "IA do Home Assistant", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
+        check(heads["Integrações"] == ["Contas do GerencIA", "Tarefas do ResolvIA", "MemorIA", "CorrerIA", "IA", "Falar", "Uso da IA", "Sensores no Home Assistant"], f"Integrações ({heads['Integrações']})")
         check(await a.locator(".mais-head .mais-ic svg").count() == len(heads["Opções"]), "each heading has its icon")
         check(heads["Aparência"] == ["Tema", "Cor do app"] and heads["Opções"] == ["Adicionar", "Semana"], "Aparência: Tema and Cor do app; Opções: Adicionar and Semana")
         # AI on by default: Novo shows the import strip
@@ -91,6 +91,17 @@ async def main():
         await open_more(a, "Integrações"); await A.wait_for_timeout(400)
         await a.locator("input[aria-label='Usar IA']").check()
         await wait_for(lambda: "ai_off" not in stored()["app"], "back on")
+        # 1.100.0: the IA card: one AI for conversing and one for photos and PDFs (none: the same)
+        await A.wait_for_timeout(800)
+        conv, fotos = a.locator("#leitura-ia select[aria-label='IA para conversar']"), a.locator("#leitura-ia select[aria-label='IA para ler fotos e PDFs']")
+        check(await conv.count() == 1 and await fotos.count() == 1, "on: Para conversar and Para ler fotos e PDFs")
+        first = await fotos.evaluate("(s) => s.options[0].textContent.trim()")
+        opts = await fotos.evaluate("(s) => [...s.options].slice(1).map((o) => o.value)")
+        check(first == "Igual à de conversar" and opts and all(o.startswith("ai_task.") for o in opts), f"photos: the same of conversing by default, then the ones that read photos ({first}, {opts})")
+        await fotos.select_option(opts[0])
+        await wait_for(lambda: stored()["app"].get("ai_photos") == opts[0], "the AI for photos saved")
+        await fotos.select_option("")
+        await wait_for(lambda: not stored()["app"].get("ai_photos"), "back to the same of conversing")
         check(extract() != (409, "ai_off"), "on: the server reads again")
         await a.locator(".tab", has_text="Agora").click(); await A.wait_for_timeout(800)
         check(await a.locator(".mic-top:not(.chat-top):visible").count() == 1, "on: Falar back on Agora")
