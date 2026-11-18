@@ -150,8 +150,8 @@ export const ChatMixin = (Base) =>
       const from = this._view().name === "calendar" && this._cursor && this._cursor > today ? startOfDay(this._cursor) : today;
       const ix = this._ix();
       const cal = (id) => (this._cal(id) || {}).name || "";
-      const agenda = (this._events(from, addDays(from, 8)) || [])
-        .filter((e) => !e.kind && !e.todo && !e.gerencia)
+      const agendaAll = (this._events(from, addDays(from, 8)) || []).filter((e) => !e.kind && !e.todo && !e.gerencia);
+      const agenda = agendaAll
         .sort((a, b) => a.start - b.start)
         .slice(0, 80)
         .map((e) => ({ titulo: e.summary || "", data: ymd(e.start), inicio: e.allDay ? null : hm(e.start), fim: e.allDay ? null : hm(e.end), calendario: cal(e.cal) }));
@@ -169,6 +169,9 @@ export const ChatMixin = (Base) =>
         manutencao: (ix.maint || []).map((m) => ({ nome: m.summary, vence: m.due, estado: m.state })),
         placar: score && this._scoreOn && this._scoreOn() ? (score.rows || []).map((r) => ({ pessoa: r.name, pontos: r.points })) : [],
         tarefas: ((todos && todos.items) || []).filter((t) => !t.done).slice(0, 60).map((t) => ({ nome: t.summary, lista: t.listName || "", prazo: t.undated || !t.due ? null : String(t.due).slice(0, 10), atrasada: !!t.overdue })),
+        // 1.101.0: how many there are, when the lists above are cut (the AI says it saw only part)
+        agenda_total: agendaAll.length,
+        tarefas_total: ((todos && todos.items) || []).filter((t) => !t.done).length,
       };
     }
 

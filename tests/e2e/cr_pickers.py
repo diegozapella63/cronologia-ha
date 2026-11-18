@@ -39,7 +39,7 @@ async def main():
                 pg.on("pageerror", lambda e: errs.append(str(e)))
                 await pg.goto(URL); await pg.wait_for_timeout(1600)
                 a = pg.locator("cronologia-app"); sheet = a.locator(".sheet")
-                surface = "rgb(23, 32, 34)" if scheme == "dark" else "rgb(255, 255, 255)"
+                surface = "rgb(28, 28, 28)" if scheme == "dark" else "rgb(255, 255, 255)"  # 1.101.0: the card of the Home Assistant theme (outside it, the default)
                 # Novo › Evento: Começa and Termina
                 await a.locator(".tab.fab").click(); await pg.wait_for_timeout(500)
                 await no_native(a, f"{k} Novo › Evento")

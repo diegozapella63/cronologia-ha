@@ -3,7 +3,8 @@
 import { at, isoLocal, flushPromises } from "./helpers.mjs";
 import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { toEvent, EventStore, eventsOfDay, layoutDay, multiDay, onDay, atSameStart } from "../frontend/src/events.js";
+import { toEvent, EventStore, eventsOfDay, layoutDay, multiDay, onDay, atSameStart, BACK_DAYS } from "../frontend/src/events.js";
+import { addDays } from "../frontend/src/util.js";
 import { searchEquips, renderEquipPicker } from "../frontend/src/equip-picker.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "../frontend/src/voice.js";
 
@@ -126,7 +127,7 @@ describe("events: EventStore", () => {
   }
   const raw = (summary, s, e, extra = {}) => ({ uid: summary, summary, start: isoLocal(s), end: isoLocal(e), ...extra });
 
-  it("ensure subscribes each calendar for the range with a week around; query returns what overlaps, sorted", async () => {
+  it("ensure subscribes each calendar for the range with BACK_DAYS before and a week after; query returns what overlaps, sorted", async () => {
     mock.timers.enable({ apis: ["Date"], now: at(2026, 11, 2, 14).getTime() });
     const api = fakeApi();
     let changes = 0;
@@ -137,7 +138,7 @@ describe("events: EventStore", () => {
     const to = at(2026, 11, 9);
     assert.equal(s.ensure(from, to), false);
     assert.equal(api.subs.length, 2);
-    assert.equal(api.subs[0].start, "2026-10-26T00:00:00-03:00");
+    assert.equal(api.subs[0].start, "2026-09-01T00:00:00-03:00", "1.101.0: 62 days before (BACK_DAYS)");
     assert.equal(api.subs[0].end, "2026-11-17T00:00:00-03:00");
     assert.equal(s.loading(from, to), true);
     api.subs[0].cb({ events: [raw("Z depois", at(2026, 11, 3, 9), at(2026, 11, 3, 10)), raw("Fora", at(2026, 10, 27, 9), at(2026, 10, 27, 10))] });
@@ -156,6 +157,27 @@ describe("events: EventStore", () => {
       ["Dia todo", "A antes"],
     );
     assert.deepEqual(s.query(at(2027, 1, 1), at(2027, 1, 2)), [], "not covered");
+  });
+  it("1.101.0: the look back of the routines (BACK_DAYS before the range) is the same window: no other window, no subscription", async () => {
+    mock.timers.enable({ apis: ["Date"], now: at(2026, 11, 2, 14).getTime() });
+    const api = fakeApi();
+    const s = new EventStore(api, () => {});
+    s.setCalendars(["calendar.a"]);
+    // the screens: Agora (today), Lista (a month), the mini calendar (6 weeks), the panel (today and tomorrow)
+    const ranges = [[at(2026, 11, 2), at(2026, 11, 3)], [at(2026, 11, 2), at(2026, 12, 2)], [at(2026, 10, 26), at(2026, 12, 7)], [at(2026, 11, 2), at(2026, 11, 4)]];
+    for (const [a, b] of ranges) s.ensure(a, b);
+    const subs = api.subs.length;
+    for (let round = 0; round < 3; round++)
+      for (const [a, b] of ranges) {
+        s.ensure(a, b);
+        assert.ok(s._covering(addDays(a, -BACK_DAYS), b), "the routines done before the range: in a window already there");
+        s.query(addDays(a, -BACK_DAYS), b);
+      }
+    assert.equal(api.subs.length, subs, "no window opened again (before, they pushed each other out)");
+    assert.equal(api.unsubs, 0, "and none dropped");
+    api.subs[1].cb({ events: [raw("Consulta", at(2026, 11, 3, 9), at(2026, 11, 3, 10)), raw("Rotina feita", at(2026, 9, 20, 9), at(2026, 9, 20, 9, 30))] });
+    assert.deepEqual(s.query(at(2026, 11, 2), at(2026, 12, 2)).map((e) => e.summary), ["Consulta"]);
+    assert.deepEqual(s.query(addDays(at(2026, 11, 2), -BACK_DAYS), at(2026, 12, 2)).map((e) => e.summary), ["Rotina feita", "Consulta"]);
   });
   it("a bad answer or a refused subscription is an error of that calendar", async () => {
     const api = fakeApi({ refuse: { code: "not_found", message: "Calendário sumiu" } });
@@ -223,13 +245,33 @@ describe("events: EventStore", () => {
     const s = new EventStore(api, () => {});
     s.setCalendars(["calendar.a"]);
     for (let m = 0; m < 5; m++) {
-      mock.timers.tick(1000);
+      mock.timers.tick(20000); // 1.101.0: one screen after the other (a window of the screen shown now stays)
       s.ensure(at(2026, 1 + m * 2, 1), at(2026, 1 + m * 2, 2));
     }
     assert.equal(s.windows.length, 4);
     await flushPromises();
     assert.equal(api.unsubs, 1);
     assert.equal(s.loading(at(2026, 1, 1), at(2026, 1, 2)), true, "the first range was dropped");
+  });
+  it("1.101.0: more ranges on one screen than 4: none dropped while in use (before, they dropped each other on every render)", async () => {
+    mock.timers.enable({ apis: ["Date"], now: at(2026, 11, 2).getTime() });
+    const api = fakeApi();
+    const s = new EventStore(api, () => {});
+    s.setCalendars(["calendar.a"]);
+    const ranges = [0, 1, 2, 3, 4, 5].map((m) => [at(2026, 1 + m * 2, 1), at(2026, 1 + m * 2, 2)]);
+    for (let render = 0; render < 3; render++) {
+      for (const [a, b] of ranges) s.ensure(a, b);
+      mock.timers.tick(500);
+    }
+    assert.equal(s.windows.length, 6);
+    assert.equal(api.subs.length, 6, "each subscribed once");
+    assert.equal(api.unsubs, 0);
+    // later, on another screen: the ones not used anymore go
+    mock.timers.tick(30000);
+    s.ensure(at(2027, 6, 1), at(2027, 6, 2));
+    await flushPromises();
+    assert.equal(s.windows.length, 4);
+    assert.equal(api.unsubs, 3);
   });
 });
 

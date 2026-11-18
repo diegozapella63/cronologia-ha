@@ -49,7 +49,9 @@ const INGRESS_IPS = new Set(["172.30.32.2"]);
 // the panel of the Tela cheia beside its Conversa. Kept in /data, for the restarts.
 const INGRESS_PATH = /^\/api\/hassio_ingress\/[A-Za-z0-9_-]{8,128}$/;
 const MAX_UPLOAD = 30 * 1024 * 1024;
-const MAX_RANGE_DAYS = 800;
+// 1.101.0: the search of the Calendário (a year back and one ahead) with the 62 days each window holds before it
+// (BACK_DAYS in events.js) and the week after: 801 days, and the 800 of before left it empty
+const MAX_RANGE_DAYS = 900;
 
 const stamp = () => new Date().toISOString().replace("T", " ").slice(0, 19);
 const log = {

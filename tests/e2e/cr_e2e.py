@@ -89,6 +89,8 @@ async def main():
         async def seen_b():
             return "Consulta e2e" in await bb.locator(".ev-row .ev-title").all_inner_texts()
         await wait_for(seen_b, "other screen shows it live (subscription)")
+        # 1.101.0: and the events of the calendars, not only the tasks (since 1.96.0 the Lista could lose them all)
+        check(len(await bb.locator(".ev-row .ev-title").all_inner_texts()) > 8, "the Lista keeps the events of the calendars")
         await bb.locator(".tab", has_text="Agora").click(); await asyncio.sleep(0.4)
         # read-only calendar: no edit/delete
         await a.locator(".ad-chip").first.click(); await A.wait_for_timeout(300)

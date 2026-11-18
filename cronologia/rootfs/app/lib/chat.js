@@ -35,7 +35,7 @@ const KEY = /^[^\r\n]{1,300}$/;
 
 export const CHAT_STRUCTURE = {
   resposta: {
-    description: "A resposta para a pessoa, em português do Brasil: curta, direta, sem palavras em inglês e sem markdown.",
+    description: "A resposta para a pessoa, em português do Brasil com os acentos: curta, direta, sem palavras em inglês e sem markdown.",
     required: true,
     selector: { text: { multiline: true } },
   },
@@ -78,6 +78,11 @@ export function cleanChat(raw) {
     placar: rows(c.placar, 20, (x) => ({ pessoa: oneLine(x.pessoa, 60), pontos: Math.round(num(x.pontos) || 0) })).filter((x) => x.pessoa),
     tarefas: rows(c.tarefas, MAX_ROWS, (x) => ({ nome: oneLine(x.nome, 160), lista: oneLine(x.lista, 60), prazo: isDate(x.prazo) ? x.prazo : null, atrasada: x.atrasada === true })).filter((x) => x.nome),
   };
+  // 1.101.0: how many the screen has, when it sends only the first ones
+  for (const k of ["agenda", "tarefas"]) {
+    const n = Math.round(num(c[`${k}_total`]) || 0);
+    if (n > context[k].length && n < 100000) context[`${k}_total`] = n;
+  }
   return { messages, context };
 }
 
@@ -85,22 +90,24 @@ const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const whenText = (now) => `${WEEKDAY[now.getDay()]}, ${now.getDate()} de ${MONTH[now.getMonth()]} de ${now.getFullYear()}, ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 const money = (v) => (v == null ? "" : `R$ ${v.toFixed(2).replace(".", ",")}`);
-const section = (title, list, line) => (list.length ? [title, ...list.map((x) => `  - ${line(x)}`)].join("\n") : "");
+const section = (title, list, line, total = 0) =>
+  list.length ? [title, ...list.map((x) => `  - ${line(x)}`), ...(total > list.length ? [`  - … e mais ${total - list.length} que não couberam aqui (são ${total} ao todo).`] : [])].join("\n") : "";
 
 /** The instructions for one turn: who the AI is, today, the screen, what the app shows and the conversation so far. */
 export function chatInstructions({ messages, context: c, arquivos = 0 }, now = new Date()) {
   const parts = [
-    section("Agenda (próximos dias):", c.agenda, (e) => `${e.data}${e.inicio ? ` ${e.inicio}${e.fim ? `–${e.fim}` : ""}` : " (dia todo)"}: ${e.titulo}${e.calendario ? ` [${e.calendario}]` : ""}`),
+    section("Agenda (próximos dias):", c.agenda, (e) => `${e.data}${e.inicio ? ` ${e.inicio}${e.fim ? `–${e.fim}` : ""}` : " (dia todo)"}: ${e.titulo}${e.calendario ? ` [${e.calendario}]` : ""}`, c.agenda_total),
     section("Rotinas da casa de hoje:", c.rotinas, (x) => `${x.nome}${x.hora ? ` às ${x.hora}` : x.periodo ? ` (${x.periodo})` : ""}${x.quem ? `, ${x.quem}` : ""}${x.pontos ? `, ${x.pontos} pontos` : ""}: ${x.feito ? (x.pulada ? "pulada" : "feita") : x.atrasada ? "atrasada" : "a fazer"}`),
     section("Remédios de hoje:", c.remedios, (x) => `${x.nome}${x.dose ? ` (${x.dose})` : ""}${x.hora ? ` às ${x.hora}` : ""}${x.quem ? `, ${x.quem}` : ""}: ${x.estado || "a tomar"}`),
     section("Contas a pagar:", c.contas, (x) => `${x.nome}${x.valor != null ? `, ${money(x.valor)}` : ""}${x.vence ? `, vence ${x.vence}` : ""}${x.atrasada ? " (atrasada)" : ""}`),
     section("Manutenção da casa:", c.manutencao, (x) => `${x.nome}${x.vence ? `, próxima ${x.vence}` : ""}${x.estado === "vencida" ? " (vencida)" : ""}`),
     section("Placar:", c.placar, (x) => `${x.pessoa}: ${x.pontos} pontos`),
-    section("Tarefas com prazo (ResolvIA):", c.tarefas, (x) => `${x.nome}${x.lista ? ` [${x.lista}]` : ""}${x.prazo ? `, prazo ${x.prazo}` : ""}${x.atrasada ? " (atrasada)" : ""}`),
+    // 1.101.0: the tasks are all the pending ones (also without a deadline), not only "com prazo"
+    section("Tarefas pendentes (ResolvIA):", c.tarefas, (x) => `${x.nome}${x.lista ? ` [${x.lista}]` : ""}${x.prazo ? `, prazo ${x.prazo}` : ", sem prazo"}${x.atrasada ? " (atrasada)" : ""}`, c.tarefas_total),
   ].filter(Boolean);
   const talk = messages.map((m) => `${m.role === "user" ? "Pessoa" : "Você"}: ${m.role === "user" ? withFiles(m) : m.text}`).join("\n");
   return [
-    "Você é a IA da CronologIA, a agenda da família no Home Assistant (compromissos, rotinas da casa, remédios, contas, manutenção e placar de recompensas). Converse em português do Brasil, de forma curta e direta, sem palavras em inglês e sem markdown.",
+    "Você é a IA da CronologIA, a agenda da família no Home Assistant (compromissos, rotinas da casa, remédios, contas, manutenção e placar de recompensas). Converse em português do Brasil, com todos os acentos e o ç (você, às, não, alimentação), de forma curta e direta, sem palavras em inglês e sem markdown.",
     "A pessoa pode perguntar sobre a agenda e a tela em que está, ou sobre qualquer outro assunto: responda das duas formas. Sobre a agenda, use só os dados abaixo; não invente compromissos.",
     `Hoje é ${whenText(now)} (${ymd(now)}).`,
     c.tela ? `A pessoa está na tela: ${c.tela}.` : "",

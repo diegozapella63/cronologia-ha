@@ -83,6 +83,8 @@ describe("chatInstructions", () => {
   const ins = chatInstructions({ messages: [{ role: "user", text: "O que tenho hoje?" }, { role: "ia", text: "Arrumar a cama." }, { role: "user", text: "E amanhã?" }], context: ctx() }, NOW);
   it("says who the AI is, the day and the screen", () => {
     assert.match(ins, /Você é a IA da CronologIA/);
+    // 1.101.0: some AIs answered without the accents: asked for them in words
+    assert.match(ins, /com todos os acentos e o ç \(você, às, não, alimentação\)/);
     assert.match(ins, /Hoje é terça-feira, 3 de novembro de 2026, 08:30 \(2026-11-03\)\./);
     assert.match(ins, /A pessoa está na tela: Agora\./);
   });
@@ -108,6 +110,22 @@ describe("chatInstructions", () => {
   });
   it("an empty agenda says so", () => {
     assert.match(chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }] }), NOW), /\(nada na agenda\)/);
+  });
+  it("1.101.0: the tasks are the pending ones, also without a deadline (not only com prazo)", () => {
+    assert.match(ins, /Tarefas pendentes \(ResolvIA\):/);
+    assert.doesNotMatch(ins, /Tarefas com prazo/);
+    const c = cleanChat({ messages: [{ role: "user", text: "x" }], context: { tarefas: [{ nome: "Lavar o carro", lista: "Casa" }] } });
+    assert.match(chatInstructions(c, NOW), /Lavar o carro \[Casa\], sem prazo/);
+  });
+  it("1.101.0: a list the screen cut says how many there are (the AI does not answer as if it saw all)", () => {
+    const agenda = Array.from({ length: 80 }, (_, i) => ({ titulo: `Compromisso ${i}`, data: "2026-11-05" }));
+    const c = cleanChat({ messages: [{ role: "user", text: "x" }], context: { agenda, agenda_total: 95, tarefas: [{ nome: "Pagar IPVA" }], tarefas_total: 61 } });
+    const t = chatInstructions(c, NOW);
+    assert.match(t, /… e mais 15 que não couberam aqui \(são 95 ao todo\)\./);
+    assert.match(t, /… e mais 60 que não couberam aqui \(são 61 ao todo\)\./);
+    const whole = chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }], context: { agenda: agenda.slice(0, 3), agenda_total: 3 } }), NOW);
+    assert.doesNotMatch(whole, /e mais/, "nothing cut: nothing said");
+    assert.doesNotMatch(chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }], context: { agenda: agenda.slice(0, 3), agenda_total: "muitos" } }), NOW), /e mais/);
   });
 });
 

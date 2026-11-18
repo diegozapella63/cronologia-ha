@@ -60,7 +60,7 @@ async def main():
         txt = await av.inner_text()
         check("Pessoa do Home Assistant" in await row("Aurora").inner_text() and "Pet" in await row("Mimi").inner_text(), "people and the pet")
         check(not re.search(r"Pixel|Galaxy|mobile_app|Automático", txt), "no device anywhere: only people")
-        check(await row("Aurora").locator("select").count() == 0, "a person with a phone in Home Assistant: nothing to pick")
+        check(await row("Aurora").locator("select:not(.p-cal)").count() == 0, "a person with a phone in Home Assistant: nothing to pick")
         mimi_sel = row("Mimi").locator("select[aria-label='Quem recebe os avisos de Mimi']")
         opts = [o.strip() for o in await mimi_sel.locator("option").all_inner_texts()]
         check(opts == ["No celular de quem cuida", "No celular de Aurora", "No celular de Davi"] and await mimi_sel.locator("option:checked").inner_text() == "No celular de quem cuida", f"the pet: Quem cuida or a person with a phone ({opts})")
@@ -110,7 +110,7 @@ async def main():
         # off: no phone alerts, the choices leave the screen
         await av.locator("input[aria-label='Avisar no celular']").uncheck()
         await wait_for(lambda: st.stored()["app"]["alerts"]["meds"] is False, "Avisar no celular off: saved")
-        check(await av.locator(".icon-btn[aria-label^='Testar']").count() == 0 and await av.locator(".field", has_text="Quem cuida").count() == 0 and await av.locator(".field", has_text="Avisar de novo").count() == 0 and await av.locator("select").count() == 0, "no sininho, no Avisar de novo, no Quem cuida, no choice")
+        check(await av.locator(".icon-btn[aria-label^='Testar']").count() == 0 and await av.locator(".field", has_text="Quem cuida").count() == 0 and await av.locator(".field", has_text="Avisar de novo").count() == 0 and await av.locator("select:not(.p-cal)").count() == 0, "no sininho, no Avisar de novo, no Quem cuida, no choice (1.99.0: the calendar of each person stays)")
         await av.locator("input[aria-label='Avisar no celular']").check()
         await wait_for(lambda: st.stored()["app"]["alerts"] == {"meds": True, "late": 30, "caregivers": ["Aurora"]}, "on again, the choices kept")
         check(not errs, f"no page errors {errs}")

@@ -7,6 +7,14 @@ import { parseKind, occurrenceKey } from "../../cronologia/rootfs/app/lib/kinds.
 
 const MAX_WINDOWS = 4;
 const POLL_MS = 5 * 60 * 1000;
+/** 1.101.0: each window also holds the 62 days before the range: a routine that comes back N days after done (up to 60)
+ * shows on the day it is due again, from the event of the day it was done (_afterDueEvents). Before, that look back was
+ * a window of its own for each range, and with the screens' windows they were more than MAX_WINDOWS: they pushed each
+ * other out before loading and the Calendário lost its events. */
+export const BACK_DAYS = 62;
+/** 1.101.0: a window used in the last seconds (by the screen shown now) is never dropped, even past MAX_WINDOWS: with
+ * more ranges on one screen than that, they dropped each other on every render and never loaded. */
+const KEEP_MS = 10000;
 
 /** Event as the screens use it. */
 export function toEvent(cal, raw) {
@@ -50,13 +58,14 @@ export class EventStore {
 
   /** Make sure [start, end) is loaded; returns true when it already was. */
   ensure(start, end) {
-    const w = this._covering(start, end);
+    // 1.101.0: covered with the BACK_DAYS before it too (a window that starts later does not have the routines done then)
+    const w = this._covering(addDays(startOfDay(start), -BACK_DAYS), end);
     if (w) {
       w.used = Date.now();
       return w.cals.size > 0 && [...w.cals.values()].every((c) => c.loaded);
     }
     const ws = {
-      start: addDays(startOfDay(start), -7),
+      start: addDays(startOfDay(start), -BACK_DAYS),
       end: addDays(startOfDay(end), 8),
       cals: new Map(),
       used: Date.now(),
@@ -185,8 +194,13 @@ export class EventStore {
 
   _gc() {
     if (this.windows.length <= MAX_WINDOWS) return;
+    const now = Date.now();
     this.windows.sort((a, b) => b.used - a.used);
-    for (const w of this.windows.splice(MAX_WINDOWS)) for (const [id] of w.cals) this._drop(w, id);
+    const keep = [];
+    const drop = [];
+    for (const w of this.windows) (keep.length < MAX_WINDOWS || now - w.used < KEEP_MS ? keep : drop).push(w);
+    this.windows = keep;
+    for (const w of drop) for (const [id] of w.cals) this._drop(w, id);
   }
 }
 

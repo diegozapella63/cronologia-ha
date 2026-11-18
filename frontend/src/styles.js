@@ -5,16 +5,18 @@ export const styles = css`
   :host {
     --rv-body: ${unsafeCSS(FONT_BODY)};
     --rv-display: ${unsafeCSS(FONT_DISPLAY)};
-    --rv-bg: #f4f8f9;
-    --rv-surface: #ffffff;
-    --rv-surface-2: #eaf2f4;
-    --rv-line: #e0eaed;
-    --rv-line-strong: #c9d8dd;
+    /* the background and the cards are the ones of the Home Assistant theme (hatema.js, the same in all the apps); the
+       grays come from them and the text, so every app of the family has the same background */
+    --rv-bg: var(--ha-bg-light, #fafafa);
+    --rv-surface: var(--ha-card-light, #ffffff);
+    --rv-surface-2: color-mix(in srgb, var(--rv-surface) 95%, var(--rv-text));
+    --rv-line: color-mix(in srgb, var(--rv-surface) 91%, var(--rv-text));
+    --rv-line-strong: color-mix(in srgb, var(--rv-surface) 81%, var(--rv-text));
     --rv-text: #142026;
     --rv-text-2: #374850;
     --rv-muted: #627780;
     --rv-faint: #9aadb4;
-    --rv-nav: #ffffff;
+    --rv-nav: var(--rv-surface);
     --rv-scrim: rgba(10, 26, 32, 0.42);
     --rv-shadow: 0 18px 50px rgba(15, 60, 75, 0.18);
     --rv-on-accent: #0c1a1f;
@@ -22,8 +24,8 @@ export const styles = css`
     --rv-late-soft: rgba(217, 45, 32, 0.1);
     --rv-today: #b45309;
     --rv-today-soft: rgba(245, 158, 11, 0.14);
-    --rv-skeleton: #e3edf0;
-    --rv-header-bg: var(--app-header-background-color, #f4f8f9);
+    --rv-skeleton: color-mix(in srgb, var(--rv-surface) 92%, var(--rv-text));
+    --rv-header-bg: var(--app-header-background-color, var(--rv-bg));
     --rv-header-fg: var(--app-header-text-color, #142026);
     --rv-nav-h: 68px;
     --rv-side-w: 272px;
@@ -38,24 +40,18 @@ export const styles = css`
     line-height: 1.5;
   }
   :host([dark]) {
-    --rv-bg: #0f1517;
-    --rv-surface: #172022;
-    --rv-surface-2: #1f2a2d;
-    --rv-line: #273437;
-    --rv-line-strong: #36474b;
+    --rv-bg: var(--ha-bg-dark, #111111);
+    --rv-surface: var(--ha-card-dark, #1c1c1c);
     --rv-text: #eef5f6;
     --rv-text-2: #cfdde0;
     --rv-muted: #8fa5ab;
     --rv-faint: #5d7378;
-    --rv-nav: #141c1e;
     --rv-scrim: rgba(0, 0, 0, 0.6);
     --rv-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
     --rv-late: #ff6b5e;
     --rv-late-soft: rgba(255, 107, 94, 0.14);
     --rv-today: #ffb547;
     --rv-today-soft: rgba(255, 181, 71, 0.14);
-    --rv-skeleton: #1f2a2d;
-    --rv-header-bg: var(--app-header-background-color, #0d1214);
     --rv-header-fg: var(--app-header-text-color, #eef5f6);
     color-scheme: dark;
   }

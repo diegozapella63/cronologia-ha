@@ -52,11 +52,11 @@ async def main():
         check(pp.get("Thor") == {}, f"saved ({pp})")
         row = av.locator(".person-row", has_text="Thor")
         check(await row.count() == 1 and "Só no CronologIA" in await row.inner_text(), "Thor in the list")
-        opts = [o.strip() for o in await row.locator("select option").all_inner_texts()]
+        opts = [o.strip() for o in await row.locator("select:not(.p-cal) option").all_inner_texts()]
         check(opts == ["No celular de quem cuida", "No celular de Aurora", "No celular de Davi"], f"who gets his alerts: Quem cuida or a person ({opts})")
-        await row.locator("select").select_option("Aurora"); await pg.wait_for_timeout(600)
+        await row.locator("select:not(.p-cal)").select_option("Aurora"); await pg.wait_for_timeout(600)
         check((prefs().get("people") or {}).get("Thor") == {"care": "Aurora"}, f"on the phone of Aurora ({prefs().get('people')})")
-        check(await row.locator("select").evaluate("(s) => s.value") == "Aurora", "his alerts: Aurora")
+        check(await row.locator("select:not(.p-cal)").evaluate("(s) => s.value") == "Aurora", "his alerts: Aurora")
         check(await row.locator(".icon-btn[aria-label^='Testar']").count() == 1 and await row.locator(".icon-btn[aria-label='Tirar Thor']").count() == 1, "Testar and Tirar")
         check(await av.locator(".person-row:has(b:text-is('Aurora'))").count() == 1 and await av.locator(".person-row:has(b:text-is('Aurora'))").locator(".icon-btn[aria-label^='Tirar']").count() == 0, "a person of Home Assistant cannot be taken out")
         await pg.screenshot(path=f"{SP}/shots/crp-list.png")
@@ -68,7 +68,7 @@ async def main():
         await av.locator(".person-add .btn", has_text="Cancelar").click(); await pg.wait_for_timeout(200)
         check(await av.locator(".person-add").count() == 0, "Cancelar closes it")
         # back to Quem cuida, it stays
-        await row.locator("select").select_option(""); await pg.wait_for_timeout(600)
+        await row.locator("select:not(.p-cal)").select_option(""); await pg.wait_for_timeout(600)
         check((prefs().get("people") or {}).get("Thor") == {}, f"back to Quem cuida, Thor stays ({prefs().get('people')})")
         check(await av.locator(".person-row", has_text="Thor").count() == 1, "still in the list")
         # in the form
@@ -77,7 +77,7 @@ async def main():
         await sheet.locator(".icon-btn[aria-label='Fechar']").first.click(); await pg.wait_for_timeout(300)
         # alerts off: the people stay, without the phones
         await av.locator(".switch-row input[aria-label='Avisar no celular']").uncheck(); await pg.wait_for_timeout(600)
-        check(await av.locator(".person-row", has_text="Thor").count() == 1 and await av.locator(".person-row select").count() == 0, "alerts off: the people, no phones")
+        check(await av.locator(".person-row", has_text="Thor").count() == 1 and await av.locator(".person-row select:not(.p-cal)").count() == 0, "alerts off: the people, no phones")
         check(await av.locator(".add-line", has_text="Adicionar pessoa ou pet").count() == 1, "and Adicionar pessoa ou pet")
         await av.locator(".switch-row input[aria-label='Avisar no celular']").check(); await pg.wait_for_timeout(600)
         # Tirar

@@ -32,7 +32,7 @@ Sem nenhum calendário no Home Assistant, a tela mostra como adicionar um. O mai
   - **Configurações**, em quatro abas no alto, as mesmas de todos os apps da família (ficam presas no topo ao rolar; abre em Integrações):
     - **Integrações**: **contas do GerencIA**, **tarefas do ResolvIA** (cada um com o indicador verde de conectado), **levar manutenções e rotinas para o ResolvIA**, **trechos do MemorIA no Agora**, **CorrerIA**, **IA** (o **Usar IA** e a IA de cada uso), Falar, uso da IA e sensores.
     - **Dados**: exportar, backup na pasta share, importar, versões anteriores, onde ficam os dados e começar do zero.
-    - **Aparência**: tema (Sistema, Claro ou Escuro) e cor do app. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
+    - **Aparência**: tema (Sistema, Claro ou Escuro) e cor do app; o fundo e os cartões são os do tema do Home Assistant, os mesmos dos outros apps. Com **Cor do dia** (ligada no começo), a cor muda todo dia sozinha; escolher uma cor desliga e deixa fixa nela.
     - **Opções**: **Local e notas** no Adicionar (desligado por padrão) e início da semana (segunda, como vem, ou domingo; vale para o calendário e para o placar).
   - **Sobre**, por último: quem faz o app (**CorrerIA Code**), os outros apps da família, cada um com uma linha e o link para o GitHub, e **Meu GitHub**.
 

@@ -732,7 +732,8 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     const stuck = new Set(list.filter((e) => this._afterDoneOn(e) === ymd(e.start)).map((e) => `${e.cal}|${e.summary}|${ymd(e.start)}`));
     const moved = this._movedDoneEvents(start, end).filter((e) => !stuck.has(`${e.cal}|${e.summary}|${ymd(e.start)}`));
     // 1.96.0: and on the day it is due again (Agora's "venceu ontem"), to do
-    const due = this._afterDueEvents(start, end, (a, b) => (this._store.ensure(a, b), this._store.query(a, b)));
+    // 1.101.0: from the window this range already has (it holds BACK_DAYS before it), never a window of its own
+    const due = this._afterDueEvents(start, end, (a, b) => this._store.query(a, b));
     const bills = [...this._gerenciaEvents(start, end), ...this._todoEvents(start, end), ...moved, ...due];
     return bills.length ? [...list, ...bills].sort((a, b) => a.start - b.start || Number(b.allDay) - Number(a.allDay) || a.summary.localeCompare(b.summary, "pt-BR")) : list;
   }

@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.101.0
+
+- **O fundo e os cartões seguem o tema do Home Assistant**, no claro e no escuro: o mesmo fundo do Home Assistant e dos outros apps da família (antes, cada app tinha o seu, o da CronologIA meio azulado). Com um tema seu no Home Assistant, o app usa as cores dele; ao trocar o tema ou o modo no Home Assistant, o app muda junto.
+- **Conversa**: a IA responde com todos os acentos (algumas IAs escreviam "voce" e "Alimentacao"). Ela vê também as tarefas sem prazo (antes achava que eram só as com prazo) e, quando a agenda ou as tarefas são muitas, sabe quantas ficaram de fora.
+- **Calendário**: corrigido o **Lista** (e as outras visões) que, desde a 1.96.0, podia ficar só com as tarefas, sem os eventos dos calendários, e um evento novo não aparecia na hora nos outros aparelhos. A **busca** voltou a achar os eventos do último ano ao próximo.
+
 ## 1.100.0
 
 - **Integrações › IA** (antes "IA do Home Assistant"): agora dá para escolher uma IA **Para conversar** (a Conversa, o Falar, as mensagens coladas) e outra **Para ler fotos e PDFs** (o Escolher fotos ou PDF, o Digitalizar com IA e a Conversa com uma foto ou um PDF). Assim uma IA mais barata responde as perguntas e uma mais caprichada lê as fotos. A de fotos começa **Igual à de conversar**, então nada muda até você escolher.

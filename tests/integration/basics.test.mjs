@@ -145,7 +145,10 @@ describe("calendar events through the server", () => {
     await assert.rejects(c.call("calendar/event/update", { entity_id: "calendar.pessoal", uid: "", event: {} }), { code: "invalid_format" });
     await assert.rejects(c.call("calendar/event/create", { entity_id: "calendar.feriados", event: { summary: "x", start: day(1), end: day(2) } }), { code: "not_supported" });
     await assert.rejects(c.call("cronologia/events/list", { entity_id: "calendar.pessoal", start: isoAt(2, 0), end: isoAt(1, 0) }), { code: "invalid_format" });
-    await assert.rejects(c.call("cronologia/events/list", { entity_id: "calendar.pessoal", start: isoAt(0, 0), end: isoAt(900, 0) }), { code: "invalid_format", message: "Período grande demais" });
+    await assert.rejects(c.call("cronologia/events/list", { entity_id: "calendar.pessoal", start: isoAt(0, 0), end: isoAt(901, 0) }), { code: "invalid_format", message: "Período grande demais" });
+    // 1.101.0: the window of the search (a year back, one ahead, the 62 days before and the week after) fits
+    const big = await c.call("cronologia/events/list", { entity_id: "calendar.pessoal", start: isoAt(-427, 0), end: isoAt(374, 0) });
+    assert.ok(Array.isArray(big.events));
   });
   it("live subscription of a calendar: the events, then the changes", async () => {
     const got = [];

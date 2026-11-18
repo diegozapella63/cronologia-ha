@@ -51,7 +51,7 @@ async def main():
             on = sheet.locator(".ss-opt.on")
             check(await on.count() == 1 and (await on.inner_text()).strip() == opts[0], f"{scheme}: the current one is marked")
             bg = await sheet.evaluate("(s) => getComputedStyle(s).backgroundColor")
-            check(bg == ("rgb(23, 32, 34)" if scheme == "dark" else "rgb(255, 255, 255)"), f"{scheme}: the colors of the app's own windows ({bg})")
+            check(bg == ("rgb(28, 28, 28)" if scheme == "dark" else "rgb(255, 255, 255)"), f"{scheme}: the colors of the app's own windows ({bg})")  # 1.101.0: the card of the Home Assistant theme
             accent = await sel.evaluate("(s) => getComputedStyle(s).getPropertyValue('--rv-accent').trim()")
             ck = await on.locator("svg").evaluate("(s) => getComputedStyle(s).color")
             check(accent and ck not in ("rgb(0, 0, 0)", "rgb(100, 181, 246)"), f"{scheme}: the mark in the color of the app ({accent}, {ck})")

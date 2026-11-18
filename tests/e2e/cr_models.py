@@ -239,7 +239,7 @@ async def main():
         await a.locator("#avisos .pick", has_text="1 hora").click(); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
         check(prefs.get("alerts") == {"meds": True, "late": 60, "caregivers": ["Davi"]}, f"alerts saved, Quem cuida by person ({prefs.get('alerts')})")
-        await a.locator("#avisos .person-row", has_text="Mimi").locator("select").select_option("Davi"); await A.wait_for_timeout(600)
+        await a.locator("#avisos .person-row", has_text="Mimi").locator("select:not(.p-cal)").select_option("Davi"); await A.wait_for_timeout(600)
         prefs = json.load(open(f"{data}/cronologia.json"))["app"]
         check(prefs.get("people") == {"Mimi": {"care": "Davi"}}, f"the person who gets Mimi's alerts saved ({prefs.get('people')})")
         await a.locator("#avisos .person-row", has_text="Mimi").locator(".icon-btn[aria-label^='Testar']").click()
