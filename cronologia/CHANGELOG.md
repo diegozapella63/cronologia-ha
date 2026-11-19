@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.103.0
+
+- **Novo evento › Repetir › Semanal**: os dias da semana (D S T Q Q S S), como nas rotinas. Começa marcado o dia da data; toque para marcar outros, como toda terça e quinta. O evento começa no primeiro dia escolhido a partir da data. Ao editar um evento que já repete em alguns dias, eles aparecem marcados.
+
 ## 1.102.0
 
 - **Conversa**: 6 perguntas prontas (as do placar só com ele ligado). Em **Editar perguntas**, embaixo, ficam **Mais perguntas (20)**: um toque põe a pergunta na sua lista.

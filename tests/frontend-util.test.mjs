@@ -258,3 +258,23 @@ describe("util: prepareImage (a photo shrunk before it goes to the AI)", () => {
     await assert.rejects(U.prepareImage(new Blob([])), /vazio/);
   });
 });
+
+describe("util: Repetir › Semanal com os dias da semana (1.103.0)", () => {
+  it("the days of a rule; without BYDAY, the weekday of the date (2026-11-19 is a Thursday)", () => {
+    assert.deepEqual(U.weekDaysOf("FREQ=WEEKLY;BYDAY=TU,TH", "2026-11-19"), [2, 4]);
+    assert.deepEqual(U.weekDaysOf("RRULE:FREQ=WEEKLY;BYDAY=TH,TU,TU", ""), [2, 4], "in order, once each");
+    assert.deepEqual(U.weekDaysOf("FREQ=WEEKLY", "2026-11-19"), [4]);
+    assert.deepEqual(U.weekDaysOf("", "nada"), []);
+  });
+  it("a weekly rule with the days, keeping the interval and the end", () => {
+    assert.equal(U.withWeekDays("FREQ=WEEKLY", [4, 2]), "FREQ=WEEKLY;BYDAY=TU,TH");
+    assert.equal(U.withWeekDays("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20261231T000000Z", [1, 3]), "FREQ=WEEKLY;INTERVAL=2;UNTIL=20261231T000000Z;BYDAY=MO,WE");
+    assert.equal(U.rruleLabel(U.withWeekDays("", [2, 4])), "Toda semana (ter, qui)");
+  });
+  it("the first of the days from a date (the event starts on one of them)", () => {
+    assert.equal(U.firstWeekDay("2026-11-18", [2, 4]), "2026-11-19", "a Wednesday: the Thursday after");
+    assert.equal(U.firstWeekDay("2026-11-19", [2, 4]), "2026-11-19");
+    assert.equal(U.firstWeekDay("2026-11-20", [2]), "2026-11-24", "a Friday: the next Tuesday");
+    assert.equal(U.firstWeekDay("2026-11-20", []), "2026-11-20");
+  });
+});

@@ -82,6 +82,28 @@ async def main():
         await sheet.locator(".seg.rep-seg button", has_text="Mensal").click(); await A.wait_for_timeout(200)
         await sheet.locator(".ev-title-input").press("Enter")
         await wait_for(lambda: evs("Fechamento do mês") and evs("Fechamento do mês")[0].get("rrule") == "FREQ=MONTHLY", "Mensal, saved with Enter")
+        # 1.103.0: Semanal with the days of the week (every Tuesday and Thursday): starts with the day of the date, and the
+        # event starts on the first chosen day from the date
+        await A.wait_for_timeout(600)
+        await a.locator(".tab.fab").click(); await A.wait_for_timeout(500)
+        await sheet.locator(".ev-title-input").fill("Pilates")
+        await sheet.locator(".seg.rep-seg button", has_text="Semanal").click(); await A.wait_for_timeout(200)
+        on = await sheet.locator(".wdp-row .wdp.on").count()
+        check(await sheet.locator(".wdp-row .wdp").count() == 7 and on == 1, f"Semanal: the 7 days, the one of the date marked ({on})")
+        for d in (2, 4):  # terça e quinta
+            if not await sheet.locator(".wdp-row .wdp").nth(d).get_attribute("class") or "on" not in await sheet.locator(".wdp-row .wdp").nth(d).get_attribute("class"):
+                await sheet.locator(".wdp-row .wdp").nth(d).click(); await A.wait_for_timeout(120)
+        wd = (today.weekday() + 1) % 7  # 0 = domingo
+        if wd not in (2, 4):
+            await sheet.locator(".wdp-row .wdp").nth(wd).click(); await A.wait_for_timeout(120)
+        hint = (await sheet.locator(".wdp-row + .field-hint").inner_text()).strip()
+        check(hint == "Toda semana (ter, qui)", f"the rule in words ({hint})")
+        await sheet.locator(".wdp-row + .field-hint").scroll_into_view_if_needed(); await A.wait_for_timeout(3500)
+        await A.screenshot(path=f"{SP}/shots/cr-repetir-dias.png")
+        await sheet.locator(".btn.primary", has_text="Criar evento").click()
+        await wait_for(lambda: evs("Pilates") and evs("Pilates")[0].get("rrule") == "FREQ=WEEKLY;BYDAY=TU,TH", "saved every Tuesday and Thursday")
+        first = datetime.date.fromisoformat(str(evs("Pilates")[0]["start"])[:10])
+        check(first >= today and (first.weekday() in (1, 3)), f"it starts on a Tuesday or Thursday ({first})")
         # Cancelar: nothing created
         await A.wait_for_timeout(600)
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(500)

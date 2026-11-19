@@ -207,6 +207,33 @@ export function rruleLabel(rrule) {
   return s;
 }
 
+// 1.103.0: Repetir › Semanal com os dias da semana (toda terça e quinta): BYDAY, na ordem de domingo a sábado
+export const BYDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+/** The days of a weekly rule (0 = domingo); without BYDAY, the weekday of `date` (AAAA-MM-DD). */
+export function weekDaysOf(rrule, date) {
+  const m = /(?:^|;)BYDAY=([A-Z,0-9+-]+)/.exec(String(rrule || "").replace(/^RRULE:/, ""));
+  const days = m ? m[1].split(",").map((d) => BYDAY_CODES.indexOf(d.replace(/^[+-]?\d+/, ""))).filter((i) => i >= 0) : [];
+  if (days.length) return [...new Set(days)].sort((a, b) => a - b);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(date || "") ? new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) : null;
+  return d ? [d.getDay()] : [];
+}
+
+/** A weekly rule with these days, keeping the rest of `rrule` (the interval, the end). */
+export function withWeekDays(rrule, days) {
+  const parts = String(rrule || "FREQ=WEEKLY").replace(/^RRULE:/, "").split(";").filter((x) => x && !/^BYDAY=/.test(x) && !/^FREQ=/.test(x));
+  const list = [...new Set(days)].filter((i) => i >= 0 && i < 7).sort((a, b) => a - b);
+  return ["FREQ=WEEKLY", ...parts, ...(list.length ? [`BYDAY=${list.map((i) => BYDAY_CODES[i]).join(",")}`] : [])].join(";");
+}
+
+/** The first day from `date` (included) that is one of `days` (0 = domingo), AAAA-MM-DD. */
+export function firstWeekDay(date, days) {
+  if (!days.length || !/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return date;
+  const d = new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)));
+  for (let k = 0; k < 7 && !days.includes(d.getDay()); k++) d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export const freqOf = (rrule) => {
   const m = /FREQ=(\w+)/.exec(rrule || "");
   return m ? m[1] : "";

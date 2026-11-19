@@ -42,6 +42,9 @@ import {
   splitLinks,
   WEEKDAYS,
   WEEKDAYS_SHORT,
+  weekDaysOf,
+  withWeekDays,
+  firstWeekDay,
   MONTHS,
   ymd,
   hm,
@@ -1104,6 +1107,21 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     }
   }
 
+  /** 1.103.0: Repetir › Semanal: os dias da semana (toda terça e quinta); começa com o dia da data, e fica pelo menos um. */
+  _renderWeekDays(f) {
+    const rule = f.rrule && freqOf(f.rrule) === "WEEKLY" ? f.rrule : "FREQ=WEEKLY";
+    const on = weekDaysOf(rule, f.date);
+    const toggle = (i) => {
+      const next = on.includes(i) ? on.filter((x) => x !== i) : [...on, i];
+      if (next.length) this._setForm({ rrule: withWeekDays(rule, next) });
+    };
+    // os mesmos botões dos dias das rotinas (D S T Q Q S S)
+    return html`<div class="wdp-row" role="group" aria-label="Dias da semana">${[0, 1, 2, 3, 4, 5, 6].map(
+      (i) => html`<button type="button" class="wdp ${on.includes(i) ? "on" : ""}" aria-pressed=${on.includes(i) ? "true" : "false"} aria-label=${WEEKDAYS_SHORT[i]} @click=${() => toggle(i)}>${"DSTQQSS"[i]}</button>`,
+    )}</div>
+      <div class="field-hint">${icon("repeat")}<span>${rruleLabel(rule.includes("BYDAY") ? rule : withWeekDays(rule, on))}</span></div>`;
+  }
+
   /** The form as a Home Assistant event, or throws a message for the person. */
   _eventFromForm(f, { keepRrule = true } = {}) {
     if (f.kind) return this._kindEvents(f, { keepRrule })[0];
@@ -1111,6 +1129,16 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     if (!title) throw new Error("Dê um nome ao evento");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || "")) throw new Error("Escolha a data");
     const ev = { summary: title };
+    // 1.103.0: Semanal com os dias da semana: o evento começa no primeiro dia escolhido (a partir da data), para a
+    // primeira vez ser um dos dias (o calendário conta o começo como uma das vezes)
+    const weekly = keepRrule && f.repeat === "WEEKLY" && /BYDAY=/.test(f.rrule || "") ? weekDaysOf(f.rrule, f.date) : null;
+    if (weekly && !f.rid) {
+      const first = firstWeekDay(f.date, weekly);
+      if (first !== f.date) {
+        const shift = Math.round((fromYmd(first) - fromYmd(f.date)) / 86400000);
+        f = { ...f, date: first, endDate: f.endDate && f.endDate > f.date ? ymd(addDays(fromYmd(f.endDate), shift)) : f.endDate };
+      }
+    }
     if (f.allDay) {
       const last = f.endDate && f.endDate > f.date ? f.endDate : f.date;
       ev.start = f.date;
@@ -3441,7 +3469,8 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
         <div class="seg rep-seg" role="radiogroup" aria-label="Repetir">${REPEATS.map(
           (r) => html`<button class=${f.repeat === r.id ? "on" : ""} role="radio" aria-checked=${f.repeat === r.id ? "true" : "false"} title=${r.label} @click=${() => this._setForm({ repeat: r.id })}>${r.short}</button>`,
         )}</div>
-        ${f.rrule && freqOf(f.rrule) === f.repeat && rruleLabel(f.rrule) !== (REPEATS.find((r) => r.id === f.repeat) || {}).label ? html`<div class="field-hint">${icon("repeat")}<span>${rruleLabel(f.rrule)}</span></div>` : nothing}
+        ${f.repeat === "WEEKLY" ? this._renderWeekDays(f) : nothing}
+        ${f.rrule && freqOf(f.rrule) === f.repeat && f.repeat !== "WEEKLY" && rruleLabel(f.rrule) !== (REPEATS.find((r) => r.id === f.repeat) || {}).label ? html`<div class="field-hint">${icon("repeat")}<span>${rruleLabel(f.rrule)}</span></div>` : nothing}
         ${f.rid ? html`<div class="field-hint">${icon("repeat")}<span>Este evento se repete.</span></div>` : nothing}
       </div>
       ${this._app("event_details", false) === true || f.details

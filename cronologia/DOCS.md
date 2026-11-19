@@ -84,7 +84,7 @@ Em eventos que se repetem, ao salvar ou apagar você escolhe **só este evento**
 
 Mudar o evento de calendário cria uma cópia no novo calendário e apaga a original (o Home Assistant não tem "mover").
 
-**Repetir** fica numa linha só: Não, Diário, Semanal, Mensal ou Anual.
+**Repetir** fica numa linha só: Não, Diário, Semanal, Mensal ou Anual. Em **Semanal**, os dias da semana aparecem embaixo (D S T Q Q S S): começa marcado o dia da data, e dá para marcar mais de um (toda terça e quinta, por exemplo). O evento começa no primeiro dia marcado a partir da data.
 
 **Quando** é o dia. Em **Horário** (com o **Dia todo**), **Manhã**, **Tarde** e **Noite** põem a parte do dia inteira (das 8h ao meio-dia, das 13h às 17h e das 18h às 22h), e **15 min**, **30 min** e **1 h** a duração a partir da hora de começar. Embaixo delas ficam a hora de começar e a de terminar, para acertar.
 
