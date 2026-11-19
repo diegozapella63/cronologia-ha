@@ -125,6 +125,16 @@ async def main():
         await sheet.locator(".model", has_text="Rotina").click(); await A.wait_for_timeout(500)
         check((await field("Tipo").locator(".model.on").inner_text()).strip() == "Rotina", "Rotina: Tipo marks it")
         check(await field("Observações").count() == 1, "Rotina: Observações folds")
+        # 1.104.0: Mais › Calendários › Personalizar: Cor folds by the title too
+        await sheet.locator(".icon-btn[aria-label=Fechar]").click(); await A.wait_for_timeout(400)
+        await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)
+        await open_more(a, "Calendários"); await A.wait_for_timeout(400)
+        await a.locator('.tile[aria-label^="Personalizar"]').first.click(); await A.wait_for_timeout(400)
+        cor = field("Cor")
+        await cor.locator(":scope > .flabel").click(); await A.wait_for_timeout(200)
+        check("shut" in (await cor.get_attribute("class") or "") and not await cor.locator(".swatches").is_visible(), "Personalizar: Cor closed, only the title")
+        await cor.locator(":scope > .flabel").click(); await A.wait_for_timeout(200)
+        check(await cor.locator(".swatches").is_visible(), "and open again")
         check(not errs, f"no page errors {errs[:3]}")
         await b.close()
 

@@ -116,6 +116,13 @@ async def main():
         check(len(qk) == 6 and len(mods) == 20 and not set(mods) & set(qk), f"1.102.0: 6 ready questions and 20 more models in Editar perguntas ({len(qk)}, {len(mods)})")
         await chat.locator(".chat-ed-modelo").first.click(); await pg.wait_for_timeout(150)
         check(await chat.locator(".chat-ed-modelo").count() == 19, "a tap on a model puts it in the list")
+        # 1.104.0: a tap on a question changes it; the two titles fold
+        txt = chat.locator(".chat-ed > .chat-ed-row:not(.chat-ed-modelo) > .chat-ed-txt").first
+        await txt.fill("Pergunta mudada?"); await txt.press("Enter"); await pg.wait_for_timeout(100)
+        check(await txt.input_value() == "Pergunta mudada?", "a question changed in place")
+        await chat.locator('.chat-ed-dobra[data-dobra="mais"]').click(); await pg.wait_for_timeout(150)
+        check(await chat.locator(".chat-ed-modelo").count() == 0, "Mais perguntas closes by the title")
+        await chat.locator('.chat-ed-dobra[data-dobra="mais"]').click(); await pg.wait_for_timeout(150)
         await chat.locator(".chat-ed-acts .btn", has_text="Padrão").click(); await pg.wait_for_timeout(150)
         await chat.locator(".chat-ed-acts .btn", has_text="Pronto").click(); await pg.wait_for_timeout(200)
         await chat.locator(".chat-qbtn").click(); await pg.wait_for_timeout(200)

@@ -441,7 +441,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     }
     for (const field of root.querySelectorAll(".sheet .field")) {
       const lab = field.querySelector(":scope > .flabel");
-      if (!lab || !(field.classList.contains("fold-txt") || field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick, :scope > .model-strip, :scope > .seg"))) continue;
+      if (!lab || !(field.classList.contains("fold-txt") || field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick, :scope > .model-strip, :scope > .seg, :scope > .swatches, :scope > .icon-grid"))) continue; // 1.104.0: a Cor também
       const key = fieldKeyOf(field);
       if (!key) continue;
       const off = this._camposFechados.has(key);

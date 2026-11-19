@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.104.0
+
+- **Conversa › Editar perguntas**: toque numa pergunta para mudar o texto dela. **Perguntas prontas** e **Mais perguntas** fecham e abrem num toque no título, com a seta no canto, e o aparelho lembra.
+- **Personalizar** (de um calendário): a **Cor** fecha e abre num toque no título, como os outros campos de escolha.
+
 ## 1.103.0
 
 - **Novo evento › Repetir › Semanal**: os dias da semana (D S T Q Q S S), como nas rotinas. Começa marcado o dia da data; toque para marcar outros, como toda terça e quinta. O evento começa no primeiro dia escolhido a partir da data. Ao editar um evento que já repete em alguns dias, eles aparecem marcados.
