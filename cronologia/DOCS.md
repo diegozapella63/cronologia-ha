@@ -60,7 +60,9 @@ Pedindo para mexer na agenda ("marca dentista sexta às 15h", "fiz arrumar a cam
 
 O **clipe**, à esquerda da caixa, manda junto uma foto ou um PDF: **Tirar foto** (a câmera do Digitalizar com IA), **Escolher fotos** (a galeria, até 4) ou **Escolher arquivo** (uma foto ou um PDF). A IA olha o arquivo para responder e pode propor marcar o compromisso que vê (um convite, um cartão de consulta). Na conversa fica só o nome do arquivo. O botão redondo da direita é o microfone com a caixa vazia e vira o Enviar quando você escreve ou escolhe um arquivo.
 
-**Perguntas prontas**: na conversa vazia aparecem algumas perguntas para tocar; o botão ✨ ao lado da caixa abre as mesmas a qualquer momento. Em **Editar perguntas**, o ✕ tira uma pergunta e **Adicionar** põe outra; **Padrão** volta às de exemplo. Ficam guardadas no aparelho.
+**Perguntas prontas**: na conversa vazia aparecem 6 perguntas para tocar; o botão ✨ ao lado da caixa abre as mesmas a qualquer momento. Em **Editar perguntas**, o ✕ tira uma pergunta e **Adicionar** põe outra; **Padrão** volta às de exemplo. Embaixo, **Mais perguntas (20)**: um toque põe a pergunta na lista. Ficam guardadas no aparelho.
+
+A IA sabe quem está usando o app e de quem é cada compromisso (a pessoa do calendário, em **Mais › Avisos › Pessoas e pets**; sem pessoa, é da casa). Ela vê o próximo mês da agenda, com o local e as notas, as rotinas e os remédios de hoje, tudo o que está cadastrado, as contas, a manutenção, o placar (com o prêmio, o extrato e os deméritos) e as tarefas do ResolvIA.
 
 ### Buscar
 

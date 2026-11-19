@@ -6,8 +6,8 @@ import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
 import { renderChat, chatFiles } from "./chat.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
-import { ymd, hm, startOfDay, addDays, clip } from "./util.js";
-import { periodInfo } from "../../cronologia/rootfs/app/lib/kinds.js";
+import { ymd, hm, startOfDay, addDays, clip, rruleLabel } from "./util.js";
+import { periodInfo, everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
 import { moreName } from "./routes.js";
 
 const icon = (name, cls = "") =>
@@ -77,6 +77,7 @@ export const ChatMixin = (Base) =>
         error: c.error,
         voice: { ready: !!v.ready && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), on: c.rec === "on", starting: c.rec === "starting" },
         examples: this._chatExamples(),
+        models: this._chatModels(),
         onDraft: (t) => this._setChat({ draft: t }),
         onSend: (t) => this._chatSend(t),
         onMic: () => this._chatMic(),
@@ -123,11 +124,60 @@ export const ChatMixin = (Base) =>
       if (this._sheet !== "chat") this._openChat();
     }
 
+    /**
+     * 1.102.0: the 6 ready questions (the first ones of the screen, then the app's) and, in Editar perguntas, 20 more
+     * models; the ones of the scoreboard only with it on, the ones of the tasks with the ResolvIA.
+     */
+    _chatPool() {
+      const score = !!(this._scoreOn && this._scoreOn());
+      const tasks = !!(this._resolviaOn && this._resolviaOn());
+      const q = (t, ok = true) => (ok ? [t] : []);
+      return [
+        ...q("O que tenho hoje?"),
+        ...q("O que tenho amanhã?"),
+        ...q("Quais remédios faltam hoje?"),
+        ...q("Quais rotinas estão atrasadas?"),
+        ...q("Tem conta para pagar esta semana?"),
+        ...q("Marca dentista sexta às 15h"),
+        ...q("Estou livre amanhã à tarde?"),
+        ...q("O que tenho esta semana?"),
+        ...q("Resume o meu dia"),
+        ...q("Quando é o meu próximo compromisso?"),
+        ...q("Quais compromissos tenho no fim de semana?"),
+        ...q("O que tenho na próxima semana?"),
+        ...q("Quem está ganhando o placar?", score),
+        ...q("Quantos pontos eu tenho?", score),
+        ...q("O que ainda dá pontos hoje?", score),
+        ...q("Qual é o prêmio deste período?", score),
+        ...q("Qual é a próxima manutenção da casa?"),
+        ...q("Tem manutenção vencida?"),
+        ...q("Quais remédios eu tomo de manhã?"),
+        ...q("Já tomei todos os remédios de hoje?"),
+        ...q("Quais contas vencem este mês?"),
+        ...q("Tem alguma conta atrasada?"),
+        ...q("Quais rotinas são minhas hoje?"),
+        ...q("Quem faz o quê hoje em casa?"),
+        ...q("Quais tarefas do ResolvIA vencem hoje?", tasks),
+        ...q("O que ficou para amanhã?"),
+        ...q("Marca a rotina de arrumar a cama como feita"),
+        ...q("Tomei o remédio das 8h"),
+        ...q("Marca reunião amanhã às 10h"),
+        ...q("Quais rotinas da manhã ainda faltam?"),
+        ...q("Quais compromissos são da casa toda?"),
+      ];
+    }
+
     _chatExamples() {
       const v = this._shownView ? this._shownView() : this._view();
-      if (v.name === "calendar") return ["O que tenho esta semana?", "Estou livre amanhã à tarde?"];
-      if (v.name === "rewards") return ["Quem está ganhando?", "O que ainda dá pontos hoje?"];
-      return ["O que tenho hoje?", "Por onde eu começo?", "Marca dentista sexta às 15h"];
+      const first = v.name === "calendar" ? ["O que tenho esta semana?", "Estou livre amanhã à tarde?"]
+        : v.name === "rewards" && this._scoreOn && this._scoreOn() ? ["Quem está ganhando o placar?", "O que ainda dá pontos hoje?"] : [];
+      return [...new Set([...first, ...this._chatPool()])].slice(0, 6);
+    }
+
+    /** The 20 models of Editar perguntas: the others of the app, beyond the 6 at hand. */
+    _chatModels() {
+      const at = this._chatExamples();
+      return this._chatPool().filter((t) => !at.includes(t)).slice(0, 20);
     }
 
     /** Where the person is, in words for the AI. */
@@ -150,11 +200,15 @@ export const ChatMixin = (Base) =>
       const from = this._view().name === "calendar" && this._cursor && this._cursor > today ? startOfDay(this._cursor) : today;
       const ix = this._ix();
       const cal = (id) => (this._cal(id) || {}).name || "";
-      const agendaAll = (this._events(from, addDays(from, 8)) || []).filter((e) => !e.kind && !e.todo && !e.gerencia);
+      // 1.102.0: de quem é cada calendário (a pessoa de Mais › Avisos › Pessoas e pets): o compromisso é dela
+      const owner = new Map(((this._peopleCals && this._peopleCals()) || []).map((p) => [p.cal, p.name]));
+      // 1.102.0: um mês da agenda (antes, 8 dias), com o local e as notas
+      const agendaAll = (this._events(from, addDays(from, 31)) || []).filter((e) => !e.kind && !e.todo && !e.gerencia);
       const agenda = agendaAll
         .sort((a, b) => a.start - b.start)
-        .slice(0, 80)
-        .map((e) => ({ titulo: e.summary || "", data: ymd(e.start), inicio: e.allDay ? null : hm(e.start), fim: e.allDay ? null : hm(e.end), calendario: cal(e.cal) }));
+        .slice(0, 150)
+        .map((e) => ({ titulo: e.summary || "", data: ymd(e.start), inicio: e.allDay ? null : hm(e.start), fim: e.allDay ? null : hm(e.end), calendario: cal(e.cal),
+          de: owner.get(e.cal) || "", local: clip(e.location || "", 120), notas: clip(String(e.description || "").replace(/\s+/g, " ").trim(), 200) }));
       const score = this._score ? this._score() : null;
       const todos = this._todos ? this._todos() : { items: [] };
       const away = this._away && this._away();
@@ -168,6 +222,24 @@ export const ChatMixin = (Base) =>
         contas: (this._billsList ? this._billsList() : []).filter((b) => !b.paid).map((b) => ({ nome: b.title, valor: b.value == null ? null : Number(b.value), vence: b.due, atrasada: !!b.overdue })),
         manutencao: (ix.maint || []).map((m) => ({ nome: m.summary, vence: m.due, estado: m.state })),
         placar: score && this._scoreOn && this._scoreOn() ? (score.rows || []).map((r) => ({ pessoa: r.name, pontos: r.points })) : [],
+        // 1.102.0: o período, o prêmio, as últimas linhas do extrato e os deméritos (antes, só os pontos)
+        recompensas: score && this._scoreOn && this._scoreOn() ? {
+          periodo: (score.current && score.current.label) || "",
+          premio: (score.current && (score.current.reward || Object.entries(score.current.prizes || {}).map(([n, t]) => `${n}: ${t}`).join(" · "))) || "",
+          extrato: (score.log || []).slice(0, 15).map((l) => ({ quando: String(l.at || "").slice(0, 16).replace("T", " "), pessoa: l.who || "", pontos: Number(l.points) || 0, o_que: l.title || "" })),
+          demeritos: ((this._demerits && this._demerits()) || []).map((d) => ({ nome: d.title, pontos: d.points })),
+        } : null,
+        // 1.102.0: o que está cadastrado (as rotinas, os remédios, as contas e a manutenção de todos os dias, não só os de hoje)
+        cadastros: (ix.catalog || []).slice(0, 200).map((c) => ({
+          tipo: c.kind || "", nome: c.summary || "", quem: c.who || "", quando: c.time || (periodInfo(c.period) || {}).label || "",
+          repete: c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? rruleLabel(c.rrule) : "uma vez",
+          proxima: c.next || null, dose: c.dose || "", valor: c.value == null ? null : Number(c.value), atrasada: !!c.late,
+        })),
+        cadastros_total: (ix.catalog || []).length,
+        // 1.102.0: as pessoas e os pets da casa, cada pessoa com o calendário dela
+        pessoas: (ix.people || []).map((p) => ({ nome: p.name, pet: !!p.pet, calendario: cal([...owner].find(([, n]) => n === p.name)?.[0]) })),
+        // 1.102.0: quem está usando o app agora ("você")
+        eu: (this._user && (this._user.person || this._user.name)) || "",
         tarefas: ((todos && todos.items) || []).filter((t) => !t.done).slice(0, 60).map((t) => ({ nome: t.summary, lista: t.listName || "", prazo: t.undated || !t.due ? null : String(t.due).slice(0, 10), atrasada: !!t.overdue })),
         // 1.101.0: how many there are, when the lists above are cut (the AI says it saw only part)
         agenda_total: agendaAll.length,

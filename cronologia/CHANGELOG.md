@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.102.0
+
+- **Conversa**: 6 perguntas prontas (as do placar só com ele ligado). Em **Editar perguntas**, embaixo, ficam **Mais perguntas (20)**: um toque põe a pergunta na sua lista.
+- **Conversa**: a IA sabe quem está usando o app e de quem é cada compromisso, pelo calendário de cada pessoa: um compromisso de outra pessoa não é mais tratado como seu. Ela vê também um mês da agenda (antes, 8 dias), o local e as notas, tudo o que está cadastrado (rotinas, remédios, contas e manutenção, não só os de hoje), o prêmio, o extrato e os deméritos do placar, e as pessoas e os pets.
+- **CorrerIA**: cada compromisso diz de quem é.
+
 ## 1.101.0
 
 - **O fundo e os cartões seguem o tema do Home Assistant**, no claro e no escuro: o mesmo fundo do Home Assistant e dos outros apps da família (antes, cada app tinha o seu, o da CronologIA meio azulado). Com um tema seu no Home Assistant, o app usa as cores dele; ao trocar o tema ou o modo no Home Assistant, o app muda junto.

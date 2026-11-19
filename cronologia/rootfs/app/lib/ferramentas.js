@@ -19,6 +19,7 @@ const F = { CREATE: 1, DELETE: 2, UPDATE: 4 };
 export const INSTRUCOES =
   "CronologIA: a agenda da família no Home Assistant (compromissos dos calendários, rotinas da casa, remédios, contas, manutenção e o placar de pontos). " +
   "Datas AAAA-MM-DD (aceita hoje e amanhã) e horários HH:MM. Comece por cronologia_resumo: os ids que ele mostra servem nas outras ferramentas. " +
+  "Cada compromisso diz de quem é (de: a pessoa do calendário, ou casa); o de outra pessoa não é de quem pergunta: diga de quem é. " +
   "Antes de gravar, diga à pessoa o que vai ser feito.";
 
 /** A wrong argument: the AI reads the message (it says what is valid) and tries again (400). */
@@ -380,9 +381,24 @@ export class Ferramentas {
   }
 
   /** One event as the AI reads it. */
-  evento({ cal, e, s, f }, comCalendario = true) {
+  /** 1.102.0: de quem é cada calendário (a pessoa dele, como no De quem do Adicionar): {calendar.x → nome}. */
+  donos(now = new Date()) {
+    const prefs = this.store.data.app.people || {};
+    const w = this.calendarios().filter((c) => c.cria && !c.fora).map((c) => ({ id: c.id, name: c.nome }));
+    const m = new Map();
+    for (const p of this.index(now).people || []) {
+      if (p.pet) continue;
+      const pc = personCalendar(p.name, prefs, w);
+      if (pc && !m.has(pc.id)) m.set(pc.id, p.name);
+    }
+    return m;
+  }
+
+  evento({ cal, e, s, f }, comCalendario = true, donos = null) {
     const k = parseKind(e.description);
     const out = { id: occurrenceKey(cal.id, e), titulo: e.summary || "(sem título)", data: ymd(new Date(s)) };
+    // 1.102.0: de quem é (a pessoa do calendário); sem pessoa, da casa
+    if (donos) out.de = donos.get(cal.id) || "casa";
     if (isDay(e.start)) {
       out.dia_todo = true;
       const last = ymd(addDays(new Date(f), -1));
@@ -483,7 +499,8 @@ export class Ferramentas {
     if (away && away.to >= ymd(hoje)) out.ferias = { de: away.from, ate: away.to, agora: ymd(hoje) >= away.from, regra: "rotinas, tarefas e manutenção pausadas; remédios continuam" };
     const { lista: evs, falhas } = await this.eventos(hoje, addDays(hoje, 1));
     const comp = evs.filter((x) => !parseKind(x.e.description));
-    const noDia = (d) => comp.filter((x) => x.s < addDays(d, 1).getTime() && Math.max(x.f, x.s + 1) > d.getTime()).map((x) => this.evento(x));
+    const donos = this.donos(now);
+    const noDia = (d) => comp.filter((x) => x.s < addDays(d, 1).getTime() && Math.max(x.f, x.s + 1) > d.getTime()).map((x) => this.evento(x, true, donos));
     out.compromissos = { hoje: noDia(hoje), amanha: noDia(addDays(hoje, 1)) };
     if (falhas.length) out.calendarios_sem_resposta = falhas;
     out.remedios_hoje = ix.meds.map((m) => {
@@ -545,7 +562,8 @@ export class Ferramentas {
     const busca = foldText(a.busca);
     const { lista: evs, falhas } = await this.eventos(de, ate, cal);
     const achados = busca ? evs.filter((x) => [x.e.summary, x.e.location, x.e.description].some((t) => foldText(t).includes(busca))) : evs;
-    const out = { periodo: { de: ymd(de), ate: ymd(ate) }, encontrados: achados.length, mostrando: Math.min(limite, achados.length), eventos: achados.slice(0, limite).map((x) => this.evento(x)) };
+    const donos = this.donos(now);
+    const out = { periodo: { de: ymd(de), ate: ymd(ate) }, encontrados: achados.length, mostrando: Math.min(limite, achados.length), eventos: achados.slice(0, limite).map((x) => this.evento(x, true, donos)) };
     if (falhas.length) out.calendarios_sem_resposta = falhas;
     return json(out);
   }

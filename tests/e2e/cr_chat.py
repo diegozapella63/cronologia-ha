@@ -111,6 +111,13 @@ async def main():
         await chat.locator(".chat-qbtn").click(); await pg.wait_for_timeout(250)
         qk = [t.strip() for t in await chat.locator(".chat-quick .chat-ex .pick").all_inner_texts()]
         check(len(qk) >= 1 and await chat.locator(".chat-quick .chat-ed-open").count() == 1, f"Perguntas prontas at any moment, with Editar perguntas ({qk})")
+        await chat.locator(".chat-quick .chat-ed-open").click(); await pg.wait_for_timeout(250)
+        mods = [t.strip() for t in await chat.locator(".chat-ed-modelo").all_inner_texts()]
+        check(len(qk) == 6 and len(mods) == 20 and not set(mods) & set(qk), f"1.102.0: 6 ready questions and 20 more models in Editar perguntas ({len(qk)}, {len(mods)})")
+        await chat.locator(".chat-ed-modelo").first.click(); await pg.wait_for_timeout(150)
+        check(await chat.locator(".chat-ed-modelo").count() == 19, "a tap on a model puts it in the list")
+        await chat.locator(".chat-ed-acts .btn", has_text="Padrão").click(); await pg.wait_for_timeout(150)
+        await chat.locator(".chat-ed-acts .btn", has_text="Pronto").click(); await pg.wait_for_timeout(200)
         await chat.locator(".chat-qbtn").click(); await pg.wait_for_timeout(200)
         check(await chat.locator(".chat-quick").count() == 0, "the same button closes them")
         # 1.84.0: the round button (the microphone with the box empty, Enviar writing) and the clip

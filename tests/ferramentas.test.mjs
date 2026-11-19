@@ -237,7 +237,9 @@ describe("resumo", () => {
     assert.deepEqual(r.compromissos.hoje.map((e) => e.titulo), ["Finados", "Viagem", "Natação", "Sem uid", "Pilates"]);
     assert.deepEqual(r.compromissos.amanha.map((e) => e.titulo), ["Viagem", "Dentista"]);
     const viagem = r.compromissos.hoje.find((e) => e.titulo === "Viagem");
-    assert.deepEqual(viagem, { id: "calendar.pessoal|viagem|2026-11-02", titulo: "Viagem", data: "2026-11-02", dia_todo: true, ate: "2026-11-04", calendario: "Pessoal da Ana" });
+    assert.deepEqual(viagem, { id: "calendar.pessoal|viagem|2026-11-02", de: "Ana", titulo: "Viagem", data: "2026-11-02", dia_todo: true, ate: "2026-11-04", calendario: "Pessoal da Ana" });
+    // 1.102.0: de quem é: a pessoa do calendário; sem pessoa, a casa
+    assert.ok(r.compromissos.hoje.every((e) => e.de === "Ana" || e.de === "casa"), JSON.stringify(r.compromissos.hoje.map((e) => [e.titulo, e.calendario, e.de])));
     const pil = r.compromissos.hoje.find((e) => e.titulo === "Pilates");
     assert.equal(pil.id, "calendar.pessoal|pil|20261102T180000");
     assert.equal(pil.repete, "toda semana");
@@ -336,7 +338,7 @@ describe("agenda", () => {
     const { read, evs } = setup();
     evs["calendar.pessoal"].push({ uid: "festa", summary: "Festa", start: "2026-11-04T22:00:00-03:00", end: "2026-11-05T02:00:00-03:00" });
     const r = await read("agenda", { calendario: "Pessoal da Ana", busca: "festa" });
-    assert.deepEqual(r.eventos[0], { id: "calendar.pessoal|festa|2026-11-04T22:00:00-03:00", titulo: "Festa", data: "2026-11-04", inicio: "22:00", fim: "02:00", termina: "2026-11-05", calendario: "Pessoal da Ana" });
+    assert.deepEqual(r.eventos[0], { id: "calendar.pessoal|festa|2026-11-04T22:00:00-03:00", de: "Ana", titulo: "Festa", data: "2026-11-04", inicio: "22:00", fim: "02:00", termina: "2026-11-05", calendario: "Pessoal da Ana" });
   });
   it("refused: the end before the start, more than 400 days, a day that doesn't exist, a calendar that isn't there", async () => {
     const { refused } = setup();

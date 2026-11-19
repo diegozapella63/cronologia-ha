@@ -70,7 +70,7 @@ export function cleanChat(raw) {
   const context = {
     tela: oneLine(c.tela, 160),
     criar: c.criar === true,
-    agenda: rows(c.agenda, MAX_ROWS, (e) => ({ titulo: oneLine(e.titulo, 160), data: isDate(e.data) ? e.data : null, inicio: isTime(e.inicio) ? e.inicio : null, fim: isTime(e.fim) ? e.fim : null, calendario: oneLine(e.calendario, 60) })).filter((e) => e.titulo && e.data),
+    agenda: rows(c.agenda, 160, (e) => ({ titulo: oneLine(e.titulo, 160), data: isDate(e.data) ? e.data : null, inicio: isTime(e.inicio) ? e.inicio : null, fim: isTime(e.fim) ? e.fim : null, calendario: oneLine(e.calendario, 60), de: oneLine(e.de, 60), local: oneLine(e.local, 120), notas: oneLine(e.notas, 200) })).filter((e) => e.titulo && e.data),
     rotinas: rows(c.rotinas, MAX_ROWS, (x) => ({ id: typeof x.id === "string" && KEY.test(x.id) ? x.id : null, nome: oneLine(x.nome, 160), feito: x.feito === true, pulada: x.pulada === true, periodo: oneLine(x.periodo, 20), hora: isTime(x.hora) ? x.hora : null, quem: oneLine(x.quem, 60), pontos: Math.max(0, Math.min(999, Math.round(num(x.pontos) || 0))), atrasada: x.atrasada === true })).filter((x) => x.nome),
     remedios: rows(c.remedios, MAX_ROWS, (x) => ({ id: typeof x.id === "string" && KEY.test(x.id) ? x.id : null, nome: oneLine(x.nome, 160), hora: isTime(x.hora) ? x.hora : null, quem: oneLine(x.quem, 60), dose: oneLine(x.dose, 80), estado: oneLine(x.estado, 20) })).filter((x) => x.nome),
     contas: rows(c.contas, 60, (x) => ({ nome: oneLine(x.nome, 160), valor: num(x.valor), vence: isDate(x.vence) ? x.vence : null, atrasada: x.atrasada === true })).filter((x) => x.nome),
@@ -78,8 +78,18 @@ export function cleanChat(raw) {
     placar: rows(c.placar, 20, (x) => ({ pessoa: oneLine(x.pessoa, 60), pontos: Math.round(num(x.pontos) || 0) })).filter((x) => x.pessoa),
     tarefas: rows(c.tarefas, MAX_ROWS, (x) => ({ nome: oneLine(x.nome, 160), lista: oneLine(x.lista, 60), prazo: isDate(x.prazo) ? x.prazo : null, atrasada: x.atrasada === true })).filter((x) => x.nome),
   };
+  // 1.102.0: who uses the app now, the catalog, the scoreboard in full and the people (and pets) of the house
+  context.eu = oneLine(c.eu, 80);
+  context.cadastros = rows(c.cadastros, 200, (x) => ({ tipo: oneLine(x.tipo, 20), nome: oneLine(x.nome, 160), quem: oneLine(x.quem, 60), quando: oneLine(x.quando, 40), repete: oneLine(x.repete, 80), proxima: isDate(x.proxima) ? x.proxima : null, dose: oneLine(x.dose, 60), valor: num(x.valor), atrasada: x.atrasada === true })).filter((x) => x.nome);
+  const rw = c.recompensas && typeof c.recompensas === "object" ? c.recompensas : null;
+  context.recompensas = rw ? {
+    periodo: oneLine(rw.periodo, 60), premio: oneLine(rw.premio, 200),
+    extrato: rows(rw.extrato, 20, (l) => ({ quando: oneLine(l.quando, 20), pessoa: oneLine(l.pessoa, 60), pontos: Math.round(num(l.pontos) || 0), o_que: oneLine(l.o_que, 120) })).filter((l) => l.pessoa),
+    demeritos: rows(rw.demeritos, 30, (d) => ({ nome: oneLine(d.nome, 80), pontos: Math.round(num(d.pontos) || 0) })).filter((d) => d.nome),
+  } : null;
+  context.pessoas = rows(c.pessoas, 30, (p) => ({ nome: oneLine(p.nome, 60), pet: p.pet === true, calendario: oneLine(p.calendario, 60) })).filter((p) => p.nome);
   // 1.101.0: how many the screen has, when it sends only the first ones
-  for (const k of ["agenda", "tarefas"]) {
+  for (const k of ["agenda", "tarefas", "cadastros"]) {
     const n = Math.round(num(c[`${k}_total`]) || 0);
     if (n > context[k].length && n < 100000) context[`${k}_total`] = n;
   }
@@ -96,12 +106,18 @@ const section = (title, list, line, total = 0) =>
 /** The instructions for one turn: who the AI is, today, the screen, what the app shows and the conversation so far. */
 export function chatInstructions({ messages, context: c, arquivos = 0 }, now = new Date()) {
   const parts = [
-    section("Agenda (próximos dias):", c.agenda, (e) => `${e.data}${e.inicio ? ` ${e.inicio}${e.fim ? `–${e.fim}` : ""}` : " (dia todo)"}: ${e.titulo}${e.calendario ? ` [${e.calendario}]` : ""}`, c.agenda_total),
+    // 1.102.0: de quem é cada compromisso (a pessoa do calendário), o local e as notas
+    section("Agenda (o próximo mês):", c.agenda, (e) => `${e.data}${e.inicio ? ` ${e.inicio}${e.fim ? `–${e.fim}` : ""}` : " (dia todo)"}: ${e.titulo}${e.calendario ? ` [${e.calendario}]` : ""}${e.de ? `, de ${e.de}` : ", da casa"}${e.local ? `, em ${e.local}` : ""}${e.notas ? ` (notas: ${e.notas})` : ""}`, c.agenda_total),
     section("Rotinas da casa de hoje:", c.rotinas, (x) => `${x.nome}${x.hora ? ` às ${x.hora}` : x.periodo ? ` (${x.periodo})` : ""}${x.quem ? `, ${x.quem}` : ""}${x.pontos ? `, ${x.pontos} pontos` : ""}: ${x.feito ? (x.pulada ? "pulada" : "feita") : x.atrasada ? "atrasada" : "a fazer"}`),
     section("Remédios de hoje:", c.remedios, (x) => `${x.nome}${x.dose ? ` (${x.dose})` : ""}${x.hora ? ` às ${x.hora}` : ""}${x.quem ? `, ${x.quem}` : ""}: ${x.estado || "a tomar"}`),
     section("Contas a pagar:", c.contas, (x) => `${x.nome}${x.valor != null ? `, ${money(x.valor)}` : ""}${x.vence ? `, vence ${x.vence}` : ""}${x.atrasada ? " (atrasada)" : ""}`),
     section("Manutenção da casa:", c.manutencao, (x) => `${x.nome}${x.vence ? `, próxima ${x.vence}` : ""}${x.estado === "vencida" ? " (vencida)" : ""}`),
     section("Placar:", c.placar, (x) => `${x.pessoa}: ${x.pontos} pontos`),
+    c.recompensas && (c.recompensas.periodo || c.recompensas.premio) ? `Recompensas: ${[c.recompensas.periodo ? `período ${c.recompensas.periodo}` : "", c.recompensas.premio ? `prêmio: ${c.recompensas.premio}` : ""].filter(Boolean).join("; ")}.` : "",
+    section("Extrato do placar (os últimos):", (c.recompensas && c.recompensas.extrato) || [], (l) => `${l.quando}: ${l.pessoa} ${l.pontos >= 0 ? "+" : ""}${l.pontos}${l.o_que ? `, ${l.o_que}` : ""}`),
+    section("Deméritos:", (c.recompensas && c.recompensas.demeritos) || [], (d) => `${d.nome}: −${Math.abs(d.pontos)} pontos`),
+    section("Cadastrados (rotinas, remédios, contas e manutenção):", c.cadastros || [], (x) => `${x.nome} (${x.tipo})${x.quem ? `, ${x.quem}` : ""}${x.dose ? `, ${x.dose}` : ""}${x.quando ? `, ${x.quando}` : ""}, ${x.repete}${x.proxima ? `, próxima ${x.proxima}` : ""}${x.valor != null ? `, ${money(x.valor)}` : ""}${x.atrasada ? " (atrasada)" : ""}`, c.cadastros_total),
+    section("Pessoas e pets da casa:", c.pessoas || [], (p) => `${p.nome}${p.pet ? " (pet)" : p.calendario ? ` (calendário ${p.calendario})` : ""}`),
     // 1.101.0: the tasks are all the pending ones (also without a deadline), not only "com prazo"
     section("Tarefas pendentes (ResolvIA):", c.tarefas, (x) => `${x.nome}${x.lista ? ` [${x.lista}]` : ""}${x.prazo ? `, prazo ${x.prazo}` : ", sem prazo"}${x.atrasada ? " (atrasada)" : ""}`, c.tarefas_total),
   ].filter(Boolean);
@@ -110,6 +126,8 @@ export function chatInstructions({ messages, context: c, arquivos = 0 }, now = n
     "Você é a IA da CronologIA, a agenda da família no Home Assistant (compromissos, rotinas da casa, remédios, contas, manutenção e placar de recompensas). Converse em português do Brasil, com todos os acentos e o ç (você, às, não, alimentação), de forma curta e direta, sem palavras em inglês e sem markdown.",
     "A pessoa pode perguntar sobre a agenda e a tela em que está, ou sobre qualquer outro assunto: responda das duas formas. Sobre a agenda, use só os dados abaixo; não invente compromissos.",
     `Hoje é ${whenText(now)} (${ymd(now)}).`,
+    // 1.102.0: quem usa e de quem é cada coisa: "você" é só o que é dessa pessoa ou da casa
+    c.eu ? `Quem está usando o app agora: ${c.eu}. "Você" é essa pessoa: o compromisso, a rotina ou o remédio de outra pessoa é dela (diga de quem é), não de quem pergunta.` : "",
     c.tela ? `A pessoa está na tela: ${c.tela}.` : "",
     parts.length ? parts.join("\n") : "(nada na agenda)",
     `Quando a pessoa pedir para ${c.criar ? "marcar um compromisso, " : ""}marcar uma rotina como feita ou um remédio como tomado, escreva em "acoes" uma linha por ação e, na resposta, diga o que vai fazer: ela confirma na tela antes. Datas relativas ("amanhã", "sexta") contam a partir de hoje. Sem pedido, deixe "acoes" vazio.`,

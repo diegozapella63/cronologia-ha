@@ -65,7 +65,7 @@ describe("cleanChat", () => {
     }).context;
     assert.equal(c.tela, "x y");
     assert.equal(c.criar, false, "only true counts");
-    assert.deepEqual(c.agenda, [{ titulo: "a b c", data: "2026-11-05", inicio: null, fim: "10:00", calendario: "" }]);
+    assert.deepEqual(c.agenda, [{ titulo: "a b c", data: "2026-11-05", inicio: null, fim: "10:00", calendario: "", de: "", local: "", notas: "" }]);
     assert.deepEqual(c.rotinas, [{ id: null, nome: "R", feito: false, pulada: false, periodo: "", hora: null, quem: "", pontos: 0, atrasada: false }]);
     assert.equal(c.remedios[0].hora, null);
     assert.deepEqual(c.contas, [{ nome: "C", valor: null, vence: null, atrasada: false }]);
@@ -116,6 +116,25 @@ describe("chatInstructions", () => {
     assert.doesNotMatch(ins, /Tarefas com prazo/);
     const c = cleanChat({ messages: [{ role: "user", text: "x" }], context: { tarefas: [{ nome: "Lavar o carro", lista: "Casa" }] } });
     assert.match(chatInstructions(c, NOW), /Lavar o carro \[Casa\], sem prazo/);
+  });
+  it("1.102.0: who uses the app and whose each appointment is: 'você' is only what is theirs", () => {
+    const c = cleanChat({ messages: [{ role: "user", text: "o que tenho hoje?" }], context: {
+      eu: "Beto", agenda: [{ titulo: "Pilates", data: "2026-11-03", inicio: "07:00", fim: "08:00", calendario: "Ana", de: "Ana", local: "Studio", notas: "levar tapete" }, { titulo: "Feira", data: "2026-11-04" }],
+      pessoas: [{ nome: "Beto", calendario: "Casa" }, { nome: "Bolinha", pet: true }],
+      cadastros: [{ tipo: "rotina", nome: "Regar", quem: "Ana", quando: "manhã", repete: "toda segunda", proxima: "2026-11-09" }], cadastros_total: 3,
+      recompensas: { periodo: "Novembro", premio: "Pizza", extrato: [{ quando: "2026-11-02 08:10", pessoa: "Ana", pontos: 5, o_que: "Arrumar a cama" }], demeritos: [{ nome: "Bagunça", pontos: 3 }] },
+    } });
+    const t = chatInstructions(c, NOW);
+    assert.match(t, /Quem está usando o app agora: Beto\. "Você" é essa pessoa/);
+    assert.match(t, /2026-11-03 07:00–08:00: Pilates \[Ana\], de Ana, em Studio \(notas: levar tapete\)/);
+    assert.match(t, /2026-11-04 \(dia todo\): Feira, da casa/);
+    assert.match(t, /Bolinha \(pet\)/);
+    assert.match(t, /Regar \(rotina\), Ana, manhã, toda segunda, próxima 2026-11-09/);
+    assert.match(t, /… e mais 2 que não couberam aqui \(são 3 ao todo\)/);
+    assert.match(t, /Recompensas: período Novembro; prêmio: Pizza\./);
+    assert.match(t, /2026-11-02 08:10: Ana \+5, Arrumar a cama/);
+    assert.match(t, /Bagunça: −3 pontos/);
+    assert.doesNotMatch(chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }] }), NOW), /Quem está usando/, "no person: nothing said");
   });
   it("1.101.0: a list the screen cut says how many there are (the AI does not answer as if it saw all)", () => {
     const agenda = Array.from({ length: 80 }, (_, i) => ({ titulo: `Compromisso ${i}`, data: "2026-11-05" }));

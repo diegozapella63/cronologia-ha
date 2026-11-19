@@ -59,7 +59,7 @@ class Panel extends hostOf(ChatMixin) {
 }
 
 describe("chat context: the same as the screen", () => {
-  it("the agenda of the next 8 days, in order, without what goes apart (routines, tasks, GerencIA)", () => {
+  it("1.102.0: the agenda of the next month, in order, without what goes apart (routines, tasks, GerencIA)", () => {
     const p = new Panel({
       events: [
         ev("Dentista", 20, 15),
@@ -76,9 +76,43 @@ describe("chat context: the same as the screen", () => {
       [["Reunião", "2026-11-19", "10:00", "Casa"], ["Dentista", "2026-11-20", "15:00", "Casa"], ["Feriado", "2026-11-21", null, ""]],
     );
     assert.equal(c.agenda_total, 3);
-    assert.equal(p.asked[1] - p.asked[0], 8 * 86400000, "8 days from today");
+    assert.equal(Math.round((p.asked[1] - p.asked[0]) / 86400000), 31, "a month from today");
     assert.equal(c.criar, true);
     assert.equal(new Panel({ cal: null })._chatContext().criar, false, "no calendar to create: no cards to create");
+  });
+
+  it("1.102.0: who uses the app, whose each appointment is (the person of the calendar), the place and the notes", () => {
+    const p = new Panel({ events: [
+      ev("Pilates", 19, 7, { cal: "calendar.ana", location: "Studio Centro", description: "Levar\n tapete" }),
+      ev("Dentista", 20, 15),
+      ev("Feira", 21, 9, { cal: "calendar.casa_toda" }),
+    ] });
+    p._user = { name: "Beto Exemplo", person: "Beto" };
+    p._peopleCals = () => [{ name: "Beto", cal: "calendar.casa" }, { name: "Ana", cal: "calendar.ana" }];
+    p.o.ix = { people: [{ name: "Beto" }, { name: "Ana" }, { name: "Bolinha", pet: true }] };
+    const c = p._chatContext();
+    assert.equal(c.eu, "Beto");
+    assert.deepEqual(c.agenda.map((e) => [e.titulo, e.de, e.local, e.notas]), [["Pilates", "Ana", "Studio Centro", "Levar tapete"], ["Dentista", "Beto", "", ""], ["Feira", "", "", ""]]);
+    assert.deepEqual(c.pessoas, [{ nome: "Beto", pet: false, calendario: "Casa" }, { nome: "Ana", pet: false, calendario: "" }, { nome: "Bolinha", pet: true, calendario: "" }]);
+  });
+
+  it("1.102.0: the catalog (all the routines, doses, bills and maintenance, not only today's) and the rewards in full", () => {
+    const p = new Panel({ scoreOn: true, score: { rows: [{ name: "Ana", points: 30 }], current: { label: "Novembro", reward: "Pizza" },
+      log: [{ at: "2026-11-18T08:10:00", who: "Ana", points: 5, title: "Arrumar a cama" }] }, ix: { catalog: [
+      { kind: "rotina", summary: "Regar as plantas", who: "Ana", period: "manha", rrule: "FREQ=WEEKLY;BYDAY=MO,TH", next: "2026-11-19" },
+      { kind: "remedio", summary: "Vitamina D", who: "Beto", dose: "1 cp", time: "08:00", rrule: "FREQ=DAILY", next: "2026-11-19" },
+      { kind: "manutencao", summary: "Trocar o filtro", every: { n: 6, unit: "meses" }, next: "2026-12-01", late: false },
+      { kind: "conta", summary: "Internet", value: 120, next: "2026-11-25" },
+    ] } });
+    p._demerits = () => [{ title: "Bagunça", points: 3 }];
+    const c = p._chatContext();
+    assert.deepEqual(c.cadastros.map((x) => [x.nome, x.tipo, x.quem]), [["Regar as plantas", "rotina", "Ana"], ["Vitamina D", "remedio", "Beto"], ["Trocar o filtro", "manutencao", ""], ["Internet", "conta", ""]]);
+    assert.equal(c.cadastros[1].dose, "1 cp");
+    assert.equal(c.cadastros[3].valor, 120);
+    assert.match(c.cadastros[2].repete, /^a cada /);
+    assert.equal(c.cadastros_total, 4);
+    assert.deepEqual(c.recompensas, { periodo: "Novembro", premio: "Pizza", extrato: [{ quando: "2026-11-18 08:10", pessoa: "Ana", pontos: 5, o_que: "Arrumar a cama" }], demeritos: [{ nome: "Bagunça", pontos: 3 }] });
+    assert.equal(new Panel({ scoreOn: false })._chatContext().recompensas, null, "the scoreboard off: nothing of it");
   });
 
   it("on the Calendário, the days from the one on screen (when it is ahead)", () => {
@@ -89,10 +123,10 @@ describe("chat context: the same as the screen", () => {
   });
 
   it("a long agenda goes cut, with how many there are", () => {
-    const events = Array.from({ length: 95 }, (_, i) => ev(`Compromisso ${i}`, 19, 8));
+    const events = Array.from({ length: 170 }, (_, i) => ev(`Compromisso ${i}`, 19, 8));
     const c = new Panel({ events })._chatContext();
-    assert.equal(c.agenda.length, 80);
-    assert.equal(c.agenda_total, 95);
+    assert.equal(c.agenda.length, 150);
+    assert.equal(c.agenda_total, 170);
   });
 
   it("today's routines, doses and the unpaid bills, as on screen", () => {
@@ -150,8 +184,21 @@ describe("chat context: the same as the screen", () => {
     assert.equal(new Panel({ view: { name: "rewards" } })._chatScreen(), "Recompensas (placar, prêmios e extrato)");
     assert.match(new Panel({ view: { name: "routines" } })._chatScreen(), /^Rotinas/);
     assert.match(new Panel()._chatScreen(), /^Agora/);
-    assert.deepEqual(new Panel({ view: { name: "rewards" } })._chatExamples(), ["Quem está ganhando?", "O que ainda dá pontos hoje?"]);
+    assert.deepEqual(new Panel({ view: { name: "rewards" }, scoreOn: true })._chatExamples().slice(0, 2), ["Quem está ganhando o placar?", "O que ainda dá pontos hoje?"]);
     assert.equal(new Panel({ view: { name: "calendar" } })._chatExamples()[0], "O que tenho esta semana?");
+  });
+
+  it("1.102.0: 6 ready questions at hand and 20 more models in Editar perguntas, the scoreboard only with it on", () => {
+    for (const o of [{}, { scoreOn: true }, { view: { name: "calendar" } }, { view: { name: "rewards" }, scoreOn: true }]) {
+      const p = new Panel(o);
+      const at = p._chatExamples(), more = p._chatModels();
+      assert.equal(at.length, 6, JSON.stringify(o));
+      assert.equal(more.length, 20, JSON.stringify(o));
+      assert.equal(new Set([...at, ...more]).size, 26, "no question twice");
+    }
+    const off = [...new Panel()._chatExamples(), ...new Panel()._chatModels()].join("\n");
+    assert.doesNotMatch(off, /placar|pontos|prêmio/, "scoreboard off: none of its questions");
+    assert.match([...new Panel({ scoreOn: true })._chatModels()].join("\n"), /pontos/);
   });
 });
 
