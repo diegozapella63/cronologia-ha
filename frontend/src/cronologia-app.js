@@ -3203,7 +3203,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
       </div>`;
     if (!on) {
       return html`<div class="panel" id="leitura-ia">
-        ${this._secHead("sparkles", "IA", "Encontra eventos em mensagens, prints, fotos e PDFs, e conversa.")}
+        ${this._secHead("sparkles", "IA", "Usa a IA configurada no Home Assistant.")}
         ${sw}
       </div>`;
     }
@@ -3220,7 +3220,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     }
     if (ai.reason) detail = `${detail} ${ai.reason}`.trim();
     return html`<div class="panel" id="leitura-ia">
-      ${this._secHead("sparkles", "IA", "Encontra eventos em mensagens, prints, fotos e PDFs, e conversa.")}
+      ${this._secHead("sparkles", "IA", "Usa a IA configurada no Home Assistant.")}
       ${sw}
       <div class="sub-op"><div class="sub-box">
       <div class="ai-state ${tone}"><span class="dot"></span><div><b>${title}</b>${detail ? html`<span>${detail}</span>` : nothing}</div></div>

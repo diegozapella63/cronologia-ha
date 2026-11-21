@@ -10654,10 +10654,10 @@ ${s}`:e.join(`
         <div class="grow"><div class="label">Usar IA</div><div class="hint" style="white-space:normal">${e?"Ligado.":"Desligado: sem leitura por IA, sem Falar."}</div></div>
         <label class="switch"><input type="checkbox" role="switch" .checked=${e} @change=${p=>this._saveAppPrefs({ai_off:p.target.checked?null:!0})} aria-label="Usar IA" /><span class="track"></span></label>
       </div>`;if(!e)return r`<div class="panel" id="leitura-ia">
-        ${this._secHead("sparkles","IA","Encontra eventos em mensagens, prints, fotos e PDFs, e conversa.")}
+        ${this._secHead("sparkles","IA","Usa a IA configurada no Home Assistant.")}
         ${t}
       </div>`;let a=this._ai||{},s=a.entities||[],i=this._app("ai_entity",""),n=this._app("ai_photos",""),l=this._aiChecking?"off":a.ready&&a.images?"ok":a.ready?"warn":"bad",c=this._aiChecking?"Verificando\u2026":a.ready&&a.images?"Pronta para ler fotos":a.ready?"S\xF3 l\xEA mensagens":"N\xE3o configurada",d="";return a.ready&&a.using&&(d=`Usando ${a.using.name}${i?"":" (a IA padr\xE3o do Home Assistant)"}.`,a.photos&&(d+=` Para fotos, ${a.photos.name}.`)),a.reason&&(d=`${d} ${a.reason}`.trim()),r`<div class="panel" id="leitura-ia">
-      ${this._secHead("sparkles","IA","Encontra eventos em mensagens, prints, fotos e PDFs, e conversa.")}
+      ${this._secHead("sparkles","IA","Usa a IA configurada no Home Assistant.")}
       ${t}
       <div class="sub-op"><div class="sub-box">
       <div class="ai-state ${l}"><span class="dot"></span><div><b>${c}</b>${d?r`<span>${d}</span>`:m}</div></div>

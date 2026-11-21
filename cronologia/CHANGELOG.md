@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.107.1
+
+- **Integrações › IA**: o texto de cima igual ao dos outros apps.
+
 ## 1.107.0
 
 - **Tarefa e manutenção › Nenhum, Casa ou Bens**: como no ResolvIA, a escolha ganhou o **Nenhum**, que vem primeiro e é onde começa. O **Cômodo** e o **Equipamento** só aparecem depois de escolher **Casa** ou **Bens**.
