@@ -115,6 +115,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 - **Caixas de seleção no visual do app**: nenhuma janela nativa do celular. Toda caixa de seleção abre pelo selectsheet.js; sugestões de texto (no lugar do `<datalist>`) e horários (sem AM/PM) também no visual do app; a caixa fechada igual aos outros campos (altura, cantos, seta), no claro e no escuro.
   - Aqui: os horários e as datas são o `timeField`/`dateField` de `frontend/src/whenpick.js` (a janela com as horas e os minutos, ou o mês, com as classes do selectsheet.js), nunca `<input type="time|date">`; a seção recolhida é o `offFold` de `frontend/src/offfold.js` (calendários ocultos, listas do ResolvIA deixadas de fora, rotinas pausadas nas férias). O `tests/frontend-pickers.test.mjs` confere que nenhuma tela volta a usar os do celular.
 
+1.107.2: `frontend/src/teclado.js` (`tecladoCalmo`, chamado na entrada da tela; o mesmo código em todos os apps): com o foco num campo de texto, ou quando o teclado muda a altura da tela, as páginas em volta do app (a do Home Assistant) voltam para o começo. `SO_MATERIAL`/`soMaterial` no `lib/ai.js`: a guarda na frente de toda instrução que vai para a IA (o `tests/ai-guarda.test.mjs` confere que nenhuma chamada fica sem).
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.
