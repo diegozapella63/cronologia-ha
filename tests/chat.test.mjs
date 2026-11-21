@@ -1,7 +1,7 @@
 // Conversa (the chat beside the microphone): what the screen sends, the instructions and the actions.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanChat, chatInstructions, parseChatActions, replyOf, CHAT_STRUCTURE, MAX_ACTIONS } from "../cronologia/rootfs/app/lib/chat.js";
+import { cleanChat, chatInstructions, parseChatActions, replyOf, CHAT_STRUCTURE, MAX_ACTIONS, FAMILIA } from "../cronologia/rootfs/app/lib/chat.js";
 
 const NOW = new Date(2026, 10, 3, 8, 30);
 const ctx = () =>
@@ -110,6 +110,11 @@ describe("chatInstructions", () => {
   });
   it("an empty agenda says so", () => {
     assert.match(chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }] }), NOW), /\(nada na agenda\)/);
+    // 1.107.0: the context of the family (the same sentence in every app): the other apps and that it only sees this one
+    const fam = chatInstructions(cleanChat({ messages: [{ role: "user", text: "x" }] }), NOW);
+    assert.ok(fam.includes(FAMILIA) && fam.indexOf(FAMILIA) < fam.indexOf("(nada na agenda)"), "right after what the app is");
+    for (const app of ["ResolvIA (listas de tarefas)", "CronologIA (agenda", "GerencIA (finanças)", "InventarIA (inventário", "MemorIA (blocos", "EconomIA (lista de compras", "CorrerIA (os apps no WhatsApp"]) assert.ok(FAMILIA.includes(app), app);
+    assert.match(FAMILIA, /Você só vê os dados deste app: se a pessoa perguntar algo que é de outro, diga em qual app está, sem inventar\.$/);
   });
   it("1.101.0: the tasks are the pending ones, also without a deadline (not only com prazo)", () => {
     assert.match(ins, /Tarefas pendentes \(ResolvIA\):/);

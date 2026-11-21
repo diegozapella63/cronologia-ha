@@ -274,6 +274,9 @@ describe("data panel: Mais › Dados", () => {
     assert.match(text(v), /01\/11\/2026 às 09:05 3,0 MB · cronologia-2026-11-01\.zip Restaurar/);
     // Versões anteriores says when the copies are made, like the InventarIA (store.js: every 10 min of use, before import/restore/reset, 3 kept)
     assert.match(text(v), /Versões anteriores Uma cópia a cada 10 minutos de uso e antes de importar, restaurar ou começar do zero\. Ficam as 3 mais recentes\./);
+    // 1.107.0: the common sentences like the other apps
+    assert.match(text(v), /Backup na pasta share Cópia completa em share\/cronologia\. Os backups do Home Assistant também incluem o CronologIA\./);
+    assert.match(text(v), /os ajustes do app, em \/data\/cronologia\.json, no backup do Home Assistant\./);
     // 1.64.0: the sections in the order of all the apps of the family
     const heads = [...render(v).html.matchAll(/<h2>([^<]+)<\/h2>/g)].map((m) => m[1]);
     assert.deepEqual(heads, ["Exportar", "Backup na pasta share", "Importar", "Versões anteriores", "Onde ficam os dados", "Começar do zero"]);

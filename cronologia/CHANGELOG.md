@@ -1,5 +1,12 @@
 # Mudanças
 
+## 1.107.0
+
+- **Tarefa e manutenção › Nenhum, Casa ou Bens**: como no ResolvIA, a escolha ganhou o **Nenhum**, que vem primeiro e é onde começa. O **Cômodo** e o **Equipamento** só aparecem depois de escolher **Casa** ou **Bens**.
+- **Conversa**: a IA sabe quais são os outros apps da casa e, quando a pergunta é de outro app, diz em qual deles está.
+- **Falar › Como configurar**: o **Home Assistant Cloud** abre o site num toque.
+- **Dados**: os textos de cima no mesmo jeito dos outros apps.
+
 ## 1.106.0
 
 - **Remédios no EconomIA**: o EconomIA (1.46.0) pode escolher um remédio cadastrado aqui para a **Reposição** dele (o que comprar de novo de tempos em tempos). Vão só o nome, a dose e quantas vezes ele aparece; quem toma, não.

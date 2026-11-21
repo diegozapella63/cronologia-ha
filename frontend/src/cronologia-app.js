@@ -1359,7 +1359,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
         ? html`<div class="steps-box">
             <b>Como configurar</b>
             <ol class="steps">
-              <li>Com o Home Assistant Cloud, a fala para texto já vem pronta.</li>
+              <li>Com o <a class="site" href="https://www.nabucasa.com/" target="_blank" rel="noopener noreferrer">Home Assistant Cloud</a>, a fala para texto já vem pronta.</li>
               <li>Sem ele, instale um motor de fala: o app Whisper (local, de graça) com a integração Wyoming, ou a fala para texto de uma IA como Google Gemini ou OpenAI.</li>
               <li>Volte aqui, toque em Verificar de novo e escolha o motor na lista.</li>
             </ol>

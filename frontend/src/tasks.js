@@ -292,22 +292,24 @@ export const TasksMixin = (Base) =>
       const roomsOf = (list) => [...new Set(list.map((id) => (allItems.find((x) => x.id === id) || {}).roomId).filter((r) => r && allRooms.some((c) => c.id === r)))];
       const bensId = (allRooms.find((c) => c.tipo === "bens") || {}).id || null;
       const pickedAll = multiRoom ? (f.rooms || (f.room ? [f.room] : [])).filter((r) => allRooms.some((c) => c.id === r)) : f.room ? [f.room] : [];
-      const bens = !!bensId && (f.where ? f.where === "bens" : locked ? roomsOf(ids).includes(bensId) : pickedAll.includes(bensId));
-      const rooms = bensId ? (bens ? [] : allRooms.filter((c) => c.id !== bensId)) : allRooms;
-      const items = bensId ? allItems.filter((i) => (i.roomId === bensId) === bens) : allItems;
+      // 1.107.0 (like the ResolvIA 2.79.0): Nenhum | Casa | Bens. Nenhum comes first and is where a new one starts: no
+      // rooms and no equipment until Casa or Bens. Without the area Bens there is nothing to choose ("casa").
+      const dele = locked ? roomsOf(ids) : pickedAll;
+      const now = !bensId ? "casa" : f.where || (dele.includes(bensId) ? "bens" : dele.length || locked ? "casa" : "nenhum");
+      const bens = now === "bens";
+      const rooms = now === "casa" ? allRooms.filter((c) => c.id !== bensId) : [];
+      const items = now === "nenhum" ? [] : bensId ? allItems.filter((i) => (i.roomId === bensId) === bens) : allItems;
       const picked = pickedAll.filter((r) => r !== bensId);
       const marked = locked ? roomsOf(ids) : picked;
-      const go = (toBens) => {
-        if (toBens === bens) return;
-        const keep = ids.filter((id) => ((allItems.find((x) => x.id === id) || {}).roomId === bensId) === toBens);
-        this._setForm({ where: toBens ? "bens" : "casa", equips: keep, equipQ: "", equipMore: false, equipAdding: false, ...(toBens ? { room: bensId, rooms: [bensId] } : { room: null, rooms: [] }) });
+      const go = (to) => {
+        if (to === now) return;
+        const keep = to === "nenhum" ? [] : ids.filter((id) => ((allItems.find((x) => x.id === id) || {}).roomId === bensId) === (to === "bens"));
+        this._setForm({ where: to, equips: keep, equipQ: "", equipMore: false, equipAdding: false, ...(to === "bens" ? { room: bensId, rooms: [bensId] } : { room: null, rooms: [] }) });
       };
+      const opt = (id, ic, label) => html`<button class=${now === id ? "on" : ""} aria-pressed=${now === id ? "true" : "false"} @click=${() => go(id)}>${icon(ic)}<span>${label}</span></button>`;
       const where = bensId
         ? html`<div class="field where-field">
-            <div class="seg where" role="group" aria-label="Casa ou Bens">
-              <button class=${bens ? "" : "on"} aria-pressed=${bens ? "false" : "true"} @click=${() => go(false)}>${icon("house")}<span>Casa</span></button>
-              <button class=${bens ? "on" : ""} aria-pressed=${bens ? "true" : "false"} @click=${() => go(true)}>${icon("car")}<span>Bens</span></button>
-            </div>
+            <div class="seg where" role="group" aria-label="Nenhum, Casa ou Bens">${opt("nenhum", "x", "Nenhum")}${opt("casa", "house", "Casa")}${opt("bens", "car", "Bens")}</div>
           </div>`
         : nothing;
       const toggle = (id) => {

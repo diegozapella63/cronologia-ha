@@ -4,7 +4,7 @@
 import "../_lit.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { text, click, labels, fakeApi, hostOf } from "../_lit.mjs";
+import { text, click, labels, controls, fakeApi, hostOf } from "../_lit.mjs";
 import { TasksMixin } from "../../frontend/src/tasks.js";
 
 const ROOMS = [
@@ -39,8 +39,14 @@ describe("Adicionar › Tarefa: Casa ou Bens", () => {
   });
   it("Casa first: the rooms of the house (no Bens chip), Todos is the house, the equipment of the house", () => {
     const a = new App();
-    const v = a.view();
-    assert.deepEqual(labels(v).slice(0, 6), ["Casa", "Bens", "Nenhum", "Todos", "Cozinha", "Sala"]);
+    // 1.107.0: Nenhum comes first and is where a new one starts: no rooms and no equipment until Casa or Bens
+    let v = a.view();
+    assert.deepEqual(labels(v), ["Nenhum", "Casa", "Bens"]);
+    assert.equal(text(v), "Nenhum Casa Bens");
+    click(v, "Casa");
+    assert.equal(a._form.where, "casa");
+    v = a.view();
+    assert.deepEqual(labels(v).slice(0, 7), ["Nenhum", "Casa", "Bens", "Nenhum", "Todos", "Cozinha", "Sala"]);
     assert.match(text(v), /Equipamento/);
     click(v, "Todos");
     assert.deepEqual(a._form.rooms, ["cozinha", "sala"], "Todos: the house, not Bens");
@@ -59,6 +65,17 @@ describe("Adicionar › Tarefa: Casa ou Bens", () => {
     assert.deepEqual(a._form.equips, ["carro"]);
     click(a.view(), "Casa");
     assert.deepEqual([a._form.where, a._form.room, a._form.rooms, a._form.equips], ["casa", null, [], []]);
+  });
+  it("1.107.0: Nenhum takes the room and the equipment out, and the fields too; a task of the house opens in Casa", () => {
+    const a = new App();
+    a._form = { room: "cozinha", rooms: ["cozinha"], equips: ["geladeira"] };
+    assert.match(text(a.view()), /^Nenhum Casa Bens Cômodo/, "of the house: Casa, with its rooms");
+    const where = (v) => controls(v).filter((c) => /aria-pressed="true"/.test(c.attrs) && ["Nenhum", "Casa", "Bens"].includes(c.text)).map((c) => c.text)[0];
+    assert.equal(where(a.view()), "Casa");
+    controls(a.view()).filter((c) => c.text === "Nenhum")[0].on.click({}); // the first Nenhum is the one of the choice (the other, of the rooms)
+    assert.deepEqual([a._form.where, a._form.room, a._form.rooms, a._form.equips], ["nenhum", null, [], []]);
+    assert.equal(text(a.view()), "Nenhum Casa Bens");
+    assert.equal(where(a.view()), "Nenhum");
   });
   it("a task already in Bens opens in Bens", () => {
     const a = new App();

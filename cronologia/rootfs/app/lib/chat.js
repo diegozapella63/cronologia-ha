@@ -104,6 +104,10 @@ const section = (title, list, line, total = 0) =>
   list.length ? [title, ...list.map((x) => `  - ${line(x)}`), ...(total > list.length ? [`  - … e mais ${total - list.length} que não couberam aqui (são ${total} ao todo).`] : [])].join("\n") : "";
 
 /** The instructions for one turn: who the AI is, today, the screen, what the app shows and the conversation so far. */
+// The context of the family, the same in every app: the AI only sees the data of this app and says in which app the rest is
+export const FAMILIA =
+  "Este app é um dos apps da casa (a família da CorrerIA Code), cada um com o seu assunto: ResolvIA (listas de tarefas), CronologIA (agenda, rotinas, remédios e placar), GerencIA (finanças), InventarIA (inventário da casa), MemorIA (blocos de anotações), EconomIA (lista de compras e preços) e CorrerIA (os apps no WhatsApp e em outras IAs). Você só vê os dados deste app: se a pessoa perguntar algo que é de outro, diga em qual app está, sem inventar.";
+
 export function chatInstructions({ messages, context: c, arquivos = 0 }, now = new Date()) {
   const parts = [
     // 1.102.0: de quem é cada compromisso (a pessoa do calendário), o local e as notas
@@ -125,6 +129,7 @@ export function chatInstructions({ messages, context: c, arquivos = 0 }, now = n
   return [
     "Você é a IA da CronologIA, a agenda da família no Home Assistant (compromissos, rotinas da casa, remédios, contas, manutenção e placar de recompensas). Converse em português do Brasil, com todos os acentos e o ç (você, às, não, alimentação), de forma curta e direta, sem palavras em inglês e sem markdown.",
     "A pessoa pode perguntar sobre a agenda e a tela em que está, ou sobre qualquer outro assunto: responda das duas formas. Sobre a agenda, use só os dados abaixo; não invente compromissos.",
+    FAMILIA,
     `Hoje é ${whenText(now)} (${ymd(now)}).`,
     // 1.102.0: quem usa e de quem é cada coisa: "você" é só o que é dessa pessoa ou da casa
     c.eu ? `Quem está usando o app agora: ${c.eu}. "Você" é essa pessoa: o compromisso, a rotina ou o remédio de outra pessoa é dela (diga de quem é), não de quem pergunta.` : "",

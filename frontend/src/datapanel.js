@@ -179,7 +179,7 @@ export const DataMixin = (Base) =>
           </ul>
         </div>
         <div class="panel">
-          ${this._secHead("archive", "Backup na pasta share", html`Cópia completa em <code>share/cronologia</code>.`)}
+          ${this._secHead("archive", "Backup na pasta share", html`Cópia completa em <code>share/cronologia</code>. Os backups do Home Assistant também incluem o CronologIA.`)}
           <div class="btn-row sec-actions">
             <button class="btn primary sm" ?disabled=${this._busy === "backup" || (b && b.available === false)} @click=${() => this._createBackup()}>${icon("archive")}${this._busy === "backup" ? "Criando…" : "Criar backup"}</button>
           </div>
@@ -205,7 +205,7 @@ export const DataMixin = (Base) =>
           <div class="btn-row sec-actions"><button class="btn outline sm" @click=${() => this._openVersions()}>${icon("archive-restore")}Ver versões</button></div>
         </div>
         <div class="panel">
-          ${this._secHead("database", "Onde ficam os dados", html`Os eventos ficam nos calendários; os ajustes do app, em <code>/data/cronologia.json</code>.`)}
+          ${this._secHead("database", "Onde ficam os dados", html`Os eventos ficam nos calendários; os ajustes do app, em <code>/data/cronologia.json</code>, no backup do Home Assistant.`)}
         </div>
         <div class="panel" id="zerar">
           ${this._secHead("trash", "Começar do zero", "Apaga as marcações (Tomei, Paguei, Feito) e o placar. Os eventos, os calendários, as pessoas e as preferências continuam. Uma cópia fica em Versões anteriores.")}
