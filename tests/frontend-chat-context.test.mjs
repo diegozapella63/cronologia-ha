@@ -246,3 +246,57 @@ describe("chat: sending and the cards", () => {
     assert.deepEqual([p._chatState().messages[0].actions[0].state, p._chatState().messages[0].actions[0].note], ["failed", "Nenhum calendário para criar eventos."]);
   });
 });
+
+describe("chat: the microphone", () => {
+  it("Pronto sends what was understood; too short or a failure says so", async () => {
+    const api = fakeApi({ voiceText: () => ({ text: "o que tem hoje" }), call: () => ({ reply: "ok" }) });
+    const p = new Panel({ api });
+    p._chatRec = { stop: () => new Int16Array(16000) };
+    p._setChat({ rec: "on" });
+    await p._chatMic();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(p._chatState().messages[0].text, "o que tem hoje");
+    assert.equal(p._chatState().rec, null);
+    p._chatRec = { stop: () => new Int16Array(10) };
+    p._setChat({ rec: "on" });
+    await p._chatMic();
+    assert.equal(p._chatState().error, "Não ouvi nada. Toque no microfone e fale.");
+    const q = new Panel({ api: fakeApi({ voiceText: new Error("Sem fala para texto.") }) });
+    q._chatRec = { stop: () => new Int16Array(16000) };
+    q._setChat({ rec: "on" });
+    await q._chatMic();
+    assert.deepEqual([q._chatState().error, q._chatState().busy], ["Sem fala para texto.", false]);
+    q._chatRec = null;
+    q._setChat({ rec: "on" });
+    await q._chatMic();
+    assert.equal(q._chatState().rec, null, "on without a recorder: just off");
+    q._setChat({ rec: "starting" });
+    await q._chatMic();
+    assert.equal(q._chatState().rec, "starting", "while it opens, a second tap does nothing");
+  });
+
+  it("1.105.0: Cancelar while listening: the microphone stops, nothing is transcribed or sent", async () => {
+    const api = fakeApi({ voiceText: () => ({ text: "não era para ir" }) });
+    const p = new Panel({ api });
+    const rec = { cancel() { this.cancelled = true; }, stop: () => new Int16Array(16000) };
+    p._chatRec = rec;
+    p._setChat({ rec: "on", error: "antes" });
+    p._chatMicCancel();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(rec.cancelled, true);
+    assert.deepEqual([p._chatRec, p._chatState().rec, p._chatState().error, api.calls.length, p._chatState().messages.length], [null, null, "", 0, 0]);
+    p._chatMicCancel(); // with nothing listening: nothing happens
+    assert.equal(p._chatState().rec, null);
+  });
+
+  it("leaving the chat stops the microphone", () => {
+    const p = new Panel();
+    const rec = { cancel() { this.cancelled = true; } };
+    p._chatRec = rec;
+    p._setChat({ rec: "on" });
+    p._chatStop();
+    assert.deepEqual([rec.cancelled, p._chatRec, p._chatState().rec], [true, null, null]);
+    p._chatStop();
+    assert.equal(p._chatState().rec, null);
+  });
+});
