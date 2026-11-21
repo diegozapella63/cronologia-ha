@@ -423,6 +423,25 @@ export function partIdOf(cal, raw, k, key) {
 /** What the screen shows of the parts: how much was done, the points so far and who. */
 const partInfo = (p) => (p ? { done: p.done, points: p.list.reduce((a, x) => a + x.points, 0), by: [...new Set(p.list.map((x) => x.by).filter(Boolean))] } : null);
 
+/**
+ * 1.106.0: the medicines registered (the catalog of the index), for the EconomIA (Reposição): one row per name, with the
+ * dose and how many times it is scheduled (`vezes`). Without who takes it: only what to buy again.
+ */
+export function medsList(catalog) {
+  const by = new Map();
+  for (const c of catalog || []) {
+    if (!c || c.kind !== "remedio") continue;
+    const nome = String(c.summary || "").trim().slice(0, 120);
+    if (!nome) continue;
+    const id = foldText(nome);
+    const m = by.get(id) || { nome, dose: "", vezes: 0 };
+    if (!m.dose && c.dose) m.dose = String(c.dose).slice(0, 60);
+    m.vezes += 1;
+    by.set(id, m);
+  }
+  return [...by.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).slice(0, 200);
+}
+
 export function buildIndex({ occurrences, checks = {}, parts = {}, late = 30, alertsOn = true, features = () => 7, reach = () => false, now = Date.now(), away = null }) {
   const today = new Date(now);
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.106.0
+
+- **Remédios no EconomIA**: o EconomIA (1.46.0) pode escolher um remédio cadastrado aqui para a **Reposição** dele (o que comprar de novo de tempos em tempos). Vão só o nome, a dose e quantas vezes ele aparece; quem toma, não.
+
 ## 1.105.1
 
 - **Conversa**: as perguntas prontas ficam no meio da tela, uma por linha, como no CorrerIA.

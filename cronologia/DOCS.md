@@ -261,6 +261,10 @@ As **manutenções** e as **rotinas da casa** podem aparecer também como tarefa
 
 O nome, a data, as notas e os pontos continuam sendo do CronologIA: mude aqui, no evento, que a tarefa acompanha. No ResolvIA, a tarefa abre só para ver. **Apagar** a tarefa no ResolvIA tira da lista até a próxima data; escolher **Nenhuma** tira todas, e trocar de lista leva para a nova. Essas tarefas não se repetem no card **Tarefas com prazo** daqui, porque já estão nos cards de manutenção e de rotina. A lista precisa aceitar criar e editar tarefas (uma **Lista de tarefas local** do Home Assistant serve; as do Alexa, não).
 
+## Remédios no EconomIA
+
+O EconomIA pode escolher um remédio cadastrado aqui para a **Reposição** dele (o que comprar de novo de tempos em tempos), com **Remédios do CronologIA** ligado nas Opções de lá. Vão só o nome, a dose e quantas vezes ele aparece; quem toma, não.
+
 ## MemorIA no Agora
 
 Com o [MemorIA](https://github.com/diegozapella63/memoria-ha) (o app de anotações da mesma família, 1.13.0 ou mais novo) no mesmo Home Assistant, a **Agora** ganha um card com a folha do MemorIA que vale agora, desenhada como no MemorIA (a espiral, o papel do bloco, a letra de mão quando ela está ligada lá): o bloco, desde quando ("desde 18:00", ou "desde ontem às 22:00" quando começou antes da meia-noite) e o texto da folha. Um texto comprido aparece recolhido, com **Ver mais**; as caixas marcadas (☑) aparecem riscadas. Só a folha de agora: as próximas ficam no MemorIA. Tocar abre o MemorIA.

@@ -18,7 +18,7 @@ import { Store } from "./lib/store.js";
 import { AI } from "./lib/ai.js";
 import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
-import { parseKind } from "./lib/kinds.js";
+import { parseKind, medsList } from "./lib/kinds.js";
 import { Home, ingressUrl } from "./lib/home.js";
 import { AwayCal } from "./lib/awaycal.js";
 import { Gerencia } from "./lib/gerencia.js";
@@ -1018,7 +1018,9 @@ function publishPresence() {
   const donos_listas = store.data.app.todo_owner || {};
   // tela (1.95.0): the address of this app in the browser (the CorrerIA opens the panel of the Tela cheia with ?painel=1)
   const tela = telaPath || null;
-  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas, tela });
+  // remedios (1.106.0): the medicines registered (name, dose, how many times), for the Reposição of the EconomIA
+  const remedios = medsList(home.index && home.index.catalog);
+  const body = JSON.stringify({ placar, espelho, resolvia, donos_listas, tela, remedios });
   if (body === presenceLast && Date.now() - presenceAt < 15 * 60 * 1000) return;
   try {
     const dir = path.join(SHARE_DIR, "cronologia");
@@ -1027,7 +1029,7 @@ function publishPresence() {
     // espelho: the maintenance and routines taken to a ResolvIA list ({list: {uid: {pontos, tipo}}})
     // the start is the same in every app of the family (app, nome, versao, gravado_em); app is still the name here, for the
     // ResolvIA of before 2.55 (it checks it): the id ("cronologia") comes in a next version, the readers already take both
-    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", nome: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas, tela }, null, 1));
+    fs.writeFileSync(tmp, JSON.stringify({ app: "CronologIA", nome: "CronologIA", versao: VERSION, gravado_em: new Date().toISOString(), resolvia, placar, espelho, donos_listas, tela, remedios }, null, 1));
     fs.renameSync(tmp, path.join(dir, "integracao.json"));
     presenceLast = body;
     presenceAt = Date.now();

@@ -154,6 +154,16 @@ describe("routines of the calendar", () => {
     assert.ok(b, "a bill to try");
     await assert.rejects(c.call("cronologia/check/set", { key: b.key, skip: true }), { code: "not_found" });
   });
+  it("1.106.0: the medicines registered go to share/cronologia/integracao.json, for the Reposição of the EconomIA", async () => {
+    const nomes = [...new Set(h.latest.catalog.filter((x) => x.kind === "remedio").map((x) => x.summary))];
+    assert.ok(nomes.length, "a medicine in the house of the test");
+    const j = await waitFor(() => {
+      const x = JSON.parse(fs.readFileSync(path.join(stack.dirs.share, "cronologia", "integracao.json"), "utf8"));
+      return x.remedios && x.remedios.length && x;
+    }, { what: "the medicines in the integration file" });
+    assert.deepEqual(j.remedios.map((r) => r.nome).sort(), nomes.sort());
+    assert.deepEqual(Object.keys(j.remedios[0]), ["nome", "dose", "vezes"], "without who takes it");
+  });
   it("1.58.0: Pular a dose: pulado, out of the doses to take; Desfazer brings it back", async () => {
     const dose = h.latest.meds.find((m) => !m.taken);
     const out = await c.call("cronologia/check/set", { key: dose.key, skip: true });

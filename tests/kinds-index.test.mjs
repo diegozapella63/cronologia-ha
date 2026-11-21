@@ -3,7 +3,7 @@
 import { at, isoLocal, addDaysYmd } from "./helpers.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildIndex, occurrenceKey, buildDescription, afterStuck } from "../cronologia/rootfs/app/lib/kinds.js";
+import { buildIndex, occurrenceKey, buildDescription, afterStuck, medsList } from "../cronologia/rootfs/app/lib/kinds.js";
 
 const NOW = at(2026, 11, 2, 14, 0).getTime(); // Monday, 14:00 (afternoon)
 const TODAY = "2026-11-02";
@@ -582,5 +582,24 @@ describe("buildIndex: Modo férias", () => {
     for (const away of [{ from: "2026-11-06", to: "2026-11-01" }, { from: "2026-02-30", to: "2026-03-02" }, { from: "x" }, "sim"]) {
       assert.equal(index([DAILY("Regar as plantas", TODAY)], { away }).routines.length, 1, JSON.stringify(away));
     }
+  });
+});
+
+describe("medsList (1.106.0): the medicines for the Reposição of the EconomIA", () => {
+  it("one row per name, with the dose and how many times; only the medicines; without who takes", () => {
+    const catalog = [
+      { kind: "remedio", summary: "Vitamina D", dose: "1 cápsula", who: "Ana" },
+      { kind: "remedio", summary: "Antialérgico", dose: "", who: "Beto" },
+      { kind: "remedio", summary: "antialergico ", dose: "1 comprimido", who: "Beto" },
+      { kind: "rotina", summary: "Regar as plantas" },
+      { kind: "remedio", summary: "  " },
+      null,
+    ];
+    assert.deepEqual(medsList(catalog), [
+      { nome: "Antialérgico", dose: "1 comprimido", vezes: 2 },
+      { nome: "Vitamina D", dose: "1 cápsula", vezes: 1 },
+    ]);
+    assert.deepEqual(medsList(undefined), []);
+    assert.equal(medsList(Array.from({ length: 300 }, (_, i) => ({ kind: "remedio", summary: `Remédio ${i}` }))).length, 200);
   });
 });
