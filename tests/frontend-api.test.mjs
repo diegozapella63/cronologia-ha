@@ -287,6 +287,35 @@ describe("api: fetch calls", () => {
     globalThis.fetch = reply(503);
     await assert.rejects(api.extract({}), /Erro 503/);
   });
+  it("chat (the Conversa with the clip) posts the files as JSON and carries the error code", async () => {
+    const { api } = up();
+    globalThis.fetch = reply(200, { reply: "Li o arquivo." });
+    assert.deepEqual(await api.chat({ messages: [], anexos: [{ nome: "a.pdf" }] }), { reply: "Li o arquivo." });
+    assert.deepEqual([reply.last.opts.method, reply.last.opts.headers["content-type"], reply.last.opts.body], ["POST", "application/json", '{"messages":[],"anexos":[{"nome":"a.pdf"}]}']);
+    assert.match(String(reply.last.url), /\/api\/hassio_ingress\/xyz\/api\/chat$/);
+    globalThis.fetch = reply(413, { error: "Arquivo grande demais.", code: "too_big" });
+    await assert.rejects(api.chat({}), (e) => e.code === "too_big" && e.message === "Arquivo grande demais.");
+    globalThis.fetch = reply(500);
+    await assert.rejects(api.chat({}), /Erro 500/);
+  });
+  it("part of a routine, Começar do zero and the sheet of now of the MemorIA at the clock of this phone", () => {
+    const { api, ws } = up();
+    const sent = () => strip(ws.sent.at(-1));
+    api.checkPart("k1", 0.5);
+    assert.deepEqual(sent(), { type: "cronologia/check/part", key: "k1", frac: 0.5 });
+    api.checkPart("k1", 0.25, "Ana");
+    assert.deepEqual(sent(), { type: "cronologia/check/part", key: "k1", frac: 0.25, who: "Ana" });
+    api.setCheck("k1", true, "rotina", "", 0.75);
+    assert.deepEqual(sent(), { type: "cronologia/check/set", key: "k1", done: true, kind: "rotina", frac: 0.75 });
+    api.resetData();
+    assert.deepEqual(sent(), { type: "cronologia/data/reset" });
+    api.memoriaNow(false, new Date(2026, 10, 4, 7, 5));
+    assert.deepEqual(sent(), { type: "cronologia/memoria/agora", fresh: false, hora: "07:05", dia: "2026-11-04" });
+    api.memoriaNow(true, new Date(2026, 0, 9, 23, 59), true);
+    assert.deepEqual(sent(), { type: "cronologia/memoria/agora", fresh: true, casa: true, hora: "23:59", dia: "2026-01-09" });
+    api.memoriaNow();
+    assert.match(sent().hora, /^\d\d:\d\d$/, "with no clock given: now");
+  });
 });
 
 describe("api: the Home Assistant around", () => {
@@ -320,5 +349,25 @@ describe("api: the Home Assistant around", () => {
     appEnv().haptic("x");
     appEnv().openInHA("/config");
     assert.deepEqual(opened, [["/config", "_top"]]);
+  });
+  it("appEnv inside another app (the CorrerIA): the Home Assistant is the window on top; another origin never breaks", () => {
+    // the parent is the CorrerIA (no <home-assistant> in it); the top is the Home Assistant
+    const ha = parent({});
+    window.parent = { document: { querySelector: () => null } };
+    window.top = ha;
+    appEnv().haptic("light");
+    appEnv().openInHA("/app/resolvia");
+    assert.deepEqual(ha.events.map((e) => e.type), ["haptic", "location-changed"]);
+    assert.deepEqual(ha.pushed, [[null, "", "/app/resolvia"]]);
+    // both from another origin (reading their document throws): the parent, which can do nothing here
+    const opened = [];
+    window.open = (...a) => opened.push(a);
+    const far = { get document() { throw new Error("cross-origin"); }, dispatchEvent() { throw new Error("cross-origin"); } };
+    window.parent = far;
+    window.top = far;
+    assert.doesNotThrow(() => appEnv().haptic("light"));
+    appEnv().openInHA("/config");
+    assert.deepEqual(opened, [["/config", "_top"]], "the link opens on top, the usual way");
+    window.top = window;
   });
 });

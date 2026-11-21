@@ -3,10 +3,12 @@
 // GerencIA (they go apart), today's routines and doses, the unpaid bills, the scoreboard only when on, the pending
 // tasks of the ResolvIA (also without a deadline) and how many there are when a list is cut. And what the cards do.
 import "./_lit.mjs";
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { fakeApi, hostOf } from "./_lit.mjs";
+import { fakeApi, hostOf, labels, click, fire, controls, render } from "./_lit.mjs";
 import { ChatMixin } from "../frontend/src/chat-panel.js";
+import { Recorder, micError, VOICE_MAX_S } from "../frontend/src/voice.js";
+import { nothing } from "../frontend/vendor/lit-all.min.js";
 
 const NOW = new Date(2026, 10, 18, 9, 0).getTime();
 const at = (d, h = 0, m = 0) => new Date(2026, 10, d, h, m);
@@ -239,6 +241,17 @@ describe("chat: sending and the cards", () => {
     assert.equal(api.calls.length, 2, "a card done is not done twice");
   });
 
+  it("Fazer todas does each card not done yet, in order", async () => {
+    const api = fakeApi({ setCheck: () => ({}) });
+    const p = new Panel({ api });
+    p._setChat({ messages: [{ role: "ia", text: "", actions: [{ tipo: "feito", id: "k1", nome: "Regar", state: "done" }, { tipo: "feito", id: "k2", nome: "Varrer", state: "todo" }, { tipo: "tomei", id: "m1", nome: "Vitamina", state: "failed" }] }] });
+    await p._chatDoAll(0);
+    assert.deepEqual(api.calls.map((c) => c.slice(1)), [["k2", true, "rotina"], ["m1", true, "remedio"]]);
+    assert.deepEqual(p._chatState().messages[0].actions.map((a) => a.state), ["done", "done", "done"]);
+    await p._chatDoAll(7); // a message that is not there: nothing
+    assert.equal(api.calls.length, 2);
+  });
+
   it("without a calendar to create, the card says why", async () => {
     const p = new Panel({ cal: null, api: fakeApi({ createEvent: () => ({}) }) });
     p._setChat({ messages: [{ role: "ia", text: "", actions: [{ tipo: "evento", titulo: "X", data: "2026-11-20", state: "todo" }] }] });
@@ -300,3 +313,239 @@ describe("chat: the microphone", () => {
     assert.equal(p._chatState().rec, null);
   });
 });
+
+describe("chat: the button, the window and what is kept", () => {
+  const store = () => {
+    const kept = {};
+    globalThis.sessionStorage = { getItem: (k) => (k in kept ? kept[k] : null), setItem: (k, v) => (kept[k] = v) };
+    return kept;
+  };
+  const ready = (o = {}) => Object.assign(new Panel(o), { _aiOn: () => true, _ai: { ready: true }, _voice: { ready: true }, _isHaAndroid: () => false, renderRoot: { querySelector: () => null }, updateComplete: Promise.resolve() });
+
+  it("the conversation is kept in this tab (the last 30 messages) and comes back; private mode does not break", () => {
+    const kept = store();
+    const p = new Panel();
+    p._setChat({ messages: Array.from({ length: 34 }, (_, i) => ({ role: "user", text: `m${i}` })) });
+    const saved = JSON.parse(kept["cronologia-conversa"]);
+    assert.deepEqual([saved.length, saved[0].text, saved[29].text], [30, "m4", "m33"]);
+    p._setChat({ draft: "oi" });
+    assert.equal(JSON.parse(kept["cronologia-conversa"]).length, 30, "only the messages are kept, when they change");
+    assert.deepEqual(new Panel()._chatState().messages.map((m) => m.text).slice(0, 2), ["m4", "m5"], "another opening of the app in this tab: the same conversation");
+    kept["cronologia-conversa"] = '{"não":"lista"}';
+    assert.deepEqual(new Panel()._chatState().messages, [], "something else kept there: an empty conversation");
+    globalThis.sessionStorage = { getItem() { throw new Error("private"); }, setItem() { throw new Error("private"); } };
+    const q = new Panel();
+    assert.deepEqual(q._chatState().messages, []);
+    assert.doesNotThrow(() => q._setChat({ messages: [{ role: "user", text: "oi" }] }));
+    assert.equal(q._chatState().messages.length, 1);
+    store();
+  });
+
+  it("the button beside the microphone only with Usar IA on and an AI ready; it opens the window", async () => {
+    store();
+    const p = ready();
+    assert.equal(new Panel()._aiOn, undefined);
+    assert.equal(Object.assign(new Panel(), { _aiOn: () => false, _ai: { ready: true } })._renderChatBtn(), nothing);
+    assert.equal(Object.assign(new Panel(), { _aiOn: () => true, _ai: null })._renderChatBtn(), nothing);
+    assert.equal(Object.assign(new Panel(), { _aiOn: () => true, _ai: { ready: false } })._renderChatBtn(), nothing);
+    const btn = p._renderChatBtn();
+    assert.deepEqual(labels(btn), ["Conversar com a IA"]);
+    // on a computer (a mouse), the box takes the focus; on a phone the keyboard does not jump up
+    const ta = { focused: 0, focus() { this.focused++; } };
+    p.renderRoot = { querySelector: (q) => (q === ".chat-input textarea" ? ta : null) };
+    globalThis.window.matchMedia = (q) => ({ matches: /pointer: fine/.test(q) });
+    click(btn, "Conversar com a IA");
+    await p.updateComplete;
+    assert.deepEqual([p._sheet, p._chatScroll, ta.focused], ["chat", true, 1]);
+    globalThis.window.matchMedia = () => ({ matches: false });
+    p._openChat();
+    await p.updateComplete;
+    assert.equal(ta.focused, 1, "a phone: no focus");
+    p.renderRoot = { querySelector: () => null };
+    p._openChat(); // the box is not drawn yet: no error
+    await p.updateComplete;
+    delete globalThis.window.matchMedia;
+    p._openChat();
+    await p.updateComplete;
+    assert.equal(ta.focused, 1);
+  });
+
+  it("the window: the 6 questions, the draft, Nova conversa, the X, and the microphone only where the browser has one", () => {
+    store();
+    const p = ready();
+    Object.defineProperty(globalThis, "navigator", { value: { mediaDevices: { getUserMedia() {} } }, configurable: true });
+    let v = p._renderChatSheet();
+    assert.ok(labels(v).includes("Falar"), "a fala para texto ready and a microphone: Falar");
+    assert.equal((render(v).html.match(/class="pick"/g) || []).length, 6, "the 6 ready questions");
+    fire(v, "Mensagem para a IA", "input", { target: { value: "o que tem hoje" } });
+    assert.equal(p._chatState().draft, "o que tem hoje");
+    p._setChat({ messages: [{ role: "user", text: "oi" }], error: "falhou", draft: "" });
+    v = p._renderChatSheet();
+    click(v, "Nova conversa");
+    assert.deepEqual([p._chatState().messages, p._chatState().error], [[], ""]);
+    const n = p.updates;
+    click(p._renderChatSheet(), "Editar perguntas"); // the panel of the questions asks the app to draw again
+    assert.ok(p.updates > n);
+    click(p._renderChatSheet(), "Pronto");
+    p._sheet = "chat";
+    click(p._renderChatSheet(), "Fechar");
+    assert.equal(p._sheet, null);
+    // no microphone in this browser (http): no Falar, the box only sends
+    Object.defineProperty(globalThis, "navigator", { value: {}, configurable: true });
+    assert.ok(!labels(p._renderChatSheet()).includes("Falar"));
+    p._voice = null;
+    assert.ok(!labels(p._renderChatSheet()).includes("Falar"));
+  });
+
+  it("the microphone of the window: listening, Pronto and Cancelar reach the app", async () => {
+    store();
+    const p = ready();
+    Object.defineProperty(globalThis, "navigator", { value: { mediaDevices: { getUserMedia() {} } }, configurable: true });
+    const got = [];
+    p._chatMic = () => got.push("mic");
+    p._chatMicCancel = () => got.push("cancel");
+    p._chatSend = (t) => got.push(["send", t]);
+    p._chatDo = (k, j) => got.push(["do", k, j]);
+    p._chatDoAll = (k) => got.push(["all", k]);
+    p._setChat({ rec: "on" });
+    const v = p._renderChatSheet();
+    click(v, "Pronto: enviar o que falei");
+    click(v, "Cancelar: não enviar o que falei");
+    assert.deepEqual(got, ["mic", "cancel"]);
+    p._setChat({ rec: null, draft: "oi", messages: [{ role: "ia", text: "", actions: [{ label: "A", state: "todo" }, { label: "B", state: "todo" }] }] });
+    const w = p._renderChatSheet();
+    fire(w, "Mensagem para a IA", "keydown", { key: "Enter", preventDefault() {} });
+    click(w, "Fazer todas (2)");
+    controls(w).filter((c) => c.text === "Fazer")[1].on.click();
+    assert.deepEqual(got.slice(2), [["send", "oi"], ["all", 0], ["do", 0, 1]]);
+  });
+});
+
+describe("chat: the clip (Tirar foto, Escolher fotos, Escolher arquivo)", () => {
+  /** A page where the app creates the hidden <input type=file>: what it was given and its change listener. */
+  const page = () => {
+    const made = [];
+    globalThis.document = {
+      ...globalThis.document,
+      createElement: (tag) => {
+        const el = { tag, style: {}, files: [], clicked: 0, removed: 0, on: {}, addEventListener(t, fn) { this.on[t] = fn; }, click() { this.clicked++; }, remove() { this.removed++; } };
+        made.push(el);
+        return el;
+      },
+      body: { appended: [], appendChild(el) { this.appended.push(el); } },
+    };
+    return made;
+  };
+  const panel = (android = false) => Object.assign(new Panel(), { _isHaAndroid: () => android, cams: [], _openCamera(o) { this.cams.push(o); } });
+
+  it("Tirar foto opens the camera of the app, for the Conversa", () => {
+    const p = panel();
+    p._chatAttach("camera");
+    assert.deepEqual(p.cams, [{ chat: true }]);
+  });
+
+  it("Escolher fotos: the gallery, several at once (one at a time in the Home Assistant app on Android); Escolher arquivo: a photo or a PDF", () => {
+    const made = page();
+    const p = panel();
+    const added = [];
+    p._chatAddFiles = (l) => added.push(l);
+    p._chatAttach("fotos");
+    const inp = made[0];
+    assert.deepEqual([inp.tag, inp.type, inp.accept, inp.multiple, inp.style.display, inp.clicked], ["input", "file", "image/*", true, "none", 1]);
+    assert.deepEqual(globalThis.document.body.appended, [inp]);
+    inp.files = [{ name: "a.jpg" }, { name: "b.jpg" }];
+    inp.on.change();
+    assert.deepEqual([inp.removed, added], [1, [[{ name: "a.jpg" }, { name: "b.jpg" }]]]);
+    panel(true)._chatAttach("fotos");
+    assert.equal(made[1].multiple, false, "the Home Assistant app on Android drops what multiple chose");
+    p._chatAttach("arquivo");
+    assert.deepEqual([made[2].accept, made[2].multiple], ["image/*,application/pdf", false]);
+    made[2].files = null;
+    made[2].on.change();
+    assert.deepEqual([made[2].removed, added.length], [1, 1], "nothing chosen: the field leaves the page and nothing is added");
+  });
+
+  it("the files chosen go to the conversation, with what could not be read said; the photos of the camera too", async () => {
+    const p = panel();
+    p._setChat({ files: [{ nome: "nota.pdf", pdf: true }] });
+    await p._chatAddFiles([{ name: "planilha.xlsx", type: "application/vnd.ms-excel", size: 10 }]);
+    assert.deepEqual(p._chatState().files.map((f) => f.nome), ["nota.pdf"]);
+    assert.match(p._chatState().error, /foto ou.*PDF|PDF/i);
+    assert.equal(p._chatScroll, true);
+    // the camera (Pronto): the PDF gives way to the photos, numbered, up to 4; the Conversa opens if it was closed
+    p._openChat = function () { this.opened = (this.opened || 0) + 1; };
+    p._chatAddShots([{ data: "AAA", url: "blob:1" }, { data: "BBB", url: "blob:2", mime: "image/png" }]);
+    assert.deepEqual(p._chatState().files, [{ nome: "Foto 1.jpg", pdf: false, mime: "image/jpeg", data: "AAA", url: "blob:1" }, { nome: "Foto 2.jpg", pdf: false, mime: "image/png", data: "BBB", url: "blob:2" }]);
+    assert.deepEqual([p._chatState().error, p.opened], ["", 1]);
+    p._sheet = "chat";
+    p._chatAddShots([{ data: "C" }, { data: "D" }, { data: "E" }]);
+    assert.deepEqual([p._chatState().files.map((f) => f.nome), p.opened], [["Foto 1.jpg", "Foto 2.jpg", "Foto 3.jpg", "Foto 4.jpg"], 1], "4 at most; already in the Conversa: it stays");
+    // ✕ on a file of the window takes it out
+    Object.assign(p, { _voice: null, _aiOn: () => true });
+    click(p._renderChatSheet(), "Tirar Foto 2.jpg");
+    assert.deepEqual(p._chatState().files.map((f) => f.nome), ["Foto 1.jpg", "Foto 3.jpg", "Foto 4.jpg"]);
+    const before = p.cams.length;
+    click(p._renderChatSheet(), "Anexar");
+    click(p._renderChatSheet(), "Tirar foto");
+    assert.equal(p.cams.length, before + 1, "the clip of the window reaches the app");
+  });
+});
+
+describe("chat: starting to listen, and the newest message in view", () => {
+  it("the microphone opens (starting, then on) and stops alone at the limit; blocked, it says why", async () => {
+    const start = Recorder.prototype.start;
+    const cancel = Recorder.prototype.cancel;
+    const cancelled = [];
+    Recorder.prototype.cancel = function () { cancelled.push(this); };
+    const seen = [];
+    Recorder.prototype.start = async function () { seen.push(this); };
+    mock.timers.enable({ apis: ["setTimeout"] });
+    try {
+      const p = new Panel({ api: fakeApi({ voiceText: () => ({ text: "" }) }) });
+      const going = p._chatMic();
+      assert.equal(p._chatState().rec, "starting");
+      await going;
+      assert.deepEqual([p._chatState().rec, p._chatRec === seen[0]], ["on", true]);
+      // at the limit of a recording, it finishes by itself (as a tap on Pronto)
+      let auto = 0;
+      p._chatRec = { stop: () => (auto++, new Int16Array(10)) };
+      mock.timers.tick(VOICE_MAX_S * 1000);
+      assert.equal(auto, 1);
+      // the person left while the microphone was opening: this recorder is dropped
+      const q = new Panel();
+      Recorder.prototype.start = async function () { q._chatRec = null; };
+      await q._chatMic();
+      assert.equal(cancelled.length, 1);
+      assert.notEqual(q._chatState().rec, "on");
+      // the browser says no: the reason, in words
+      const r = new Panel();
+      Recorder.prototype.start = async () => { throw Object.assign(new Error("x"), { name: "NotAllowedError" }); };
+      await r._chatMic();
+      assert.deepEqual([r._chatState().rec, r._chatRec, r._chatState().error], [null, null, micError({ name: "NotAllowedError" })]);
+      assert.equal(cancelled.length, 2);
+    } finally {
+      mock.timers.reset();
+      Recorder.prototype.start = start;
+      Recorder.prototype.cancel = cancel;
+    }
+  });
+
+  it("after a draw, the Conversa scrolls to the newest message, once", () => {
+    const p = new Panel();
+    const log = { scrollTop: 0, scrollHeight: 900 };
+    p.renderRoot = { querySelector: (q) => (q === ".chat-log" ? log : null) };
+    p._chatScroll = true;
+    p._chatAfterRender();
+    assert.equal(log.scrollTop, 0, "another window open: nothing");
+    p._sheet = "chat";
+    p._chatAfterRender();
+    assert.deepEqual([log.scrollTop, p._chatScroll], [900, false]);
+    log.scrollHeight = 1500;
+    p._chatAfterRender();
+    assert.equal(log.scrollTop, 900, "only when something new was said");
+    p._chatScroll = true;
+    p.renderRoot = { querySelector: () => null };
+    assert.doesNotThrow(() => p._chatAfterRender());
+  });
+});
+

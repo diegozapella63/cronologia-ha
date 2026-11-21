@@ -46,6 +46,7 @@ No `config.yaml`, `url` aponta para o repositório e `panel_admin: false` fica c
 
 - `tests/run.sh` (ou `npm test`): unitários (`tests/*.test.mjs`), telas montadas (`tests/ui/`) e integração (`tests/integration/`), com `node:test`, sem instalar nada; `tests/run.sh unit|ui|integration|coverage` roda uma parte. Cada arquivo de integração sobe o HA simulado e o servidor em portas livres.
 - `tests/e2e/run.sh`: testes visuais em Python + Playwright (`pip install playwright && playwright install chromium`). Precisam dos outros apps ao lado deste repositório (`../resolvia-ha`, `../inventario-ha`, `../gerencia-ha`) ou nas variáveis `E2E_*`. Usam as portas fixas 8099/8123/8097: não rode duas baterias ao mesmo tempo.
+- Cobertura: `tests/run.sh coverage` (`npm run test:coverage`) falha abaixo de 95% das linhas, e cada arquivo fica acima de 95%; código novo vem com o teste que passa por ele.
 - Datas: nunca dependa do relógio real nos unitários (passe `now` ou use `mock.timers`); nos visuais, a ordem das rotinas depende da hora (períodos), então calcule o esperado a partir da hora.
 
 ## Arquivos iguais em todos os apps

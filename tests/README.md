@@ -5,7 +5,7 @@ Quatro camadas, todas rodando a cada push no GitHub (aba Actions):
 | Camada | Onde | Como rodar | O que confere |
 |---|---|---|---|
 | Unitários | `tests/*.test.mjs` | `npm run test:unit` | cada parte do servidor (`cronologia/rootfs/app/lib`) e as partes puras da tela, sem Home Assistant |
-| Telas montadas | `tests/ui/*.test.mjs` | `npm run test:ui` | o que uma tela mostra em cada estado, com os mixins da tela montados num app de mentira (`hostOf`); fica fora de `npm run test:coverage`, porque montar um mixin faz todos os métodos dele contarem na cobertura |
+| Telas montadas | `tests/ui/*.test.mjs` | `npm run test:ui` | o que uma tela mostra em cada estado, com os mixins da tela montados num app de mentira (`hostOf`): o que cada botão faz, o que é salvo e o que é dito quando algo falha |
 | Integração | `tests/integration/*.test.mjs` | `npm run test:integration` | o servidor de verdade contra o Home Assistant simulado (`dev/fake-ha.mjs`), pelo WebSocket e pelo HTTP: eventos (repetições com só este, este e os próximos e toda a série) e os modelos (remédio, conta, rotina, manutenção), Feito, Pular e Desfazer, avisos no celular (quem cuida, Adiar, Tomei), placar, fechamento e Extrato, cômodos e equipamentos, Levar e Trazer do ResolvIA, GerencIA, os trechos do MemorIA (um MemorIA de mentira), Falar, Ler com IA, exportar e importar, o que cada calendário permite (Google, CalDAV, Outlook só leitura), Home Assistant antigo, sem calendários ou com falhas |
 | Visuais | `tests/e2e/*.py` | `tests/e2e/run.sh` | as telas no Chromium (Playwright): clica, digita, confere o que aparece e grava capturas de tela |
 
@@ -13,7 +13,7 @@ O Home Assistant simulado tem variações pelas variáveis `FAKE_*` (lista no co
 
 `tests/run.sh` (ou `npm test`) roda as três primeiras (só Node 22, sem instalar nada; cerca de um minuto); `tests/run.sh unit`, `ui`, `integration` ou `coverage` roda uma parte. Os visuais precisam de `python3` e `pip install playwright && playwright install chromium`, e dos outros apps da família ao lado deste repositório (`../resolvia-ha`, `../inventario-ha`, `../gerencia-ha`) ou nas variáveis `E2E_*`; um teste que precisa de um app que não está lá é pulado. As capturas ficam em `$E2E_TMP/shots`.
 
-`npm run test:coverage` mostra quanto do código os testes percorrem.
+`npm run test:coverage` (ou `tests/run.sh coverage`) mostra quanto do código os testes percorrem (unitários, telas montadas e integração) e falha abaixo de 95% das linhas; cada arquivo fica acima de 95% (a última coluna mostra as linhas que faltam). Janelas feitas à mão no `document` (a do horário e a da data) são testadas com o `tests/_dom.mjs`, um `document` de mentira.
 
 ## Peças que ajudam
 

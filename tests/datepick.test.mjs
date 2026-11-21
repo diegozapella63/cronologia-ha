@@ -96,4 +96,37 @@ describe("<date-pick>: the shortcuts and Outra data", () => {
     assert.match(h, /<div class="field dp-field">\s*<span class="flabel">Prazo<\/span>/);
     assert.match(h, /<date-pick value="2026-11-20" kind="futuro" min="" max="" weekStart="1" bid="td-date" none="" label="Prazo"/);
   });
+  it("datePickField: the choice of the field goes to onPick", () => {
+    const got = [];
+    const v = datePickField("Prazo", "", (x) => got.push(x));
+    render(v).fns[0]({ detail: { value: "2026-12-01" } });
+    assert.deepEqual(got, ["2026-12-01"]);
+    assert.match(render(v).html, /<date-pick value="" kind="futuro" min="" max="" weekStart="1" bid="" none="" label="Prazo"/, "what was not given: the defaults");
+  });
+  it("the element: its defaults, drawn in the screen that has it (no shadow), and the month scrolls into view when it opens", async () => {
+    const dp = new DatePick();
+    assert.deepEqual([dp.value, dp.kind, dp.min, dp.max, dp.weekStart, dp.bid, dp.none, dp.label, dp._month, dp._months], ["", "futuro", "", "", 1, "", "", "Data", null, false]);
+    assert.equal(dp.createRenderRoot(), dp, "the styles of the screen (.chip-row, .pick, the calendar) apply to it");
+    const sent = [];
+    dp.dispatchEvent = (e) => sent.push([e.type, e.detail.value]);
+    dp._month = "2026-11";
+    dp._months = true;
+    dp._pick("2026-11-30");
+    assert.deepEqual([sent, dp._month, dp._months], [[["pick", "2026-11-30"]], null, false]);
+    // opening: after the draw, the month is brought into view (smoothly); closing: nothing to scroll
+    const seen = [];
+    const cal = { scrollIntoView: (o) => seen.push(o) };
+    const made = (props) => Object.defineProperty(Object.assign(Object.create(DatePick.prototype), props), "updateComplete", { value: Promise.resolve() });
+    const el = made({ value: XMAS, min: "", max: "", _month: null, _months: true, querySelector: (q) => (q === ".cal" ? cal : null) });
+    el._toggle();
+    await el.updateComplete;
+    assert.deepEqual([el._month, el._months, seen], [`${Y}-12`, false, [{ block: "nearest", behavior: "smooth" }]]);
+    el._toggle();
+    await el.updateComplete;
+    assert.deepEqual([el._month, seen.length], [null, 1]);
+    const gone = made({ value: XMAS, min: "", max: "", _month: null, querySelector: () => null });
+    gone._toggle(); // the month is not on the page yet (or a browser without scrollIntoView): no error
+    await gone.updateComplete;
+    assert.equal(gone._month, `${Y}-12`);
+  });
 });
