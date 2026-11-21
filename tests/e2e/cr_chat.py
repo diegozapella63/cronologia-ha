@@ -54,6 +54,9 @@ async def main():
         await btn.click(); await pg.wait_for_timeout(400)
         chat = sheet.locator(".chat")
         ex = [t.strip() for t in await chat.locator(".chat-ex .pick").all_inner_texts()]
+        # 1.105.1: the ready questions in the middle of the width, one per line, as in the CorrerIA (the same in every app)
+        mid = await chat.locator(".chat-ex").evaluate("(x) => { const b = x.getBoundingClientRect(), c = (b.left + b.right) / 2; const rs = [...x.querySelectorAll('.pick')].map((p) => p.getBoundingClientRect()); return { off: Math.max(...rs.map((r) => Math.abs((r.left + r.right) / 2 - c))), lines: new Set(rs.map((r) => Math.round(r.top))).size, n: rs.length }; }")
+        check(mid["off"] <= 1 and mid["lines"] == mid["n"], f"the questions centered, one per line ({mid})")
         check(await chat.count() == 1 and "O que tenho hoje?" in ex, f"the chat opens empty, with examples ({ex})")
         await pg.screenshot(path=f"{SP}/shots/crh-empty.png")
         async def answered(n): return await chat.locator(".chat-msg.ia .chat-bubble:not(.typing)").count() >= n

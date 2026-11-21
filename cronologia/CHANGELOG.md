@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.105.1
+
+- **Conversa**: as perguntas prontas ficam no meio da tela, uma por linha, como no CorrerIA.
+
 ## 1.105.0
 
 - **Conversa › Falar**: ouvindo, o clipe dá lugar ao **Cancelar**: o microfone para e nada é enviado. Antes só dava para mandar.
