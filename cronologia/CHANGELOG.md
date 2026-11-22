@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.108.0
+
+- **CorrerIA**: as rotinas e as manutenções agora dizem de que cômodo e de que equipamento são, e dá para pedir só as de um cômodo. Com isso, a Ronda da casa do CorrerIA encontra as rotinas de cada cômodo.
+
 ## 1.107.3
 
 - **Conversa no celular**: o Enter do teclado vai para a próxima linha; quem envia é o botão. Com teclado de verdade, o Enter continua enviando.

@@ -371,6 +371,24 @@ describe("cadastros and placar", () => {
     assert.ok(r.pessoas.includes("Ana (calendário Pessoal da Ana)"), "1.99.0: with the calendar, by the name");
     assert.deepEqual(r.placar, { participantes: ["Ana", "Beto"], demeritos: [{ nome: "Toalha molhada", pontos: 5 }] });
   });
+  it("1.108.0: cadastros says the rooms and the items of a routine, and filters by room (the Ronda da casa of the CorrerIA)", async () => {
+    const { read, evs, home } = setup();
+    evs["calendar.casa"].push(
+      { uid: "plantas", summary: "Regar as plantas", start: "2026-11-09", end: "2026-11-10", description: "#rotina\nQuem faz: Ana\nCômodo: Sala de estar; Varanda\nEquipamento: Regador" },
+      { uid: "ar", summary: "Limpar o ar-condicionado", start: "2026-11-12", end: "2026-11-13", description: "#manutenção\nQuem faz: Beto\nA cada: 3 meses\nCômodo: Quarto" },
+    );
+    home.tracked.get("calendar.casa").events = evs["calendar.casa"];
+    const tudo = await read("cadastros");
+    const cad = Object.fromEntries(tudo.cadastrados.map((c) => [c.nome, c]));
+    assert.deepEqual(cad["Regar as plantas"].comodos, ["Sala de estar", "Varanda"]);
+    assert.deepEqual(cad["Regar as plantas"].equipamentos, ["Regador"]);
+    assert.deepEqual(cad["Limpar o ar-condicionado"].comodos, ["Quarto"]);
+    assert.equal(cad["Arrumar a cama"].comodos, undefined, "without a room, no field");
+    const sala = await read("cadastros", { comodo: " sala de ESTAR " });
+    assert.deepEqual(sala.cadastrados.map((c) => c.nome), ["Regar as plantas"], "by the name, without accents or capitals");
+    assert.deepEqual((await read("cadastros", { comodo: "Cozinha" })).cadastrados, [], "a room with nothing");
+    assert.ok(sala.calendarios.length > 1, "the rest comes as always");
+  });
   it("cadastros with the placar off; a pet is said", async () => {
     const { read } = setup({ app: { score: { enabled: false, participants: [] }, people: { Mimi: { pet: true } } } });
     const r = await read("cadastros");

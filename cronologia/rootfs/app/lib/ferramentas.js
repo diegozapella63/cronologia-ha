@@ -69,8 +69,11 @@ export const FERRAMENTAS = [
     titulo: "Calendários e cadastros",
     grava: false,
     descricao:
-      "Os calendários (o que cada um deixa fazer e qual é o padrão para criar), o que está cadastrado (remédios, rotinas, contas e manutenções, com a repetição e a próxima vez), as pessoas da casa e os deméritos do placar.",
-    entrada: obj({}),
+      "Os calendários (o que cada um deixa fazer e qual é o padrão para criar), o que está cadastrado (remédios, rotinas, contas e manutenções, com a repetição, a próxima vez e, nas rotinas e manutenções, os cômodos e os equipamentos), as pessoas da casa e os deméritos do placar.",
+    entrada: obj({
+      // 1.108.0: for the Ronda da casa of the CorrerIA (the routines of one room)
+      comodo: { type: "string", description: "Só as rotinas e as manutenções deste cômodo (o nome, como no InventarIA)." },
+    }),
   },
   {
     nome: "placar",
@@ -580,7 +583,10 @@ export class Ferramentas {
       if (c.fora) r.fora_do_ar = true;
       return r;
     });
-    const cadastrados = (ix.catalog || []).slice(0, 300).map((c) => {
+    // 1.108.0: only what is of one room (the routines and the maintenances have rooms; the rest has none)
+    const comodo = foldText(String(a.comodo || "")).trim();
+    const doComodo = (c) => !comodo || (c.rooms || []).some((r) => foldText(r).trim() === comodo);
+    const cadastrados = (ix.catalog || []).filter(doComodo).slice(0, 300).map((c) => {
       const r = { id: c.key, tipo: KINDS[c.kind].label, nome: c.summary, quando: c.time || (periodInfo(c.period) ? periodInfo(c.period).when : "dia todo") };
       r.repete = c.kind === "manutencao" ? `a cada ${everyLabel(c.every)}` : c.after ? `volta ${everyLabel(c.after)} depois de feita` : c.rrule ? repeteTexto(c.rrule) : "uma vez";
       r.proxima = c.next;
@@ -589,6 +595,8 @@ export class Ferramentas {
       if (c.dose) r.dose = c.dose;
       if (c.value != null) r.valor = c.value;
       if (st && c.points) r.pontos = c.points;
+      if (c.rooms && c.rooms.length) r.comodos = c.rooms;
+      if (c.equips && c.equips.length) r.equipamentos = c.equips;
       r.calendario = nomeCal.get(c.cal) || c.cal;
       return r;
     });

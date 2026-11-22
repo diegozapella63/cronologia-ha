@@ -119,6 +119,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.107.3: na Conversa, no celular (`noCelular()`: `(hover: none) and (pointer: coarse)`, o dedo como jeito principal), o Enter é uma linha nova e o botão envia (`enterkeyhint="enter"`); com teclado de verdade, o Enter envia. Vale em todos os apps da família.
 
+1.108.0: a ferramenta `cadastros` (CorrerIA) leva `comodos` e `equipamentos` (os nomes, de `c.rooms`/`c.equips` do catálogo) nas rotinas e manutenções e aceita `comodo` (só as de um cômodo, pelo nome sem acento nem maiúsculas): a Ronda da casa do CorrerIA 1.21.2 pede assim.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.
