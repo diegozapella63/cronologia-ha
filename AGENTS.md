@@ -129,6 +129,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.110.0: a ferramenta `ler_arquivo` (leitura; `anexo`: os tipos do `anexos.js`, foto ou PDF; o CorrerIA 1.24.0 manda o arquivo da conversa em `anexo`, fora dos argumentos; `chamar(..., {anexo})`, `_ler_arquivo`): o `ai.extract` da tela (`ler` no `server.js`, que respeita o Usar IA) e devolve os compromissos achados, sem criar nada; a IA do CorrerIA cria depois com `criar_compromisso`. O pedido da rota aceita 22 MB.
 
+1.111.0: as lembranças da casa (a Memória da IA do CorrerIA 1.28.0, em `share/correria/lembrancas.json`: `{lembrancas: [frases]}`) vão na frente de toda instrução da IA daqui, logo depois da guarda, só com a opção CorrerIA ligada: `lib/lembrancas.js` (`lerLembrancas`, `lembrancasTexto`, relido uma vez por minuto; igual nos três apps em Node, em `tools/iguais.py`), o `comLembrancas` do `lib/ai.js` (dentro do `soMaterial`) e, no `server.js`, `comLembrancas(() => (correriaOn() ? lembrancasTexto() : ""))`; `LEMBRANCAS_ARQ` troca o arquivo nos testes (`tests/lembrancas.test.mjs`).
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

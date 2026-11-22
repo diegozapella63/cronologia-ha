@@ -15,7 +15,8 @@ import { fileURLToPath } from "node:url";
 import { acceptUpgrade } from "./lib/ws.js";
 import { HAClient } from "./lib/ha.js";
 import { Store } from "./lib/store.js";
-import { AI } from "./lib/ai.js";
+import { AI, comLembrancas } from "./lib/ai.js";
+import { lembrancasTexto } from "./lib/lembrancas.js";
 import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind, medsList } from "./lib/kinds.js";
@@ -68,6 +69,8 @@ const resolviaOn = () => store.data.app.resolvia_on === true;
 const gerenciaOn = () => store.data.app.gerencia_on === true;
 // Mais › Configurações › Integrações › CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda (off by default)
 const correriaOn = () => store.data.app.correria_on === true;
+// as lembranças da casa (do CorrerIA) vão para a IA daqui, só com a opção CorrerIA ligada
+comLembrancas(() => (correriaOn() ? lembrancasTexto() : ""));
 // Mais › Configurações › Integrações › MemorIA: the trechos of now in Agora (off by default)
 const memoriaOn = () => store.data.app.memoria_on === true;
 // dev only (tests written before 1.16.0): start with both on

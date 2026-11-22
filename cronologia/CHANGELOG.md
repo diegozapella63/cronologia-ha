@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.111.0
+
+- A **Memória da IA** do CorrerIA (Configurações › Integrações, lá) vale aqui também: o que a casa pediu para a IA lembrar entra na Conversa e na leitura por IA deste app, com a opção CorrerIA ligada.
+
 ## 1.110.0
 
 - **Ler foto ou PDF pelo CorrerIA**: mande no CorrerIA (ou no meio de uma ronda) a foto de um convite, de um bilhete da escola, de uma receita ou um PDF e peça para pôr na agenda. A IA do CronologIA lê, como na leitura por IA daqui, e o CorrerIA mostra os compromissos que achou para você escolher o que criar. Precisa do CorrerIA 1.24.0 e do Usar IA ligado aqui.
