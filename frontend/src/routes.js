@@ -86,7 +86,8 @@ export function moreName(v) {
  * the "aba" taken out of the address (so a reload opens where it was).
  */
 export function openTab(win = typeof window === "undefined" ? null : window) {
-  const TABS_OPEN = { recompensas: "/recompensas", calendario: "/calendario", agora: "/" };
+  // rotinas (1.109.0): Mais › Rotinas, the link of a round of the CorrerIA
+  const TABS_OPEN = { recompensas: "/recompensas", calendario: "/calendario", agora: "/", rotinas: "/mais/rotinas" };
   const take = (w) => {
     const u = new URL(w.location.href);
     const p = TABS_OPEN[u.searchParams.get("aba")];

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.109.0
+
+- **Abrir pelas Rondas do CorrerIA**: o botão **Abrir no CronologIA** de uma ronda abre direto em Mais › Rotinas.
+
 ## 1.108.1
 
 - **Cômodos de uma rotina**: marcar **Todos** numa casa com mais de 10 cômodos agora guarda todos. Antes só os 10 primeiros ficavam e os últimos voltavam desmarcados. Abra a rotina, marque Todos e salve de novo.

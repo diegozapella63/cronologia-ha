@@ -123,6 +123,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.108.1: os cômodos de uma rotina, manutenção ou tarefa vão até 40 (`MAX_ROOMS` no `nameList` do `lib/kinds.js`, e os mesmos 40 no `server.js` e no `lib/todos.js`); eram 10, e o Todos de uma casa com 12 cômodos voltava com os dois últimos desmarcados. Os equipamentos continuam em 10.
 
+1.109.0: `?aba=rotinas` (`openTab` no `routes.js`) abre Mais › Rotinas: o link de uma ronda do CorrerIA 1.22.0.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

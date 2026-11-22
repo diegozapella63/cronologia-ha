@@ -139,6 +139,11 @@ describe("openTab: a notification opens the app on Recompensas (?aba=recompensas
     assert.deepEqual(ha.replaced[0], { x: 1 }, "the state of the HA page is kept");
     assert.equal(openTab(app), null, "once");
   });
+  it("1.109.0: ?aba=rotinas opens Mais › Rotinas (the link of a round of the CorrerIA)", () => {
+    const ha = win("https://casa.local:8123/app/abc_cronologia?aba=rotinas");
+    assert.equal(openTab(win("https://casa.local:8123/api/hassio_ingress/tok/", ha)), "/mais/rotinas");
+    assert.deepEqual(viewOf("/mais/rotinas"), { name: "more", tab: "rotinas" });
+  });
   it("on the app's own address too; unknown tabs and other origins: nothing", () => {
     const own = win("http://127.0.0.1:8099/?aba=calendario&y=2");
     assert.equal(openTab(own), "/calendario");
