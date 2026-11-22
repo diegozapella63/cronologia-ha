@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.109.1
+
+- **Abrir pelas Rondas do CorrerIA**: o botão **Abrir no CronologIA** agora leva a Mais › Rotinas só com as rotinas do cômodo da ronda (o nome do cômodo vem na busca da tela; limpe para ver todas), também quando o CronologIA já estava aberto no Home Assistant.
+
 ## 1.109.0
 
 - **Abrir pelas Rondas do CorrerIA**: o botão **Abrir no CronologIA** de uma ronda abre direto em Mais › Rotinas.

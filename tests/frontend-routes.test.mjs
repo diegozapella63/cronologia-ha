@@ -125,6 +125,48 @@ describe("routes: the screen in words (Conversa)", () => {
   });
 });
 
+describe("1.109.1: the rest of the address the Home Assistant panel passes by message", async () => {
+  const { watchHaPath, haLink } = await import("../frontend/src/routes.js");
+  const fakeWin = () => {
+    const parent = { posted: [], postMessage(m) { parent.posted.push(m); } };
+    const w = { parent, on: null, addEventListener(_t, f) { w.on = f; }, removeEventListener() { w.on = null; } };
+    return w;
+  };
+  it("each new rest once, only from the page around; stops when asked", () => {
+    const w = fakeWin(), got = [];
+    const stop = watchHaPath((p) => got.push(p), w);
+    assert.deepEqual(w.parent.posted, [{ type: "home-assistant/subscribe-properties" }]);
+    const msg = (path, source = w.parent) => w.on({ source, data: { type: "home-assistant/properties", route: { path } } });
+    msg("");
+    msg("/mais/rotinas");
+    msg("/mais/rotinas/");
+    msg("/outra", {});
+    w.on({ source: w.parent, data: { type: "other" } });
+    assert.deepEqual(got, ["/mais/rotinas"]);
+    stop();
+    assert.equal(w.on, null);
+    const alone = { addEventListener() { throw new Error("no"); } };
+    alone.parent = alone;
+    watchHaPath(() => {}, alone)();
+  });
+  it("haLink: Rotinas (also of one room), Calendário and Recompensas", () => {
+    assert.deepEqual(haLink("/mais/rotinas"), { path: "/mais/rotinas", room: "" });
+    assert.deepEqual(haLink("/mais/rotinas/comodo/Banheiro%20de%20visitas"), { path: "/mais/rotinas", room: "Banheiro de visitas" });
+    assert.deepEqual(haLink("/mais/rotinas/comodo/100%"), { path: "/mais/rotinas", room: "100%" });
+    assert.deepEqual(haLink("/calendario"), { path: "/calendario", room: "" });
+    assert.equal(haLink("/config"), null);
+  });
+  it("?aba=rotinas&comodo=: the room, once, and the address cleaned", async () => {
+    const { openTab, openRoom } = await import("../frontend/src/routes.js");
+    const w = { location: { href: "https://casa.local/app/x_cronologia?aba=rotinas&comodo=Sala%20de%20estar" }, history: { state: null, replaceState(_s, _t, h) { w.location.href = h; } } };
+    w.parent = w;
+    assert.equal(openTab(w), "/mais/rotinas");
+    assert.equal(w.location.href, "https://casa.local/app/x_cronologia");
+    assert.equal(openRoom(), "Sala de estar");
+    assert.equal(openRoom(), "");
+  });
+});
+
 describe("openTab: a notification opens the app on Recompensas (?aba=recompensas)", () => {
   const win = (href, parent = null) => {
     const w = { location: { href }, history: { state: { x: 1 }, replaceState(st, _t, url) { w.location.href = url; w.replaced = [st, url]; } } };

@@ -125,6 +125,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.109.0: `?aba=rotinas` (`openTab` no `routes.js`) abre Mais › Rotinas: o link de uma ronda do CorrerIA 1.22.0.
 
+1.109.1: o mesmo também pelo resto do endereço (`/app/<slug>/mais/rotinas[/comodo/<nome>]`, `/calendario`, `/recompensas`; o cômodo, também em `?aba=rotinas&comodo=`, `openRoom`, vai para a busca da tela, `_catQ`), que o painel do Home Assistant passa por mensagem (`watchHaPath` e `haLink` no `routes.js`): vale para a tela que já estava aberta.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

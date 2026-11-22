@@ -26,7 +26,7 @@ import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
 import { timeField, dateField } from "./whenpick.js";
 import { offFold } from "./offfold.js";
-import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab } from "./routes.js";
+import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab, openRoom, watchHaPath, haLink } from "./routes.js";
 import {
   PALETTE,
   colorById,
@@ -234,6 +234,9 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     if (open) {
       this._path = open;
       history.replaceState({ ...(history.state || {}), rvDepth: 0, rvPath: open }, "");
+      // 1.109.1 (the owner: "não abre filtrando na aba de rotinas somente daquele cômodo"): the room of the link in the search
+      const r = openRoom();
+      if (r) this._catQ = r;
     }
     this._sheet = null;
     this._form = null;
@@ -305,6 +308,17 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     window.addEventListener("message", this._onParentMsg);
     window.addEventListener("resize", this._onSlotResize);
     if (EMBED_CHAT) this._tellParent("pronto"); // the CorrerIA tells back whether its Conversa is open
+    // 1.109.1: /app/<slug>/mais/rotinas (the link of a round of the CorrerIA): the panel of the Home Assistant passes the rest
+    // of the address by message, also to a screen that was already open
+    if (!EMBED) {
+      this._stopHaPath = watchHaPath((p) => {
+        const to = haLink(p);
+        if (!to) return;
+        if (to.room) this._catQ = to.room;
+        if (to.path !== this._path) this._go(to.path);
+        else this.requestUpdate();
+      });
+    }
     document.addEventListener("visibilitychange", this._onVisible);
     if (this._mql && this._mql.addEventListener) this._mql.addEventListener("change", this._onScheme);
     if (this._deskMq && this._deskMq.addEventListener) this._deskMq.addEventListener("change", this._onDesk);
@@ -317,6 +331,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._stopHaPath) this._stopHaPath();
     window.removeEventListener("popstate", this._onPopState);
     window.removeEventListener("keydown", this._onKey);
     window.removeEventListener("message", this._onParentMsg);

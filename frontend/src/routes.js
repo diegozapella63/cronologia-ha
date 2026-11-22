@@ -85,6 +85,14 @@ export function moreName(v) {
  * around the app (the same origin) or on the app's own address (outside the HA). The path to open, and
  * the "aba" taken out of the address (so a reload opens where it was).
  */
+let room = "";
+/** 1.109.1: the room of the last link that opened the Rotinas (?aba=rotinas&comodo=<name>), once: the search of the screen. */
+export function openRoom() {
+  const r = room;
+  room = "";
+  return r;
+}
+
 export function openTab(win = typeof window === "undefined" ? null : window) {
   // rotinas (1.109.0): Mais › Rotinas, the link of a round of the CorrerIA
   const TABS_OPEN = { recompensas: "/recompensas", calendario: "/calendario", agora: "/", rotinas: "/mais/rotinas" };
@@ -92,7 +100,9 @@ export function openTab(win = typeof window === "undefined" ? null : window) {
     const u = new URL(w.location.href);
     const p = TABS_OPEN[u.searchParams.get("aba")];
     if (!p) return null;
+    room = p === "/mais/rotinas" ? String(u.searchParams.get("comodo") || "").trim().slice(0, 80) : "";
     u.searchParams.delete("aba");
+    u.searchParams.delete("comodo");
     w.history.replaceState(w.history.state, "", u.href);
     return p;
   };
@@ -105,4 +115,46 @@ export function openTab(win = typeof window === "undefined" ? null : window) {
     // another origin around the app: nothing to read
   }
   return null;
+}
+
+/**
+ * 1.109.1: inside the Home Assistant (2026.2 or newer), the panel of the app (/app/<slug>/<the rest>) passes the rest of the
+ * address by message, at the start and whenever it changes, also to a screen that was already open (the ?aba= is only
+ * read when the screen loads). onPath gets each new rest once ("" is the app itself). Returns the function that stops.
+ */
+export function watchHaPath(onPath, win = typeof window === "undefined" ? null : window) {
+  if (!win || !win.parent || win.parent === win) return () => {};
+  let seen = null;
+  const on = (e) => {
+    if (e.source !== win.parent || !e.data || e.data.type !== "home-assistant/properties") return;
+    const p = String((e.data.route && e.data.route.path) || "").replace(/\/+$/, "");
+    if (p === seen) return;
+    seen = p;
+    if (p) onPath(p);
+  };
+  win.addEventListener("message", on);
+  try {
+    win.parent.postMessage({ type: "home-assistant/subscribe-properties" }, "*");
+  } catch (e) {
+    /* outside the Home Assistant */
+  }
+  return () => win.removeEventListener("message", on);
+}
+
+/**
+ * The screen of a rest of address the panel passed: {path, room}: Mais › Rotinas (with /comodo/<name>, only the ones
+ * of that room: the search of the screen), the Calendário or Recompensas; or null.
+ */
+export function haLink(p) {
+  const m = /^\/mais\/rotinas(?:\/comodo\/(.+))?$/.exec(p || "");
+  if (m) {
+    let r = m[1] || "";
+    try {
+      r = decodeURIComponent(r);
+    } catch (e) {
+      /* as it came */
+    }
+    return { path: "/mais/rotinas", room: r.trim().slice(0, 80) };
+  }
+  return ["/calendario", "/recompensas"].includes(p) ? { path: p, room: "" } : null;
 }
