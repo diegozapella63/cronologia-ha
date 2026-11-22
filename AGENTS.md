@@ -127,6 +127,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.109.1: o mesmo também pelo resto do endereço (`/app/<slug>/mais/rotinas[/comodo/<nome>]`, `/calendario`, `/recompensas`; o cômodo, também em `?aba=rotinas&comodo=`, `openRoom`, vai para a busca da tela, `_catQ`), que o painel do Home Assistant passa por mensagem (`watchHaPath` e `haLink` no `routes.js`): vale para a tela que já estava aberta.
 
+1.110.0: a ferramenta `ler_arquivo` (leitura; `anexo`: os tipos do `anexos.js`, foto ou PDF; o CorrerIA 1.24.0 manda o arquivo da conversa em `anexo`, fora dos argumentos; `chamar(..., {anexo})`, `_ler_arquivo`): o `ai.extract` da tela (`ler` no `server.js`, que respeita o Usar IA) e devolve os compromissos achados, sem criar nada; a IA do CorrerIA cria depois com `criar_compromisso`. O pedido da rota aceita 22 MB.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

@@ -154,10 +154,36 @@ describe("the list of tools (the contract with the CorrerIA)", () => {
       assert.equal(typeof t.apaga, "boolean");
     }
     assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso"]);
-    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar"]);
+    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo"]);
     assert.equal(FERRAMENTAS[0].nome, "resumo");
     assert.match(INSTRUCOES, /cronologia_resumo/);
     assert.match(INSTRUCOES, /AAAA-MM-DD/);
+  });
+  it("1.110.0: ler_arquivo: the AI of the app reads the photo or the PDF of the conversation; nothing is created", async () => {
+    const { f, calls } = setup();
+    const def = lista().find((t) => t.nome === "ler_arquivo");
+    assert.deepEqual([def.grava, def.apaga, def.anexo], [false, false, ["image/jpeg", "image/png", "image/webp", "application/pdf"]]);
+    const arq = (tipo = "image/jpeg", b64 = "data:image/jpeg;base64,/9j/AAAA") => ({ tipo, nome: "convite.jpg", b64 });
+    const bad = (anexo, re) => assert.rejects(f.chamar("ler_arquivo", {}, { anexo }), (err) => err.status === 400 && re.test(err.message));
+    await bad(arq(), /não está disponível/);
+    let got = null;
+    f.ler = async (x) => {
+      got = x;
+      return { provider: "IA de teste", events: [{ title: "Festa da Lia", date: "2026-12-05", start: "15:00", end: "18:00", end_date: "", location: "Buffet Alegria", notes: "Levar\npresente", repeat: "" }, { title: "Vacina", date: "2026-12-10", start: "", end: "", end_date: "", location: "", notes: "", repeat: "yearly" }] };
+    };
+    const out = await f.chamar("ler_arquivo", { dica: "o convite" }, { anexo: arq() });
+    assert.equal(out.grava, false);
+    assert.equal(out.texto, "No arquivo (lido pela IA do CronologIA, IA de teste) há 2 compromissos:\n- Festa da Lia · 2026-12-05 15:00–18:00 · Buffet Alegria · notas: Levar presente\n- Vacina · 2026-12-10 · repete todo ano\nNada foi criado. Mostre à pessoa e crie com cronologia_criar_compromisso os que ela quiser.");
+    assert.deepEqual(got, { text: "o convite", images: [{ data: "/9j/AAAA", mime: "image/jpeg" }] });
+    assert.equal(calls.length, 0);
+    f.ler = async () => ({ events: [] });
+    assert.match((await f.chamar("ler_arquivo", {}, { anexo: arq("application/pdf", "JVBERi0=") })).texto, /não achou nenhum compromisso/);
+    await bad(null, /Falta o arquivo/);
+    await bad(arq("image/heic"), /lê foto \(JPG, PNG ou WebP\) ou PDF/);
+    f.ler = async () => {
+      throw new Error("a IA está desligada no CronologIA.");
+    };
+    await bad(arq(), /não conseguiu ler o arquivo: a IA está desligada.*sem inventar/);
   });
   it("an unknown tool is 404; arguments that are not an object count as none", async () => {
     const { f, call } = setup();

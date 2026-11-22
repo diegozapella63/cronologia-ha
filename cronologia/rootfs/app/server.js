@@ -271,6 +271,11 @@ const ferramentas = new Ferramentas({
   updateEvent: (cal, uid, ev, opts) => changeEvent("calendar/event/update", cal, uid, ev, opts),
   deleteEvent: (cal, uid, opts) => changeEvent("calendar/event/delete", cal, uid, null, opts),
   log,
+  // 1.110.0: the reading of a photo or a PDF by the AI of this app (the Leitura por IA of the screen), for cronologia_ler_arquivo
+  ler: async ({ text, images }) => {
+    if (store.data.app.ai_off) throw new Error("a IA está desligada no CronologIA (Mais › Configurações › Integrações › Usar IA).");
+    return ai.extract({ text, images });
+  },
 });
 // sensor.cronologia_proximo (1.78.0): the next appointment, with Sensores no Home Assistant on
 const nextSensor = new NextSensor({
@@ -907,14 +912,14 @@ async function handleTools(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { erro: "Use GET ou POST." });
   let body;
   try {
-    body = JSON.parse((await readRaw(req, 256 * 1024)).toString("utf8") || "{}");
+    body = JSON.parse((await readRaw(req, 22 * 1024 * 1024)).toString("utf8") || "{}"); // 1.110.0: with the file of ler_arquivo (up to 15 MB, in base64)
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("JSON inválido");
   } catch (err) {
     return sendJson(res, err.code === "too_big" ? 413 : 400, { erro: err.code === "too_big" ? "Pedido grande demais." : "JSON inválido." });
   }
   const nome = String(body.nome || "");
   try {
-    const out = await ferramentas.chamar(nome, body.argumentos, { pessoa: body.pessoa, cliente: body.cliente });
+    const out = await ferramentas.chamar(nome, body.argumentos, { pessoa: body.pessoa, cliente: body.cliente, anexo: body.anexo && typeof body.anexo === "object" ? body.anexo : null });
     correria.used(body.cliente, nome);
     return sendJson(res, 200, { texto: out.texto });
   } catch (err) {

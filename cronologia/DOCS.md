@@ -292,6 +292,8 @@ As mudanças aparecem na tela na hora, e quem ganha os pontos é quem fez (ou a 
 
 Ligado, o CronologIA grava `share/cronologia/correria.json` com o endereço dele e uma chave própria (guardada em `/data/correria.key`); o CorrerIA usa essa chave. Desligar apaga o arquivo e a chave deixa de valer na hora. Nada de fotos, arquivos, backups ou configurações passa pelo CorrerIA.
 
+**Ler foto ou PDF** (1.110.0, com o CorrerIA 1.24.0): mande no CorrerIA a foto de um convite, de um bilhete, de uma receita ou um PDF e peça para pôr na agenda. A IA do CronologIA lê (precisa do Usar IA ligado) e o CorrerIA mostra os compromissos que achou para você escolher o que criar.
+
 ## Atalho no celular
 
 Para abrir o CronologIA direto da tela inicial do celular (Android), sem passar pelo menu do Home Assistant: em **Mais › Configurações › Opções › Atalho no celular**, toque em **Copiar** embaixo do **Caminho** (algo como `/app/a1b2c3d4_cronologia`). No app do Home Assistant, abra **Configurações › Aplicativo complementar › Gerenciar atalhos** e, em **Atalho fixado**, escolha o tipo **Painel**, cole o caminho e dê um nome. O ícone vai para a tela inicial e abre o app direto. Fora do Home Assistant o cartão não aparece.

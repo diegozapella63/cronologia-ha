@@ -7,6 +7,7 @@
 import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, everyLabel, parseEvery, parseMoney, addEvery, isoWithOffset, ymdOf, periodInfo, cleanAway, PERIODS, personCalendar } from "./kinds.js";
 import { scoreSettings } from "./score.js";
 import { asActor } from "./actor.js";
+import { MIMES } from "./anexos.js";
 
 const DAY = 86400000;
 const MAX_DIAS = 400; // a busca da agenda: até 400 dias
@@ -176,6 +177,18 @@ export const FERRAMENTAS = [
       ["quem"],
     ),
   },
+  {
+    // 1.110.0 (o dono: "todos os apps que tenham as funções de PDF ou imagem ou foto funcionem no correria/rondas"): a
+    // Leitura por IA da tela (foto, print, PDF), pelo CorrerIA. `anexo` diz ao CorrerIA que esta ferramenta recebe o
+    // arquivo (ele manda em `anexo`, fora dos argumentos). Nada é criado: a IA de lá propõe com criar_compromisso.
+    nome: "ler_arquivo",
+    titulo: "Ler foto ou PDF",
+    grava: false,
+    anexo: Object.keys(MIMES),
+    descricao:
+      "Lê com a IA do CronologIA a foto, a imagem ou o PDF que a pessoa acabou de mandar na conversa (um convite, um bilhete da escola, uma receita médica, um boleto, um print com datas) e devolve os compromissos que há nele (título, data, horário, local, repetição). Não cria nada: depois, crie com cronologia_criar_compromisso os que a pessoa quiser. Só serve logo depois de a pessoa mandar o arquivo.",
+    entrada: obj({ dica: { type: "string", description: "O que a pessoa disse sobre o arquivo, se disse (ajuda a IA a ler)." } }),
+  },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
 
@@ -281,19 +294,43 @@ export class Ferramentas {
    * fetchEvents(cal, startIso, endIso) -> events; createEvent(cal, ev), updateEvent(cal, uid, ev, {recurrence_id,
    * recurrence_range}), deleteEvent(cal, uid, opts): the same as the screen's commands.
    */
-  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log }) {
-    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log });
+  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null }) {
+    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler });
+  }
+
+  /** 1.110.0: what the AI of this app reads in the file the person sent (the same reading of the screen). */
+  async _ler_arquivo(a, ctx) {
+    const anexo = ctx.anexo;
+    const mime = anexo && typeof anexo === "object" ? String(anexo.tipo || "").toLowerCase() : "";
+    const data = anexo && typeof anexo.b64 === "string" ? anexo.b64.replace(/^data:[^,]*,/, "").replace(/\s+/g, "") : "";
+    if (!data) throw erro("Falta o arquivo: peça para a pessoa mandar a foto ou o PDF na conversa e tente de novo.");
+    if (!MIMES[mime]) throw erro("O CronologIA lê foto (JPG, PNG ou WebP) ou PDF. Diga isso à pessoa.");
+    if (!this.ler) throw erro("A leitura por IA não está disponível no CronologIA.");
+    let out;
+    try {
+      out = await this.ler({ text: typeof a.dica === "string" ? a.dica.slice(0, 500) : "", images: [{ data, mime }] });
+    } catch (err) {
+      throw erro(`O CronologIA não conseguiu ler o arquivo: ${err.message} Diga isso à pessoa, sem inventar o que há nele.`);
+    }
+    const evs = (out && out.events) || [];
+    if (!evs.length) return "A IA do CronologIA leu o arquivo e não achou nenhum compromisso com data nele. Diga isso à pessoa e pergunte o que ela quer fazer.";
+    const REP = { daily: "todo dia", weekly: "toda semana", monthly: "todo mês", yearly: "todo ano" };
+    const lines = evs.map((e) => {
+      const quando = `${e.date}${e.start ? ` ${e.start}` : ""}${e.end ? `–${e.end}` : ""}${e.end_date ? ` até ${e.end_date}` : ""}`;
+      return `- ${e.title} · ${quando}${e.location ? ` · ${e.location}` : ""}${e.repeat ? ` · repete ${REP[e.repeat] || e.repeat}` : ""}${e.notes ? ` · notas: ${e.notes.replace(/\s+/g, " ").slice(0, 200)}` : ""}`;
+    });
+    return `No arquivo (lido pela IA do CronologIA${out.provider ? `, ${out.provider}` : ""}) ${evs.length === 1 ? "há 1 compromisso" : `há ${evs.length} compromissos`}:\n${lines.join("\n")}\nNada foi criado. Mostre à pessoa e crie com cronologia_criar_compromisso os que ela quiser.`;
   }
 
   /** Runs a tool: {texto, grava}. A wrong argument throws ErroFerramenta (400); an unknown name, status 404. */
-  async chamar(nome, argumentos, { pessoa, cliente } = {}, now = new Date()) {
+  async chamar(nome, argumentos, { pessoa, cliente, anexo = null } = {}, now = new Date()) {
     const f = POR_NOME.get(String(nome || ""));
     if (!f) throw Object.assign(new Error(`Ferramenta desconhecida: ${nome}.`), { status: 404 });
     const a = argumentos && typeof argumentos === "object" && !Array.isArray(argumentos) ? argumentos : {};
     const p = pessoa && typeof pessoa === "object" ? pessoa : {};
     // who connected (approved in the panel): the person of Home Assistant by the id, else the name sent
     const known = typeof p.id === "string" && this.home.persons ? this.home.persons.get(p.id) : null;
-    const ctx = { nome: linha(known ? known.name : p.nome, 40), cliente: linha(cliente, 20) || "CorrerIA" };
+    const ctx = { nome: linha(known ? known.name : p.nome, 40), cliente: linha(cliente, 20) || "CorrerIA", anexo };
     // the Extrato of the placar says who did it and where from ("pelo Claude")
     return asActor({ by: this.home.participant(ctx.nome) || ctx.nome, via: ctx.cliente }, async () => {
       try {

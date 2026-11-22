@@ -65,7 +65,7 @@ describe("CorrerIA: the switch, the file and the key", () => {
     assert.equal(res.status, 200);
     const j = await res.json();
     assert.match(j.instrucoes, /cronologia_resumo/);
-    assert.deepEqual(j.ferramentas.map((f) => f.nome), ["resumo", "agenda", "cadastros", "placar", "criar_compromisso", "editar_compromisso", "apagar_compromisso", "marcar_feito", "pular", "dar_pontos"]);
+    assert.deepEqual(j.ferramentas.map((f) => f.nome), ["resumo", "agenda", "cadastros", "placar", "criar_compromisso", "editar_compromisso", "apagar_compromisso", "marcar_feito", "pular", "dar_pontos", "ler_arquivo"]);
     assert.equal((await get("errada")).status, 401);
     const none = await fetch(stack.url + ROUTE);
     assert.equal(none.status, 401);
@@ -137,7 +137,7 @@ describe("CorrerIA: the switch, the file and the key", () => {
     assert.equal(res.status, 400);
     res = await post("[1]");
     assert.equal(res.status, 400);
-    res = await post("x".repeat(300 * 1024));
+    res = await post("x".repeat(23 * 1024 * 1024));
     assert.equal(res.status, 413);
   });
 

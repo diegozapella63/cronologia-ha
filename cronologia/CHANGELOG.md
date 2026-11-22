@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.110.0
+
+- **Ler foto ou PDF pelo CorrerIA**: mande no CorrerIA (ou no meio de uma ronda) a foto de um convite, de um bilhete da escola, de uma receita ou um PDF e peça para pôr na agenda. A IA do CronologIA lê, como na leitura por IA daqui, e o CorrerIA mostra os compromissos que achou para você escolher o que criar. Precisa do CorrerIA 1.24.0 e do Usar IA ligado aqui.
+
 ## 1.109.1
 
 - **Abrir pelas Rondas do CorrerIA**: o botão **Abrir no CronologIA** agora leva a Mais › Rotinas só com as rotinas do cômodo da ronda (o nome do cômodo vem na busca da tela; limpe para ver todas), também quando o CronologIA já estava aberto no Home Assistant.
