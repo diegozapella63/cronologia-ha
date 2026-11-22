@@ -121,6 +121,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.108.0: a ferramenta `cadastros` (CorrerIA) leva `comodos` e `equipamentos` (os nomes, de `c.rooms`/`c.equips` do catálogo) nas rotinas e manutenções e aceita `comodo` (só as de um cômodo, pelo nome sem acento nem maiúsculas): a Ronda da casa do CorrerIA 1.21.2 pede assim.
 
+1.108.1: os cômodos de uma rotina, manutenção ou tarefa vão até 40 (`MAX_ROOMS` no `nameList` do `lib/kinds.js`, e os mesmos 40 no `server.js` e no `lib/todos.js`); eram 10, e o Todos de uma casa com 12 cômodos voltava com os dois últimos desmarcados. Os equipamentos continuam em 10.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

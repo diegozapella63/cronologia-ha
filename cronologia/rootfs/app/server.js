@@ -481,7 +481,7 @@ class Session {
         // several items (ResolvIA 2.31): the ResolvIA takes the room from them
         const equips = (Array.isArray(t.equips) ? t.equips : [t.equip]).filter(okId).map(String).slice(0, 10);
         // several rooms (without items): a list (ResolvIA 2.39.2)
-        const rooms = [...new Set((Array.isArray(t.rooms) ? t.rooms : [t.room]).filter(okId).map(String))].slice(0, 10);
+        const rooms = [...new Set((Array.isArray(t.rooms) ? t.rooms : [t.room]).filter(okId).map(String))].slice(0, 40);
         // prazo: the deadline of a list without dates, kept by the ResolvIA (2.59.0+)
         if (rooms.length || equips.length || added.prazo) {
           const event_data = { entity_id: String(msg.entity_id || ""), tarefa: String(t.summary || "").trim(), origem: "CronologIA" };

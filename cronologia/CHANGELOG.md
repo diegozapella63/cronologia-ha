@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.108.1
+
+- **Cômodos de uma rotina**: marcar **Todos** numa casa com mais de 10 cômodos agora guarda todos. Antes só os 10 primeiros ficavam e os últimos voltavam desmarcados. Abra a rotina, marque Todos e salve de novo.
+
 ## 1.108.0
 
 - **CorrerIA**: as rotinas e as manutenções agora dizem de que cômodo e de que equipamento são, e dá para pedir só as de um cômodo. Com isso, a Ronda da casa do CorrerIA encontra as rotinas de cada cômodo.

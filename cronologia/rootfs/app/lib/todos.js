@@ -45,7 +45,7 @@ function cleanRooms(raw) {
     // one id, or a list (ResolvIA 2.31: several items of a task, so several rooms)
     for (const [k, v] of Object.entries(map)) {
       const ids = (Array.isArray(v) ? v : [v]).filter((x) => typeof x === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(x));
-      if (ids.length) tarefas[list][k] = [...new Set(ids)].slice(0, 10);
+      if (ids.length) tarefas[list][k] = [...new Set(ids)].slice(0, 40);
     }
   }
   return { lista, tarefas };

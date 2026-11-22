@@ -185,7 +185,7 @@ export function parseKind(description) {
     out.after = raw.after ? parseEvery(raw.after) : null;
     if (out.after) out.history = parseHistory(raw.history);
     // the room (InventarIA, by the ResolvIA), like the maintenance
-    out.rooms = nameList(raw.room);
+    out.rooms = nameList(raw.room, MAX_ROOMS);
     out.equips = nameList(raw.equip);
     out.room = out.rooms[0] || "";
     out.equip = out.equips[0] || "";
@@ -197,7 +197,7 @@ export function parseKind(description) {
     out.history = parseHistory(raw.history);
     out.points = parsePoints(raw.points);
     // the rooms and the items of the InventarIA, by name ("A; B" when several); room/equip: the first one
-    out.rooms = nameList(raw.room);
+    out.rooms = nameList(raw.room, MAX_ROOMS);
     out.equips = nameList(raw.equip);
     out.room = out.rooms[0] || "";
     out.equip = out.equips[0] || "";
@@ -205,14 +205,18 @@ export function parseKind(description) {
   return out;
 }
 
-/** "Ar-condicionado; Geladeira" -> the names (up to 10, no repeats). */
-function nameList(text) {
+/**
+ * "Ar-condicionado; Geladeira" -> the names (no repeats; up to 10 items, or up to 40 rooms: 1.108.1, a routine of the
+ * whole house, Todos, has every room, and a house can have more than 10: the last ones came back unmarked).
+ */
+const MAX_ROOMS = 40;
+function nameList(text, max = 10) {
   const out = [];
   for (const s of String(text || "").split(";")) {
     const n = s.trim();
     if (n && !out.some((x) => foldText(x) === foldText(n))) out.push(n);
   }
-  return out.slice(0, 10);
+  return out.slice(0, max);
 }
 
 /** The rooms or the items of a maintenance: the list, or the one name of before. */

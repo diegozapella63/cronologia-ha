@@ -230,6 +230,23 @@ describe("parts of the day", () => {
   });
 });
 
+describe("1.108.1: a routine of the whole house keeps every room (it kept only 10: the last ones came back unmarked)", () => {
+  const rooms = ["Hall de entrada", "Cozinha", "Lavanderia", "Sala de jantar", "Sala de estar", "Corredor", "Escritório", "Banheiro de visitas", "Banheiro pessoal", "Quarto", "Sacada", "Geral"];
+  it("12 rooms go and come back, in a routine and in a maintenance", () => {
+    for (const kind of ["rotina", "manutencao"]) {
+      const k = parseKind(buildDescription({ kind, who: "Ana", rooms, every: { n: 6, unit: "meses" } }));
+      assert.deepEqual(k.rooms, rooms, kind);
+      assert.equal(k.room, "Hall de entrada");
+    }
+  });
+  it("up to 40 rooms; the items stay at 10", () => {
+    const many = Array.from({ length: 45 }, (_, i) => `Cômodo ${i + 1}`);
+    const k = parseKind(buildDescription({ kind: "rotina", who: "Ana", rooms: many, equips: many }));
+    assert.equal(k.rooms.length, 40);
+    assert.equal(k.equips.length, 10);
+  });
+});
+
 describe("parseKind", () => {
   it("returns null for a plain event", () => {
     assert.equal(parseKind(""), null);
