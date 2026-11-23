@@ -141,7 +141,15 @@ async def main():
         await a.locator(".sheet .icon-btn[aria-label=Fechar]").click(); await A.wait_for_timeout(300)
         # .ics import
         await a.locator(".tab").nth(4).click(); await A.wait_for_timeout(500)
-        await a.locator("#cr-ics").set_input_files(os.path.join(FIX, "cr_test.ics"))
+        # the dates of the fixture follow today (the wedding in two months, the holidays after it, the class a month ago):
+        # written with fixed dates, the test broke the day after the wedding
+        from datetime import date as _d, timedelta as _td
+        _ics = open(os.path.join(FIX, "cr_test.ics"), encoding="utf-8").read()
+        for _de, _dias in (("20261121", 60), ("20261222", 90), ("20270105", 104), ("20261020", -30)):
+            _ics = _ics.replace(_de, (_d.today() + _td(days=_dias)).strftime("%Y%m%d"))
+        _ics_path = os.path.join(SP, "cr_test_hoje.ics")
+        open(_ics_path, "w", encoding="utf-8").write(_ics)
+        await a.locator("#cr-ics").set_input_files(_ics_path)
         await a.locator(".rv-card").first.wait_for(timeout=5000)
         cards = await a.locator(".rv-card .rv-title").evaluate_all("els => els.map(e => e.value)")
         check(cards == ["Casamento da Júlia e do Pedro", "Férias", "Aula de inglês"], f".ics read ({cards})")
