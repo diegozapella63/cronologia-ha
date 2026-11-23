@@ -5,6 +5,7 @@ import { themePicker, colorPicker, lookStyles, colorOfDay } from "./look.js";
 import { datePickField } from "./datepick.js";
 import { calendarStyles } from "./calendar.js";
 import { ICONS } from "./icons.js";
+import { MemoriaIaMixin, memoriaIaStyles } from "./memoria-ia.js";
 import { ensureFonts } from "./fonts.js";
 import { appIcon } from "./appicon.js";
 import { swipeStart, swipeEnd, slideIn } from "./swipe.js";
@@ -191,7 +192,7 @@ const svgPath = (d, cls) => svg`<path class=${cls} d=${d}></path>`;
 const timeRange = (e) => (e.allDay ? "Dia todo" : `${hm(e.start)} – ${hm(e.end)}`);
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement))))))) {
+class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))))) {
   static properties = {
     _desk: { state: true },
     _wide: { state: true },
@@ -217,7 +218,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     _home: { state: true },
   };
 
-  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(calendarStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles, painelStyles];
+  static styles = [styles, extraStyles, calStyles, aboutStyles, unsafeCSS(usageStyles), unsafeCSS(lookStyles), unsafeCSS(calendarStyles), unsafeCSS(equipPickerStyles), unsafeCSS(chatStyles), memoriaStyles, painelStyles, unsafeCSS(memoriaIaStyles)];
 
   constructor() {
     super();
@@ -2974,7 +2975,7 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
     let body;
     let status = null;
     if (v.config) {
-      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderMemoriaSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
+      if (tab === "integracoes") body = html`${this._renderGerenciaPanel()} ${this._renderTodosSettings()} ${this._renderMemoriaSettings()} ${this._renderCorreriaPanel()} ${this._renderAiPanel()} ${this._aiOn() && this.api.memoriaIa ? this._renderMemoriaIa() : nothing} ${this._aiOn() && this.api.voiceStatus ? this._renderVoicePanel() : nothing} ${this._aiOn() ? this._renderUsage() : nothing} ${this._renderSensorsPanel()}`;
       else if (tab === "dados") body = this._renderDataPanel();
       else if (tab === "aparencia") body = this._renderAppearance();
       else body = this._renderOptions();
@@ -3141,6 +3142,11 @@ class CronologiaApp extends PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMi
   }
 
   /** Section heading of Mais, like the InventarIA: the icon in a soft square, a big title and, optionally, a line about it. */
+  /** Memória da IA: the command of the server (get, add, del) -> {lista, max}. */
+  _memoriaIaCall(acao, payload = {}) {
+    return this.api.memoriaIa(acao, payload);
+  }
+
   _secHead(ic, title, lead = null) {
     return html`<div class="mais-head"><span class="mais-ic" aria-hidden="true">${icon(ic)}</span><h2>${title}</h2></div>${lead ? html`<p class="panel-lead">${lead}</p>` : nothing}`;
   }

@@ -410,6 +410,11 @@ export class Api {
   }
 
   /** Mais › Configurações › Integrações › Uso da IA. */
+  /** Memória da IA (uma só, de todos os apps): get, add {texto}, del {frase} -> {lista, max}. */
+  memoriaIa(acao, payload = {}) {
+    return this.call(`cronologia/memoria_ia/${acao}`, payload);
+  }
+
   aiUsage() {
     return this.call("cronologia/ai/usage");
   }

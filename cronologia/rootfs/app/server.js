@@ -16,7 +16,7 @@ import { acceptUpgrade } from "./lib/ws.js";
 import { HAClient } from "./lib/ha.js";
 import { Store } from "./lib/store.js";
 import { AI, comLembrancas } from "./lib/ai.js";
-import { lembrancasTexto } from "./lib/lembrancas.js";
+import * as memoriaIa from "./lib/memoria-ia.js";
 import { AiUsage } from "./lib/usage.js";
 import { normalizeApiEvent, toICS, toHAEvent } from "./lib/events.js";
 import { parseKind, medsList } from "./lib/kinds.js";
@@ -70,7 +70,9 @@ const gerenciaOn = () => store.data.app.gerencia_on === true;
 // Mais › Configurações › Integrações › CorrerIA: the WhatsApp, the Claude and the Gemini read and change the agenda (off by default)
 const correriaOn = () => store.data.app.correria_on === true;
 // as lembranças da casa (do CorrerIA) vão para a IA daqui, só com a opção CorrerIA ligada
-comLembrancas(() => (correriaOn() ? lembrancasTexto() : ""));
+// 1 memória só, da casa, de todos os apps da família: na pasta share do Home Assistant, fora da pasta de cada app
+const MEMORIA_ARQ = process.env.MEMORIA_IA_ARQ || path.join(SHARE_DIR, "familia", "memoria_ia.json");
+comLembrancas(() => memoriaIa.memoriaTexto(MEMORIA_ARQ));
 // Mais › Configurações › Integrações › MemorIA: the trechos of now in Agora (off by default)
 const memoriaOn = () => store.data.app.memoria_on === true;
 // dev only (tests written before 1.16.0): start with both on
@@ -573,6 +575,12 @@ class Session {
         return this.result(id, await voice.status({ fresh: !!msg.fresh }));
 
       // Mais › Configurações › Integrações › Uso da IA
+      // Mais › Configurações › Integrações › Memória da IA: uma memória só, da casa, de todos os apps (lib/memoria-ia.js)
+      case "cronologia/memoria_ia/get":
+      case "cronologia/memoria_ia/add":
+      case "cronologia/memoria_ia/del":
+        return this.result(id, memoriaIa.comando(type.split("/")[2], msg, "CronologIA", (this.user && this.user.name) || "", MEMORIA_ARQ));
+
       case "cronologia/ai/usage":
         return this.result(id, usage.summary());
 
