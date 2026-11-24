@@ -4,7 +4,7 @@
 // Mixed into <cronologia-app>.
 import { html, nothing, unsafeSVG } from "../vendor/lit-all.min.js";
 import { ICONS } from "./icons.js";
-import { renderChat, chatFiles } from "./chat.js";
+import { renderChat, chatFiles, chatFresh } from "./chat.js";
 import { Recorder, micError, VOICE_RATE, VOICE_MAX_S } from "./voice.js";
 import { ymd, hm, startOfDay, addDays, clip, rruleLabel } from "./util.js";
 import { periodInfo, everyLabel } from "../../cronologia/rootfs/app/lib/kinds.js";
@@ -55,6 +55,7 @@ export const ChatMixin = (Base) =>
     }
 
     _openChat() {
+      chatFresh();
       this._openSheet("chat", {});
       this._chatScroll = true;
       this.updateComplete.then(() => {
