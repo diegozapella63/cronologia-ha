@@ -89,7 +89,7 @@ Mudar o evento de calendário cria uma cópia no novo calendário e apaga a orig
 
 **Quando** é o dia. Em **Horário** (com o **Dia todo**), **Manhã**, **Tarde** e **Noite** põem a parte do dia inteira (das 8h ao meio-dia, das 13h às 17h e das 18h às 22h), e **15 min**, **30 min** e **1 h** a duração a partir da hora de começar. Embaixo delas ficam a hora de começar e a de terminar, para acertar.
 
-**Tipo**, **Calendário**, **Repetir**, **Local** e **Notas** fecham num toque no título (a seta no canto). Fechado, o escolhido ou o escrito aparece ao lado do título, e o aparelho lembra o que ficou fechado da próxima vez.
+Todo campo das janelas fecha num toque no título (a seta no canto): **Tipo**, **Título**, **Calendário**, **Quando**, **Horário**, **Repetir**, **Local**, **Notas**, as datas, a dose, o valor… Fechado, o escolhido ou o escrito aparece ao lado do título (**Tipo · Evento**, **Quando · Hoje**, **Horário · Dia todo**), e o aparelho lembra o que ficou fechado da próxima vez. O **Dia todo**, ao lado de Horário, continua sendo só a chave.
 
 **Local e notas** (em **Mais › Configurações › Opções › Adicionar**) vem desligado: o formulário do evento fica sem **Local** e **Notas**, e o da tarefa sem **Notas**. Ligado, os campos aparecem. Um evento que já tem local ou notas continua mostrando os dois ao editar, para nada ficar escondido.
 

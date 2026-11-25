@@ -1,5 +1,12 @@
 # Mudanças
 
+## 1.115.0
+
+- Nas janelas (como o **Adicionar**), todo campo fecha num toque no título, não só os de escolher: **Título**, **Quando**,
+  **Horário**, as datas, a dose e o valor também. Fechado, o que está escolhido ou escrito aparece ao lado do título
+  (**Quando · Hoje**, **Horário · Dia todo**, **Cor · Azul**).
+- Em **Mais › Sobre**, a linha do OdisseIA ficou mais curta.
+
 ## 1.114.1
 
 - Em **Mais › Sobre**, o OdisseIA aparece com os jogos.

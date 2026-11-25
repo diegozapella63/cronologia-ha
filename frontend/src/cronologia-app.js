@@ -25,7 +25,8 @@ import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
 import { PainelMixin, painelStyles } from "./painel.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
-import { timeField, dateField } from "./whenpick.js";
+import { timeField, dateField, dateText } from "./whenpick.js";
+import { paintFieldVals } from "./campovalor.js";
 import { offFold } from "./offfold.js";
 import { MENU, CONFIG_TABS, viewOf, pathOf, canonPath, underMore, moreTitle, openTab, openRoom, watchHaPath, haLink } from "./routes.js";
 import {
@@ -150,7 +151,7 @@ export const foldKeyOf = (card) => {
   return card.id || (card.dataset && card.dataset.card) || (t ? t.textContent.trim() : "");
 };
 export const fieldKeyOf = (field) => {
-  const l = field && field.querySelector(":scope > .flabel");
+  const l = field && field.querySelector(":scope > .flabel, :scope > .flabel-row > .flabel");
   return l ? l.textContent.trim().replace(/\s*[(·].*$/, "").replace(/s$/, "") : "";
 };
 const keptSet = (key) => {
@@ -456,9 +457,12 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       head.setAttribute("tabindex", "0");
       head.setAttribute("aria-expanded", off ? "false" : "true");
     }
+    // 1.115.0: every field of a window with a title folds (Título, Quando, Horário, the dates, Dose, Valor too), not only
+    // the ones of choices; a field inside another (the Até of Quando) goes with it
     for (const field of root.querySelectorAll(".sheet .field")) {
-      const lab = field.querySelector(":scope > .flabel");
-      if (!lab || !(field.classList.contains("fold-txt") || field.querySelector(":scope > .chip-row, :scope > .imp-tiles, :scope > .eq-pick, :scope > .model-strip, :scope > .seg, :scope > .swatches, :scope > .icon-grid"))) continue; // 1.104.0: a Cor também
+      const row = field.querySelector(":scope > .flabel-row");
+      const lab = row || field.querySelector(":scope > .flabel");
+      if (!lab || (row && !row.querySelector(":scope > .flabel")) || (field.parentElement && field.parentElement.closest(".field"))) continue;
       const key = fieldKeyOf(field);
       if (!key) continue;
       const off = this._camposFechados.has(key);
@@ -468,6 +472,12 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       lab.setAttribute("tabindex", "0");
       lab.setAttribute("aria-expanded", off ? "false" : "true");
     }
+    this._fieldVals();
+  }
+
+  /** The closed fields show what is chosen after the title (data-val on the .flabel, drawn by the CSS; campovalor.js). */
+  _fieldVals() {
+    paintFieldVals(this.renderRoot);
   }
 
   _toggleFold(el, field) {
@@ -482,15 +492,21 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
 
   firstUpdated() {
     const target = (e) => {
-      if (!e.target.closest || e.target.closest("button, a, input, select, textarea, label:not(.flabel)")) return null;
+      if (!e.target.closest) return null;
+      // a control inside the title (the Dia todo of Horário) is the control's; the field around the title (a <label
+      // class="field">, the Título) is not a control
+      const ctl = e.target.closest("button, a, input, select, textarea, label:not(.flabel):not(.field)");
       const head = e.target.closest(".panel.dobra > .fold-head");
-      if (head) return [head, false];
-      const lab = e.target.closest(".sheet .field.dobravel > .flabel");
-      return lab ? [lab, true] : null;
+      if (head) return ctl ? null : [head, false];
+      const lab = e.target.closest(".sheet .field.dobravel > .flabel, .sheet .field.dobravel > .flabel-row");
+      return lab && !(ctl && lab.contains(ctl)) ? [lab, true] : null;
     };
     this.renderRoot.addEventListener("click", (e) => {
       const t = target(e);
-      if (t) this._toggleFold(t[0], t[1]);
+      if (!t) return;
+      // the title of a <label class="field">: no focus on the box (no keyboard) when folding
+      if (t[1]) e.preventDefault();
+      this._toggleFold(t[0], t[1]);
     });
     this.renderRoot.addEventListener("keydown", (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
@@ -511,6 +527,8 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     this._markTabs();
     this._labelIcons();
     this._applyFolds();
+    // the date buttons are their own element and draw after this one: what a closed field shows is read again then
+    requestAnimationFrame(() => this._fieldVals());
     this._chatAfterRender();
     // Agora › MemorIA: the trecho of now, once a minute and when the next one starts
     this._memoriaTick();
@@ -852,7 +870,9 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     this._part = 1;
     if (this._sheet) this._closeSheet();
     if (this._popping) await this._popping;
-    await this._leaveSel();
+    // only waits when the selection has its entry (a promise always waited would make _go never synchronous)
+    if (history.state && history.state.rvSel) await this._leaveSel();
+    else this._csel = null;
     const st = history.state || {};
     const depth = (st.rvDepth || 0) + (replace ? 0 : 1);
     const state = { rvDepth: depth, rvPath: path };
@@ -871,7 +891,8 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
   /** "‹ Mais" on a screen of Mais: Back to the menu when it came from there, or else the menu in its place. */
   async _goMenu() {
     if (this._sheet) await this._closeSheet();
-    await this._leaveSel();
+    if (history.state && history.state.rvSel) await this._leaveSel();
+    else this._csel = null;
     if (history.state && history.state.rvUp) await this._popEntry("rvUp");
     else await this._go("/mais", true);
     const main = this.renderRoot && this.renderRoot.querySelector("main");
@@ -914,7 +935,8 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     }
     // leaving a screen opened from the menu of Mais: first Back to the menu, so Back from the new tab goes where Mais did
     if (path !== "" && this._sheet) await this._closeSheet();
-    if (path !== "") await this._leaveSel();
+    if (path !== "" && history.state && history.state.rvSel) await this._leaveSel();
+    else if (path !== "") this._csel = null;
     if (path !== "" && history.state && history.state.rvUp) await this._popEntry("rvUp");
     const view = this._view().name;
     if (path === "") {
@@ -3478,7 +3500,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       </div>
       <div class="field ev-hours">
         <!-- 1.86.2: Quando is the day; Horário, the hours: the parts of the day and the lengths first, then from and until -->
-        <div class="flabel-row"><span class="flabel">Horário</span>
+        <div class="flabel-row"><span class="flabel">Horário<span class="fl-val">· ${f.allDay ? "Dia todo" : f.endDate ? `${f.start} até ${f.end}, ${dateText(f.endDate)}` : part ? part.label : `${f.start} até ${f.end}`}</span></span>
           <label class="mini-switch"><span>Dia todo</span><span class="switch"><input type="checkbox" role="switch" .checked=${f.allDay} @change=${(e) => this._setForm({ allDay: e.target.checked })} aria-label="Dia todo" /><span class="track"></span></span></label>
         </div>
         ${f.allDay

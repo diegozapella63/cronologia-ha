@@ -4232,7 +4232,8 @@ export const calStyles = css`
   }
   /* every card with a heading folds (a tap on it, the arrow at the end); each field of choices of a window too */
   .panel.dobra > .fold-head,
-  .sheet .field.dobravel > .flabel {
+  .sheet .field.dobravel > .flabel,
+  .sheet .field.dobravel > .flabel-row {
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -4246,8 +4247,26 @@ export const calStyles = css`
     align-items: center;
     gap: 8px;
   }
+  /* 1.115.0: the title with a control beside it (Horário with Dia todo): the arrow after the control */
+  .sheet .field.dobravel > .flabel-row {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .sheet .field.dobravel > .flabel-row > .flabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .sheet .field.dobravel > .flabel-row > .mini-switch {
+    margin-left: auto;
+  }
+  .sheet .field.dobravel.shut > .flabel-row > .mini-switch {
+    display: none;
+  }
   .panel.dobra > .fold-head::after,
-  .sheet .field.dobravel > .flabel::after {
+  .sheet .field.dobravel > .flabel::after,
+  .sheet .field.dobravel > .flabel-row::after {
     content: "";
     flex: none;
     width: 20px;
@@ -4265,11 +4284,29 @@ export const calStyles = css`
   }
   .sheet .field.dobravel > .flabel::after {
     margin-left: auto;
+    order: 2;
+  }
+  .sheet .field.dobravel.shut > .flabel-row::after {
+    margin-left: auto;
   }
   /* closed: what is chosen or written, after the title */
-  .sheet .field > .flabel > .fl-val {
+  .sheet .field > .flabel > .fl-val,
+  .sheet .field > .flabel-row > .flabel > .fl-val {
     display: none;
   }
+  /* 1.115.0: closed, what is chosen or written comes after the title, also in the fields without their own .fl-val */
+  .sheet .field.dobravel.shut > .flabel[data-val]::before {
+    content: "· " attr(data-val);
+    order: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--rv-muted);
+    font-weight: 500;
+  }
+  .sheet .field.dobravel.shut > .flabel-row > .flabel > .fl-val,
   .sheet .field.dobravel.shut > .flabel > .fl-val {
     display: block;
     flex: 0 1 auto;
@@ -4281,11 +4318,12 @@ export const calStyles = css`
     font-weight: 500;
   }
   .panel.dobra.fechada > .fold-head::after,
-  .sheet .field.dobravel.shut > .flabel::after {
+  .sheet .field.dobravel.shut > .flabel::after,
+  .sheet .field.dobravel.shut > .flabel-row::after {
     transform: rotate(-90deg);
   }
   .panel.dobra.fechada > :not(.fold-head),
-  .sheet .field.dobravel.shut > :not(.flabel) {
+  .sheet .field.dobravel.shut > :not(.flabel):not(.flabel-row) {
     display: none !important;
   }
   .panel.dobra.fechada > .fold-head {
@@ -4295,7 +4333,8 @@ export const calStyles = css`
     padding-bottom: 16px;
   }
   .panel.dobra > .fold-head:focus-visible,
-  .sheet .field.dobravel > .flabel:focus-visible {
+  .sheet .field.dobravel > .flabel:focus-visible,
+  .sheet .field.dobravel > .flabel-row:focus-visible {
     outline: 2px solid var(--rv-accent);
     outline-offset: 2px;
     border-radius: 10px;
