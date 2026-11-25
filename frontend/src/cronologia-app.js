@@ -194,6 +194,7 @@ const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encode
 
 class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(MemoriaMixin(TasksMixin(RewardsMixin(ModelsMixin(LitElement)))))))) {
   static properties = {
+    _csel: { state: true },
     _desk: { state: true },
     _wide: { state: true },
     _full: { state: true },
@@ -851,6 +852,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     this._part = 1;
     if (this._sheet) this._closeSheet();
     if (this._popping) await this._popping;
+    await this._leaveSel();
     const st = history.state || {};
     const depth = (st.rvDepth || 0) + (replace ? 0 : 1);
     const state = { rvDepth: depth, rvPath: path };
@@ -869,6 +871,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
   /** "‹ Mais" on a screen of Mais: Back to the menu when it came from there, or else the menu in its place. */
   async _goMenu() {
     if (this._sheet) await this._closeSheet();
+    await this._leaveSel();
     if (history.state && history.state.rvUp) await this._popEntry("rvUp");
     else await this._go("/mais", true);
     const main = this.renderRoot && this.renderRoot.querySelector("main");
@@ -911,6 +914,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     }
     // leaving a screen opened from the menu of Mais: first Back to the menu, so Back from the new tab goes where Mais did
     if (path !== "" && this._sheet) await this._closeSheet();
+    if (path !== "") await this._leaveSel();
     if (path !== "" && history.state && history.state.rvUp) await this._popEntry("rvUp");
     const view = this._view().name;
     if (path === "") {
@@ -944,6 +948,12 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     this._scrollWeek = true;
   }
 
+  /** 1.114.0: leaving a screen while selecting (Mais › Rotinas): the entry of the selection goes first. */
+  _leaveSel() {
+    this._csel = null;
+    return this._popEntry("rvSel");
+  }
+
   _popEntry(flag) {
     if (!(history.state && history.state[flag])) return Promise.resolve();
     const p = new Promise((resolve) => {
@@ -965,6 +975,8 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     if (this._cam && !(history.state && history.state.rvCam)) this._closeCamera(true);
     // the Voltar of the phone leaves the Tela cheia (a window open over it closes first)
     if (this._full && !this._embed && !this._sheet && !(history.state && history.state.rvFull)) this._setFull(false, true);
+    // 1.114.0: Mais › Rotinas › Selecionar: the Voltar of the phone ends it (a window open over it closes first)
+    if (this._csel && !this._sheet && !(history.state && history.state.rvSel)) this._csel = null;
     if (this._sheet && !(history.state && history.state.rvSheet)) {
       this._releaseImages();
       this._sheet = null;
@@ -3294,6 +3306,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       tint = this._cal(f.cal) && this._cal(f.cal).color;
     } else if (this._sheet === "scope") body = this._renderScope();
     else if (this._sheet === "confirm") body = this._renderConfirm();
+    else if (this._sheet === "catbulk") body = this._renderCatBulkSheet();
     else if (this._sheet === "import") {
       body = this._renderImportSheet();
       tint = this._cal(f.target) && this._cal(f.target).color;

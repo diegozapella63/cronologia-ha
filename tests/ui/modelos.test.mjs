@@ -319,7 +319,7 @@ describe("models: Mais › Rotinas", () => {
     assert.equal(a._catalogCount(), 8);
     assert.equal(new App({ home: { catalog: undefined } })._catalogCount(), 0);
     const v = a._renderCatalog();
-    assert.equal(text(v), "Rotina da casa 3 Regar Ana · todo dia · de manhã · +5 Varanda Varrer volta 3 dias depois de feita · 19:00 · atrasada há 2 dias Lavar o carro uma vez · próxima sexta, 20 de nov Nova rotina Remédios 2 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia Vitamina Rex · toda semana (seg) Novo remédio Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador Nova manutenção Contas a pagar 2 Condomínio R$ 450,00 · todo mês · vence amanhã Seguro uma vez · venceu há 8 dias As contas do GerencIA ficam no GerencIA. Nova conta");
+    assert.equal(text(v), "Selecionar Rotina da casa 3 Regar Ana · todo dia · de manhã · +5 Varanda Varrer volta 3 dias depois de feita · 19:00 · atrasada há 2 dias Lavar o carro uma vez · próxima sexta, 20 de nov Nova rotina Remédios 2 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia Vitamina Rex · toda semana (seg) Novo remédio Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador Nova manutenção Contas a pagar 2 Condomínio R$ 450,00 · todo mês · vence amanhã Seguro uma vez · venceu há 8 dias As contas do GerencIA ficam no GerencIA. Nova conta");
     click(v, /^Varrer/);
     assert.equal(a.opened[0].summary, "Varrer");
     click(v, "Nova conta");
@@ -331,9 +331,9 @@ describe("models: Mais › Rotinas", () => {
   it("the search by the name, who, the dose or the place; nothing found says so; the X clears", () => {
     const a = new App({ home: { catalog: catalog(), score: SCORE } });
     fire(a._renderCatalog(), "Buscar nos cadastros", "input", { target: { value: " losar " } });
-    assert.equal(text(a._renderCatalog()), "Remédios 1 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia");
+    assert.equal(text(a._renderCatalog()), "Selecionar Remédios 1 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia");
     a._catQ = "purific";
-    assert.equal(text(a._renderCatalog()), "Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador");
+    assert.equal(text(a._renderCatalog()), "Selecionar Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador");
     a._catQ = "zzz";
     assert.equal(text(a._renderCatalog()), "Nada encontrado Nenhum cadastro com “zzz”.");
     click(a._renderCatalog(), "Limpar");
@@ -344,8 +344,70 @@ describe("models: Mais › Rotinas", () => {
     globalThis.localStorage = { getItem: () => null, setItem() {} };
     const a = new App({ home: { catalog: [...catalog(), cat("rotina", "Depois das férias", { next: "2026-11-30" })], score: SCORE }, away: { from: "2026-11-17", to: "2026-11-22" } });
     const t = text(a._renderCatalog());
-    assert.match(t, /^Rotina da casa 4 Depois das férias uma vez · próxima segunda, 30 de nov Pausadas \(3\) Nova rotina Remédios 2 Losartana/);
+    assert.match(t, /^Selecionar Rotina da casa 4 Depois das férias uma vez · próxima segunda, 30 de nov Pausadas \(3\) Nova rotina Remédios 2 Losartana/);
     assert.match(t, /Manutenção da casa 1 Pausadas \(1\) Nova manutenção Contas a pagar 2 Condomínio/);
+  });
+});
+
+describe("models: Mais › Rotinas › Selecionar (1.114.0)", () => {
+  const cat = (kind, summary, over = {}) => ({ key: `c|${summary}`, cal: "calendar.casa", uid: `u-${summary}`, kind, summary, next: "2026-11-20", late: 0, who: "", dose: "", location: "", start: "2026-11-20", end: "2026-11-21", description: `#${kind}`, ...over });
+  const catalog = () => [
+    cat("rotina", "Regar", { who: "Ana", points: 5, rooms: ["Sala"] }),
+    cat("rotina", "Varrer", {}),
+    cat("remedio", "Losartana", { who: "Ana", time: "08:00" }),
+    cat("remedio", "Losartana", { key: "c|L2", who: "Ana", time: "20:00" }),
+    cat("conta", "Seguro", { value: 90 }),
+  ];
+  it("marca de um tipo só, Todos e Nenhum; um remédio de vários horários leva todos; o X sai", () => {
+    const a = new App({ home: { catalog: catalog(), score: SCORE } });
+    click(a._renderCatalog(), "Selecionar");
+    assert.ok(a._cselOn());
+    let v = a._renderCatalog();
+    assert.match(text(v), /^Toque nos cadastros Rotina da casa 2 Regar/);
+    assert.doesNotMatch(text(v), /Nova rotina/, "sem os Novo… enquanto seleciona");
+    click(v, /^Losartana/);
+    v = a._renderCatalog();
+    assert.match(text(v), /^1 selecionado Nenhum /, "o único remédio: já são todos");
+    assert.deepEqual(a._cselPicked().map((r) => r.keys), [["c|Losartana", "c|L2"]], "os horários do remédio juntos");
+    click(v, "Nenhum");
+    assert.equal(a._csel.kind, "", "nada marcado: o tipo solta");
+    click(a._renderCatalog(), /^Regar/);
+    click(a._renderCatalog(), "Todos");
+    v = a._renderCatalog();
+    assert.match(text(v), /2 selecionados.* Apagar Alterar 2$/);
+    click(v, "Cancelar seleção");
+    assert.equal(a._csel, null);
+  });
+  it("Alterar: cada campo em Manter; Salvar manda quem, pontos e cômodos dos marcados; o Desfazer manda o de antes", async () => {
+    const api = fakeApi({ catalogBulk: (acao, itens) => ({ feitos: itens.length, falhas: [], desfazer: [{ id: "c|Regar", campos: { quem: "Ana" } }] }) });
+    const a = new App({ api, home: withInv({ catalog: catalog(), score: SCORE }) });
+    a._cselStart("rotina", "c|Regar");
+    a._renderCatalog();
+    a._cselAlter();
+    assert.deepEqual([a._sheet, a._form.kind], ["catbulk", "rotina"]);
+    let v = a._renderCatBulkSheet();
+    assert.match(text(v), /^Alterar 1 rotina Quem faz Manter Ninguém .*Pontos para quem fizer Manter Sem pontos \+5 .*Cômodos Manter Nenhum Todos Cozinha Sala Área Cancelar Salvar$/);
+    click(v, "D Davi");
+    click(a._renderCatBulkSheet(), "+20");
+    click(a._renderCatBulkSheet(), "Cozinha");
+    await click(a._renderCatBulkSheet(), "Salvar");
+    await tick();
+    assert.deepEqual(api.calls[0], ["catalogBulk", "alterar", [{ id: "c|Regar", campos: { quem: "Davi", pontos: 20, comodos: ["Cozinha"] } }]]);
+    assert.deepEqual([a._sheet, a._csel, a.toasts.at(-1)], [null, null, "1 cadastro alterado"]);
+    await a.undos.at(-1).run();
+    assert.deepEqual(api.calls[1], ["catalogBulk", "alterar", [{ id: "c|Regar", campos: { quem: "Ana" } }]]);
+  });
+  it("Apagar pede a confirmação e apaga deste em diante; o que o calendário recusa é dito", async () => {
+    const api = fakeApi({ catalogBulk: () => ({ feitos: 1, falhas: [{ nome: "Losartana", erro: "O calendário não deixa." }], desfazer: [] }) });
+    const a = new App({ api, home: { catalog: catalog(), score: SCORE } });
+    a._cselStart("remedio", "calendar.casa|losartana|ana|");
+    a._renderCatalog();
+    a._csel.ids = new Set([...a._cselRows.keys()].filter((k) => a._cselRows.get(k).kind === "remedio"));
+    a._cselDelete();
+    assert.deepEqual([a._sheet, a._form.title, a._form.label], ["confirm", "Apagar “Losartana”?", "Apagar"]);
+    await a._form.run();
+    assert.deepEqual(api.calls[0], ["catalogBulk", "apagar", ["c|Losartana", "c|L2"]]);
+    assert.equal(a.toasts.at(-1), "1 cadastro apagado. Não deu em Losartana: O calendário não deixa.");
   });
 });
 

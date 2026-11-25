@@ -4,7 +4,7 @@
 // funções da tela e do servidor (criar, mudar e apagar eventos pelo Home Assistant; Feito, Pular, Desfazer,
 // manutenção feita e pontos pelo Home), e a tela se atualiza como quando outra pessoa muda algo.
 // Each tool: {nome, titulo, descricao, entrada (JSON Schema), grava, apaga}. chamar() -> {texto, grava}.
-import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, everyLabel, parseEvery, parseMoney, addEvery, isoWithOffset, ymdOf, periodInfo, cleanAway, PERIODS, personCalendar } from "./kinds.js";
+import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, namesOf, everyLabel, parseEvery, parseMoney, addEvery, isoWithOffset, ymdOf, periodInfo, cleanAway, PERIODS, personCalendar } from "./kinds.js";
 import { scoreSettings } from "./score.js";
 import { asActor } from "./actor.js";
 import { MIMES } from "./anexos.js";
@@ -118,7 +118,7 @@ export const FERRAMENTAS = [
     nome: "editar_compromisso",
     titulo: "Editar compromisso",
     grava: true,
-    descricao: "Muda um evento (só o que vier). Num modelo, muda também quem, dose, pontos ou valor. Mudar a data ou o início mantém a duração. repete muda a repetição deste dia em diante (uma rotina, um remédio, uma conta que se repete; nao: este é o último).",
+    descricao: "Muda um evento (só o que vier). Num modelo, muda também quem, dose, pontos, comodos ou valor. Mudar a data ou o início mantém a duração. repete muda a repetição deste dia em diante (uma rotina, um remédio, uma conta que se repete; nao: este é o último).",
     entrada: obj(
       {
         id: ID,
@@ -132,6 +132,7 @@ export const FERRAMENTAS = [
         quem: { type: "string" },
         dose: { type: "string" },
         pontos: { type: "integer", minimum: 0, maximum: 1000 },
+        comodos: { type: "array", items: { type: "string" }, description: "Os cômodos de uma rotina ou manutenção, pelo nome (os de cronologia_cadastros); vazio tira." },
         valor: { type: "number", exclusiveMinimum: 0 },
         repete: { type: "string", enum: Object.keys(REPETE), description: "A repetição nova, deste dia em diante (nao: para de repetir depois deste)." },
         repete_ate: { type: "string", description: "Último dia da repetição (AAAA-MM-DD); vazio: para sempre." },
@@ -333,6 +334,49 @@ export class Ferramentas {
   }
 
   /** Runs a tool: {texto, grava}. A wrong argument throws ErroFerramenta (400); an unknown name, status 404. */
+  /**
+   * 1.114.0: o Selecionar de Mais › Rotinas: muda (quem, pontos, comodos) ou apaga vários cadastros de uma vez, deste em
+   * diante, com as mesmas regras do editar_compromisso e do apagar_compromisso. itens: [{id, campos}] para alterar (cada um
+   * com os seus campos: o Desfazer manda os de antes) ou [id] para apagar. -> {feitos, falhas: [{nome, erro}], desfazer: [{id, campos}]}
+   */
+  async lote(acao, itens, { nome = "" } = {}, now = new Date()) {
+    if (!["alterar", "apagar"].includes(acao)) throw erro("acao: alterar ou apagar.");
+    if (!Array.isArray(itens) || !itens.length) throw erro("Nada selecionado.");
+    const ctx = { cliente: "CronologIA", nome: linha(nome, 40) };
+    const cat = new Map((this.index(now).catalog || []).map((c) => [c.key, c]));
+    const out = { feitos: 0, falhas: [], desfazer: [] };
+    for (const it of itens.slice(0, 200)) {
+      const id = acao === "apagar" ? it : it && it.id;
+      if (typeof id !== "string" || !id) {
+        out.falhas.push({ nome: "?", erro: "Item inválido." });
+        continue;
+      }
+      const row = cat.get(id);
+      try {
+        if (acao === "apagar") await this._apagar_compromisso({ id, escopo: "este_e_proximos" }, ctx, now);
+        else {
+          const c = it.campos && typeof it.campos === "object" ? it.campos : {};
+          const campos = {};
+          for (const k of ["quem", "pontos", "comodos"]) if (k in c) campos[k] = c[k];
+          if (!Object.keys(campos).length) throw erro("Nada para mudar.");
+          const t = await this._editar_compromisso({ id, ...campos, escopo: "este_e_proximos" }, ctx, now);
+          const novo = / id: (\S+)$/.exec(t);
+          if (row) {
+            const antes = {};
+            if ("quem" in campos) antes.quem = row.who || "";
+            if ("pontos" in campos) antes.pontos = row.points || 0;
+            if ("comodos" in campos) antes.comodos = namesOf(row.rooms, row.room);
+            out.desfazer.push({ id: novo ? novo[1] : id, campos: antes });
+          }
+        }
+        out.feitos += 1;
+      } catch (err) {
+        out.falhas.push({ nome: row ? row.summary : id, erro: err.message });
+      }
+    }
+    return out;
+  }
+
   async chamar(nome, argumentos, { pessoa, cliente, anexo = null } = {}, now = new Date()) {
     const f = POR_NOME.get(String(nome || ""));
     if (!f) throw Object.assign(new Error(`Ferramenta desconhecida: ${nome}.`), { status: 404 });
@@ -796,7 +840,7 @@ export class Ferramentas {
   }
 
   async _editar_compromisso(a, ctx, now) {
-    const campos = ["titulo", "data", "inicio", "fim", "dia_todo", "local", "notas", "quem", "dose", "pontos", "valor", "repete", "repete_ate"];
+    const campos = ["titulo", "data", "inicio", "fim", "dia_todo", "local", "notas", "quem", "dose", "pontos", "comodos", "valor", "repete", "repete_ate"];
     if (!campos.some((c) => c in a)) throw erro(`Diga o que muda: ${campos.join(", ")}.`);
     const escopo = a.escopo || "este";
     if (!["este", "este_e_proximos"].includes(escopo)) throw erro("escopo: este ou este_e_proximos.");
@@ -805,7 +849,7 @@ export class Ferramentas {
     if (!(cal.edita || (cal.cria && cal.apaga))) throw erro(`O calendário ${cal.nome} não deixa mudar eventos.`);
     const k = parseKind(raw.description);
     const kind = k ? k.kind : "compromisso";
-    const so = { quem: ["remedio", "rotina", "manutencao"], dose: ["remedio"], pontos: ["rotina", "manutencao"], valor: ["conta"] };
+    const so = { quem: ["remedio", "rotina", "manutencao"], dose: ["remedio"], pontos: ["rotina", "manutencao"], comodos: ["rotina", "manutencao"], valor: ["conta"] };
     for (const [campo, tipos] of Object.entries(so)) if (campo in a && !tipos.includes(kind)) throw erro(`${campo} só vale num evento de ${tipos.map((t) => KINDS[t].label.toLowerCase()).join(" ou ")}${k ? `; este é ${KINDS[kind].label.toLowerCase()}` : ""}.`);
     const hoje = startOfDay(now);
     const wasAllDay = isDay(raw.start);
@@ -838,6 +882,13 @@ export class Ferramentas {
       if ("quem" in a) nk.who = linha(a.quem, 40);
       if ("dose" in a) nk.dose = linha(a.dose, 80);
       if ("pontos" in a) nk.points = Math.max(0, Math.min(1000, Math.round(Number(a.pontos) || 0)));
+      // 1.114.0: os cômodos (o Selecionar de Mais › Rotinas e a IA), pelo nome; uma lista ou "A; B"
+      if ("comodos" in a) {
+        const lista = (Array.isArray(a.comodos) ? a.comodos : String(a.comodos || "").split(";")).map((s) => linha(String(s || "").replace(/;/g, ","), 60)).filter(Boolean);
+        const uns = lista.filter((s, i) => lista.findIndex((x) => foldText(x) === foldText(s)) === i).slice(0, 40);
+        nk.rooms = uns;
+        nk.room = uns[0] || "";
+      }
       if ("valor" in a) {
         nk.value = typeof a.valor === "number" ? Math.round(a.valor * 100) / 100 : parseMoney(a.valor);
         if (!(nk.value > 0)) throw erro(`valor inválido: ${a.valor}.`);
@@ -885,7 +936,8 @@ export class Ferramentas {
         }
       }
       await this.updateEvent(cal.id, raw.uid, ev, opts);
-      novoId = repeats ? occurrenceKey(cal.id, raw) : occurrenceKey(cal.id, { uid: raw.uid, start: ev.start });
+      // 1.114.0: read again (a calendar may give "este e os próximos" another uid): the Desfazer of the Selecionar uses it
+      novoId = (await this.idCriado(cal, ev)) || (repeats ? occurrenceKey(cal.id, raw) : occurrenceKey(cal.id, { uid: raw.uid, start: ev.start }));
     } else {
       // a calendar that can't change events (the Google one in Home Assistant): deleted and created again, like
       // the screen does; a repeating one is the whole series, starting on the day that was edited

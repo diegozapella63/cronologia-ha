@@ -2461,6 +2461,67 @@ export const calStyles = css`
   .cat-sec .chores-head + .cat-row {
     border-top: 0;
   }
+  /* 1.114.0: Selecionar (como no ResolvIA e no GerencIA): a linha da contagem com o Selecionar, a marca em cada linha e a
+     barra de baixo com Apagar e Alterar */
+  .res-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: -4px 0 12px;
+    min-height: 40px;
+  }
+  .res-head.end {
+    justify-content: flex-end;
+  }
+  .res-head.sel-head {
+    justify-content: flex-start;
+  }
+  .res-head.sel-head .res-n {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+  }
+  .cat-row .cat-mark {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    border: 2px solid var(--rv-line-strong);
+    color: transparent;
+  }
+  .cat-row .cat-mark svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 3;
+  }
+  .cat-row.sel-on .cat-mark {
+    background: var(--rv-accent);
+    border-color: var(--rv-accent);
+    color: var(--rv-on-accent);
+  }
+  .cat-row.sel-on {
+    background: color-mix(in srgb, var(--rv-accent) 10%, transparent);
+  }
+  .cat-row.fora {
+    opacity: 0.45;
+  }
+  .sel-bar {
+    position: sticky;
+    bottom: calc(var(--rv-nav-h) + 12px + env(safe-area-inset-bottom, 0px));
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+    padding-top: 12px;
+  }
+  .sel-bar .btn {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  }
+  .sel-bar .btn.outline {
+    background: var(--rv-surface);
+  }
   .cat-note {
     display: flex;
     align-items: center;

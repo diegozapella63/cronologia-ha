@@ -1,5 +1,14 @@
 # Mudanças
 
+## 1.114.0
+
+- **Selecionar** em Mais › Rotinas, como nos outros apps: toque em **Selecionar** (ou segure o dedo numa linha) e marque
+  vários de um tipo (ou **Todos**). Embaixo:
+  - **Alterar**: quem faz (ou quem toma), os pontos e os cômodos, de uma vez, deste dia em diante; depois, o **Desfazer**;
+  - **Apagar**: saem da agenda deste dia em diante, depois de confirmar.
+- O **X** ou o Voltar do celular saem da seleção.
+- Pela CorrerIA, a IA também muda os cômodos de uma rotina ou manutenção.
+
 ## 1.113.0
 
 - **Pelo CorrerIA**, a IA agora também:

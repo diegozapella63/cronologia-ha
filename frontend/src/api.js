@@ -294,6 +294,12 @@ export class Api {
     return this.call("cronologia/maint/done", { entity_id: entityId, uid, ...(who ? { who } : {}) });
   }
 
+  /** 1.114.0: Mais › Rotinas › Selecionar. acao "alterar" with itens [{id, campos: {quem?, pontos?, comodos?}}], or
+   * "apagar" with itens [id] -> {feitos, falhas: [{nome, erro}], desfazer: [{id, campos}]} */
+  catalogBulk(acao, itens) {
+    return this.call("cronologia/catalog/bulk", { acao, itens });
+  }
+
   /** Amanhã (1.81.0): this time of a routine or a maintenance goes to tomorrow -> {moved, next, undo}; Desfazer: maintUndo */
   toTomorrow(entityId, uid) {
     return this.call("cronologia/event/tomorrow", { entity_id: entityId, uid });

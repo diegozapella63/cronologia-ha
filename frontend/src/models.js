@@ -24,6 +24,9 @@ export const KIND_UI = {
   manutencao: { label: "Manutenção", icon: "wrench", verb: "Feito", done: "feita" },
 };
 
+// 1.114.0: the plural of each type (Alterar 3 rotinas, Apagar 2 manutenções)
+const KIND_PLURAL = { remedio: "remédios", conta: "contas", rotina: "rotinas", manutencao: "manutenções" };
+
 const WD_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const WD_LETTER = ["D", "S", "T", "Q", "Q", "S", "S"];
 const DOSE_PRESETS = [
@@ -701,13 +704,29 @@ export const ModelsMixin = (Base) =>
         if (m) {
           if (c.time && !m.times.includes(c.time)) m.times.push(c.time);
           if (c.next < m.first.next || (c.next === m.first.next && c.time < m.first.time)) m.first = c;
-        } else meds.push({ id, first: c, times: c.time ? [c.time] : [] });
+          m.keys.push(c.key);
+        } else meds.push({ id, first: c, times: c.time ? [c.time] : [], keys: [c.key] });
       }
-      const row = (c, hint, w = null, tags = nothing) => html`<button class="row cat-row" style=${colorVars(this._colorOfEvent(c), this._dark)} @click=${() => this._openIndexItem(c)}>
+      // 1.114.0: Selecionar (o dono, sobre o do OdisseIA: "veja se os outros apps estão assim"): marcar vários de um tipo
+      // (segurar o dedo num também começa) e mudar quem, os pontos e os cômodos, ou apagar, de uma vez
+      const sel = this._cselOn();
+      const rowsSel = new Map();
+      const row = (c, hint, w = null, tags = nothing, sid = c.key, keys = [c.key]) => {
+        rowsSel.set(sid, { kind: c.kind, keys, c });
+        const on = sel && this._csel.ids.has(sid);
+        const fora = sel && !!this._csel.kind && this._csel.kind !== c.kind;
+        return html`<button class="row cat-row ${on ? "sel-on" : ""} ${fora ? "fora" : ""}" style=${colorVars(this._colorOfEvent(c), this._dark)} ?disabled=${fora} aria-pressed=${sel ? (on ? "true" : "false") : nothing}
+          @click=${() => (sel ? this._cselToggle(c.kind, sid) : this._openIndexItem(c))}
+          @contextmenu=${(e) => {
+            if (sel) return;
+            e.preventDefault();
+            this._cselStart(c.kind, sid);
+          }}>
         <span class="tile" aria-hidden="true">${icon(KIND_UI[c.kind].icon)}</span>
         <span class="grow"><div class="label">${c.summary}</div><div class="hint">${hint}${w ? html`${hint ? " · " : ""}<span class=${w.late ? "late" : ""}>${w.text}</span>` : nothing}</div>${tags}</span>
-        ${icon("chevron-right")}
+        ${sel ? html`<span class="cat-mark" aria-hidden="true">${icon("check")}</span>` : icon("chevron-right")}
       </button>`;
+      };
       const line = (c, parts, tags = nothing) => {
         const ps = parts.filter(Boolean);
         return row(c, ps.length ? ps.map((p, i) => html`${i ? " · " : ""}${p}`) : "", when(c), tags);
@@ -721,15 +740,36 @@ export const ModelsMixin = (Base) =>
       const g = this._ix().gerencia || {};
       const body = (sec, list) => {
         if (sec.kind === "remedio")
-          return meds.map(({ first: c, times }) => {
+          return meds.filter(({ first }) => list.includes(first)).map(({ id, first: c, times, keys }) => {
             const t = [...times].sort();
-            return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "));
+            return row(c, [c.dose, c.who, t.length ? t.join(", ") : "", freq(c), c.alert === false ? "sem aviso" : ""].filter(Boolean).join(" · "), null, nothing, id, keys);
           });
         if (sec.kind === "rotina") return list.map((c) => line(c, [c.who, freq(c), c.time || (periodInfo(c.period) || {}).when, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
         // the rooms and the equipments as tags under the line, like the ResolvIA
         if (sec.kind === "manutencao") return list.map((c) => line(c, [freq(c), c.who, pts(c)], placeTags(namesOf(c.rooms, c.room), namesOf(c.equips, c.equip), allRooms)));
         return list.map((c) => line(c, [c.value != null ? formatMoney(c.value) : "", freq(c)]));
       };
+      const secs = SECS.map((sec) => {
+        const list = found.filter((c) => c.kind === sec.kind);
+        const off = list.filter(paused);
+        return { sec, list, off, rows: body(sec, list.filter((c) => !paused(c))) };
+      });
+      this._cselRows = rowsSel;
+      const total = this._catalogCount();
+      const ids = sel ? [...this._csel.ids].filter((s) => rowsSel.has(s)) : [];
+      const n = ids.length;
+      const mesmo = sel && this._csel.kind ? [...rowsSel].filter(([, r]) => r.kind === this._csel.kind).map(([s]) => s) : [];
+      const todos = mesmo.length > 0 && mesmo.every((s) => this._csel.ids.has(s));
+      const head = sel
+        ? html`<div class="res-head sel-head">
+            <button class="icon-btn" @click=${() => this._cselEnd()} aria-label="Cancelar seleção">${icon("x")}</button>
+            <b class="res-n">${n ? `${n} ${n === 1 ? "selecionado" : "selecionados"}` : "Toque nos cadastros"}</b>
+            ${this._csel.kind ? html`<button class="text-btn" @click=${() => this._cselAll(todos ? [] : mesmo)}>${icon(todos ? "x" : "list-checks")}${todos ? "Nenhum" : "Todos"}</button>` : nothing}
+          </div>`
+        : total && found.length
+          ? html`<div class="res-head end"><button class="text-btn sel-start" @click=${() => this._cselStart()}>${icon("list-checks")}Selecionar</button></div>`
+          : nothing;
+      const kindSel = sel ? this._csel.kind : "";
       return html`
         <label class="search-box cat-search">
           ${icon("search")}
@@ -737,10 +777,8 @@ export const ModelsMixin = (Base) =>
           ${q ? html`<button class="icon-btn" style="width:40px;height:40px" @click=${() => ((this._catQ = ""), this.requestUpdate())} aria-label="Limpar">${icon("x")}</button>` : nothing}
         </label>
         ${needle && !found.length ? html`<div class="panel"><div class="empty"><div class="em-icon">${icon("search")}</div><h3>Nada encontrado</h3><p>Nenhum cadastro com “${clip(q, 30)}”.</p></div></div>` : nothing}
-        ${SECS.map((sec) => {
-          const list = found.filter((c) => c.kind === sec.kind);
-          const off = list.filter(paused);
-          const rows = body(sec, list.filter((c) => !paused(c)));
+        ${head}
+        ${secs.map(({ sec, list, off, rows }) => {
           const n = rows.length + off.length;
           if (needle && !n) return nothing;
           return html`<div class="panel cat-sec" id="cat-${sec.kind}">
@@ -748,10 +786,183 @@ export const ModelsMixin = (Base) =>
             ${rows.length ? rows : off.length ? nothing : html`<p class="empty-line">${sec.none}</p>`}
             ${offFold(this, `cat-${sec.kind}`, "Pausadas", off.length, () => body(sec, off))}
             ${sec.kind === "conta" && g.ligado ? html`<p class="cat-note">${icon("info")}As contas do GerencIA ficam no GerencIA.</p>` : nothing}
-            ${needle ? nothing : html`<button class="add-line" @click=${() => this._openKindForm({ kind: sec.kind })}>${icon("plus")}${sec.add}</button>`}
+            ${needle || sel ? nothing : html`<button class="add-line" @click=${() => this._openKindForm({ kind: sec.kind })}>${icon("plus")}${sec.add}</button>`}
           </div>`;
         })}
+        ${sel
+          ? html`<div class="sel-bar ${kindSel && kindSel !== "conta" ? "two" : ""}">
+              <button class="btn outline sel-apagar" ?disabled=${!n} @click=${() => this._cselDelete()}>${icon("trash")}Apagar</button>
+              ${kindSel && kindSel !== "conta"
+                ? html`<button class="btn primary sel-alterar" ?disabled=${!n} @click=${() => this._cselAlter()}>${icon("pencil")}${n ? `Alterar ${n}` : "Alterar"}</button>`
+                : nothing}
+            </div>`
+          : nothing}
       `;
+    }
+
+    // ------------------------------------------------------------ Mais › Rotinas › Selecionar (1.114.0)
+
+    /** Selecting in Mais › Rotinas (another screen ends it: the path changes). */
+    _cselOn() {
+      return !!(this._csel && this._csel.path === this._path);
+    }
+
+    /** From Selecionar, or holding a line (that one comes selected). The selection is an entry of the history: Voltar ends it. */
+    _cselStart(kind = "", sid = "") {
+      this._csel = { path: this._path, kind, ids: new Set(sid ? [sid] : []) };
+      this._haptic("light");
+      try {
+        if (!(history.state && history.state.rvSel)) history.pushState({ ...(history.state || {}), rvSel: true }, "");
+      } catch (e) {
+        /* ignore */
+      }
+      this.requestUpdate();
+    }
+
+    /** One type at a time: the first one marked says which; none marked, any. */
+    _cselToggle(kind, sid) {
+      const ids = new Set(this._csel.ids);
+      if (ids.has(sid)) ids.delete(sid);
+      else ids.add(sid);
+      this._csel = { ...this._csel, ids, kind: ids.size ? this._csel.kind || kind : "" };
+      this.requestUpdate();
+    }
+
+    _cselAll(sids) {
+      this._csel = { ...this._csel, ids: new Set(sids), kind: sids.length ? this._csel.kind : "" };
+      this.requestUpdate();
+    }
+
+    _cselEnd() {
+      this._csel = null;
+      this.requestUpdate();
+      return this._popEntry("rvSel");
+    }
+
+    /** The marked lines that are still there: [{kind, keys, c}]. */
+    _cselPicked() {
+      if (!this._cselOn()) return [];
+      const rows = this._cselRows || new Map();
+      return [...this._csel.ids].map((s) => rows.get(s)).filter(Boolean);
+    }
+
+    /** Alterar: each field starts on Manter (nothing changes until another choice). */
+    _cselAlter() {
+      const picked = this._cselPicked();
+      if (!picked.length) return;
+      this._openSheet("catbulk", { kind: picked[0].kind, quem: undefined, pontos: undefined, comodos: undefined, saving: false });
+    }
+
+    _renderCatBulkSheet() {
+      const f = this._form;
+      const picked = this._cselPicked();
+      const n = picked.length;
+      if (!f || !n) return nothing;
+      const ui = KIND_UI[f.kind];
+      const casa = f.kind === "rotina" || f.kind === "manutencao";
+      const all = this._ix().people || [];
+      const people = all.filter((p) => f.kind === "remedio" || !p.pet);
+      const keep = (on, run) => html`<button class="pick keep ${on ? "on" : ""}" aria-pressed=${on ? "true" : "false"} @click=${run}>${icon("lock")}<span>Manter</span></button>`;
+      const rooms = this._roomNamesAll();
+      const cs = f.comodos || [];
+      const todosCom = rooms.length > 1 && rooms.every((r) => cs.some((x) => foldText(x) === foldText(r)));
+      const toggleRoom = (r) => this._setForm({ comodos: cs.some((x) => foldText(x) === foldText(r)) ? cs.filter((x) => foldText(x) !== foldText(r)) : [...cs, r] });
+      const muda = f.quem !== undefined || f.pontos !== undefined || f.comodos !== undefined;
+      const label = `${n} ${n === 1 ? ui.label.toLowerCase() : KIND_PLURAL[f.kind]}`;
+      return html`${this._sheetHead(`Alterar ${label}`, null, "pencil")}
+        <div class="field" data-f="quem">
+          <span class="flabel">${icon("user-round", "lbl-ic")}${f.kind === "remedio" ? "Quem toma" : "Quem faz"}</span>
+          <div class="chip-row">
+            ${keep(f.quem === undefined, () => this._setForm({ quem: undefined }))}
+            ${casa ? html`<button class="pick ${f.quem === "" ? "on" : ""}" @click=${() => this._setForm({ quem: "" })}>${icon("x")}<span>Ninguém</span></button>` : nothing}
+            ${people.map((p) => html`<button class="pick person ${f.quem === p.name ? "on" : ""}" @click=${() => this._setForm({ quem: p.name })}><span class="avatar sm">${p.pet ? icon("paw-print") : initial(p.name)}</span><span>${p.name}</span></button>`)}
+          </div>
+        </div>
+        ${casa && this._scoreOn()
+          ? html`<div class="field" data-f="pontos">
+              <span class="flabel">${icon("trophy", "lbl-ic")}Pontos para quem fizer</span>
+              <div class="chip-row c4">
+                ${keep(f.pontos === undefined, () => this._setForm({ pontos: undefined }))}
+                ${[0, 5, 10, 20, 30, 50].map((v) => html`<button class="pick ${f.pontos === v ? "on" : ""}" @click=${() => this._setForm({ pontos: v })}>${icon(v ? "trophy" : "x")}<span>${v ? `+${v}` : "Sem pontos"}</span></button>`)}
+              </div>
+            </div>`
+          : nothing}
+        ${casa && rooms.length
+          ? html`<div class="field" data-f="comodos">
+              <span class="flabel">${icon("door-open", "lbl-ic")}Cômodos</span>
+              <div class="chip-row">
+                ${keep(f.comodos === undefined, () => this._setForm({ comodos: undefined }))}
+                <button class="pick ${f.comodos !== undefined && !cs.length ? "on" : ""}" @click=${() => this._setForm({ comodos: [] })}>${icon("x")}<span>Nenhum</span></button>
+                ${rooms.length > 1 ? html`<button class="pick ${todosCom ? "on" : ""}" @click=${() => this._setForm({ comodos: todosCom ? [] : [...rooms] })}>${icon("house")}<span>Todos</span></button>` : nothing}
+                ${rooms.map((r) => {
+                  const on = f.comodos !== undefined && cs.some((x) => foldText(x) === foldText(r));
+                  return html`<button class="pick ${on ? "on" : ""}" aria-pressed=${on ? "true" : "false"} @click=${() => toggleRoom(r)}>${icon("door-open")}<span>${clip(r, 22)}</span></button>`;
+                })}
+              </div>
+            </div>`
+          : nothing}
+        <div class="sheet-actions two">
+          <button class="btn outline" @click=${() => this._closeSheet()}>${icon("x")}Cancelar</button>
+          <button class="btn primary" ?disabled=${!muda || f.saving} @click=${() => this._cselSave()}>${icon("check")}${f.saving ? "Salvando…" : "Salvar"}</button>
+        </div>`;
+    }
+
+    async _cselSave() {
+      const f = this._form;
+      const picked = this._cselPicked();
+      const campos = {};
+      if (f.quem !== undefined) campos.quem = f.quem;
+      if (f.pontos !== undefined) campos.pontos = f.pontos;
+      if (f.comodos !== undefined) campos.comodos = f.comodos;
+      const itens = picked.flatMap((r) => r.keys.map((id) => ({ id, campos })));
+      if (!itens.length || !Object.keys(campos).length) return;
+      this._setForm({ saving: true });
+      try {
+        const res = await this.api.catalogBulk("alterar", itens);
+        await this._closeSheet();
+        await this._cselEnd();
+        this._haptic("success");
+        for (const c of new Set(picked.map((r) => r.c.cal))) this._store.refresh(c);
+        this._cselToast(res, `${plural(picked.length, "cadastro alterado", "cadastros alterados")}`, res.desfazer && res.desfazer.length
+          ? { label: "Desfazer", run: () => this.api.catalogBulk("alterar", res.desfazer).then((r) => this._showToast(r.falhas.length ? `Não deu para desfazer: ${r.falhas[0].erro}` : "Desfeito")).catch((err) => this._showToast(err.message)) }
+          : null);
+      } catch (err) {
+        if (this._sheet === "catbulk") this._setForm({ saving: false });
+        this._showToast(`Não consegui: ${err.message}`);
+      }
+    }
+
+    /** Apagar: from here on (what passed stays in the calendar), after a confirmation. */
+    _cselDelete() {
+      const picked = this._cselPicked();
+      if (!picked.length) return;
+      const n = picked.length;
+      this._openSheet("confirm", {
+        title: n === 1 ? `Apagar “${clip(picked[0].c.summary, 28)}”?` : `Apagar ${n} ${KIND_PLURAL[picked[0].kind]}?`,
+        text: "Saem da agenda deste em diante; o que já passou fica no calendário.",
+        label: "Apagar",
+        danger: true,
+        run: async () => {
+          try {
+            const res = await this.api.catalogBulk("apagar", picked.flatMap((r) => r.keys));
+            await this._closeSheet();
+            await this._cselEnd();
+            this._haptic("medium");
+            for (const c of new Set(picked.map((r) => r.c.cal))) this._store.refresh(c);
+            this._cselToast(res, plural(n, "cadastro apagado", "cadastros apagados"));
+          } catch (err) {
+            this._showToast(`Não consegui apagar: ${err.message}`);
+          }
+        },
+      });
+    }
+
+    /** What was done, or what the calendar refused (the first reason). */
+    _cselToast(res, ok, action = null) {
+      const falhas = (res && res.falhas) || [];
+      if (!falhas.length) return this._showToast(cap(ok), action);
+      const onde = falhas.length === 1 ? clip(falhas[0].nome, 28) : plural(falhas.length, "cadastro", "cadastros");
+      this._showToast(`${res.feitos ? `${cap(ok)}. ` : ""}Não deu em ${onde}: ${falhas[0].erro}`, res.feitos ? action : null);
     }
 
     // ------------------------------------------------------------ event sheet

@@ -43,6 +43,13 @@ export class App extends hostOf(ModelsMixin, TasksMixin, RewardsMixin) {
   _view() {
     return { name: "now" };
   }
+  // 1.114.0: Mais › Rotinas › Selecionar
+  get _path() {
+    return "/mais/rotinas";
+  }
+  _popEntry() {
+    return Promise.resolve();
+  }
   _fullOn() {
     return this.full;
   }

@@ -148,3 +148,5 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.
+
+1.114.0 (o dono, sobre o Selecionar do OdisseIA: "veja se os outros apps estão assim"): **Mais › Rotinas › Selecionar** (`models.js`: `_csel` `{path, kind, ids}`, um tipo só; `_cselStart`, `_cselToggle`, `_cselAll`, `_cselEnd`, `_cselPicked`, a linha com `.cat-mark` e o `contextmenu`; `.res-head`, `.sel-head` e `.sel-bar` com Apagar e Alterar; a janela `catbulk`, `_renderCatBulkSheet`: Quem faz, Pontos e Cômodos em Manter de início). A seleção é a entrada `rvSel` do histórico (o `_onPopState` sai; `_leaveSel` no `_go`, `_goMenu` e `_goTab`). O servidor: `cronologia/catalog/bulk {acao, itens}` → `ferramentas.lote` (o `editar_compromisso` e o `apagar_compromisso` com `este_e_proximos`; `{feitos, falhas, desfazer}`; o Desfazer manda o `desfazer`). O `editar_compromisso` aceita `comodos` e devolve o id lido de novo (`idCriado`). Testes: `lote` no `tests/ferramentas.test.mjs` e `tests/e2e/cr_selecionar.py`.

@@ -941,3 +941,54 @@ describe("ferias (1.113.0)", () => {
     await refused("ferias", { de: "2026-10-01", ate: "2026-10-10" }, /já passaram/);
   });
 });
+
+describe("lote: Mais › Rotinas › Selecionar (1.114.0)", () => {
+  it("muda quem, pontos e cômodos de vários deste em diante e devolve o de antes para o Desfazer", async () => {
+    const s = setup();
+    const r = await s.f.lote(
+      "alterar",
+      [
+        { id: "calendar.casa|lixo|20261102", campos: { quem: "Beto", pontos: 20, comodos: ["Cozinha", "Sala", "cozinha"] } },
+        { id: "calendar.casa|filtro|2026-10-30", campos: { quem: "", comodos: "Lavanderia; Área" } },
+      ],
+      { nome: "Ana" },
+      new Date(),
+    );
+    assert.deepEqual([r.feitos, r.falhas], [2, []]);
+    const k1 = parseKind(s.calls[0][3].description);
+    assert.deepEqual([k1.who, k1.points, k1.rooms], ["Beto", 20, ["Cozinha", "Sala"]], "sem repetir o cômodo");
+    assert.deepEqual(s.calls[0][4], { recurrence_id: "20261102", recurrence_range: "THISANDFUTURE" }, "deste em diante");
+    const k2 = parseKind(s.calls[1][3].description);
+    assert.deepEqual([k2.who || "", k2.points, k2.rooms], ["", 30, ["Lavanderia", "Área"]], "Ninguém tira quem; os pontos ficam");
+    assert.deepEqual(r.desfazer, [
+      { id: "calendar.casa|lixo|20261102", campos: { quem: "Ana", pontos: 10, comodos: [] } },
+      { id: "calendar.casa|filtro|2026-10-30", campos: { quem: "Ana", comodos: [] } },
+    ]);
+    // o Desfazer manda o de antes: volta como era
+    const d = await s.f.lote("alterar", r.desfazer, {}, new Date());
+    assert.equal(d.feitos, 2);
+    const k3 = parseKind(s.calls[2][3].description);
+    assert.deepEqual([k3.who, k3.points, k3.rooms || []], ["Ana", 10, []]);
+  });
+  it("apaga deste em diante; o que o calendário recusa vem em falhas, com o nome", async () => {
+    const s = setup();
+    const r = await s.f.lote("apagar", ["calendar.casa|lixo|20261102", "calendar.casa|net|2026-11-04", "calendar.feriados|fin|2026-11-02", 7], {}, new Date());
+    assert.equal(r.feitos, 2);
+    assert.deepEqual(s.calls.map((c) => [c[0], c[2], c[3]]), [
+      ["delete", "lixo", { recurrence_id: "20261102", recurrence_range: "THISANDFUTURE" }],
+      ["delete", "net", {}],
+    ]);
+    assert.deepEqual(r.falhas.map((x) => x.nome), ["calendar.feriados|fin|2026-11-02", "?"]);
+    assert.match(r.falhas[0].erro, /não deixa/);
+    await assert.rejects(s.f.lote("mover", ["x"]), /acao: alterar ou apagar/);
+    await assert.rejects(s.f.lote("apagar", []), /Nada selecionado/);
+    const n = await s.f.lote("alterar", [{ id: "calendar.casa|lixo|20261102", campos: { titulo: "x" } }], {}, new Date());
+    assert.deepEqual([n.feitos, n.falhas[0].erro], [0, "Nada para mudar."], "só quem, pontos e cômodos");
+  });
+  it("editar_compromisso: comodos só numa rotina ou manutenção", async () => {
+    const { call, calls, refused } = setup();
+    await call("editar_compromisso", { id: "calendar.casa|cama|2026-11-02", comodos: ["Quarto"] });
+    assert.deepEqual(parseKind(calls[0][3].description).rooms, ["Quarto"]);
+    await refused("editar_compromisso", { id: "calendar.casa|net|2026-11-04", comodos: ["Sala"] }, /comodos só vale num evento de rotina da casa ou manutenção/);
+  });
+});

@@ -401,6 +401,12 @@ class Session {
         return this.result(id, await home.part(msg.key, Number(msg.frac), this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));
       }
 
+      // 1.114.0: Mais › Rotinas › Selecionar: Alterar (quem, pontos, cômodos) ou Apagar vários de uma vez
+      case "cronologia/catalog/bulk": {
+        const nome = home.personOfUser(this.user.id, this.user.name) || this.user.name || "";
+        return this.result(id, await ferramentas.lote(String(msg.acao || ""), msg.itens, { nome }));
+      }
+
       case "cronologia/maint/done": {
         if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
         return this.result(id, await home.maintDone(msg.entity_id, msg.uid, this.user.name || "", String(msg.who || home.personOfUser(this.user.id, this.user.name) || "")));
