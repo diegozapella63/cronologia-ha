@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.114.1
+
+- Em **Mais › Sobre**, o OdisseIA aparece com os jogos.
+
 ## 1.114.0
 
 - **Selecionar** em Mais › Rotinas, como nos outros apps: toque em **Selecionar** (ou segure o dedo numa linha) e marque
