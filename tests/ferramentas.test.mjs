@@ -141,9 +141,9 @@ function setup({ app = {}, gerencia = null } = {}) {
 // ------------------------------------------------------------------ the list
 
 describe("the list of tools (the contract with the CorrerIA)", () => {
-  it("5 to 12 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
+  it("5 to 14 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
     const l = lista();
-    assert.ok(l.length >= 5 && l.length <= 12, String(l.length));
+    assert.ok(l.length >= 5 && l.length <= 14, String(l.length));
     for (const t of l) {
       assert.match(t.nome, /^[a-z0-9_]{1,40}$/);
       assert.ok(t.titulo && t.descricao.length > 20, t.nome);
@@ -643,6 +643,21 @@ describe("editar_compromisso", () => {
     assert.match(r.texto, /\(este e os próximos\)/);
     await refused("editar_compromisso", { id: "calendar.pessoal|pil|20261102T180000", titulo: "x", escopo: "todos" }, /escopo: este ou este_e_proximos/);
   });
+  it("1.113.0: repete changes the repetition from this day on; nao ends the series on this day", async () => {
+    const { call, calls, refused } = setup();
+    let r = await call("editar_compromisso", { id: "calendar.pessoal|pil|20261102T180000", repete: "diario" });
+    assert.equal(calls[0][3].rrule, "FREQ=DAILY");
+    assert.deepEqual(calls[0][4], { recurrence_id: "20261102T180000", recurrence_range: "THISANDFUTURE" });
+    assert.match(r.texto, /\(este e os próximos\)/);
+    r = await call("editar_compromisso", { id: "calendar.pessoal|pil|20261102T180000", repete: "nao" });
+    assert.match(calls[1][3].rrule, /^FREQ=DAILY;UNTIL=20261103T0[25]5959Z$/, "the series ends today (23:59 here)");
+    await call("editar_compromisso", { id: "calendar.pessoal|dent|2026-11-03T15:00:00-03:00", repete: "mensal", repete_ate: "2027-03-31" });
+    assert.match(calls[2][3].rrule, /^FREQ=MONTHLY;UNTIL=20270401T0[25]5959Z$/);
+    assert.deepEqual(calls[2][4], {}, "one that did not repeat becomes a series");
+    await refused("editar_compromisso", { id: "calendar.casa|net|2026-11-04", repete: "nao" }, /não se repete/);
+    await refused("editar_compromisso", { id: "calendar.casa|net|2026-11-04", repete_ate: "2026-12-01" }, /Diga a repetição/);
+    await refused("editar_compromisso", { id: "calendar.casa|net|2026-11-04", repete: "semanal", repete_ate: "2026-10-01" }, /antes deste dia/);
+  });
   it("a model: dose, who, points and value in its description (the notes stay)", async () => {
     const { call, calls, refused } = setup();
     await call("editar_compromisso", { id: "calendar.casa|vitd|20261102T080000", dose: "2 gotas", quem: "Ana", notas: "Com comida", escopo: "este_e_proximos" });
@@ -906,5 +921,23 @@ describe("errors of Home Assistant", () => {
     await s.refused("marcar_feito", { id: "calendar.casa|filtro|2026-10-30" }, /does not support/);
     s.ha.failCode = "home_assistant_error";
     await assert.rejects(s.call("marcar_feito", { id: "calendar.casa|filtro|2026-10-30" }), (err) => !err.status && /falhou|support/.test(err.message));
+  });
+});
+
+describe("ferias (1.113.0)", () => {
+  it("marks the days away, as Mais › Férias, and cancels; past days are refused", async () => {
+    const { call, store, refused } = setup();
+    let r = await call("ferias", { de: "2026-12-20", ate: "2027-01-05" });
+    assert.equal(r.texto, "Férias de 20/12/2026 a 05/01/2027: as rotinas, as tarefas e a manutenção pausam; os remédios continuam.");
+    assert.deepEqual(store.data.app.away, { from: "2026-12-20", to: "2027-01-05" });
+    r = await call("ferias", { de: "2026-12-22", ate: "2026-12-30" });
+    assert.match(r.texto, /Antes: de 20\/12\/2026 a 05\/01\/2027\.$/);
+    r = await call("ferias", { cancelar: true });
+    assert.match(r.texto, /^Férias canceladas \(eram de 22\/12\/2026 a 30\/12\/2026\)/);
+    assert.equal(store.data.app.away || null, null);
+    await refused("ferias", { cancelar: true }, /Não há férias marcadas/);
+    await refused("ferias", { de: "2026-12-20" }, /Diga de e ate/);
+    await refused("ferias", { de: "2026-12-20", ate: "2026-12-01" }, /não valem/);
+    await refused("ferias", { de: "2026-10-01", ate: "2026-10-10" }, /já passaram/);
   });
 });

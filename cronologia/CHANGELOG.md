@@ -1,5 +1,12 @@
 # Mudanças
 
+## 1.113.0
+
+- **Pelo CorrerIA**, a IA agora também:
+  - **muda a repetição** de uma rotina, de um remédio ou de uma conta que já existe, deste dia em diante (todo dia, toda semana, todo mês, todo ano, até um dia, ou parar de repetir);
+  - **marca as Férias** (de um dia a outro) ou **cancela**, como em Mais › Férias.
+- Como toda mudança pelo CorrerIA, só depois do seu sim.
+
 ## 1.112.5
 
 - **Mais › Sobre**: o **OdisseIA** (os filmes e as séries da casa) entra na lista dos apps.

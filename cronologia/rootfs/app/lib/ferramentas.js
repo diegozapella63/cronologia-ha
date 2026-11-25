@@ -118,7 +118,7 @@ export const FERRAMENTAS = [
     nome: "editar_compromisso",
     titulo: "Editar compromisso",
     grava: true,
-    descricao: "Muda um evento (só o que vier). Num modelo, muda também quem, dose, pontos ou valor. Mudar a data ou o início mantém a duração.",
+    descricao: "Muda um evento (só o que vier). Num modelo, muda também quem, dose, pontos ou valor. Mudar a data ou o início mantém a duração. repete muda a repetição deste dia em diante (uma rotina, um remédio, uma conta que se repete; nao: este é o último).",
     entrada: obj(
       {
         id: ID,
@@ -133,6 +133,8 @@ export const FERRAMENTAS = [
         dose: { type: "string" },
         pontos: { type: "integer", minimum: 0, maximum: 1000 },
         valor: { type: "number", exclusiveMinimum: 0 },
+        repete: { type: "string", enum: Object.keys(REPETE), description: "A repetição nova, deste dia em diante (nao: para de repetir depois deste)." },
+        repete_ate: { type: "string", description: "Último dia da repetição (AAAA-MM-DD); vazio: para sempre." },
         escopo: ESCOPO(false),
       },
       ["id"],
@@ -188,6 +190,14 @@ export const FERRAMENTAS = [
     descricao:
       "Lê com a IA do CronologIA a foto, a imagem ou o PDF que a pessoa acabou de mandar na conversa (um convite, um bilhete da escola, uma receita médica, um boleto, um print com datas) e devolve os compromissos que há nele (título, data, horário, local, repetição). Não cria nada: depois, crie com cronologia_criar_compromisso os que a pessoa quiser. Só serve logo depois de a pessoa mandar o arquivo.",
     entrada: obj({ dica: { type: "string", description: "O que a pessoa disse sobre o arquivo, se disse (ajuda a IA a ler)." } }),
+  },
+  {
+    // 1.113.0 (o dono, à lista do que a IA não fazia: "todas"): o Modo férias de Mais › Férias
+    nome: "ferias",
+    titulo: "Férias",
+    grava: true,
+    descricao: "Liga o Modo férias de um dia a outro (as rotinas, as tarefas e a manutenção pausam; os remédios continuam), como em Mais › Férias, ou cancela as férias marcadas.",
+    entrada: obj({ de: DATA, ate: DATA, cancelar: { type: "boolean" } }),
   },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
@@ -294,8 +304,8 @@ export class Ferramentas {
    * fetchEvents(cal, startIso, endIso) -> events; createEvent(cal, ev), updateEvent(cal, uid, ev, {recurrence_id,
    * recurrence_range}), deleteEvent(cal, uid, opts): the same as the screen's commands.
    */
-  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null }) {
-    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler });
+  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null, awaySync = () => {} }) {
+    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler, awaySync });
   }
 
   /** 1.110.0: what the AI of this app reads in the file the person sent (the same reading of the screen). */
@@ -786,7 +796,7 @@ export class Ferramentas {
   }
 
   async _editar_compromisso(a, ctx, now) {
-    const campos = ["titulo", "data", "inicio", "fim", "dia_todo", "local", "notas", "quem", "dose", "pontos", "valor"];
+    const campos = ["titulo", "data", "inicio", "fim", "dia_todo", "local", "notas", "quem", "dose", "pontos", "valor", "repete", "repete_ate"];
     if (!campos.some((c) => c in a)) throw erro(`Diga o que muda: ${campos.join(", ")}.`);
     const escopo = a.escopo || "este";
     if (!["este", "este_e_proximos"].includes(escopo)) throw erro("escopo: este ou este_e_proximos.");
@@ -838,6 +848,20 @@ export class Ferramentas {
     const loc = "local" in a ? linha(a.local, 500) : raw.location || "";
     if (loc) ev.location = loc;
     const antes = this.linhaEvento(cal, raw);
+    // 1.113.0: a repetição nova, deste dia em diante (nao: a série acaba neste dia)
+    let regra = null;
+    if ("repete" in a || "repete_ate" in a) {
+      const freq = String(raw.rrule || "").split(";").find((x) => x.startsWith("FREQ=")) || "";
+      const r = a.repete !== undefined ? a.repete : freq ? Object.keys(REPETE).find((k) => REPETE[k] === freq) || "" : null;
+      if (r === null) throw erro("Diga a repetição: repete.");
+      if (!(r in REPETE)) throw erro(`repete: ${Object.keys(REPETE).join(", ")}.`);
+      const fim = r === "nao" ? (raw.rrule ? day : null) : a.repete_ate ? parseDia(a.repete_ate, hoje, "repete_ate") : null;
+      if (r === "nao" && !raw.rrule) throw erro("Esse evento não se repete.");
+      if (fim && fim < day) throw erro("repete_ate vem antes deste dia.");
+      const base = r === "nao" ? freq : REPETE[r];
+      if (!base) throw erro("Diga a repetição: repete.");
+      regra = base + (!fim ? "" : allDay ? `;UNTIL=${ymd(fim).replace(/-/g, "")}` : `;UNTIL=${utcStamp(new Date(fim.getFullYear(), fim.getMonth(), fim.getDate(), 23, 59, 59))}`);
+    }
     // one day of a series (as the screen asks Só este / Este e os próximos)
     const repeats = !!raw.recurrence_id;
     let nota = "";
@@ -852,13 +876,21 @@ export class Ferramentas {
           nota = " (este e os próximos)";
         } else nota = " (só este dia)";
       } else if (raw.rrule) ev.rrule = raw.rrule;
+      if (regra !== null) {
+        ev.rrule = regra;
+        if (repeats) {
+          opts.recurrence_id = raw.recurrence_id;
+          opts.recurrence_range = "THISANDFUTURE";
+          nota = " (este e os próximos)";
+        }
+      }
       await this.updateEvent(cal.id, raw.uid, ev, opts);
       novoId = repeats ? occurrenceKey(cal.id, raw) : occurrenceKey(cal.id, { uid: raw.uid, start: ev.start });
     } else {
       // a calendar that can't change events (the Google one in Home Assistant): deleted and created again, like
       // the screen does; a repeating one is the whole series, starting on the day that was edited
-      if (raw.rrule) {
-        ev.rrule = raw.rrule;
+      if (raw.rrule || regra !== null) {
+        ev.rrule = regra !== null ? regra : raw.rrule;
         nota = " (a série recomeça neste dia)";
       }
       await this.home.recreate(cal.id, raw, ev);
@@ -867,6 +899,25 @@ export class Ferramentas {
     }
     this.log.info(`CorrerIA: ${ctx.cliente}${ctx.nome ? ` (${ctx.nome})` : ""} mudou ${raw.summary} em ${cal.id}`);
     return `Alterado${nota}: ${this.linhaEvento(cal, ev)}. Antes: ${antes}.${novoId ? ` id: ${novoId}` : ""}`;
+  }
+
+  async _ferias(a, ctx, now) {
+    const atual = cleanAway(this.store.data.app.away);
+    if (a.cancelar === true) {
+      if (!atual) throw erro("Não há férias marcadas.");
+      this.store.setApp({ away: null });
+      this.awaySync();
+      return `Férias canceladas (eram de ${dm(atual.from)} a ${dm(atual.to)}): as rotinas, as tarefas e a manutenção voltam.`;
+    }
+    if (!a.de || !a.ate) throw erro("Diga de e ate (as datas das férias), ou cancelar.");
+    const hoje = startOfDay(now);
+    const v = cleanAway({ from: ymd(parseDia(a.de, hoje, "de")), to: ymd(parseDia(a.ate, hoje, "ate")) });
+    if (!v) throw erro("As datas das férias não valem: ate vem depois de de, em até um ano.");
+    if (v.to < ymd(hoje)) throw erro("Essas férias já passaram.");
+    this.store.setApp({ away: v });
+    this.awaySync();
+    this.log.info(`CorrerIA: ${ctx.cliente}${ctx.nome ? ` (${ctx.nome})` : ""} marcou as férias de ${v.from} a ${v.to}`);
+    return `Férias de ${dm(v.from)} a ${dm(v.to)}: as rotinas, as tarefas e a manutenção pausam; os remédios continuam.${atual ? ` Antes: de ${dm(atual.from)} a ${dm(atual.to)}.` : ""}`;
   }
 
   async _apagar_compromisso(a, ctx) {

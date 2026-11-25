@@ -143,6 +143,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.112.4 (o dono: "sempre que eu clicar na conversa da IA deve iniciar com o chat"; vale em todos os apps): `chatFresh()` no `chat.js` (igual nos três) fecha as perguntas prontas, o Editar perguntas e o menu do clipe; o `_openChat` do `chat-panel.js` chama.
 
+1.113.0 (o dono, à lista do que a IA não fazia: "todas"): no `editar_compromisso`, `repete` e `repete_ate` (a regra nova deste dia em diante: num que se repete, `recurrence_range` THISANDFUTURE; `nao` acaba a série neste dia, com `UNTIL`); a ferramenta `ferias` (`de` e `ate`, ou `cancelar`: o `away` do `store.setApp`, e o `awaySync` do server.js faz o `home.rebuild` e o `awayCal.sync`, como o `cronologia/prefs/set_app`). Pausar uma rotina sozinha não existe na tela (só as Férias). Testes: os de 1.113.0 no `tests/ferramentas.test.mjs`.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

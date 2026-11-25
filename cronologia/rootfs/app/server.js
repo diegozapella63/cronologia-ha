@@ -274,6 +274,11 @@ const ferramentas = new Ferramentas({
   fetchEvents,
   createEvent,
   updateEvent: (cal, uid, ev, opts) => changeEvent("calendar/event/update", cal, uid, ev, opts),
+  // 1.113.0: cronologia_ferias: o Agora, os sensores e os calendários que avisam no celular mudam na hora, como pela tela
+  awaySync: () => {
+    home.rebuild();
+    awayCal.sync();
+  },
   deleteEvent: (cal, uid, opts) => changeEvent("calendar/event/delete", cal, uid, null, opts),
   log,
   // 1.110.0: the reading of a photo or a PDF by the AI of this app (the Leitura por IA of the screen), for cronologia_ler_arquivo
