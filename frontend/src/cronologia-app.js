@@ -127,7 +127,7 @@ export const sheetIc = (t = "") =>
 const LABEL_IC = [
   [/^Tipo/, "layout-grid"], [/^Cor do dia/, "calendar"], [/^Cor/, "palette"], [/^Usar IA|^IA usada|Trazer de mensagem/, "sparkles"], [/CorrerIA/, "zap"], [/sensores/i, "activity"],
   [/Trechos no Agora/, "notebook-pen"], [/^Fala/, "mic"], [/^Usar a integração/, "blocks"], [/^Mostrar n[oa] (calendário|agenda)/, "calendar-check"],
-  [/^Mostrar na tela inicial/, "smartphone"], [/Tarefas|^Lista|^Tarefa/, "list-checks"], [/^Local e notas|^Local/, "map-pin"], [/^De férias/, "plane"],
+  [/^Mostrar na tela inicial/, "smartphone"], [/Tarefas|^Lista|^Tarefa/, "list-checks"], [/^Local e notas|^Local|^Onde$/, "map-pin"], [/^De férias/, "plane"],
   [/recompensas|^Marcar|pontos|^Pontos|placar|ganha|^Quantos pontos/i, "trophy"], [/^Se .* vencer/, "crown"], [/^Resultado|^Lembrete|^Avisar|^Aviso/, "bell"],
   [/^Pessoas|^Quem|^De quem|participa/, "users"], [/^Para conversar/, "message-circle"], [/^Para ler fotos/, "scan-text"], [/^Voltar para a folha/, "hourglass"], [/^Calendário|^Adicionar em|^Onde guardar/, "calendar-days"], [/^Notas|^Observações|^O que foi feito/, "notebook-pen"],
   [/^Título|^Nome|^O que foi/, "pencil"], [/^Quando/, "calendar-clock"], [/^Horário/, "clock"], [/^Até|^Período/, "calendar-range"], [/^Repet|^A cada/, "repeat"],

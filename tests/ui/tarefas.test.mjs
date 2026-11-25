@@ -561,13 +561,13 @@ describe("tasks: the room and the equipment of the InventarIA (by the ResolvIA)"
     const bens = { comodos: [...inv.comodos, { id: "bens", nome: "Bens", tipo: "bens" }], equipamentos: [...inv.equipamentos, { id: "carro", nome: "Carro", comodo: "Bens" }] };
     const a = app({ equips: ["carro"] }, bens);
     const view = () => a._renderRoomEquipFields(a._form, { multiRoom: true });
-    assert.match(text(view()), /^Nenhum Casa Bens Bem /);
+    assert.match(text(view()), /^Onde Nenhum Casa Bens Bem /);
     click(view(), "Bens"); // already there: nothing changes
     assert.deepEqual(a._form.equips, ["carro"]);
     click(view(), "Tirar Carro");
     assert.deepEqual([a._form.equips, a._form.where], [[], "bens"]);
     const two = app({ equips: ["carro", "carro2"] }, { ...bens, equipamentos: [...bens.equipamentos, { id: "carro2", nome: "Moto", comodo: "Bens" }] });
-    assert.match(text(two._renderRoomEquipFields(two._form, { multiRoom: true })), /^Nenhum Casa Bens Bens /, "several: Bens");
+    assert.match(text(two._renderRoomEquipFields(two._form, { multiRoom: true })), /^Onde Nenhum Casa Bens Bens /, "several: Bens");
   });
 });
 

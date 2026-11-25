@@ -309,6 +309,7 @@ export const TasksMixin = (Base) =>
       const opt = (id, ic, label) => html`<button class=${now === id ? "on" : ""} aria-pressed=${now === id ? "true" : "false"} @click=${() => go(id)}>${icon(ic)}<span>${label}</span></button>`;
       const where = bensId
         ? html`<div class="field where-field">
+            <span class="flabel">Onde</span>
             <div class="seg where" role="group" aria-label="Nenhum, Casa ou Bens">${opt("nenhum", "x", "Nenhum")}${opt("casa", "house", "Casa")}${opt("bens", "car", "Bens")}</div>
           </div>`
         : nothing;

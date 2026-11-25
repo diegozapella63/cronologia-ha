@@ -42,7 +42,7 @@ describe("Adicionar › Tarefa: Casa ou Bens", () => {
     // 1.107.0: Nenhum comes first and is where a new one starts: no rooms and no equipment until Casa or Bens
     let v = a.view();
     assert.deepEqual(labels(v), ["Nenhum", "Casa", "Bens"]);
-    assert.equal(text(v), "Nenhum Casa Bens");
+    assert.equal(text(v), "Onde Nenhum Casa Bens"); // 1.115.1: with its title, so it folds like the other fields
     click(v, "Casa");
     assert.equal(a._form.where, "casa");
     v = a.view();
@@ -69,12 +69,12 @@ describe("Adicionar › Tarefa: Casa ou Bens", () => {
   it("1.107.0: Nenhum takes the room and the equipment out, and the fields too; a task of the house opens in Casa", () => {
     const a = new App();
     a._form = { room: "cozinha", rooms: ["cozinha"], equips: ["geladeira"] };
-    assert.match(text(a.view()), /^Nenhum Casa Bens Cômodo/, "of the house: Casa, with its rooms");
+    assert.match(text(a.view()), /^Onde Nenhum Casa Bens Cômodo/, "of the house: Casa, with its rooms");
     const where = (v) => controls(v).filter((c) => /aria-pressed="true"/.test(c.attrs) && ["Nenhum", "Casa", "Bens"].includes(c.text)).map((c) => c.text)[0];
     assert.equal(where(a.view()), "Casa");
     controls(a.view()).filter((c) => c.text === "Nenhum")[0].on.click({}); // the first Nenhum is the one of the choice (the other, of the rooms)
     assert.deepEqual([a._form.where, a._form.room, a._form.rooms, a._form.equips], ["nenhum", null, [], []]);
-    assert.equal(text(a.view()), "Nenhum Casa Bens");
+    assert.equal(text(a.view()), "Onde Nenhum Casa Bens");
     assert.equal(where(a.view()), "Nenhum");
   });
   it("a task already in Bens opens in Bens", () => {

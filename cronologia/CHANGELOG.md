@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.115.1
+
+- Na tarefa e na manutenção, **Nenhum**, **Casa** e **Bens** ganharam o título **Onde** e retraem como os outros campos
+  (fechado: **Onde · Casa**).
+
 ## 1.115.0
 
 - Nas janelas (como o **Adicionar**), todo campo fecha num toque no título, não só os de escolher: **Título**, **Quando**,
