@@ -145,6 +145,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.113.0 (o dono, à lista do que a IA não fazia: "todas"): no `editar_compromisso`, `repete` e `repete_ate` (a regra nova deste dia em diante: num que se repete, `recurrence_range` THISANDFUTURE; `nao` acaba a série neste dia, com `UNTIL`); a ferramenta `ferias` (`de` e `ate`, ou `cancelar`: o `away` do `store.setApp`, e o `awaySync` do server.js faz o `home.rebuild` e o `awayCal.sync`, como o `cronologia/prefs/set_app`). Pausar uma rotina sozinha não existe na tela (só as Férias). Testes: os de 1.113.0 no `tests/ferramentas.test.mjs`.
 
+1.115.2 (o dono: "revisar as 20 perguntas padrões da IA, tem algumas muito específicas"): as **perguntas prontas** da Conversa (as 6 à vista e as 20 do Mais perguntas) são gerais e valem em qualquer casa: nada de itens, valores, compromissos, cômodos ou nomes inventados («Adiciona leite na lista», «Marca dentista sexta às 15h», «Onde está o liquidificador?»); o pedido com o detalhe é o que a pessoa escreve. Vale em todos os apps da família.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

@@ -134,13 +134,13 @@ export const ChatMixin = (Base) =>
       const score = !!(this._scoreOn && this._scoreOn());
       const tasks = !!(this._resolviaOn && this._resolviaOn());
       const q = (t, ok = true) => (ok ? [t] : []);
+      // 1.115.2 (o dono: "tem algumas muito específicas"): só perguntas que valem em qualquer casa, sem compromissos inventados
       return [
         ...q("O que tenho hoje?"),
         ...q("O que tenho amanhã?"),
         ...q("Quais remédios faltam hoje?"),
         ...q("Quais rotinas estão atrasadas?"),
         ...q("Tem conta para pagar esta semana?"),
-        ...q("Marca dentista sexta às 15h"),
         ...q("Estou livre amanhã à tarde?"),
         ...q("O que tenho esta semana?"),
         ...q("Resume o meu dia"),
@@ -161,9 +161,10 @@ export const ChatMixin = (Base) =>
         ...q("Quem faz o quê hoje em casa?"),
         ...q("Quais tarefas do ResolvIA vencem hoje?", tasks),
         ...q("O que ficou para amanhã?"),
-        ...q("Marca a rotina de arrumar a cama como feita"),
-        ...q("Tomei o remédio das 8h"),
-        ...q("Marca reunião amanhã às 10h"),
+        ...q("Quais compromissos se repetem toda semana?"),
+        ...q("Qual é o próximo remédio?"),
+        ...q("Qual dia da semana está mais cheio?"),
+        ...q("Quais compromissos tenho este mês?"),
         ...q("Quais rotinas da manhã ainda faltam?"),
         ...q("Quais compromissos são da casa toda?"),
       ];

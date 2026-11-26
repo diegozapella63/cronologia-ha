@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.115.2
+
+- As **perguntas prontas** da Conversa (e as **Mais perguntas** do **Editar perguntas**) ficaram gerais, para valer em qualquer casa: saíram as que citavam itens, valores, compromissos ou cômodos inventados, como «Marca dentista sexta às 15h» e «Tomei o remédio das 8h». As perguntas que você já editou continuam como estão.
+
 ## 1.115.1
 
 - Na tarefa e na manutenção, **Nenhum**, **Casa** e **Bens** ganharam o título **Onde** e retraem como os outros campos
