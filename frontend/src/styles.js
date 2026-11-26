@@ -1311,6 +1311,70 @@ export const styles = css`
   :host([dark]) .seg button.on {
     background: var(--rv-line-strong);
   }
+  /* 1.116.0: Agrupar por, no padrão da família (o dos Consumíveis do InventarIA): o título pequeno que fecha o bloco (fechado,
+     o escolhido ao lado), as escolhas numa barra só, do mesmo tamanho */
+  .agrupar {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+  }
+  .agrupar.fechado {
+    gap: 0;
+  }
+  .agrupar-l {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--rv-muted);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .agrupar-l .i {
+    width: 17px;
+    height: 17px;
+  }
+  .agrupar-l > .seta {
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+  .agrupar.fechado > .agrupar-l > .seta {
+    transform: rotate(-90deg);
+  }
+  .agrupar-l > .agrupar-val {
+    color: var(--rv-text);
+    font-weight: 600;
+  }
+  .seg.agrupar-seg {
+    display: grid;
+    grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  }
+  .seg.agrupar-seg button {
+    min-width: 0;
+  }
+  .seg.agrupar-seg button > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media (max-width: 380px) {
+    .seg.agrupar-seg button .i {
+      display: none;
+    }
+  }
+  @media (max-width: 440px) {
+    .seg.agrupar-seg[style*="--n:4"] button .i {
+      display: none;
+    }
+  }
   .switch {
     position: relative;
     width: 50px;

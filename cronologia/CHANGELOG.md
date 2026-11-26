@@ -1,5 +1,12 @@
 # Mudanças
 
+## 1.116.0
+
+- **Rotinas › Agrupar por**, no mesmo jeito dos outros apps da família.
+  - **Tipo** (como sempre: rotinas, remédios, manutenções e contas), **Quem faz**, **Cômodo** (com os cômodos ligados) ou **Frequência** (Todo dia, Até uma semana, Até um mês, Mais de um mês e Uma vez), numa barra só, do mesmo tamanho.
+  - Cada grupo é um cartão com o ícone, o nome e quantos, que fecha num toque no título. As pausadas nas férias ficam no fim, recolhidas.
+  - O título **Agrupar por** fecha e abre o bloco; fechado, mostra ao lado o que está escolhido. O aparelho lembra.
+
 ## 1.115.3
 
 - Numa tarefa ou manutenção, o campo **Equipamento** fechado mostra o equipamento escolhido ao lado do título; com mais de um, **Vários equipamentos** (ou **Vários bens**).

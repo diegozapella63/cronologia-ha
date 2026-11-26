@@ -319,7 +319,7 @@ describe("models: Mais › Rotinas", () => {
     assert.equal(a._catalogCount(), 8);
     assert.equal(new App({ home: { catalog: undefined } })._catalogCount(), 0);
     const v = a._renderCatalog();
-    assert.equal(text(v), "Selecionar Rotina da casa 3 Regar Ana · todo dia · de manhã · +5 Varanda Varrer volta 3 dias depois de feita · 19:00 · atrasada há 2 dias Lavar o carro uma vez · próxima sexta, 20 de nov Nova rotina Remédios 2 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia Vitamina Rex · toda semana (seg) Novo remédio Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador Nova manutenção Contas a pagar 2 Condomínio R$ 450,00 · todo mês · vence amanhã Seguro uma vez · venceu há 8 dias As contas do GerencIA ficam no GerencIA. Nova conta");
+    assert.equal(text(v), "Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Rotina da casa 3 Regar Ana · todo dia · de manhã · +5 Varanda Varrer volta 3 dias depois de feita · 19:00 · atrasada há 2 dias Lavar o carro uma vez · próxima sexta, 20 de nov Nova rotina Remédios 2 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia Vitamina Rex · toda semana (seg) Novo remédio Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador Nova manutenção Contas a pagar 2 Condomínio R$ 450,00 · todo mês · vence amanhã Seguro uma vez · venceu há 8 dias As contas do GerencIA ficam no GerencIA. Nova conta");
     click(v, /^Varrer/);
     assert.equal(a.opened[0].summary, "Varrer");
     click(v, "Nova conta");
@@ -331,9 +331,9 @@ describe("models: Mais › Rotinas", () => {
   it("the search by the name, who, the dose or the place; nothing found says so; the X clears", () => {
     const a = new App({ home: { catalog: catalog(), score: SCORE } });
     fire(a._renderCatalog(), "Buscar nos cadastros", "input", { target: { value: " losar " } });
-    assert.equal(text(a._renderCatalog()), "Selecionar Remédios 1 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia");
+    assert.equal(text(a._renderCatalog()), "Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Remédios 1 Losartana 1 cp · Ana · 06:00, 08:00, 20:00 · todo dia");
     a._catQ = "purific";
-    assert.equal(text(a._renderCatalog()), "Selecionar Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador");
+    assert.equal(text(a._renderCatalog()), "Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Manutenção da casa 1 Filtro a cada 6 meses · Davi · +15 · venceu ontem Purificador");
     a._catQ = "zzz";
     assert.equal(text(a._renderCatalog()), "Nada encontrado Nenhum cadastro com “zzz”.");
     click(a._renderCatalog(), "Limpar");
@@ -344,8 +344,39 @@ describe("models: Mais › Rotinas", () => {
     globalThis.localStorage = { getItem: () => null, setItem() {} };
     const a = new App({ home: { catalog: [...catalog(), cat("rotina", "Depois das férias", { next: "2026-11-30" })], score: SCORE }, away: { from: "2026-11-17", to: "2026-11-22" } });
     const t = text(a._renderCatalog());
-    assert.match(t, /^Selecionar Rotina da casa 4 Depois das férias uma vez · próxima segunda, 30 de nov Pausadas \(3\) Nova rotina Remédios 2 Losartana/);
+    assert.match(t, /^Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Rotina da casa 4 Depois das férias uma vez · próxima segunda, 30 de nov Pausadas \(3\) Nova rotina Remédios 2 Losartana/);
     assert.match(t, /Manutenção da casa 1 Pausadas \(1\) Nova manutenção Contas a pagar 2 Condomínio/);
+  });
+
+  it("1.116.0: Agrupar por Quem faz, Cômodo e Frequência; as pausadas no fim; o título fecha o bloco; o aparelho lembra", () => {
+    const kept = {};
+    globalThis.localStorage = { getItem: (k) => (k in kept ? kept[k] : null), setItem: (k, v) => (kept[k] = v) };
+    const a = new App({ home: { catalog: catalog(), score: SCORE } });
+    click(a._renderCatalog(), "Quem faz");
+    assert.equal(kept["cronologia-rotinas-agrupar"], '"quem"');
+    let t = text(a._renderCatalog());
+    assert.match(t, /^Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Ana 2 Regar .* Losartana .* Davi 1 Filtro .* Rex 1 Vitamina .* Sem quem faz 4 Varrer .* Lavar o carro .* Condomínio .* Seguro /);
+    click(a._renderCatalog(), "Cômodo");
+    t = text(a._renderCatalog());
+    assert.match(t, /Selecionar Varanda 1 Regar .* Sem cômodo 7 Varrer/);
+    click(a._renderCatalog(), "Frequência");
+    t = text(a._renderCatalog());
+    assert.match(t, /Selecionar Todo dia 2 Regar .* Losartana .* Até uma semana 2 Varrer .* Vitamina .* Até um mês 1 Condomínio .* Mais de um mês 1 Filtro .* Uma vez 2 Lavar o carro .* Seguro /);
+    click(a._renderCatalog(), "Agrupar por");
+    assert.equal(kept["cronologia-rotinas-agrupar-fechado"], "true");
+    assert.match(text(a._renderCatalog()), /^Agrupar por · Frequência Selecionar Todo dia 2/);
+    // de férias: as pausadas num cartão só, no fim, recolhidas
+    const f = new App({ home: { catalog: catalog(), score: SCORE }, away: { from: "2026-11-17", to: "2026-11-22" } });
+    assert.match(text(f._renderCatalog()), /Pausadas \(\d+\)$/);
+    // uma escolha que não vale mais volta ao Tipo
+    kept["cronologia-rotinas-agrupar"] = '"comodo"';
+    const s = new App({ home: { catalog: [cat("rotina", "Varrer", {})], score: SCORE } });
+    assert.match(text(s._renderCatalog()), /^Agrupar por · Tipo Selecionar Rotina da casa 1 Varrer/);
+    globalThis.localStorage = { getItem() { throw new Error("private"); }, setItem() { throw new Error("private"); } };
+    const p = new App({ home: { catalog: catalog(), score: SCORE } });
+    assert.match(text(p._renderCatalog()), /^Agrupar por Tipo Quem faz Cômodo Frequência Selecionar Rotina da casa 3/);
+    click(p._renderCatalog(), "Quem faz");
+    assert.ok(p.updates > 0);
   });
 });
 

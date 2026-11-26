@@ -11,6 +11,8 @@ import { datePickField } from "./datepick.js";
 import { offFold } from "./offfold.js";
 import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
+const CAT_AGRUPAR = "cronologia-rotinas-agrupar"; // 1.116.0: Mais › Rotinas › Agrupar por (o aparelho lembra)
+const CAT_AGRUPAR_FECHADO = "cronologia-rotinas-agrupar-fechado";
 const icon = (name, cls = "") =>
   html`<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${unsafeSVG(ICONS[name] || ICONS.calendar)}</svg>`;
 
@@ -754,6 +756,55 @@ export const ModelsMixin = (Base) =>
         const off = list.filter(paused);
         return { sec, list, off, rows: body(sec, list.filter((c) => !paused(c))) };
       });
+      // 1.116.0 (o dono: "do mesmo jeito que criamos esse agrupar por… a gente precisa adicionar ele em outros locais"; o
+      // modelo é o dos Consumíveis do InventarIA): Agrupar por Tipo (como sempre), Quem faz, Cômodo ou Frequência; cada grupo
+      // é um cartão com o ícone, o nome e quantos, que fecha pelo título; as pausadas ficam no fim, recolhidas
+      // os cômodos do InventarIA, na ordem de lá, e depois os que algum cadastro usa e lá não há
+      const salas = [...new Set([...allRooms, ...all.flatMap((c) => namesOf(c.rooms, c.room))])];
+      const ags = [["tipo", "Tipo", "layers"], ["quem", "Quem faz", "user-round"], ...(salas.length ? [["comodo", "Cômodo", "door-open"]] : []), ["freq", "Frequência", "repeat"]];
+      const agKey = (() => { try { return JSON.parse(localStorage.getItem(CAT_AGRUPAR) || '"tipo"'); } catch { return "tipo"; } })();
+      const como = ags.some(([k]) => k === agKey) ? agKey : "tipo";
+      const agShut = (() => { try { return localStorage.getItem(CAT_AGRUPAR_FECHADO) === "true"; } catch { return false; } })();
+      const salva = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem o aparelho */ } this.requestUpdate(); };
+      const dias = (c) => {
+        const r = /FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/.exec(c.rrule || ""), i = +((/INTERVAL=(\d+)/.exec(c.rrule || "") || [])[1] || 1);
+        if (r) return { DAILY: 1, WEEKLY: 7, MONTHLY: 30, YEARLY: 365 }[r[1]] * i;
+        const e = c.kind === "manutencao" ? c.every : c.after;
+        return e && UNITS[e.unit] ? UNITS[e.unit][0] * e.n : 0;
+      };
+      const FREQS = [["dia", "Todo dia", "sunrise"], ["semana", "Até uma semana", "calendar-days"], ["mes", "Até um mês", "calendar-range"], ["mais", "Mais de um mês", "calendar-clock"], ["uma", "Uma vez", "calendar-check"]];
+      const freqDe = (c) => { const d = dias(c); return !d ? "uma" : d <= 1 ? "dia" : d <= 7 ? "semana" : d <= 31 ? "mes" : "mais"; };
+      const grupos = () => {
+        const ativos = found.filter((c) => !paused(c));
+        let ordem, de;
+        if (como === "quem") {
+          const nomes = [...new Set(ativos.map((c) => (c.who || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+          ordem = [...nomes.map((n) => [n, n, "user-round"]), ["", "Sem quem faz", "users"]];
+          de = (c) => [(c.who || "").trim()];
+        } else if (como === "comodo") {
+          ordem = [...salas.map((n) => [n, n, "door-open"]), ["", "Sem cômodo", "house"]];
+          de = (c) => { const ns = namesOf(c.rooms, c.room); return ns.length ? ns : [""]; };
+        } else {
+          ordem = FREQS;
+          de = (c) => [freqDe(c)];
+        }
+        const by = new Map(ordem.map(([k]) => [k, []]));
+        for (const c of ativos) for (const k of de(c)) if (by.has(k)) by.get(k).push(c);
+        return ordem.map(([k, nome, ic]) => {
+          const list = by.get(k);
+          return { k, nome, ic, rows: SECS.flatMap((sec) => body(sec, list.filter((c) => c.kind === sec.kind))) };
+        }).filter((g) => g.rows.length);
+      };
+      const offAll = found.filter(paused);
+      const nomeAg = (ags.find(([k]) => k === como) || ags[0])[1];
+      const agrupar = sel
+        ? nothing
+        : html`<div class="agrupar ${agShut ? "fechado" : ""}">
+            <button type="button" class="agrupar-l" id="cat-agrupar" aria-expanded=${agShut ? "false" : "true"} @click=${() => salva(CAT_AGRUPAR_FECHADO, !agShut)}>${icon("layers")}<span>Agrupar por</span>${agShut ? html`<span class="agrupar-val">· ${nomeAg}</span>` : nothing}${icon("chevron-down", "seta")}</button>
+            ${agShut ? nothing : html`<div class="seg agrupar-seg" role="radiogroup" aria-labelledby="cat-agrupar" style="--n:${ags.length}">
+              ${ags.map(([k, nome, ic]) => html`<button type="button" class=${como === k ? "on" : ""} role="radio" aria-checked=${como === k ? "true" : "false"} @click=${() => salva(CAT_AGRUPAR, k)}>${icon(ic)}<span>${nome}</span></button>`)}
+            </div>`}
+          </div>`;
       this._cselRows = rowsSel;
       const total = this._catalogCount();
       const ids = sel ? [...this._csel.ids].filter((s) => rowsSel.has(s)) : [];
@@ -777,8 +828,16 @@ export const ModelsMixin = (Base) =>
           ${q ? html`<button class="icon-btn" style="width:40px;height:40px" @click=${() => ((this._catQ = ""), this.requestUpdate())} aria-label="Limpar">${icon("x")}</button>` : nothing}
         </label>
         ${needle && !found.length ? html`<div class="panel"><div class="empty"><div class="em-icon">${icon("search")}</div><h3>Nada encontrado</h3><p>Nenhum cadastro com “${clip(q, 30)}”.</p></div></div>` : nothing}
+        ${total && found.length ? agrupar : nothing}
         ${head}
-        ${secs.map(({ sec, list, off, rows }) => {
+        ${como !== "tipo"
+          ? html`${grupos().map((g) => html`<div class="panel cat-sec cat-grp" data-card="agrupar-${como}-${g.k || "sem"}">
+                ${this._panelHead(g.ic, "accent", g.nome, String(g.rows.length))}
+                ${g.rows}
+              </div>`)}
+              ${offAll.length ? html`<div class="panel cat-sec cat-grp">${offFold(this, "cat-pausadas", "Pausadas", offAll.length, () => SECS.flatMap((sec) => body(sec, offAll.filter((c) => c.kind === sec.kind))))}</div>` : nothing}`
+          : nothing}
+        ${como !== "tipo" ? nothing : secs.map(({ sec, list, off, rows }) => {
           const n = rows.length + off.length;
           if (needle && !n) return nothing;
           return html`<div class="panel cat-sec" id="cat-${sec.kind}">

@@ -129,6 +129,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.115.3 (o dono, no ResolvIA: "quando eu retraio e tem só um equipamento, coloca do lado o equipamento; senão, «Vários equipamentos»"): o `campovalor.js` (igual no ResolvIA e no MemorIA) lê o `.eq-sel` do campo (um: o nome; mais: o `data-varios`, que o campo Equipamento do `tasks.js` põe: «Vários equipamentos» ou «Vários bens»).
 
+1.116.0 (o dono: "do mesmo jeito que criamos esse agrupar por… [nos Consumíveis do InventarIA]… a gente precisa adicionar ele em outros locais"): no `_renderCatalog` (`models.js`), o `agrupar` (o título `.agrupar-l`, que fecha, e o `.seg.agrupar-seg`; `CAT_AGRUPAR` e `CAT_AGRUPAR_FECHADO` no aparelho): Tipo (as seções `SECS` de sempre), Quem faz, Cômodo (com o `_roomNamesAll`) ou Frequência (`freqDe`/`dias`: o `rrule`, o `every` da manutenção ou o `after`; `FREQS`); os grupos (`grupos()`) são cartões `.cat-sec.cat-grp` com o `_panelHead` e `data-card`, as linhas pelo mesmo `body()` (os remédios juntos) e as pausadas num `offFold` no fim. Teste: `tests/e2e/cr_agrupar.py`.
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.
