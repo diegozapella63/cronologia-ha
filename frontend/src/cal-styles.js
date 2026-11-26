@@ -3448,6 +3448,15 @@ export const calStyles = css`
     width: 17px;
     height: 17px;
   }
+  /* 1.117.1: o empate, igual ao entregue (o círculo cheio), no amarelo e com o aperto de mãos */
+  .hist-gift.tie {
+    background: var(--rv-warn);
+    border-color: var(--rv-warn);
+    color: #fff;
+  }
+  :host([dark]) .hist-gift.tie {
+    color: #2a1d02;
+  }
 
   .who-grid {
     display: grid;

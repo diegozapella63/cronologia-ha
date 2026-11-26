@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.117.1
+
+- **Recompensas › Histórico**: toda vitória tem o prêmio para marcar como entregue (o círculo verde), também quando o prêmio não foi escrito; o **Empate** ganha a marca dele, no mesmo círculo, em amarelo, com o aperto de mãos (ninguém leva).
+
 ## 1.117.0
 
 - **O alto das listas igual em todos os apps**: em **Mais › Rotinas**, o **Agrupar por** é a linha do mesmo tamanho dos outros apps, com o ícone na cor do app; logo antes da lista, quantos cadastros à esquerda e o **Selecionar** à direita.

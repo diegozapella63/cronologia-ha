@@ -859,9 +859,12 @@ export const RewardsMixin = (Base) =>
               <span class="hist-tx"><b>${x.winner ? `${x.winner} venceu` : "Empate"} · ${Object.values(x.totals || {}).join(" × ")}</b><small>${periodLabel(x.start, x.end, s.period)}${x.reward ? ` · ${x.reward}` : ""}</small></span>
               ${icon("chevron-right")}
             </button>
-            ${x.reward && x.winner
+            ${/* 1.117.1 (o dono: "pq não aparece o verde ali no que já passou"; "no empate colocar um ícone igual o verde mas
+                 outro que represente o empate"): toda vitória tem o prêmio para marcar, também sem o prêmio escrito; o empate,
+                 o aperto de mãos (ninguém leva) */ ""}
+            ${x.winner
               ? html`<button class="hist-gift ${x.delivered ? "on" : ""}" aria-pressed=${x.delivered ? "true" : "false"} aria-label="${x.delivered ? "Prêmio entregue" : "Marcar prêmio como entregue"}" @click=${() => this._setDelivered(x.key, !x.delivered)}>${icon(x.delivered ? "check" : "gift")}</button>`
-              : nothing}
+              : html`<span class="hist-gift tie" role="img" aria-label="Empate: ninguém leva">${icon("handshake")}</span>`}
           </div>`,
         )}
       </div>`;

@@ -61,7 +61,7 @@ async def main():
         h1 = " ".join((await hist.nth(1).inner_text()).split())
         check(h0 == f"D Davi venceu · 30 × 10 {LAST} · Jantar fora" and h1.startswith("= Empate · 20 × 20"), f"each with who won and the score ({h0} | {h1})")
         gift = hist.nth(0).locator(".hist-gift")
-        check(await gift.get_attribute("aria-pressed") == "false" and await gift.get_attribute("aria-label") == "Marcar prêmio como entregue" and await hist.nth(1).locator(".hist-gift").count() == 0, "a gift to mark it given (none on a tie)")
+        check(await gift.get_attribute("aria-pressed") == "false" and await gift.get_attribute("aria-label") == "Marcar prêmio como entregue" and await hist.nth(1).locator(".hist-gift.tie").get_attribute("aria-label") == "Empate: ninguém leva", "a gift to mark it given; a tie, the handshake (1.117.1)")
         check("Davi 1" in await a.locator(".panel.history .panel-head, .panel.history").first.inner_text(), "the wins counted in the head")
 
         # Entregue: the card leaves, the Histórico shows it given; tapping the gift again undoes it

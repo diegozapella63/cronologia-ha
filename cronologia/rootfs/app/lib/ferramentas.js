@@ -730,7 +730,7 @@ export class Ferramentas {
     if (premio(s.next)) out.premio_do_proximo = premio(s.next);
     out.extrato = extrato;
     out.extrato_total = s.log_count;
-    out.anteriores = (s.history || []).slice(0, 5).map((h) => ({ de: h.start, ate: last(h.end), vencedor: h.winner || "empate", pontos: h.totals, ...(h.reward ? { premio: h.reward, entregue: !!h.delivered } : {}) }));
+    out.anteriores = (s.history || []).slice(0, 5).map((h) => ({ de: h.start, ate: last(h.end), vencedor: h.winner || "empate", pontos: h.totals, ...(h.reward ? { premio: h.reward } : {}), ...(h.winner ? { entregue: !!h.delivered } : {}) }));
     out.demeritos = (this.store.data.app.demerits || []).map((d) => ({ nome: d.title, pontos: d.points }));
     return json(out);
   }

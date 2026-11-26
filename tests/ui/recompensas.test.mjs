@@ -646,10 +646,14 @@ describe("Recompensas: the Histórico and the Extrato of a past period", () => {
     const a = new App({ score: s, api: fakeApi({ scoreDelivered: null, scoreLog: [] }) });
     const v = a._renderHistory(s);
     assert.equal(text(v), "Histórico Davi 2 · Ana 1 D Davi venceu · 30 × 45 9 a 14 de nov · Escolher o filme = Empate · 20 × 20 2 a 7 de nov · Pizza D Davi venceu · 26 a 31 de out A Ana venceu · 9 × 1 19 a 24 de out · Massagem");
-    click(v, "Marcar prêmio como entregue");
-    click(v, "Prêmio entregue");
+    // 1.117.1: toda vitória tem a marca, também sem o prêmio escrito (o h3); o empate, o aperto de mãos
+    const marcas = controls(v).filter((c) => c.on.click && /^(Marcar prêmio como entregue|Prêmio entregue)$/.test(c.aria));
+    assert.deepEqual(marcas.map((c) => c.aria), ["Marcar prêmio como entregue", "Prêmio entregue", "Prêmio entregue"], "as três vitórias");
+    marcas[0].on.click({});
+    marcas[2].on.click({});
     await tick();
     assert.deepEqual(a.api.calls.slice(0, 2), [["scoreDelivered", "h1", true], ["scoreDelivered", "h4", false]]);
+    assert.match(render(v).html, /hist-gift tie[^>]*aria-label="Empate: ninguém leva"/, "o empate com a marca dele");
     assert.equal(new App()._renderHistory(SCORE()), nothing);
     assert.equal(new App()._renderHistory(SCORE({ history: undefined })), nothing);
     const many = SCORE({ history: Array.from({ length: 12 }, (_, i) => ({ ...hist[0], key: `k${i}` })) });
