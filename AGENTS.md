@@ -127,6 +127,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 
 1.115.2 (o dono: "revisar as 20 perguntas padrões da IA, tem algumas muito específicas"): as **perguntas prontas** da Conversa (as 6 à vista e as 20 do Mais perguntas) são gerais e valem em qualquer casa: nada de itens, valores, compromissos, cômodos ou nomes inventados («Adiciona leite na lista», «Marca dentista sexta às 15h», «Onde está o liquidificador?»); o pedido com o detalhe é o que a pessoa escreve. Vale em todos os apps da família.
 
+1.115.3 (o dono, no ResolvIA: "quando eu retraio e tem só um equipamento, coloca do lado o equipamento; senão, «Vários equipamentos»"): o `campovalor.js` (igual no ResolvIA e no MemorIA) lê o `.eq-sel` do campo (um: o nome; mais: o `data-varios`, que o campo Equipamento do `tasks.js` põe: «Vários equipamentos» ou «Vários bens»).
+
 ## Conversa com o dono
 
 Respostas curtas, em português. Ao terminar uma mudança: o que mudou, a versão e se está publicado.

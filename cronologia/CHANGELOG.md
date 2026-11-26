@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.115.3
+
+- Numa tarefa ou manutenção, o campo **Equipamento** fechado mostra o equipamento escolhido ao lado do título; com mais de um, **Vários equipamentos** (ou **Vários bens**).
+
 ## 1.115.2
 
 - As **perguntas prontas** da Conversa (e as **Mais perguntas** do **Editar perguntas**) ficaram gerais, para valer em qualquer casa: saíram as que citavam itens, valores, compromissos ou cômodos inventados, como «Marca dentista sexta às 15h» e «Tomei o remédio das 8h». As perguntas que você já editou continuam como estão.

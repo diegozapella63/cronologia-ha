@@ -336,7 +336,7 @@ export const TasksMixin = (Base) =>
             </div>`
           : nothing}
         ${items.length
-          ? html`<div class="field">
+          ? html`<div class="field" data-varios=${bens ? "Vários bens" : "Vários equipamentos"}>
               <span class="flabel">${bens ? (ids.length > 1 ? "Bens" : "Bem") : ids.length > 1 ? "Equipamentos" : "Equipamento"}</span>
               ${renderEquipPicker({
                 lit: { html, nothing },
