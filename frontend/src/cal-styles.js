@@ -2463,13 +2463,21 @@ export const calStyles = css`
   }
   /* 1.114.0: Selecionar (como no ResolvIA e no GerencIA): a linha da contagem com o Selecionar, a marca em cada linha e a
      barra de baixo com Apagar e Alterar */
+  /* 1.117.0 (PADROES.md): a contagem à esquerda, 15 px, cinza; o Selecionar à direita, na cor do app */
   .res-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin: -4px 0 12px;
+    margin: 0 2px 12px;
     min-height: 40px;
+  }
+  .res-head:not(.sel-head) > .res-n {
+    color: var(--rv-muted);
+    font-size: 15px;
+  }
+  .res-head .text-btn {
+    font-size: 15px;
   }
   .res-head.end {
     justify-content: flex-end;
@@ -3497,8 +3505,11 @@ export const calStyles = css`
   details.score-set summary::-webkit-details-marker {
     display: none;
   }
-  details.score-set[open] summary .i {
-    transform: rotate(180deg);
+  details.score-set summary > .i:last-child {
+    transform: rotate(-90deg);
+  }
+  details.score-set[open] summary > .i:last-child {
+    transform: none;
   }
   details.score-set summary .i {
     color: var(--rv-muted);

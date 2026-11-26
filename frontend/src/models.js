@@ -800,7 +800,7 @@ export const ModelsMixin = (Base) =>
       const agrupar = sel
         ? nothing
         : html`<div class="agrupar ${agShut ? "fechado" : ""}">
-            <button type="button" class="agrupar-l" id="cat-agrupar" aria-expanded=${agShut ? "false" : "true"} @click=${() => salva(CAT_AGRUPAR_FECHADO, !agShut)}>${icon("layers")}<span>Agrupar por</span>${agShut ? html`<span class="agrupar-val">· ${nomeAg}</span>` : nothing}${icon("chevron-down", "seta")}</button>
+            <button type="button" class="agrupar-l" id="cat-agrupar" aria-expanded=${agShut ? "false" : "true"} @click=${() => salva(CAT_AGRUPAR_FECHADO, !agShut)}>${icon("layers", "lbl-ic")}<span>Agrupar por</span>${agShut ? html`<span class="agrupar-val">· ${nomeAg}</span>` : nothing}${icon("chevron-down", "seta")}</button>
             ${agShut ? nothing : html`<div class="seg agrupar-seg" role="radiogroup" aria-labelledby="cat-agrupar" style="--n:${ags.length}">
               ${ags.map(([k, nome, ic]) => html`<button type="button" class=${como === k ? "on" : ""} role="radio" aria-checked=${como === k ? "true" : "false"} @click=${() => salva(CAT_AGRUPAR, k)}>${icon(ic)}<span>${nome}</span></button>`)}
             </div>`}
@@ -811,6 +811,7 @@ export const ModelsMixin = (Base) =>
       const n = ids.length;
       const mesmo = sel && this._csel.kind ? [...rowsSel].filter(([, r]) => r.kind === this._csel.kind).map(([s]) => s) : [];
       const todos = mesmo.length > 0 && mesmo.every((s) => this._csel.ids.has(s));
+      const nShown = found.filter((c) => c.kind !== "remedio").length + meds.length;
       const head = sel
         ? html`<div class="res-head sel-head">
             <button class="icon-btn" @click=${() => this._cselEnd()} aria-label="Cancelar seleção">${icon("x")}</button>
@@ -818,9 +819,10 @@ export const ModelsMixin = (Base) =>
             ${this._csel.kind ? html`<button class="text-btn" @click=${() => this._cselAll(todos ? [] : mesmo)}>${icon(todos ? "x" : "list-checks")}${todos ? "Nenhum" : "Todos"}</button>` : nothing}
           </div>`
         : total && found.length
-          ? html`<div class="res-head end"><button class="text-btn sel-start" @click=${() => this._cselStart()}>${icon("list-checks")}Selecionar</button></div>`
+          ? html`<div class="res-head"><span class="res-n">${plural(nShown, "cadastro", "cadastros")}</span><button class="text-btn sel-start" @click=${() => this._cselStart()}>${icon("list-checks")}Selecionar</button></div>`
           : nothing;
       const kindSel = sel ? this._csel.kind : "";
+      // 1.117.0: quantos na lista (um remédio é uma linha só, com os horários dele)
       return html`
         <label class="search-box cat-search">
           ${icon("search")}

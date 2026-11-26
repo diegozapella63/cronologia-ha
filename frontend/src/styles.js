@@ -1034,12 +1034,14 @@ export const styles = css`
   .done-toggle .count {
     color: var(--rv-muted);
   }
+  /* PADROES.md (setas): fechado, para o lado; aberto, para baixo */
   .done-toggle .i {
     transition: transform 0.2s;
     color: var(--rv-muted);
+    transform: rotate(-90deg);
   }
   .done-toggle.open .i {
-    transform: rotate(180deg);
+    transform: none;
   }
 
   .empty {
@@ -1313,44 +1315,56 @@ export const styles = css`
   }
   /* 1.116.0: Agrupar por, no padrão da família (o dos Consumíveis do InventarIA): o título pequeno que fecha o bloco (fechado,
      o escolhido ao lado), as escolhas numa barra só, do mesmo tamanho */
+  /* 1.117.0 (PADROES.md, "O alto das listas"): a linha do Agrupar por igual nos apps: 40 px, o ícone de 18 px na cor do app,
+     o nome em 15 px, peso 500, na cor do texto; fechado, o escolhido em cinza; a seta no fim */
   .agrupar {
     display: grid;
-    gap: 8px;
-    margin: 0 0 14px;
+    gap: 4px;
+    margin: -4px 0 8px;
   }
   .agrupar.fechado {
     gap: 0;
+    margin-bottom: 0;
   }
   .agrupar-l {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
-    min-height: 32px;
-    padding: 0;
+    min-height: 40px;
+    padding: 0 2px;
     border: 0;
     background: none;
-    color: var(--rv-muted);
+    color: var(--rv-text);
     font: inherit;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
     text-align: left;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  .agrupar-l .i {
-    width: 17px;
-    height: 17px;
+  .agrupar-l > .lbl-ic {
+    width: 18px;
+    height: 18px;
+    color: var(--rv-accent-ink);
   }
   .agrupar-l > .seta {
+    width: 18px;
+    height: 18px;
     margin-left: auto;
+    color: var(--rv-muted);
     transition: transform 0.2s;
   }
   .agrupar.fechado > .agrupar-l > .seta {
     transform: rotate(-90deg);
   }
   .agrupar-l > .agrupar-val {
-    color: var(--rv-text);
-    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--rv-muted);
+    font-weight: 500;
   }
   .seg.agrupar-seg {
     display: grid;

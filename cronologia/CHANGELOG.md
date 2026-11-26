@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.117.0
+
+- **O alto das listas igual em todos os apps**: em **Mais › Rotinas**, o **Agrupar por** é a linha do mesmo tamanho dos outros apps, com o ícone na cor do app; logo antes da lista, quantos cadastros à esquerda e o **Selecionar** à direita.
+- **Setas**: o que fecha e abre (Concluídos, o Placar, as Últimas chamadas do Uso da IA) mostra a seta para o lado fechado e para baixo aberto.
+
 ## 1.116.0
 
 - **Rotinas › Agrupar por**, no mesmo jeito dos outros apps da família.
