@@ -35,7 +35,9 @@ async def set_hidden(pg, name, hidden):
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        wk = datetime.timedelta(days=7)  # next week: only the weekly Pilates (Pessoal) and the Daily do time (Trabalho)
+        # three weeks ahead: only the weekly Pilates (Pessoal) and the Daily do time (Trabalho). Not next week: the
+        # Dentista of the fake calendars is on the coming Thursday, which on a Thursday is 7 days ahead.
+        wk = datetime.timedelta(days=21)
         # both calendars: two appointments, the Hoje card stays
         pg = await open_at(b, at(6, 23) + wk)
         a = pg.locator("cronologia-app")
