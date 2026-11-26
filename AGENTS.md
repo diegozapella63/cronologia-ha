@@ -1,5 +1,7 @@
 # Instruções para quem for mexer neste repositório (pessoas ou IAs)
 
+> Leia também o `PADROES.md`: os padrões da família, iguais em todos os apps. Este arquivo diz o que é só deste app e como cada padrão é feito aqui.
+
 CronologIA é um app (add-on) do Home Assistant: agenda da família com modelos (remédio, conta, rotina da casa, manutenção), placar de recompensas e leitura por IA. Faz parte de uma família de apps do mesmo dono, que conversam entre si pelo Home Assistant:
 
 | App | Repositório | O que é |
@@ -51,14 +53,7 @@ No `config.yaml`, `url` aponta para o repositório e `panel_admin: false` fica c
 
 ## Arquivos iguais em todos os apps
 
-A lista dos arquivos que são iguais nos apps da família fica em `tools/iguais.py` (ele também é igual em todos):
-`python3 tools/iguais.py` confere os daqui com os dos apps ao lado (`../resolvia-ha`, ...), e o GitHub confere a cada
-push (job **Arquivos iguais aos dos outros apps**, que baixa os outros apps). Mudou um arquivo da lista? Copie para os
-outros apps do grupo e publique todos. Um arquivo que passa a ser igual entra em `GRUPOS`, aqui e nas cópias.
-
-`share/<app>/integracao.json` começa igual em todos os apps: `app` (o id, como no `correria.json`), `nome`, `versao` e
-`gravado_em` (ISO 8601 com o fuso), depois os campos de cada app. O ResolvIA e o CronologIA ainda gravam o nome em
-`app` (as versões de antes conferem por ele) e quem lê aceita os dois; o id entra numa próxima versão.
+A lista fica em `tools/iguais.py` e as regras, em **Arquivos iguais** e **Os apps conversam** do `PADROES.md`.
 
 ## Arquivos idênticos no ResolvIA
 
@@ -91,23 +86,8 @@ Pela pasta `/share` do Home Assistant e por eventos do HA. Mudar um formato aqui
 - Pets são pessoas sem celular: não aparecem em rotinas, recompensas nem placar, só em remédios, e o aviso vai para a pessoa escolhida para ele (ou quem cuida).
 - Os apps olham para a pessoa, nunca para o aparelho: os celulares são os ligados a cada pessoa no Home Assistant. Nada de escolher um celular nem mostrar nome de aparelho na tela.
 - Celular primeiro (390 px); com 1000 px ou mais, barra lateral. Tema claro e escuro.
-- **Padrão da família (igual em todos os apps)**
-  - Barra de baixo: a primeira aba é **Agora** (onde o app abre, com o ícone do relógio; nada de Início); o botão do meio é **Adicionar** (no EconomIA, a ação principal dele), só com o ícone, sem o texto embaixo (o nome fica no `aria-label`); **Buscar**, quando houver, é a 2ª aba; **Mais** é a última, com o ícone de três pontos.
-  - **Ícones**: toda seção (cartão) começa com o cabeçalho, o ícone e o título; o título de cada tela, de cada grupo (como Imóveis e Veículos) e de cada janela (Novo cômodo, Nova despesa… e a lista de uma caixa de seleção) também tem o ícone; dentro de uma seção, toda linha com título (uma chave, uma escolha, um campo, um recolhido como **Últimas chamadas**) tem um ícone pequeno antes do título; e todo botão com texto tem ícone (Cancelar, Salvar, Voltar, Hoje…). Assim dá para ver onde cada parte começa.
-  - **Seções**: cada seção principal é um cartão (o fundo, a borda e os cantos arredondados, como no GerencIA), sem linha no fim; entre as linhas de opções de uma seção não há linha (o ícone de cada uma marca onde começa); as listas de dados (as listas, as tarefas que se repetem, os itens) têm a linha fina entre as entradas, sem a do fim.
-  - **Sub-opções**: o que só vale com uma chave ligada (o Horário e o A cada do Conferir sozinho, o Quem recebe e o Testar do Avisar no celular, uma lista como Apps detectados) fica num quadro recuado logo abaixo dela, para ver de qual opção é.
-  - **Abas**: quando as abas não cabem na largura, a ponta de onde há mais some aos poucos, com uma seta.
-  - **Contrair e expandir**: toda seção (cartão) fecha e abre num toque no cabeçalho, com a seta no canto; o aparelho lembra as que ficaram fechadas. Aqui: `_applyFolds` (a cada render: todo `.panel` cujo primeiro filho é um cabeçalho, `.mais-head` em Mais ou os da Agora, e cada `.field` de escolhas das janelas) e `_toggleFold`; a chave é o id do cartão, o `data-card` ou o título, em `cronologia-fechadas` e `cronologia-campos` no localStorage. Os ícones: `PAGE_IC` (as telas), `sheetIc` (as janelas) e `_labelIcons` (o ícone de cada opção e campo que não traz o seu, pelas palavras, `LABEL_IC`); o `tests/e2e/cr_familia.py` confere.
-  - Nada de avisos que só incham a tela: o que a própria tela já mostra, o que a pessoa confere de qualquer jeito ou um limite do app do celular ("a galeria manda uma foto por vez", "Você confere antes de criar", "a IA encontra…") fica de fora (a aba Documentação pode explicar).
-  - Botões de ação (Novo…, Verificar de novo, Salvar e testar…) na largura do cartão no celular, dois lado a lado dividindo a linha; no computador, com a largura fixa do app (250 ou 280 px). Campos de texto livre que podem ficar longos (o que foi, títulos, descrições, nomes de tarefas) são caixas de texto que mostram tudo e aumentam puxando o canto (`textareas.js`), nunca uma linha que corta o texto; o Enter salva quando o campo é de uma linha só.
-  - **Mais** é um menu: as funções do app, depois **Configurações** e por último **Sobre**. Os relatórios se chamam **Relatório de/do …**.
-  - **Configurações** em 4 abas, nesta ordem: **Integrações › Dados › Aparência › Opções**; abre em Integrações. Nenhuma função do app vira aba.
-  - **Integrações**, nesta ordem: os outros apps da família › CorrerIA › **IA** (o Usar IA e a IA de cada uso: **Para conversar**, **Para ler fotos e PDFs** e, onde há busca na web, **Para pesquisar na internet**; cada uma é uma tarefa de IA do Home Assistant, e a de fotos ou de pesquisa vazia é igual à de conversar) › Falar › Uso da IA › Sensores.
-  - IA: as entradas se chamam **Colar mensagem**, **Escolher fotos** (ou **Escolher fotos ou PDF**, onde PDF vale) e **Digitalizar com IA**; a conversa recomeça em **Nova conversa**; o Voltar do celular fecha a Conversa.
-  - Palavras: **Apagar** (nunca Excluir); **Testar no meu celular**; **Home Assistant Cloud** (não Nabu Casa); recolhidos como **Nome (n)**; o CHANGELOG começa com "# Mudanças".
-  - Avisos no celular (todos chegam como Home Assistant): o título começa pelo nome do app, uma vez só ("ResolvIA · 📅 Vence hoje"), e o ícone pequeno é o do app (`notification_icon`); o canal e o grupo de cada aviso ficam como estão (o canal guarda o som e a importância que a pessoa escolheu no Android).
-  - **Dados**: Exportar › Backup na pasta share › Importar › Versões anteriores › Onde ficam os dados › Começar do zero.
-  - **Aparência**: o tema vale no aparelho (começa em Sistema); o fundo e os cartões são os do tema do Home Assistant (`hatema.js`, igual em todos os apps: publica `--ha-bg-light`, `--ha-card-light`, `--ha-bg-dark` e `--ha-card-dark`, as do modo de agora lidas do Home Assistant e as do outro, do tema padrão dele; os cinzas, como linhas e campos, saem do cartão misturado com o texto, `color-mix`, nunca uma cor fixa puxada para a cor do app); a cor do app vale para a casa toda; uma paleta só, de 12 cores (Vermelho, Coral, Laranja, Ouro, Verde, Menta, Turquesa, Azul, Índigo, Lilás, Rosa, Grafite); a Cor do dia é a mesma em todos os apps (as 11 sem o Grafite, pelo número do dia).
+**Padrão da família**: as regras de todos os apps estão no `PADROES.md` (igual nos 8 repositórios; leia antes de mexer). Como cada uma é feita aqui:
+- Contrair e expandir: `_applyFolds` (a cada render: todo `.panel` cujo primeiro filho é um cabeçalho, `.mais-head` em Mais ou os da Agora, e cada `.field` de escolhas das janelas) e `_toggleFold`; a chave é o id do cartão, o `data-card` ou o título, em `cronologia-fechadas` e `cronologia-campos` no localStorage. Os ícones: `PAGE_IC` (as telas), `sheetIc` (as janelas) e `_labelIcons` (o ícone de cada opção e campo que não traz o seu, pelas palavras, `LABEL_IC`); o `tests/e2e/cr_familia.py` confere.
   - Aqui: as funções do Mais são Calendários, Rotinas, **Recompensas** (os ajustes do placar e os deméritos; até a 1.63 era uma aba de Configurações), Avisos e Férias. A paleta é a `PALETTE` de `frontend/src/util.js` (o modelo dos outros apps; `nearestColor` troca uma cor gravada fora dela pela mais próxima) e a Cor do dia é o `colorOfDay` de `look.js`. **Começar do zero** (`cronologia/data/reset`, `store.resetAll`) apaga as marcações e o placar; calendários, pessoas, deméritos, preferências e o que as férias mudaram nos calendários continuam.
 - **A pessoa, não o calendário** (1.99.0): cada pessoa tem o seu calendário (`app.people[nome].cal`, em **Mais › Avisos › Pessoas e pets**; `false`: nenhum; sem escolha, o calendário com o primeiro nome dela, `personCalendar` em `lib/kinds.js`, usado pela tela e pelas ferramentas). O **Adicionar** pergunta **De quem** (`_renderWhoseField`: as pessoas com o calendário delas, depois os calendários de ninguém); a ferramenta `criar_compromisso` aceita `quem` no compromisso (`daPessoa`).
 - **Nenhum, Casa ou Bens** (1.107.0, como no ResolvIA 2.79.0): com a área Bens do InventarIA, a tarefa e a manutenção começam em **Nenhum** (sem Cômodo nem Equipamento) e só mostram os campos depois de Casa ou Bens (`_renderRoomEquipMulti` em `tasks.js`). Um site citado na tela é um link que abre o site (`a.site`).
