@@ -32,9 +32,9 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 
 ## O que tem
 
-- **Agora**, só o dia de hoje: os **remédios de hoje** de cada pessoa e pet (dose, quem toma; o atrasado em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os de dia todo, a **rotina e a manutenção da casa** e as **tarefas** com prazo.
+- **Agora**, só o dia de hoje: os **remédios de hoje** de cada pessoa e pet (dose, quem toma; o atrasado em vermelho), as **contas a pagar**, o evento que está acontecendo (e quanto falta) ou o próximo, os de dia todo, a **rotina e a manutenção da casa** e as **tarefas** com prazo. Num monitor ou tablet, a **Tela cheia** vira o painel da casa (o que vem a seguir, as tarefas do dia, o placar e a folha do MemorIA).
 - **Calendário** por **mês, semana, 3 dias, dia ou lista**, com busca do último ano ao próximo. Toque num horário vazio para criar um evento ali.
-- **Modelos** em Adicionar: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** (com período do dia, cômodos, **Pular** e a que volta N dias depois de feita) e **Manutenção** contada a partir da última vez, com um ou vários equipamentos.
+- **Modelos** em Adicionar: **Remédio** (dose, quem toma, vários horários, todo dia, dia sim e dia não, dias da semana, por N dias), **Conta a pagar**, **Rotina da casa** (com período do dia, cômodos, **Pular** e a que volta N dias depois de feita) e **Manutenção** contada a partir da última vez, com um ou vários equipamentos. **De quem** é o compromisso: cada pessoa tem o seu calendário. Cada campo fecha num toque no título e, fechado, mostra o que foi escolhido.
 - **Tarefas do ResolvIA**: as tarefas com prazo das listas do Home Assistant aparecem na Agora e no calendário, o **Concluir** daqui conclui lá, e **Adicionar › Tarefa** cria a tarefa numa lista, com cômodos. As **manutenções e rotinas** podem ir para uma lista do ResolvIA: concluir lá vale como feito aqui, com os pontos.
 - **Cômodos e equipamentos** do [InventarIA](https://github.com/diegozapella63/inventario-ha), pelo ResolvIA: etiquetas curtas nas rotinas, manutenções e tarefas.
 - **Recompensas**: placar da casa com pontos por tarefa feita, **deméritos** que tiram pontos, pontos avulsos, quem está na frente, o prêmio da semana (ou do mês), o histórico de quem venceu e um **lembrete diário** no celular com quem está ganhando (o toque abre as Recompensas).
@@ -42,15 +42,15 @@ A primeira instalação leva alguns minutos, porque o app é montado no próprio
 - **Aviso de remédio no celular** pelo app Home Assistant, com **Tomei** e **Adiar 15 min** no aviso, e de novo se atrasar, também para quem cuida (o remédio do pet vai para o celular de alguém).
 - **Contas do GerencIA**: com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) instalado, as contas e faturas aparecem aqui e o **Paguei** dá baixa lá.
 - **MemorIA no Agora**: com o [MemorIA](https://github.com/diegozapella63/memoria-ha) instalado, a anotação que vale agora e as duas próximas aparecem na Agora.
-- **CorrerIA**: com o [CorrerIA](https://github.com/diegozapella63/correria-ha), a agenda responde pelo WhatsApp, pelo Claude e pelo Gemini: o que tem hoje, criar e mudar compromissos, marcar como feito e dar pontos.
+- **CorrerIA**: com o [CorrerIA](https://github.com/diegozapella63/correria-ha), a agenda responde pelo WhatsApp, pelo Claude e pelo Gemini: o que tem hoje, criar e mudar compromissos, marcar como feito, dar pontos e ligar as férias; as rotinas e manutenções de cada cômodo entram nas **Rondas** de lá.
 - **Falar**: toque no microfone e diga o compromisso; a IA monta o evento para você conferir.
-- **Conversa com a IA**: pergunte "o que tenho hoje?" ou "quem está ganhando?", ou peça "marca dentista sexta às 15h"; cada ação aparece num cartão e só acontece quando você toca em **Fazer**.
+- **Conversa com a IA**: pergunte "o que tenho hoje?" ou "quem está ganhando?", ou peça "marca dentista sexta às 15h"; cada ação aparece num cartão e só acontece quando você toca em **Fazer**. A **Memória da IA** é uma só, da casa, compartilhada por todos os apps da família.
 - **Eventos de mensagem ou foto**: cole o convite do WhatsApp, escolha um print ou fotografe um cartão de consulta; a IA configurada no Home Assistant (Claude, OpenAI, Gemini ou Ollama) encontra data, horário e local, e você revisa. **Usar IA** desligado tira tudo o que usa IA.
 - **Criar, editar e apagar** nos calendários que permitem, com **repetição** (só este ou este e os próximos) e **Desfazer**.
 - **Arquivos .ics**: importar convites e exportar os calendários.
 - **Sensores** de remédios, rotinas, manutenção, férias e do próximo compromisso (para avisar antes), e o evento `cronologia_feito` para automações e etiquetas NFC.
 - **Dados**: exportar em ZIP, CSV ou JSON, backup em `share/cronologia`, importar, versões anteriores automáticas e começar do zero.
-- **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada um, sincronizados entre aparelhos), Rotinas, Recompensas, Avisos, Férias, Configurações (Integrações, Dados, Aparência e Opções) e **Sobre**.
+- **Mais, um menu**: Calendários (nome, cor e mostrar/ocultar de cada um, sincronizados entre aparelhos), Rotinas (com o **Selecionar** para mudar ou apagar várias de uma vez), Recompensas, Avisos, Férias, Configurações (Integrações, Dados, Aparência e Opções) e **Sobre**.
 - **Outlook, Google e Alexa**: o Outlook entra pelo MS365 Calendar (HACS) ou por um link .ics; o Google, pela integração oficial; e o que você pede para a Alexa aparece quando ela usa uma dessas agendas.
 - **Celular e computador**: feito para o celular; com a tela larga, barra lateral com um mês pequeno e os calendários.
 - **Tema claro e escuro** seguindo o Home Assistant, e a **Cor do dia**: a cor do app muda todo dia, a mesma em todos os apps da família (ou fica fixa na que você escolher).
