@@ -292,6 +292,8 @@ Pelo CorrerIA dá para:
 - mudar e apagar um evento (num que se repete: só este dia, este e os próximos ou a série toda), também a **repetição** de uma rotina, de um remédio ou de uma conta, deste dia em diante (ou parar de repetir);
 - marcar ou cancelar as **Férias** (as rotinas, as tarefas e a manutenção pausam; os remédios continuam);
 - marcar um remédio como tomado, uma rotina ou manutenção como feita ou uma conta como paga, desfazer, pular uma rotina ou um remédio e dar pontos avulsos ou um demérito.
+- pôr ou tirar o **prêmio** do placar (deste período ou do próximo; o mesmo para quem vencer ou um para cada pessoa) e marcar um prêmio como **entregue**;
+- mudar de uma vez quem faz, os pontos ou os cômodos de várias rotinas, manutenções ou remédios, como o **Selecionar** de Mais › Rotinas.
 
 As mudanças aparecem na tela na hora, e quem ganha os pontos é quem fez (ou a pessoa que conectou). No **Extrato** do placar, o que veio pelo CorrerIA diz por onde ("pelo WhatsApp", "pelo Claude"). O cartão mostra quando foi usado pela última vez.
 

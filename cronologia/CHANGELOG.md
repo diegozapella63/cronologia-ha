@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.118.0
+
+- **Pelo CorrerIA** (WhatsApp, Claude, Gemini e a Conversa de lá): agora dá para pôr o **prêmio** do placar ("o prêmio desta semana é escolher o filme", o mesmo para todos ou um para cada pessoa, também o do próximo período), marcar um prêmio como **entregue** e **mudar várias rotinas de uma vez** (quem faz, os pontos e os cômodos), como no Selecionar de Mais › Rotinas.
+
 ## 1.117.3
 
 - Nas janelas, um campo fechado **sem nada escolhido nem escrito** diz ao lado **Nenhum** (ou **Nenhuma**, **Ninguém**, **Sem categoria**), como nos outros apps.

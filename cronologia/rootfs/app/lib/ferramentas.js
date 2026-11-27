@@ -200,6 +200,45 @@ export const FERRAMENTAS = [
     descricao: "Liga o Modo férias de um dia a outro (as rotinas, as tarefas e a manutenção pausam; os remédios continuam), como em Mais › Férias, ou cancela as férias marcadas.",
     entrada: obj({ de: DATA, ate: DATA, cancelar: { type: "boolean" } }),
   },
+  {
+    // 1.118.0 (o dono, às ferramentas que faltavam para o CorrerIA: "pode colocar todas"): o Prêmio de Recompensas
+    nome: "definir_premio",
+    titulo: "Prêmio do placar",
+    grava: true,
+    descricao:
+      "O prêmio de um período do placar, como em Mais › Recompensas: o mesmo para quem vencer (premio) ou um para cada pessoa (por_pessoa: quem vencer ganha o seu). periodo: este (o de agora, padrão) ou proximo. tirar: true tira o prêmio. Empate: ninguém leva.",
+    entrada: obj({
+      periodo: { type: "string", enum: ["este", "proximo"] },
+      premio: { type: "string", description: "O prêmio de quem vencer (ex.: escolher o filme de sábado)." },
+      por_pessoa: { type: "array", maxItems: 10, items: obj({ pessoa: { type: "string" }, premio: { type: "string" } }, ["pessoa", "premio"]) },
+      tirar: { type: "boolean" },
+    }),
+  },
+  {
+    nome: "premio_entregue",
+    titulo: "Prêmio entregue",
+    grava: true,
+    descricao:
+      "Marca o prêmio de um período que já fechou como entregue (o Entregue do Histórico de Recompensas), ou desmarca com entregue false. Sem periodo, o mais recente com vencedor e prêmio ainda não entregue. periodo: o começo do período (o de de cronologia_placar, em anteriores).",
+    entrada: obj({ periodo: DATA, entregue: { type: "boolean" } }),
+  },
+  {
+    // o Alterar do Selecionar de Mais › Rotinas (1.114.0), pelo CorrerIA
+    nome: "alterar_rotinas",
+    titulo: "Alterar vários cadastros",
+    grava: true,
+    descricao:
+      "Muda de uma vez quem faz, os pontos ou os cômodos de várias rotinas, manutenções ou remédios (os ids de cronologia_cadastros), deste em diante, como o Alterar do Selecionar de Mais › Rotinas. Só o que vier muda.",
+    entrada: obj(
+      {
+        ids: { type: "array", minItems: 1, maxItems: 200, items: { type: "string" } },
+        quem: { type: "string", description: "Quem faz (vazio: ninguém em especial)." },
+        pontos: { type: "integer", minimum: 0, maximum: 1000 },
+        comodos: { type: "array", items: { type: "string" }, description: "Os cômodos, pelo nome; vazio tira." },
+      },
+      ["ids"],
+    ),
+  },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
 
@@ -339,10 +378,10 @@ export class Ferramentas {
    * diante, com as mesmas regras do editar_compromisso e do apagar_compromisso. itens: [{id, campos}] para alterar (cada um
    * com os seus campos: o Desfazer manda os de antes) ou [id] para apagar. -> {feitos, falhas: [{nome, erro}], desfazer: [{id, campos}]}
    */
-  async lote(acao, itens, { nome = "" } = {}, now = new Date()) {
+  async lote(acao, itens, { nome = "", cliente = "CronologIA" } = {}, now = new Date()) {
     if (!["alterar", "apagar"].includes(acao)) throw erro("acao: alterar ou apagar.");
     if (!Array.isArray(itens) || !itens.length) throw erro("Nada selecionado.");
-    const ctx = { cliente: "CronologIA", nome: linha(nome, 40) };
+    const ctx = { cliente: linha(cliente, 20) || "CronologIA", nome: linha(nome, 40) };
     const cat = new Map((this.index(now).catalog || []).map((c) => [c.key, c]));
     const out = { feitos: 0, falhas: [], desfazer: [] };
     for (const it of itens.slice(0, 200)) {
@@ -1074,6 +1113,69 @@ export class Ferramentas {
     if (c) throw erro(`Já está ${c.skipped ? (o.k.kind === "remedio" ? "pulado" : "pulada") : o.k.kind === "remedio" ? "tomado" : "feita"}: ${o.raw.summary}. Para desfazer, use cronologia_marcar_feito com feito false.`);
     const r = await this.home.skip(o.key, ctx.nome || ctx.cliente);
     return `Pulado: ${o.raw.summary}${r && r.next ? `; volta em ${dm(r.next)}` : ""}.`;
+  }
+
+  /** 1.118.0: o Prêmio de Recompensas (o mesmo para todos, ou um para cada pessoa), pelo store.setPrizes da tela. */
+  async _definir_premio(a, ctx, now) {
+    const st = this.placarOn();
+    if (!st) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
+    const qual = a.periodo == null || a.periodo === "" ? "este" : String(a.periodo);
+    if (!["este", "proximo"].includes(qual)) throw erro("periodo: este ou proximo.");
+    const s = this.home.scoreIndex(now.getTime());
+    const p = qual === "proximo" ? s.next : s.current;
+    const shared = linha(a.premio, 200);
+    const lista = Array.isArray(a.por_pessoa) ? a.por_pessoa : a.por_pessoa == null ? [] : null;
+    if (!lista) throw erro("por_pessoa: uma lista de {pessoa, premio}.");
+    const per = {};
+    for (const x of lista) {
+      const quem = this.home.participant(linha(x && x.pessoa, 40));
+      if (!quem) throw erro(`${(x && x.pessoa) || "(vazio)"} não está no placar. No placar: ${st.participants.join(", ")}.`);
+      const t = linha(x.premio, 200);
+      if (t) per[quem] = t;
+    }
+    if (a.tirar === true) {
+      if (shared || Object.keys(per).length) throw erro("Com tirar, sem premio nem por_pessoa.");
+      this.store.setPrizes(p.key, "", {});
+    } else {
+      if (!shared && !Object.keys(per).length) throw erro("Mande o premio (o mesmo para quem vencer) ou por_pessoa (um para cada), ou tirar: true.");
+      if (shared && Object.keys(per).length) throw erro("Um dos dois: premio (o mesmo para todos) ou por_pessoa (um para cada).");
+      this.store.setPrizes(p.key, shared, per);
+    }
+    this.home.changed();
+    const nome = qual === "proximo" ? "do próximo período" : "deste período";
+    if (a.tirar === true) return `Prêmio ${nome} (${p.label}) tirado.`;
+    return shared ? `Prêmio ${nome} (${p.label}): ${shared}. Quem vencer ganha; empate, ninguém leva.` : `Prêmios ${nome} (${p.label}): ${Object.entries(per).map(([n, t]) => `${n}: ${t}`).join("; ")}. Quem vencer ganha o seu; empate, ninguém leva.`;
+  }
+
+  async _premio_entregue(a, ctx, now) {
+    if (!this.placarOn()) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
+    const hist = this.store.data.score.history || [];
+    let h;
+    if (a.periodo) {
+      const dia = ymd(parseDia(a.periodo, startOfDay(now), "periodo"));
+      h = hist.find((x) => x.key === dia || x.start === dia) || hist.find((x) => x.start <= dia && dia < x.end);
+      if (!h) throw erro(`Nenhum período fechado em ${dm(dia)}. Os de cronologia_placar, em anteriores (de).`);
+    } else {
+      h = hist.find((x) => x.winner && x.reward && !x.delivered);
+      if (!h) throw erro("Nenhum prêmio esperando a entrega.");
+    }
+    if (!h.winner) throw erro(`O período de ${dm(h.start)} acabou empatado: ninguém leva o prêmio.`);
+    const entregue = a.entregue !== false;
+    this.store.setDelivered(h.key, entregue);
+    this.home.changed();
+    return `${entregue ? "Entregue" : "Ainda não entregue"}: o prêmio de ${h.winner}${h.reward ? ` (${h.reward})` : ""}, do período de ${dm(h.start)} a ${dm(ymd(addDays(fromYmd(h.end), -1)))}.`;
+  }
+
+  async _alterar_rotinas(a, ctx, now) {
+    const ids = Array.isArray(a.ids) ? a.ids.filter((x) => typeof x === "string" && x) : [];
+    if (!ids.length) throw erro("ids: a lista dos ids (de cronologia_cadastros).");
+    const campos = {};
+    for (const k of ["quem", "pontos", "comodos"]) if (a[k] !== undefined) campos[k] = a[k];
+    if (!Object.keys(campos).length) throw erro("Mande o que mudar: quem, pontos ou comodos.");
+    const r = await this.lote("alterar", ids.map((id) => ({ id, campos })), { nome: ctx.nome, cliente: ctx.cliente }, now);
+    const out = [`${plural(r.feitos, "cadastro mudado", "cadastros mudados")}.`];
+    if (r.falhas.length) out.push(`Não deu em ${r.falhas.length}: ${r.falhas.map((f) => `${f.nome}: ${f.erro}`).join("; ")}`);
+    return out.join(" ");
   }
 
   async _dar_pontos(a, ctx, now) {

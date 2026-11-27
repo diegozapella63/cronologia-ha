@@ -141,9 +141,9 @@ function setup({ app = {}, gerencia = null } = {}) {
 // ------------------------------------------------------------------ the list
 
 describe("the list of tools (the contract with the CorrerIA)", () => {
-  it("5 to 14 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
+  it("5 to 20 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
     const l = lista();
-    assert.ok(l.length >= 5 && l.length <= 14, String(l.length));
+    assert.ok(l.length >= 5 && l.length <= 20, String(l.length));
     for (const t of l) {
       assert.match(t.nome, /^[a-z0-9_]{1,40}$/);
       assert.ok(t.titulo && t.descricao.length > 20, t.nome);
@@ -990,5 +990,50 @@ describe("lote: Mais › Rotinas › Selecionar (1.114.0)", () => {
     await call("editar_compromisso", { id: "calendar.casa|cama|2026-11-02", comodos: ["Quarto"] });
     assert.deepEqual(parseKind(calls[0][3].description).rooms, ["Quarto"]);
     await refused("editar_compromisso", { id: "calendar.casa|net|2026-11-04", comodos: ["Sala"] }, /comodos só vale num evento de rotina da casa ou manutenção/);
+  });
+});
+
+describe("o prêmio e o lote pelo CorrerIA (1.118.0)", () => {
+  it("definir_premio: o mesmo para todos, um para cada pessoa, o do próximo período e tirar", async () => {
+    const s = setup();
+    assert.match((await s.call("definir_premio", { premio: "Escolher o filme" })).texto, /Prêmio deste período \(2 a 8 de nov\): Escolher o filme/);
+    assert.equal(s.store.data.score.rewards["2026-11-02"], "Escolher o filme");
+    assert.equal(JSON.parse((await s.call("placar")).texto).premio, "Escolher o filme");
+    const t = (await s.call("definir_premio", { periodo: "proximo", por_pessoa: [{ pessoa: "ana", premio: "Cinema" }, { pessoa: "Beto", premio: "Sorvete" }] })).texto;
+    assert.match(t, /Prêmios do próximo período .*Ana: Cinema; Beto: Sorvete/);
+    assert.deepEqual(s.store.data.score.prizes["2026-11-09"], { Ana: "Cinema", Beto: "Sorvete" });
+    assert.match((await s.call("definir_premio", { tirar: true })).texto, /tirado/);
+    assert.equal(s.store.data.score.rewards["2026-11-02"], undefined);
+    await s.refused("definir_premio", {}, /Mande o premio/);
+    await s.refused("definir_premio", { premio: "a", por_pessoa: [{ pessoa: "Ana", premio: "b" }] }, /Um dos dois/);
+    await s.refused("definir_premio", { por_pessoa: [{ pessoa: "Carla", premio: "b" }] }, /Carla não está no placar/);
+    await s.refused("definir_premio", { tirar: true, premio: "a" }, /sem premio/);
+    await s.refused("definir_premio", { periodo: "ontem", premio: "a" }, /este ou proximo/);
+    await s.refused("definir_premio", { por_pessoa: "x" }, /uma lista/);
+    const off = setup({ app: { score: { enabled: false, participants: [] } } });
+    await off.refused("definir_premio", { premio: "a" }, /placar está desligado/);
+    await off.refused("premio_entregue", {}, /placar está desligado/);
+  });
+  it("premio_entregue: o mais recente esperando, pelo período, desmarcar; o empate não leva", async () => {
+    const s = setup();
+    await s.refused("premio_entregue", {}, /Nenhum prêmio esperando/);
+    s.store.data.score.history.push({ key: "2026-10-26", start: "2026-10-26", end: "2026-11-02", totals: { Ana: 30, Beto: 10 }, winner: "Ana", reward: "Jantar" });
+    s.store.data.score.history.push({ key: "2026-10-19", start: "2026-10-19", end: "2026-10-26", totals: { Ana: 0, Beto: 0 }, winner: null, reward: "" });
+    assert.match((await s.call("premio_entregue", {})).texto, /Entregue: o prêmio de Ana \(Jantar\), do período de 26\/10\/2026 a 01\/11\/2026/);
+    assert.equal(s.store.data.score.history[0].delivered, true);
+    assert.equal(JSON.parse((await s.call("placar")).texto).anteriores[0].entregue, true);
+    assert.match((await s.call("premio_entregue", { periodo: "2026-10-28", entregue: false })).texto, /Ainda não entregue/);
+    assert.equal(s.store.data.score.history[0].delivered, false);
+    await s.refused("premio_entregue", { periodo: "2026-10-19" }, /empatado/);
+    await s.refused("premio_entregue", { periodo: "2026-01-05" }, /Nenhum período fechado em 05\/01\/2026/);
+  });
+  it("alterar_rotinas: o lote da tela, com o que vier", async () => {
+    const s = setup();
+    const t = (await s.call("alterar_rotinas", { ids: ["calendar.casa|lixo|20261102", "nao-existe"], quem: "Beto", pontos: 20 })).texto;
+    assert.match(t, /^1 cadastro mudado\. Não deu em 1: nao-existe: /);
+    const k = parseKind(s.calls[0][3].description);
+    assert.deepEqual([k.who, k.points], ["Beto", 20]);
+    await s.refused("alterar_rotinas", { ids: ["calendar.casa|lixo|20261102"] }, /Mande o que mudar/);
+    await s.refused("alterar_rotinas", { ids: [] }, /ids/);
   });
 });
