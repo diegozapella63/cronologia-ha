@@ -95,12 +95,8 @@ describe("Novo › Remédio: Aviso no celular", () => {
     app._form = { ...form };
     return text(app._renderKindForm());
   };
-  it("on time and again when late, unless Avisar de novo is Não", () => {
-    assert.match(formText(new App()), /Na hora e de novo se atrasar, no celular de Davi\./);
-    assert.match(formText(new App({ app: { alerts: { late: 60 } } })), /Na hora e de novo se atrasar, no celular de Davi\./);
-    const once = formText(new App({ app: { alerts: { late: 0 } } }));
-    assert.match(once, /Na hora, no celular de Davi\./);
-    assert.doesNotMatch(once, /de novo/);
+  it("1.117.2: no switch here, whatever Mais › Avisos says (the alert follows Mais › Avisos)", () => {
+    for (const alerts of [undefined, { late: 60 }, { late: 0 }]) assert.doesNotMatch(formText(new App(alerts ? { app: { alerts } } : {})), /Aviso no celular|Na hora/);
   });
   it("Avisar no celular off in Mais › Avisos: no alert to turn on here", () => {
     const t = formText(new App({ app: { alerts: { meds: false } } }));

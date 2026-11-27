@@ -9,7 +9,7 @@ import { placeTags, roomsShown } from "./place-tags.js";
 import { timeField } from "./whenpick.js";
 import { datePickField } from "./datepick.js";
 import { offFold } from "./offfold.js";
-import { colorVars, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
+import { colorVars, nearestColor, colorById, plural, clip, cap, ymd, hm, fromYmd, startOfDay, addDays, dayDiff, isoLocal, dayLabel, dateShort, rruleLabel, WEEKDAYS_SHORT, MONTHS_SHORT } from "./util.js";
 
 const CAT_AGRUPAR = "cronologia-rotinas-agrupar"; // 1.116.0: Mais › Rotinas › Agrupar por (o aparelho lembra)
 const CAT_AGRUPAR_FECHADO = "cronologia-rotinas-agrupar-fechado";
@@ -1543,12 +1543,7 @@ export const ModelsMixin = (Base) =>
       const notes = html`<div class="field fold-txt"><span class="flabel">Observações${(f.notes || "").trim() ? html`<span class="fl-val">· ${clip(f.notes.trim().split("\n")[0], 40)}</span>` : nothing}</span><textarea rows="2" aria-label="Observações" .value=${f.notes} placeholder=${K === "remedio" ? "Ex.: tomar em jejum, depois do almoço" : "Detalhes"} @input=${(e) => this._setForm({ notes: e.target.value })}></textarea></div>`;
       let body;
       if (K === "remedio") {
-        // whose phone gets the alert: theirs, or the person chosen for one without a phone (Mais › Avisos)
-        const owner = this._phoneOwner(f.who);
         const timeEdit = f.mode === "add";
-        // Mais › Avisos: off, no alert to turn on here; Avisar de novo "Não", only the one on time
-        const a = this._app("alerts", null) || {};
-        const again = (a.late == null ? 30 : a.late) > 0;
         body = html`
           <label class="field"><span class="flabel">Dose</span><input type="text" .value=${f.dose} placeholder="Ex.: 1 comprimido, 10 gotas, 1 caneta" @input=${(e) => this._setForm({ dose: e.target.value })} /></label>
           ${this._whoField("Quem toma", { pets: true })}
@@ -1566,29 +1561,21 @@ export const ModelsMixin = (Base) =>
           ${this._dateField(f.mode === "add" ? "Começa" : "Data", f.date, (v) => this._setForm({ date: v }), "kf-date")}
           ${this._durField("Por quanto tempo")}
           ${this._calField()}
-          ${a.meds === false
-            ? nothing
-            : html`<div class="row switch-row">
-                <div class="grow"><div class="label">Aviso no celular</div><div class="hint">${!f.alert ? "Sem aviso para este remédio." : !f.who ? "Escolha quem toma." : owner || this._careOn() ? `Na hora${again ? " e de novo se atrasar" : ""}, no celular de ${owner || "quem cuida"}.` : html`Sem celular para ${f.who}: escolha quem cuida em <button class="text-btn inline" @click=${() => (this._closeSheet(), this._goAlerts())}>Mais › Avisos</button>.`}</div></div>
-                <label class="switch"><input type="checkbox" role="switch" .checked=${f.alert} @change=${(e) => this._setForm({ alert: e.target.checked })} aria-label="Aviso no celular" /><span class="track"></span></label>
-              </div>`}
+          ${/* 1.117.2 (o dono: "tirar aviso no celular daqui, já está configurado nas configurações"): o aviso de cada remédio
+             segue Mais › Avisos; o que estava gravado (sem aviso) continua valendo */ ""}
           ${notes}`;
       } else if (K === "conta") {
         body = html`
           <label class="field"><span class="flabel">Valor</span><span class="money"><span>R$</span><input type="text" inputmode="decimal" .value=${f.value} placeholder="0,00" @input=${(e) => this._setForm({ value: e.target.value })} /></span></label>
           ${this._dateField(f.repeat === "nao" ? "Vence" : "Primeiro vencimento", f.date, (v) => this._setForm({ date: v }), "kf-date")}
           <div class="field"><span class="flabel">Repete</span><div class="chip-row c3">${[["nao", "Não"], ["mensal", "Todo mês"], ["anual", "Todo ano"]].map(([k, l]) => html`<button class="pick ${f.repeat === k ? "on" : ""}" @click=${() => this._setForm({ repeat: k })}>${k !== "nao" ? icon("repeat") : nothing}<span>${l}</span></button>`)}</div></div>
-          ${g.ligado && f.mode === "add"
-            ? html`<div class="field"><span class="flabel">Onde guardar</span>
-                <div class="chip-row">
-                  <button class="pick ${f.dest === "gerencia" ? "on" : ""}" @click=${() => this._setForm({ dest: "gerencia" })}>${icon("wallet")}<span>GerencIA</span></button>
-                  <button class="pick ${f.dest === "cal" ? "on" : ""}" @click=${() => this._setForm({ dest: "cal" })}>${icon("calendar")}<span>Só no calendário</span></button>
-                </div>
-                <span class="field-hint">${icon("info")}<span>${f.dest === "gerencia" ? "Entra no GerencIA; o Paguei daqui dá baixa lá." : "Fica só no calendário."}</span></span>
-              </div>`
-            : nothing}
+          ${/* 1.117.2 (o dono: "tirar onde guardar, se está ativo a integração GerencIA, sempre vai guardar no GerencIA") */ ""}
           ${toGerencia && (g.categorias || []).length
-            ? html`<label class="field"><span class="flabel">Categoria</span><select class="select" @change=${(e) => this._setForm({ categoria: e.target.value })}><option value="">Sem categoria</option>${g.categorias.map((c) => html`<option value=${c.id} ?selected=${f.categoria === c.id}>${c.nome}</option>`)}</select></label>`
+            ? html`<div class="field"><span class="flabel">Categoria</span><div class="chip-row cat-pick">
+                <button class="pick ${f.categoria ? "" : "on"}" @click=${() => this._setForm({ categoria: "" })}>${icon("x")}<span>Sem categoria</span></button>
+                ${/* 1.117.2 (o dono: "categoria fora do padrão das outras telas"): botões com a cor de cada uma, como nos outros apps */ ""}
+                ${g.categorias.map((c) => html`<button class="pick list ${f.categoria === c.id ? "on" : ""}" style=${colorVars(nearestColor(c.cor) || colorById("grafite"), this._dark)} title=${c.nome} @click=${() => this._setForm({ categoria: c.id })}><span class="cat-dot" aria-hidden="true"></span><span>${clip(c.nome, 24)}</span></button>`)}
+              </div></div>`
             : nothing}
           ${toGerencia ? nothing : html`${this._calField()}${notes}`}`;
       } else if (K === "rotina") {
@@ -1616,7 +1603,7 @@ export const ModelsMixin = (Base) =>
         body = html`
           ${this._whoField("Quem faz")}
           ${this._renderRoomEquipFields(f, { multiRoom: true })}
-          <div class="field"><span class="flabel">A cada</span>
+          <div class="field"><span class="flabel">A cada<span class="fl-val">· ${everyLabel(f.every)}</span></span>
             <div class="chip-row c4" style="margin-bottom:10px">${EVERY_PRESETS.map((p) => html`<button class="pick ${f.every.n === p.n && f.every.unit === p.unit ? "on" : ""}" @click=${() => this._setForm({ every: { ...p } })}>${icon("repeat")}<span>${everyLabel(p)}</span></button>`)}</div>
             <div class="time-row">
               <input type="number" class="num-input" min="1" max="999" .value=${String(f.every.n)} @input=${(e) => this._setForm({ every: { ...f.every, n: Math.max(1, Number(e.target.value) || 1) } })} aria-label="Quantidade" />
@@ -1627,7 +1614,7 @@ export const ModelsMixin = (Base) =>
           ${f.mode === "add"
             ? this._dateField("Feito pela última vez", f.last, (v) => this._setForm({ last: v }), "kf-last", { kind: "passado" })
             : this._dateField("Próxima vez", f.date, (v) => this._setForm({ date: v }), "kf-date")}
-          <p class="next-line">${icon("calendar-check")}<span>Próxima: <b>${cap(dayLabel(next, now, { long: false }))}</b>${dayDiff(next, now) > 1 ? ` · em ${plural(dayDiff(next, now), "dia", "dias")}` : ""}</span></p>
+          <p class="next-line com-prev">${icon("calendar-check")}<span>Próxima: <b>${cap(dayLabel(next, now, { long: false }))}</b>${dayDiff(next, now) > 1 ? ` · em ${plural(dayDiff(next, now), "dia", "dias")}` : ""}</span></p>
           ${this._pointsField()}
           <div class="field"><span class="flabel">Mostrar na tela inicial, antes da data</span><div class="seg seg-grid" role="radiogroup" aria-label="Mostrar na tela inicial" style="grid-template-columns:repeat(5,1fr)">${[1, 3, 7, 15, 30].map((n) => html`<button class=${f.warn === n ? "on" : ""} role="radio" aria-checked=${f.warn === n ? "true" : "false"} @click=${() => this._setForm({ warn: n })}>${n === 1 ? "1 dia" : `${n} dias`}</button>`)}</div></div>
           ${this._calField()}

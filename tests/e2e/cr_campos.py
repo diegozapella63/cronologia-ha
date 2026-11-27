@@ -95,13 +95,11 @@ async def main():
         # 1.115.0: Título, Quando and Horário fold too; closed, what is written or chosen after the title
         shut = lambda f: f.evaluate("(e) => e.classList.contains('shut')")
         val = lambda f: f.locator(":scope > .flabel, :scope > .flabel-row > .flabel").first.get_attribute("data-val")
-        tit = field("Título")
+        tit = sheet.locator(".field", has=A.locator(".ev-title-input"))
         await sheet.locator(".ev-title-input").fill("Dentista do Beto")
+        # 1.117.2 (o dono: "títulos principais não retraem"): o Título não fecha
         await tit.locator(":scope > .flabel").click(); await A.wait_for_timeout(250)
-        check(await shut(tit) and not await tit.locator("textarea").is_visible(), "Título folds")
-        check(await val(tit) == "Dentista do Beto", f"Título closed: the title written ({await val(tit)})")
-        focus = await a.evaluate("(r) => (r.shadowRoot.activeElement || {}).tagName || ''")
-        check(focus != "TEXTAREA", f"folding Título does not put the focus (the keyboard) in the box ({focus})")
+        check(not await shut(tit) and await tit.locator("textarea").is_visible() and "dobravel" not in (await tit.get_attribute("class") or ""), "Título does not fold (1.117.2)")
         qd = field("Quando")
         await qd.locator(":scope > .flabel").click(); await A.wait_for_timeout(250)
         check(await shut(qd) and not await qd.locator("date-pick").is_visible(), "Quando folds")
@@ -115,10 +113,9 @@ async def main():
         hv = (await hr.locator(".fl-val").inner_text()).strip()
         check(hv == "· 18:00 até 18:30", f"Horário closed: · 18:00 até 18:30 ({hv})")
         await A.screenshot(path=f"{SP}/shots/crcampos-titulo-quando-horario.png")
-        for f in (tit, qd):
-            await f.locator(":scope > .flabel").click(); await A.wait_for_timeout(150)
+        await qd.locator(":scope > .flabel").click(); await A.wait_for_timeout(150)
         await hr.locator(":scope > .flabel-row > .flabel").click(); await A.wait_for_timeout(150)
-        check(not await shut(tit) and not await shut(qd) and not await shut(hr), "and they open again")
+        check(not await shut(qd) and not await shut(hr), "and they open again")
 
         # Local and Notas fold; closed, what was written
         loc = field("Local")
@@ -153,6 +150,20 @@ async def main():
         await sheet.locator(".model", has_text="Rotina").click(); await A.wait_for_timeout(500)
         check((await field("Tipo").locator(".model.on").inner_text()).strip() == "Rotina", "Rotina: Tipo marks it")
         check(await field("Observações").count() == 1, "Rotina: Observações folds")
+        # 1.117.2 (o dono: "tudo retraído e aquele próxima: ..."): a Próxima fecha junto com o Feito pela última vez; o A cada
+        # fechado diz só «· 6 meses»; o O que fazer não fecha
+        await sheet.locator(".model", has_text="Manuten").click(); await A.wait_for_timeout(500)
+        check("dobravel" not in (await sheet.locator(".field", has=A.locator(".ev-title-input")).get_attribute("class") or ""), "Manutenção: O que fazer does not fold")
+        ult = field("Feito pela última vez")
+        check(await sheet.locator(".next-line").is_visible(), "Próxima visible with the field open")
+        await ult.locator(":scope > .flabel").click(); await A.wait_for_timeout(250)
+        check(await shut(ult) and not await sheet.locator(".next-line").is_visible(), "Feito pela última vez closed: the Próxima goes with it")
+        await ult.locator(":scope > .flabel").click(); await A.wait_for_timeout(150)
+        ac = field("A cada")
+        await ac.locator(":scope > .flabel").click(); await A.wait_for_timeout(250)
+        acv = " ".join((await ac.locator(":scope > .flabel").inner_text()).split())
+        check(acv == "A cada · 6 meses", f"A cada closed: only the interval ({acv})")
+        await ac.locator(":scope > .flabel").click(); await A.wait_for_timeout(150)
         # 1.104.0: Mais › Calendários › Personalizar: Cor folds by the title too
         await sheet.locator(".icon-btn[aria-label=Fechar]").click(); await A.wait_for_timeout(400)
         await a.locator(".tab", has_text="Mais").click(); await A.wait_for_timeout(300)

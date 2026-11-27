@@ -810,7 +810,7 @@ describe("models: the fields of the form", () => {
   it("a medicine: the dose, who takes it (pets too), the times, how often, until when, the calendar and the alert", () => {
     const a = open("remedio", {}, { home: { people: [ANA, DAVI, REX] } });
     const view = () => a._renderKindForm();
-    assert.equal(text(view()), "Adicionar Tipo · Remédio Evento Remédio Conta Rotina Manutenção Remédio Dose Quem toma A Ana D Davi Rex Outra pessoa ou um pet: adicione em Mais › Avisos. Horários 1x ao dia 2x 3x De 8 em 8 h 08:00 Horário Frequência Todo dia Dia sim, dia não Dias da semana A cada… Só uma vez Começa Por quanto tempo Uso contínuo Por alguns dias Até uma data Calendário Casa Saúde Aviso no celular Escolha quem toma. Observações Cancelar Criar remédio");
+    assert.equal(text(view()), "Adicionar Tipo · Remédio Evento Remédio Conta Rotina Manutenção Remédio Dose Quem toma A Ana D Davi Rex Outra pessoa ou um pet: adicione em Mais › Avisos. Horários 1x ao dia 2x 3x De 8 em 8 h 08:00 Horário Frequência Todo dia Dia sim, dia não Dias da semana A cada… Só uma vez Começa Por quanto tempo Uso contínuo Por alguns dias Até uma data Calendário Casa Saúde Observações Cancelar Criar remédio");
     assert.match(render(view()).html, /<button class="btn primary" disabled /, "no name yet");
     const [title, notes] = controls(view()).filter((c) => c.tag === "textarea");
     title.on.input({ target: { value: "Losartana" } });
@@ -826,16 +826,11 @@ describe("models: the fields of the form", () => {
     a._form.times = ["08:00"];
     assert.ok(!labels(view()).includes("Tirar horário"));
     click(view(), /Rex/);
-    assert.match(text(view()), /Aviso no celular Na hora e de novo se atrasar, no celular de Ana\. Observações · em jejum Cancelar Criar remédio$/);
+    // 1.117.2 (o dono: "tirar aviso no celular daqui, já está configurado nas configurações"): sem a chave do aviso
+    assert.match(text(view()), /Saúde Observações · em jejum Cancelar Criar remédio$/);
+    assert.doesNotMatch(text(view()), /Aviso no celular/);
     click(view(), /Rex/);
     assert.equal(a._form.who, "");
-    click(view(), /Davi/);
-    assert.match(text(view()), /Sem celular para Davi: escolha quem cuida em Mais › Avisos\./);
-    a._sheet = "form";
-    click(view(), "Mais › Avisos");
-    assert.deepEqual([a._sheet, a.went], [null, ["/mais/avisos"]]);
-    fire(view(), "Aviso no celular", "change", { target: { checked: false } });
-    assert.match(text(view()), /Sem aviso para este remédio\./);
     // the calendar, the day and until when
     click(view(), "Casa");
     controls(view()).find((c) => c.tag === "date-pick").on.pick({ detail: { value: "2026-12-01" } });
@@ -856,10 +851,7 @@ describe("models: the fields of the form", () => {
     a._saveKindForm = () => (a.asked = "salvar");
     click(view(), "Criar remédio");
     assert.equal(a.asked, "salvar");
-    // the alerts off in Mais › Avisos: no switch; no alert again: only on time; someone to take care
-    assert.doesNotMatch(text(open("remedio", {}, { app: { alerts: { meds: false } } })._renderKindForm()), /Aviso no celular/);
-    assert.match(text(open("remedio", { who: "Ana" }, { app: { alerts: { late: 0 } } })._renderKindForm()), /Na hora, no celular de Ana\./);
-    assert.match(text(open("remedio", { who: "Davi" }, { app: { alerts: { caregivers: ["Ana"] } } })._renderKindForm()), /Na hora e de novo se atrasar, no celular de quem cuida\./);
+    assert.doesNotMatch(text(open("remedio", { who: "Ana" }, { app: { alerts: { late: 0 } } })._renderKindForm()), /Aviso no celular/);
     assert.match(text(open("remedio", { saving: true, title: "x" })._renderKindForm()), /Salvando…$/);
   });
 
@@ -891,22 +883,22 @@ describe("models: the fields of the form", () => {
     assert.match(render(Object.assign(new App({ form: { kind: "remedio", mode: "add", freq: "uma", byday: [] } }))._freqField("x")).html, /grid-template-columns:repeat\(3,1fr\)[\s\S]*grid-column:span 2/, "5 options: 3 + 2, the last one fills the line");
   });
 
-  it("a bill: the value, when, whether it repeats, and where it is kept (with the GerencIA)", () => {
-    const a = open("conta", {}, { home: { gerencia: { ligado: true, contas: [], categorias: [{ id: "c1", nome: "Casa" }] } } });
+  it("a bill: the value, when, whether it repeats; with the GerencIA, it goes there (1.117.2: no Onde guardar), the category in buttons", () => {
+    const a = open("conta", {}, { home: { gerencia: { ligado: true, contas: [], categorias: [{ id: "c1", nome: "Casa", cor: "#62B5FF" }] } } });
     const view = () => a._renderKindForm();
-    assert.equal(text(view()), "Adicionar Tipo · Conta Evento Remédio Conta Rotina Manutenção Conta Valor R$ Primeiro vencimento Repete Não Todo mês Todo ano Onde guardar GerencIA Só no calendário Entra no GerencIA; o Paguei daqui dá baixa lá. Categoria Sem categoria Casa Cancelar Criar no GerencIA");
+    assert.equal(text(view()), "Adicionar Tipo · Conta Evento Remédio Conta Rotina Manutenção Conta Valor R$ Primeiro vencimento Repete Não Todo mês Todo ano Categoria Sem categoria Casa Cancelar Criar no GerencIA");
+    assert.equal(a._form.dest, "gerencia", "a conta vai para o GerencIA");
     controls(view()).find((c) => c.tag === "input").on.input({ target: { value: "180,50" } });
-    controls(view()).find((c) => c.tag === "select").on.change({ target: { value: "c1" } });
+    click(view(), "Casa");
     controls(view()).find((c) => c.tag === "date-pick").on.pick({ detail: { value: "2026-12-05" } });
     click(view(), "Não");
     assert.deepEqual([a._form.value, a._form.categoria, a._form.date, a._form.repeat], ["180,50", "c1", "2026-12-05", "nao"]);
-    assert.match(render(view()).html, /<option value="c1" selected>/);
+    assert.doesNotMatch(render(view()).html, /<select/, "a categoria em botões, sem a caixa de seleção");
+    assert.match(render(view()).html, /class="pick list on"[^>]*title="Casa"/, "Casa marcada, na cor dela");
     assert.match(text(view()), /R\$ Vence Repete/);
-    click(view(), "Só no calendário");
-    assert.match(text(view()), /Fica só no calendário\. Calendário Casa Saúde Observações Cancelar Criar conta$/);
-    click(view(), "GerencIA");
-    assert.equal(a._form.dest, "gerencia");
-    assert.match(text(open("conta")._renderKindForm()), /Todo ano Calendário Casa Saúde Observações Cancelar Criar conta$/, "without the GerencIA: no Onde guardar");
+    click(view(), "Sem categoria");
+    assert.equal(a._form.categoria, "");
+    assert.match(text(open("conta")._renderKindForm()), /Todo ano Calendário Casa Saúde Observações Cancelar Criar conta$/, "without the GerencIA: the calendar");
     const edit = new App({ home: { gerencia: { ligado: true, contas: [] } } });
     edit._openKindForm({ ev: CONTA({ recurrence_id: "r1" }) });
     assert.match(text(edit._renderKindForm()), /^Editar conta Conta Valor R\$ Primeiro vencimento Repete Não Todo mês Todo ano Observações Este item se repete\. Cancelar Salvar$/);
@@ -945,7 +937,7 @@ describe("models: the fields of the form", () => {
   it("a maintenance: how often, the last time (or the next), the points and how long before it shows", () => {
     const a = open("manutencao");
     const view = () => a._renderKindForm();
-    assert.equal(text(view()), "Adicionar Tipo · Manutenção Evento Remédio Conta Rotina Manutenção O que fazer Quem faz A Ana D Davi Outra pessoa: adicione em Mais › Avisos. A cada 1 mês 3 meses 6 meses 1 ano dias semanas meses anos Feito hoje, volta em 6 meses. Feito pela última vez Próxima: Terça, 18 de mai de 2027 · em 181 dias Pontos para quem fizer Sem pontos +5 +10 +20 +30 +50 Mostrar na tela inicial, antes da data 1 dia 3 dias 7 dias 15 dias 30 dias Calendário Casa Saúde Observações Cancelar Criar manutenção");
+    assert.equal(text(view()), "Adicionar Tipo · Manutenção Evento Remédio Conta Rotina Manutenção O que fazer Quem faz A Ana D Davi Outra pessoa: adicione em Mais › Avisos. A cada · 6 meses 1 mês 3 meses 6 meses 1 ano dias semanas meses anos Feito hoje, volta em 6 meses. Feito pela última vez Próxima: Terça, 18 de mai de 2027 · em 181 dias Pontos para quem fizer Sem pontos +5 +10 +20 +30 +50 Mostrar na tela inicial, antes da data 1 dia 3 dias 7 dias 15 dias 30 dias Calendário Casa Saúde Observações Cancelar Criar manutenção");
     click(view(), "1 ano");
     fire(view(), "Quantidade", "input", { target: { value: "2" } });
     click(view(), "semanas");

@@ -216,10 +216,14 @@ async def main():
         # new bill into the GerencIA
         await a.locator(".tab.fab").click(); await A.wait_for_timeout(300)
         await a.locator(".sheet .model", has_text="Conta").click(); await A.wait_for_timeout(300)
-        check(await a.locator(".sheet .pick.on", has_text="GerencIA").count() == 1, "Conta goes to the GerencIA by default when it is there")
+        # 1.117.2: com o GerencIA, a conta vai para lá (sem o Onde guardar) e a categoria é um botão na cor dela
+        check(await a.locator(".sheet .flabel", has_text="Onde guardar").count() == 0 and await a.locator(".sheet .btn.primary", has_text="Criar no GerencIA").count() == 1, "Conta goes to the GerencIA, no Onde guardar")
         await a.locator(".sheet .ev-title-input").fill("Condomínio")
         await a.locator(".sheet .money input").fill("650,00")
-        await a.locator(".sheet select").select_option(label="Casa")
+        check(await a.locator(".sheet select").count() == 0, "the category in buttons, no select")
+        await a.locator(".sheet .cat-pick .pick", has_text="Casa").click(); await A.wait_for_timeout(200)
+        check(await a.locator(".sheet .cat-pick .pick.on", has_text="Casa").count() == 1, "Casa chosen")
+        await A.screenshot(path=f"{SP}/shots/crm-conta-categoria.png")
         await a.locator(".sheet .btn.primary", has_text="Criar no GerencIA").click()
         await wait_for(lambda: any(r["descricao"] == "Condomínio" and r["valor"] == 650 and r["categoria"] == "c-casa" for r in gdata(data)["recorrencias"]), "Conta created as a monthly fixo in the GerencIA")
         async def condo(): return await a.locator(".bill", has_text="Condomínio").count() == 1

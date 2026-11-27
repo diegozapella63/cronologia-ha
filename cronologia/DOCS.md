@@ -211,6 +211,8 @@ Com o [GerencIA](https://github.com/diegozapella63/gerencia-ha) (o app de finan�
 
 A integração vem **desligada**: ligue em **Mais › Configurações › Integrações › Contas do GerencIA › Usar a integração**. Desligada, o CronologIA não consulta o GerencIA, e as contas de lá saem da Agora, do calendário e do Adicionar › Conta. Ligada, não há mais nada a configurar: o GerencIA deixa o endereço e uma chave em `share/gerencia/integracao.json`, e o CronologIA lê a pasta `share` (só leitura). Para cortar a ligação pelo outro lado, desligue **Mais › Outros apps** no GerencIA. No mesmo painel aparece se está conectado e dá para tirar as contas do calendário.
 
+Com a integração ligada, o **Adicionar › Conta** cria a conta no GerencIA (sem a escolha de onde guardar), com a **Categoria** em botões, na cor de cada uma.
+
 ## Tarefas do ResolvIA
 
 O [ResolvIA](https://github.com/diegozapella63/resolvia-ha) guarda as tarefas nas listas do próprio Home Assistant (`todo.*`), e o CronologIA lê essas mesmas listas.

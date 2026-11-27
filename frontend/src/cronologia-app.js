@@ -463,6 +463,8 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       const row = field.querySelector(":scope > .flabel-row");
       const lab = row || field.querySelector(":scope > .flabel");
       if (!lab || (row && !row.querySelector(":scope > .flabel")) || (field.parentElement && field.parentElement.closest(".field"))) continue;
+      // 1.117.2 (o dono: "títulos principais não retraem"): o nome do que se cria (Título, Tarefa, Conta, O que fazer)
+      if (field.querySelector(":scope > .ev-title-input")) continue;
       const key = fieldKeyOf(field);
       if (!key) continue;
       const off = this._camposFechados.has(key);

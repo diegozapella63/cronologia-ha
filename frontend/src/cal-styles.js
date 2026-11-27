@@ -4343,8 +4343,18 @@ export const calStyles = css`
     transform: rotate(-90deg);
   }
   .panel.dobra.fechada > :not(.fold-head),
-  .sheet .field.dobravel.shut > :not(.flabel):not(.flabel-row) {
+  .sheet .field.dobravel.shut > :not(.flabel):not(.flabel-row),
+  /* 1.117.2: o que vem logo depois do campo e é dele (o aviso e o Sem prazo do Prazo, a Próxima da manutenção) fecha junto */
+  .sheet .field.dobravel.shut + .com-prev,
+  .sheet .field.dobravel.shut + .com-prev + .com-prev {
     display: none !important;
+  }
+  .cat-pick .pick .cat-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c);
   }
   .panel.dobra.fechada > .fold-head {
     margin-bottom: 0;

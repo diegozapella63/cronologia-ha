@@ -1,5 +1,13 @@
 # Mudanças
 
+## 1.117.2
+
+- **Adicionar**: o nome do que se cria (**Título**, **Tarefa**, **Remédio**, **Conta**, **O que fazer**) não fecha mais.
+- **Adicionar › Tarefa**: fechar o **Prazo** fecha também o aviso e os botões **Sem prazo** e **Com horário**.
+- **Adicionar › Manutenção**: fechar o **Feito pela última vez** fecha também a **Próxima**; o **A cada** fechado diz só o intervalo («· 6 meses»).
+- **Adicionar › Conta**: com o GerencIA ligado, a conta vai sempre para o GerencIA (saiu o **Onde guardar**); a **Categoria** em botões, na cor de cada uma, como nas outras telas.
+- **Adicionar › Remédio**: saiu a chave **Aviso no celular**; o aviso segue o que está em **Mais › Avisos**.
+
 ## 1.117.1
 
 - **Recompensas › Histórico**: toda vitória tem o prêmio para marcar como entregue (o círculo verde), também quando o prêmio não foi escrito; o **Empate** ganha a marca dele, no mesmo círculo, em amarelo, com o aperto de mãos (ninguém leva).
