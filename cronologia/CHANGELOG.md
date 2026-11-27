@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.117.3
+
+- Nas janelas, um campo fechado **sem nada escolhido nem escrito** diz ao lado **Nenhum** (ou **Nenhuma**, **Ninguém**, **Sem categoria**), como nos outros apps.
+
 ## 1.117.2
 
 - **Adicionar**: o nome do que se cria (**Título**, **Tarefa**, **Remédio**, **Conta**, **O que fazer**) não fecha mais.
