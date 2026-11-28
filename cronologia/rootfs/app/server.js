@@ -264,6 +264,55 @@ async function changeEvent(type, entityId, uid, ev, { recurrence_id, recurrence_
   return res;
 }
 
+async function makeBackup() {
+  const { cals, range } = await allEvents();
+  const out = backups.save(backupZip(appData(store, VERSION), cals, VERSION, range));
+  log.info(`Backup criado em ${out.folder}/${out.name} (${cals.length} calendários)`);
+  return out;
+}
+
+/** Mais › Configurações (and the tools of the CorrerIA, 1.123.0): the settings saved, with what each one sets going. */
+function applyApp(p) {
+  const prefs = store.setApp(p);
+  if (p && "gerencia_on" in p) gerencia.refresh().catch(() => {});
+  if (p && "memoria_on" in p) memoria.forget();
+  // CorrerIA: on writes share/cronologia/correria.json, off removes it (and the key stops working)
+  if (p && "correria_on" in p) {
+    correria.publish();
+    home.changed();
+  }
+  // Modo férias: Agora (and the sensors) change at once; the calendars that alert on the phone, too
+  if (p && "away" in p) {
+    home.rebuild();
+    awayCal.sync();
+  }
+  // Sensores no Home Assistant: on creates them now, off removes them
+  if (p && "sensors_on" in p) {
+    if (store.data.app.sensors_on === true) {
+      home.sensorsJson = "";
+      home.publishSensors().catch(() => {});
+      usage.publish().catch(() => {});
+      nextSensor.publish().catch(() => {});
+    } else {
+      home.removeSensors().catch(() => {});
+      usage.remove().catch(() => {});
+      nextSensor.remove().catch(() => {});
+    }
+  }
+  if (p && ("people" in p || "alerts" in p || "score" in p || "week_start" in p || "todo_hidden" in p || "todo_undated" in p || "mirror" in p || "resolvia_on" in p)) {
+    if ("mirror" in p || "resolvia_on" in p) mirror.schedule(0);
+    if ("resolvia_on" in p) publishPresence();
+    // a new setup (or a different period length) starts counting from the current period, without closing one
+    if ("score" in p || "week_start" in p) {
+      home.resetPeriod();
+      publishPresence();
+    }
+    home.changed();
+  }
+  pushPrefs();
+  return prefs;
+}
+
 // The tools of the CorrerIA (lib/ferramentas.js): the same functions as the screen's commands
 const ferramentas = new Ferramentas({
   store,
@@ -279,6 +328,9 @@ const ferramentas = new Ferramentas({
     home.rebuild();
     awayCal.sync();
   },
+  // 1.123.0: as opções pela IA, com tudo o que a tela põe para andar; e o Backup na pasta share
+  setApp: (p) => applyApp(p),
+  backup: () => makeBackup(),
   prefsChanged: () => pushPrefs(), // 1.120.0: cronologia_mudar_calendario: as telas abertas veem na hora
   deleteEvent: (cal, uid, opts) => changeEvent("calendar/event/delete", cal, uid, null, opts),
   log,
@@ -550,12 +602,8 @@ class Session {
       case "cronologia/backups/list":
         return this.result(id, backups.list());
 
-      case "cronologia/backups/create": {
-        const { cals, range } = await allEvents();
-        const out = backups.save(backupZip(appData(store, VERSION), cals, VERSION, range));
-        log.info(`Backup criado em ${out.folder}/${out.name} (${cals.length} calendários)`);
-        return this.result(id, out);
-      }
+      case "cronologia/backups/create":
+        return this.result(id, await makeBackup());
 
       case "cronologia/backups/restore": {
         const raw = backups.read(String(msg.name || ""));
@@ -610,46 +658,8 @@ class Session {
         return pushPrefs();
       }
 
-      case "cronologia/prefs/set_app": {
-        const prefs = store.setApp(msg.prefs);
-        this.result(id, prefs);
-        if (msg.prefs && "gerencia_on" in msg.prefs) gerencia.refresh().catch(() => {});
-        if (msg.prefs && "memoria_on" in msg.prefs) memoria.forget();
-        // CorrerIA: on writes share/cronologia/correria.json, off removes it (and the key stops working)
-        if (msg.prefs && "correria_on" in msg.prefs) {
-          correria.publish();
-          home.changed();
-        }
-        // Modo férias: Agora (and the sensors) change at once; the calendars that alert on the phone, too
-        if (msg.prefs && "away" in msg.prefs) {
-          home.rebuild();
-          awayCal.sync();
-        }
-        // Sensores no Home Assistant: on creates them now, off removes them
-        if (msg.prefs && "sensors_on" in msg.prefs) {
-          if (store.data.app.sensors_on === true) {
-            home.sensorsJson = "";
-            home.publishSensors().catch(() => {});
-            usage.publish().catch(() => {});
-            nextSensor.publish().catch(() => {});
-          } else {
-            home.removeSensors().catch(() => {});
-            usage.remove().catch(() => {});
-            nextSensor.remove().catch(() => {});
-          }
-        }
-        if (msg.prefs && ("people" in msg.prefs || "alerts" in msg.prefs || "score" in msg.prefs || "week_start" in msg.prefs || "todo_hidden" in msg.prefs || "todo_undated" in msg.prefs || "mirror" in msg.prefs || "resolvia_on" in msg.prefs)) {
-          if ("mirror" in msg.prefs || "resolvia_on" in msg.prefs) mirror.schedule(0);
-          if ("resolvia_on" in msg.prefs) publishPresence();
-          // a new setup (or a different period length) starts counting from the current period, without closing one
-          if ("score" in msg.prefs || "week_start" in msg.prefs) {
-            home.resetPeriod();
-            publishPresence();
-          }
-          home.changed();
-        }
-        return pushPrefs();
-      }
+      case "cronologia/prefs/set_app":
+        return this.result(id, applyApp(msg.prefs));
 
       case "calendar/event/subscribe": {
         if (!isCal(msg.entity_id)) return this.error(id, "invalid_format", "Não é um calendário");

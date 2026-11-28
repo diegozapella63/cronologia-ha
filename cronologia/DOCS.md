@@ -293,6 +293,8 @@ Pelo CorrerIA dá para:
 - mudar e apagar um evento (num que se repete: só este dia, este e os próximos ou a série toda), também a **repetição** de uma rotina, de um remédio ou de uma conta, deste dia em diante (ou parar de repetir);
 - marcar ou cancelar as **Férias** (as rotinas, as tarefas e a manutenção pausam; os remédios continuam);
 - marcar um remédio como tomado, uma rotina ou manutenção como feita ou uma conta como paga, desfazer, pular uma rotina ou um remédio e dar pontos avulsos ou um demérito.
+- ver e mudar as **opções** (a semana começa no domingo ou na segunda, o Local e notas, as listas do ResolvIA de fora, o calendário padrão, os sensores e as integrações), os ajustes das **Recompensas** (ligar o placar, quem participa, o período e o lembrete), os **avisos dos remédios** (o atraso e quem cuida) e as **pessoas e pets**;
+- escolher as listas do **Levar para o ResolvIA**, **trazer tarefas do ResolvIA** como rotinas, devolver ao placar os pontos que acabaram de sair e **fazer um backup**;
 - pôr ou tirar o **prêmio** do placar (deste período ou do próximo; o mesmo para quem vencer ou um para cada pessoa) e marcar um prêmio como **entregue**;
 - tirar uma linha do **Extrato** do placar ou passar os pontos para outra pessoa, e criar, mudar e apagar os **deméritos**;
 - mudar de uma vez quem faz, os pontos ou os cômodos de várias rotinas, manutenções ou remédios, como o **Selecionar** de Mais › Rotinas.

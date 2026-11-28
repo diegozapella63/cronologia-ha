@@ -256,8 +256,8 @@ export const FERRAMENTAS = [
     grava: true,
     apaga: true,
     descricao:
-      "Numa linha do Extrato do placar (o id dela, de cronologia_placar): tira os pontos (acao tirar: saem do placar) ou passa para outra pessoa (acao trocar, com quem), como na tela de Recompensas.",
-    entrada: obj({ id: { type: "string", description: "O id da linha do extrato (de cronologia_placar)." }, acao: { type: "string", enum: ["tirar", "trocar"] }, quem: { type: "string", description: "Com trocar: quem fica com os pontos." } }, ["id", "acao"]),
+      "Numa linha do Extrato do placar (o id dela, de cronologia_placar): tira os pontos (acao tirar: saem do placar), devolve os que acabaram de ser tirados (acao devolver, até 10 minutos depois) ou passa para outra pessoa (acao trocar, com quem), como na tela de Recompensas.",
+    entrada: obj({ id: { type: "string", description: "O id da linha do extrato (de cronologia_placar)." }, acao: { type: "string", enum: ["tirar", "devolver", "trocar"] }, quem: { type: "string", description: "Com trocar: quem fica com os pontos." } }, ["id", "acao"]),
   },
   {
     nome: "demeritos",
@@ -295,6 +295,100 @@ export const FERRAMENTAS = [
       },
       ["calendario"],
     ),
+  },
+  // 1.123.0 (a auditoria da tela contra as ferramentas; o dono: "Ok segue assim"): o que só a tela fazia
+  {
+    nome: "opcoes",
+    titulo: "Opções do app",
+    grava: false,
+    descricao:
+      "As opções de agora do CronologIA: as de Configurações › Opções, o placar (Recompensas), os avisos dos remédios, as pessoas e os pets, o Levar para o ResolvIA e as integrações. Mude com cronologia_mudar_opcoes, cronologia_recompensas, cronologia_avisos, cronologia_pessoas e cronologia_levar_para_resolvia.",
+    entrada: obj({}),
+  },
+  {
+    nome: "mudar_opcoes",
+    titulo: "Mudar opções",
+    grava: true,
+    descricao:
+      "Muda opções de Mais › Configurações (só o que for mandado): a semana começa no domingo ou na segunda, o Local e notas nos compromissos, esconder o que já passou, as tarefas sem prazo no Agora, as tarefas do ResolvIA fora do Calendário, as listas do ResolvIA deixadas de fora, as contas do GerencIA escondidas, o Marcar por outras pessoas, o placar na Tela cheia, o calendário padrão, os Sensores no Home Assistant e as integrações com o ResolvIA, o GerencIA e o MemorIA.",
+    entrada: obj({
+      semana_comeca: { type: "string", enum: ["domingo", "segunda"] },
+      local_e_notas: { type: "boolean" },
+      esconder_o_que_passou: { type: "boolean" },
+      tarefas_sem_prazo: { type: "boolean" },
+      tarefas_fora_do_calendario: { type: "boolean" },
+      listas_de_fora: { type: "array", items: { type: "string" }, description: "As listas do ResolvIA que não entram na agenda (o nome ou o id; a lista inteira de agora; vazia: todas entram)." },
+      esconder_contas: { type: "boolean" },
+      marcar_por_outros: { type: "boolean" },
+      placar_na_tela_cheia: { type: "boolean" },
+      calendario_padrao: { type: "string", description: "O nome ou o id; nenhum tira." },
+      sensores: { type: "boolean" },
+      resolvia: { type: "boolean" },
+      gerencia: { type: "boolean" },
+      memoria: { type: "boolean" },
+    }),
+  },
+  {
+    nome: "recompensas",
+    titulo: "Ajustes do placar",
+    grava: true,
+    descricao:
+      "Os ajustes de Mais › Recompensas (só o que for mandado): ligar o placar, quem participa (a lista inteira), o período (semana, quinzena ou mes), avisar o resultado no celular, pontuar à mão, e o lembrete do placar (o horário HH:MM, ou nao; e quem recebe). Mudar quem participa ou o período recomeça a contagem do período de agora.",
+    entrada: obj({
+      ligado: { type: "boolean" },
+      participantes: { type: "array", items: { type: "string" }, maxItems: 10 },
+      periodo: { type: "string", enum: ["semana", "quinzena", "mes"] },
+      avisar_resultado: { type: "boolean" },
+      pontuar_a_mao: { type: "boolean" },
+      lembrete: { type: "string", description: "HH:MM, ou nao." },
+      lembrete_para: { type: "array", items: { type: "string" }, description: "Quem recebe o lembrete; vazia: todos os que participam." },
+    }),
+  },
+  {
+    nome: "avisos",
+    titulo: "Avisos dos remédios",
+    grava: true,
+    descricao: "Mais › Avisos (só o que for mandado): avisar os remédios no celular, depois de quantos minutos de atraso avisar quem cuida (0, 15, 30, 45, 60, 90 ou 120; 0 não avisa) e quem cuida (a lista inteira das pessoas).",
+    entrada: obj({ remedios: { type: "boolean" }, atraso_minutos: { type: "integer", enum: [0, 15, 30, 45, 60, 90, 120] }, quem_cuida: { type: "array", items: { type: "string" }, maxItems: 10 } }),
+  },
+  {
+    nome: "pessoas",
+    titulo: "Pessoas e pets",
+    grava: true,
+    apaga: true,
+    descricao:
+      "Mais › Avisos › Pessoas e pets: nova (uma pessoa sem login ou um pet, com pet true), mudar (pet, e quem recebe os avisos dela em cuida; vazio tira) ou apagar (só quem foi adicionado aqui; as pessoas do Home Assistant ficam). Um pet só aparece nos remédios. O calendário de cada pessoa é pelo cronologia_mudar_calendario.",
+    entrada: obj({ acao: { type: "string", enum: ["nova", "mudar", "apagar"] }, nome: { type: "string" }, pet: { type: "boolean" }, cuida: { type: "string", description: "Quem recebe os avisos (uma pessoa)." } }, ["acao", "nome"]),
+  },
+  {
+    nome: "levar_para_resolvia",
+    titulo: "Levar para o ResolvIA",
+    grava: true,
+    descricao: "Em qual lista do ResolvIA as manutenções e as rotinas viram tarefas (o Levar para o ResolvIA): o nome ou o id da lista de cada uma, ou nenhuma para parar de levar. Só com a integração com o ResolvIA ligada.",
+    entrada: obj({ manutencoes: { type: "string", description: "A lista, ou nenhuma." }, rotinas: { type: "string", description: "A lista, ou nenhuma." } }),
+  },
+  {
+    nome: "trazer_tarefas",
+    titulo: "Trazer tarefas do ResolvIA",
+    grava: true,
+    descricao:
+      "Transforma tarefas de uma lista do ResolvIA em Rotinas da casa (o Trazer do ResolvIA): a que se repete lá vira Depois de feita, de tantos em tantos dias; as outras, Só uma vez. De início tira as tarefas da lista. Sem tarefas, o erro diz as que dá para trazer.",
+    entrada: obj(
+      {
+        lista: { type: "string", description: "O nome ou o id da lista do ResolvIA." },
+        tarefas: { type: "array", items: { type: "string" }, description: "Os nomes das tarefas, ou [\"todas\"]." },
+        calendario: { type: "string", description: "Onde criar as rotinas; sem ele, o calendário padrão." },
+        tirar_da_lista: { type: "boolean" },
+      },
+      ["lista"],
+    ),
+  },
+  {
+    nome: "fazer_backup",
+    titulo: "Fazer backup",
+    grava: true,
+    descricao: "Salva um backup do CronologIA na pasta share do Home Assistant (o Backup de Mais › Configurações › Dados). Restaurar, importar e começar do zero, só pela tela.",
+    entrada: obj({}),
   },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
@@ -401,8 +495,298 @@ export class Ferramentas {
    * fetchEvents(cal, startIso, endIso) -> events; createEvent(cal, ev), updateEvent(cal, uid, ev, {recurrence_id,
    * recurrence_range}), deleteEvent(cal, uid, opts): the same as the screen's commands.
    */
-  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null, awaySync = () => {}, prefsChanged = () => {} }) {
-    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler, awaySync, prefsChanged });
+  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null, awaySync = () => {}, prefsChanged = () => {}, setApp = null, backup = null }) {
+    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler, awaySync, prefsChanged, backup });
+    // 1.123.0: as opções pela IA gravam pelo mesmo caminho da tela (o applyApp do server.js); sem ele (testes), só o store
+    this.setApp = setApp || ((p) => this.store.setApp(p));
+  }
+
+  // ---------------------------------------------------------------- 1.123.0: as opções, pela IA
+
+  /** As pessoas da casa: as do Home Assistant e as adicionadas aqui (sem os pets, salvo com `pets`). */
+  _pessoas(pets = false) {
+    const people = this.store.data.app.people || {};
+    const ha = [...(this.home.persons ? this.home.persons.values() : [])].map((p) => p.name).filter(Boolean);
+    return [...new Set([...ha, ...Object.keys(people).filter((n) => pets || !people[n].pet)])];
+  }
+
+  _pessoa(v, campo) {
+    const n = foldText(linha(v, 40));
+    const all = this._pessoas();
+    const p = all.find((x) => foldText(x) === n) || all.find((x) => n && foldText(x).split(" ")[0] === n);
+    if (!p) throw erro(`${campo}: ${linha(v, 40) || "(vazio)"} não é uma pessoa da casa. As pessoas: ${all.join(", ") || "nenhuma"}.`);
+    return p;
+  }
+
+  /** As listas de tarefas do Home Assistant (as do ResolvIA): [{id, nome}]. */
+  _listas() {
+    const st = this.home.todos && this.home.todos.states ? [...this.home.todos.states] : [];
+    return st.filter(([, s]) => s).map(([id, s]) => ({ id, nome: (s.attributes && s.attributes.friendly_name) || id }));
+  }
+
+  _lista(v, campo = "lista") {
+    const all = this._listas();
+    const t = linha(v, 120);
+    const n = foldText(t);
+    const l = all.find((x) => x.id === t) || all.find((x) => foldText(x.nome) === n) || all.find((x) => n && foldText(x.nome).includes(n));
+    if (!l) throw erro(`${campo}: lista não encontrada: ${t || "(vazio)"}. As listas do ResolvIA: ${all.map((x) => `${x.nome} (${x.id})`).join(", ") || "nenhuma"}.`);
+    return l;
+  }
+
+  _resolviaLigado() {
+    if (this.store.data.app.resolvia_on !== true) throw erro("A integração com o ResolvIA está desligada no CronologIA (ligue com cronologia_mudar_opcoes, resolvia true).");
+  }
+
+  async _opcoes() {
+    const app = this.store.data.app || {};
+    const sc = scoreSettings(app);
+    const al = app.alerts || {};
+    const people = app.people || {};
+    const nomeLista = (id) => (id ? (this._listas().find((l) => l.id === id) || { nome: id }).nome : null);
+    const m = app.mirror || {};
+    const cal = app.default_calendar ? this.calendarios().find((c) => c.id === app.default_calendar) : null;
+    return json({
+      opcoes: {
+        semana_comeca: app.week_start === 0 ? "domingo" : "segunda",
+        local_e_notas: !!app.event_details,
+        esconder_o_que_passou: !!app.hide_past,
+        tarefas_sem_prazo: !!app.todo_undated,
+        tarefas_fora_do_calendario: !!app.todo_off_calendar,
+        listas_de_fora: (app.todo_hidden || []).map(nomeLista),
+        esconder_contas: !!app.gerencia_hidden,
+        marcar_por_outros: !!app.who_pick,
+        placar_na_tela_cheia: app.placar_cheia !== false,
+        calendario_padrao: cal ? cal.nome : null,
+        sensores: app.sensors_on === true,
+      },
+      integracoes: { resolvia: app.resolvia_on === true, gerencia: app.gerencia_on === true, memoria: app.memoria_on === true, usar_ia: !app.ai_off },
+      recompensas: { ligado: sc.enabled, participantes: sc.participants, periodo: sc.period, avisar_resultado: sc.notify !== false, pontuar_a_mao: !!sc.manual, lembrete: sc.remind || "nao", lembrete_para: sc.remind_to || "todos" },
+      avisos: { remedios: al.meds !== false, atraso_minutos: Number.isFinite(al.late) ? al.late : 30, quem_cuida: al.caregivers || [] },
+      pessoas: this._pessoas(true).map((n) => ({ nome: n, ...(people[n] && people[n].pet ? { pet: true } : {}), ...(people[n] && people[n].care ? { cuida: people[n].care } : {}), ...(people[n] ? { adicionada_aqui: true } : {}) })),
+      levar_para_resolvia: { manutencoes: nomeLista(m.maint_list), rotinas: nomeLista(m.routine_list) },
+      ferias: app.away ? { de: app.away.from, ate: app.away.to } : null,
+    });
+  }
+
+  async _mudar_opcoes(a) {
+    const p = {};
+    const mudou = [];
+    const chave = (campo, key, sim, nao, valor = (v) => (v ? true : null)) => {
+      if (a[campo] === undefined) return;
+      if (typeof a[campo] !== "boolean") throw erro(`${campo}: true ou false.`);
+      p[key] = valor(a[campo]);
+      mudou.push(a[campo] ? sim : nao);
+    };
+    if (a.semana_comeca !== undefined) {
+      if (!["domingo", "segunda"].includes(a.semana_comeca)) throw erro("semana_comeca: domingo ou segunda.");
+      p.week_start = a.semana_comeca === "segunda" ? 1 : 0;
+      mudou.push(`a semana começa ${a.semana_comeca === "segunda" ? "na segunda" : "no domingo"}`);
+    }
+    chave("local_e_notas", "event_details", "Local e notas nos compromissos", "sem Local e notas nos compromissos");
+    chave("esconder_o_que_passou", "hide_past", "o que já passou fica escondido", "o que já passou aparece");
+    chave("tarefas_sem_prazo", "todo_undated", "as tarefas sem prazo aparecem no Agora", "as tarefas sem prazo saem do Agora");
+    chave("tarefas_fora_do_calendario", "todo_off_calendar", "as tarefas ficam fora do Calendário", "as tarefas aparecem no Calendário");
+    chave("esconder_contas", "gerencia_hidden", "as contas do GerencIA ficam escondidas", "as contas do GerencIA aparecem");
+    chave("marcar_por_outros", "who_pick", "o Feito pergunta quem fez", "o Feito não pergunta quem fez");
+    chave("placar_na_tela_cheia", "placar_cheia", "o placar aparece na Tela cheia", "o placar sai da Tela cheia", (v) => (v ? null : false));
+    chave("sensores", "sensors_on", "Sensores no Home Assistant ligados", "Sensores no Home Assistant desligados");
+    chave("resolvia", "resolvia_on", "integração com o ResolvIA ligada", "integração com o ResolvIA desligada");
+    chave("gerencia", "gerencia_on", "integração com o GerencIA ligada", "integração com o GerencIA desligada");
+    chave("memoria", "memoria_on", "trechos do MemorIA no Agora", "sem os trechos do MemorIA no Agora");
+    if (a.listas_de_fora !== undefined) {
+      if (!Array.isArray(a.listas_de_fora)) throw erro("listas_de_fora: a lista dos nomes (vazia: todas entram).");
+      const ids = [...new Set(a.listas_de_fora.map((v) => this._lista(v, "listas_de_fora").id))];
+      p.todo_hidden = ids;
+      mudou.push(ids.length ? `de fora da agenda: ${ids.map((id) => this._listas().find((l) => l.id === id).nome).join(", ")}` : "todas as listas do ResolvIA entram na agenda");
+    }
+    if (a.calendario_padrao !== undefined) {
+      if (foldText(a.calendario_padrao) === "nenhum" || !linha(a.calendario_padrao)) {
+        p.default_calendar = null;
+        mudou.push("sem calendário padrão");
+      } else {
+        const c = this.calendario(a.calendario_padrao, true);
+        p.default_calendar = c.id;
+        mudou.push(`calendário padrão: ${c.nome}`);
+      }
+    }
+    if (!mudou.length) throw erro("Nada a mudar: mande ao menos uma opção. As de agora estão em cronologia_opcoes.");
+    this.setApp(p);
+    return `Opções mudadas: ${mudou.join("; ")}.`;
+  }
+
+  async _recompensas(a) {
+    const app = this.store.data.app || {};
+    const sc = { ...scoreSettings(app), ...(app.score || {}) };
+    const novo = { enabled: !!sc.enabled, participants: [...(sc.participants || [])], period: sc.period || "semana", anchor: sc.anchor || null, notify: sc.notify !== false, manual: !!sc.manual, remind: sc.remind || null, remind_to: sc.remind_to || null };
+    const mudou = [];
+    const chave = (campo, key, sim, nao) => {
+      if (a[campo] === undefined) return;
+      if (typeof a[campo] !== "boolean") throw erro(`${campo}: true ou false.`);
+      novo[key] = a[campo];
+      mudou.push(a[campo] ? sim : nao);
+    };
+    if (a.participantes !== undefined) {
+      if (!Array.isArray(a.participantes)) throw erro("participantes: a lista das pessoas.");
+      const people = app.people || {};
+      const nomes = [...new Set(a.participantes.map((v) => this._pessoa(v, "participantes")))];
+      const pet = nomes.find((n) => people[n] && people[n].pet);
+      if (pet) throw erro(`${pet} é um pet: não entra no placar.`);
+      if (nomes.length > 10) throw erro("participantes: até 10 pessoas.");
+      novo.participants = nomes;
+      mudou.push(nomes.length ? `participam ${nomes.join(", ")}` : "ninguém participa");
+    }
+    chave("ligado", "enabled", "placar ligado", "placar desligado");
+    if (a.periodo !== undefined) {
+      if (!["semana", "quinzena", "mes"].includes(a.periodo)) throw erro("periodo: semana, quinzena ou mes.");
+      novo.period = a.periodo;
+      mudou.push(`período: ${{ semana: "a semana", quinzena: "a quinzena", mes: "o mês" }[a.periodo]}`);
+    }
+    chave("avisar_resultado", "notify", "o resultado vai para os celulares", "o resultado não vai para os celulares");
+    chave("pontuar_a_mao", "manual", "dá para pontuar à mão em Recompensas", "sem pontuar à mão");
+    if (a.lembrete !== undefined) {
+      const h = linha(a.lembrete, 8);
+      if (["nao", ""].includes(foldText(h))) {
+        novo.remind = null;
+        mudou.push("sem lembrete do placar");
+      } else if (/^([01]\d|2[0-3]):[0-5]\d$/.test(h)) {
+        novo.remind = h;
+        mudou.push(`lembrete do placar às ${h}`);
+      } else throw erro("lembrete: HH:MM, ou nao.");
+    }
+    if (a.lembrete_para !== undefined) {
+      if (!Array.isArray(a.lembrete_para)) throw erro("lembrete_para: a lista de quem recebe (vazia: todos).");
+      const nomes = [...new Set(a.lembrete_para.map((v) => this._pessoa(v, "lembrete_para")))];
+      const fora = nomes.find((n) => !novo.participants.includes(n));
+      if (fora) throw erro(`${fora} não participa do placar. Participam: ${novo.participants.join(", ") || "ninguém"}.`);
+      novo.remind_to = nomes.length ? nomes : null;
+      mudou.push(nomes.length ? `o lembrete vai para ${nomes.join(", ")}` : "o lembrete vai para todos");
+    }
+    if (!mudou.length) throw erro("Nada a mudar: mande ligado, participantes, periodo, avisar_resultado, pontuar_a_mao, lembrete ou lembrete_para.");
+    if (novo.enabled && !novo.participants.length) throw erro("Para ligar o placar, diga quem participa (participantes).");
+    if (novo.remind_to) novo.remind_to = novo.remind_to.filter((n) => novo.participants.includes(n));
+    this.setApp({ score: novo });
+    return `Recompensas: ${mudou.join("; ")}.`;
+  }
+
+  async _avisos(a) {
+    const al = { meds: true, late: 30, caregivers: [], ...(this.store.data.app.alerts || {}) };
+    const mudou = [];
+    if (a.remedios !== undefined) {
+      if (typeof a.remedios !== "boolean") throw erro("remedios: true ou false.");
+      al.meds = a.remedios;
+      mudou.push(a.remedios ? "os remédios avisam no celular" : "os remédios não avisam no celular");
+    }
+    if (a.atraso_minutos !== undefined) {
+      const n = Number(a.atraso_minutos);
+      if (![0, 15, 30, 45, 60, 90, 120].includes(n)) throw erro("atraso_minutos: 0, 15, 30, 45, 60, 90 ou 120.");
+      al.late = n;
+      mudou.push(n ? `quem cuida é avisado com ${n} minutos de atraso` : "quem cuida não é avisado do atraso");
+    }
+    if (a.quem_cuida !== undefined) {
+      if (!Array.isArray(a.quem_cuida)) throw erro("quem_cuida: a lista das pessoas.");
+      al.caregivers = [...new Set(a.quem_cuida.map((v) => this._pessoa(v, "quem_cuida")))].slice(0, 10);
+      mudou.push(al.caregivers.length ? `quem cuida: ${al.caregivers.join(", ")}` : "ninguém cuida");
+    }
+    if (!mudou.length) throw erro("Nada a mudar: mande remedios, atraso_minutos ou quem_cuida.");
+    this.setApp({ alerts: al });
+    return `Avisos: ${mudou.join("; ")}.`;
+  }
+
+  async _pessoas_ferramenta(a) {
+    const people = JSON.parse(JSON.stringify(this.store.data.app.people || {}));
+    const nome = linha(a.nome, 40);
+    if (!nome) throw erro("Falta o nome.");
+    const n = foldText(nome);
+    const todas = this._pessoas(true);
+    const existe = todas.find((x) => foldText(x) === n);
+    if (a.pet !== undefined && typeof a.pet !== "boolean") throw erro("pet: true ou false.");
+    const cuida = a.cuida === undefined ? undefined : linha(a.cuida, 40) ? this._pessoa(a.cuida, "cuida") : "";
+    if (cuida && people[cuida] && people[cuida].pet) throw erro(`${cuida} é um pet: quem cuida é uma pessoa.`);
+    if (a.acao === "nova") {
+      if (existe) throw erro(`Já existe ${existe}. Para mudar, acao mudar.`);
+      if (Object.keys(people).length >= 40) throw erro("Já são 40 pessoas e pets adicionados.");
+      people[nome] = { ...(a.pet ? { pet: true } : {}), ...(cuida ? { care: cuida } : {}) };
+      this.setApp({ people });
+      return `${a.pet ? "Pet adicionado" : "Pessoa adicionada"}: ${nome}${cuida ? ` (os avisos vão para ${cuida})` : ""}.`;
+    }
+    if (!existe) throw erro(`${nome} não está na lista. Pessoas e pets: ${todas.join(", ") || "ninguém"}.`);
+    if (a.acao === "apagar") {
+      if (!people[existe]) throw erro(`${existe} é uma pessoa do Home Assistant: só sai por lá.`);
+      delete people[existe];
+      for (const v of Object.values(people)) if (v.care === existe) delete v.care;
+      this.setApp({ people });
+      return `Tirado de Pessoas e pets: ${existe}. O que já foi marcado continua.`;
+    }
+    if (a.acao !== "mudar") throw erro("acao: nova, mudar ou apagar.");
+    if (a.pet === undefined && cuida === undefined) throw erro("Diga o que muda: pet ou cuida.");
+    const v = { ...(people[existe] || {}) };
+    const mudou = [];
+    if (a.pet !== undefined) {
+      if (a.pet && !people[existe]) throw erro(`${existe} é uma pessoa do Home Assistant: não vira pet.`);
+      if (a.pet) v.pet = true;
+      else delete v.pet;
+      mudou.push(a.pet ? "é um pet" : "não é um pet");
+    }
+    if (cuida !== undefined) {
+      if (cuida === existe) throw erro("Quem cuida é outra pessoa.");
+      if (cuida) v.care = cuida;
+      else delete v.care;
+      mudou.push(cuida ? `os avisos vão para ${cuida}` : "sem alguém escolhido para os avisos");
+    }
+    people[existe] = v;
+    this.setApp({ people });
+    return `${existe}: ${mudou.join("; ")}.`;
+  }
+
+  async _levar_para_resolvia(a) {
+    this._resolviaLigado();
+    const m = { maint_list: null, routine_list: null, ...(this.store.data.app.mirror || {}) };
+    const mudou = [];
+    for (const [campo, key, rot] of [["manutencoes", "maint_list", "as manutenções"], ["rotinas", "routine_list", "as rotinas"]]) {
+      if (a[campo] === undefined) continue;
+      if (["nenhuma", "nenhum", ""].includes(foldText(linha(a[campo])))) {
+        m[key] = null;
+        mudou.push(`${rot} não vão mais para o ResolvIA`);
+      } else {
+        const l = this._lista(a[campo], campo);
+        m[key] = l.id;
+        mudou.push(`${rot} vão para ${l.nome}`);
+      }
+    }
+    if (!mudou.length) throw erro("Mande manutencoes e/ou rotinas: o nome da lista, ou nenhuma.");
+    this.setApp({ mirror: { maint_list: m.maint_list || null, routine_list: m.routine_list || null } });
+    return `Levar para o ResolvIA: ${mudou.join("; ")}.`;
+  }
+
+  async _trazer_tarefas(a) {
+    this._resolviaLigado();
+    const l = this._lista(a.lista);
+    const prev = this.home.bringPreview(l.id);
+    const dizer = () => prev.items.map((i) => `${i.summary}${i.every ? ` (a cada ${plural(i.every, "dia", "dias")})` : ""}`).join("; ");
+    if (!prev.items.length) throw erro(`A lista ${l.nome} não tem tarefa para trazer.`);
+    const quer = Array.isArray(a.tarefas) ? a.tarefas.map((t) => foldText(linha(t, 200))).filter(Boolean) : [];
+    if (!quer.length) throw erro(`Diga as tarefas (ou ["todas"]). Em ${l.nome}: ${dizer()}.`);
+    let itens = prev.items;
+    if (!(quer.length === 1 && quer[0] === "todas")) {
+      itens = [];
+      for (const q of quer) {
+        const i = prev.items.find((x) => foldText(x.summary) === q) || prev.items.find((x) => foldText(x.summary).includes(q));
+        if (!i) throw erro(`Tarefa não encontrada em ${l.nome}: ${q}. As que dá para trazer: ${dizer()}.`);
+        if (!itens.includes(i)) itens.push(i);
+      }
+    }
+    const padrao = this.store.data.app.default_calendar;
+    if (!linha(a.calendario) && !padrao) throw erro(`Diga o calendario onde criar as rotinas. Os que aceitam eventos novos: ${this.calendarios().filter((c) => c.cria && !c.fora).map((c) => c.nome).join(", ") || "nenhum"}.`);
+    const cal = this.calendario(linha(a.calendario) || padrao, true);
+    const tirar = a.tirar_da_lista !== false && prev.canDelete;
+    const r = await this.home.bring({ entity_id: l.id, calendar: cal.id, uids: itens.map((i) => i.uid), remove: tirar });
+    return `${plural(r.created, "rotina criada", "rotinas criadas")} em ${cal.nome}, de ${l.nome}${r.removed ? " (tiradas da lista)" : " (as tarefas continuam na lista)"}: ${itens.map((i) => i.summary).join("; ")}.`;
+  }
+
+  async _fazer_backup() {
+    if (!this.backup) throw erro("O backup não está disponível agora.");
+    const out = await this.backup();
+    return `Backup salvo em ${out.folder}/${out.name}.`;
   }
 
   /** 1.110.0: what the AI of this app reads in the file the person sent (the same reading of the screen). */
@@ -484,7 +868,7 @@ export class Ferramentas {
     // the Extrato of the placar says who did it and where from ("pelo Claude")
     return asActor({ by: this.home.participant(ctx.nome) || ctx.nome, via: ctx.cliente }, async () => {
       try {
-        const texto = await this[`_${f.nome}`](a, ctx, now);
+        const texto = await this[f.nome === "pessoas" ? "_pessoas_ferramenta" : `_${f.nome}`](a, ctx, now);
         return { texto, grava: f.grava };
       } catch (err) {
         // what the rules of the app (or the calendar) refuse is said to the AI as a wrong argument
@@ -1248,6 +1632,11 @@ export class Ferramentas {
   async _mudar_extrato(a, ctx, now) {
     const st = this.placarOn();
     if (!st) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
+    if (a.acao === "devolver") {
+      this.home.restorePoints(String(a.id || "")); // o Desfazer da tela: só o que saiu há pouco
+      const v = this.store.pointsByKey(String(a.id || ""));
+      return v ? `De volta no placar: ${v.title} (${v.who}, ${v.points > 0 ? "+" : ""}${v.points}).` : "De volta no placar.";
+    }
     const e = this.store.pointsByKey(String(a.id || ""));
     if (!e) throw erro("Essa linha não está mais no placar. Veja os ids em cronologia_placar (extrato).");
     const pts = `${e.points > 0 ? "+" : ""}${e.points}`;
@@ -1255,7 +1644,7 @@ export class Ferramentas {
       this.home.removePoints(e.key);
       return `Tirado do placar: ${e.title} (${e.who}, ${pts}).`;
     }
-    if (a.acao !== "trocar") throw erro("acao: tirar ou trocar.");
+    if (a.acao !== "trocar") throw erro("acao: tirar, devolver ou trocar.");
     const quem = this.home.participant(linha(a.quem, 40));
     if (!quem) throw erro(`${a.quem || "(vazio)"} não está no placar. No placar: ${st.participants.join(", ")}.`);
     if (quem === e.who) return `${e.title} já é de ${quem}.`;

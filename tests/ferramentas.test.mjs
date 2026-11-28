@@ -141,9 +141,9 @@ function setup({ app = {}, gerencia = null } = {}) {
 // ------------------------------------------------------------------ the list
 
 describe("the list of tools (the contract with the CorrerIA)", () => {
-  it("5 to 20 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
+  it("5 to 40 tools, names [a-z0-9_] up to 40, a title, a description and a JSON Schema object each", () => {
     const l = lista();
-    assert.ok(l.length >= 5 && l.length <= 20, String(l.length));
+    assert.ok(l.length >= 5 && l.length <= 40, String(l.length));
     for (const t of l) {
       assert.match(t.nome, /^[a-z0-9_]{1,40}$/);
       assert.ok(t.titulo && t.descricao.length > 20, t.nome);
@@ -153,8 +153,8 @@ describe("the list of tools (the contract with the CorrerIA)", () => {
       assert.equal(typeof t.grava, "boolean");
       assert.equal(typeof t.apaga, "boolean");
     }
-    assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso", "mudar_extrato", "demeritos"]);
-    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo", "calendarios"]);
+    assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso", "mudar_extrato", "demeritos", "pessoas"]);
+    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo", "calendarios", "opcoes"]);
     assert.equal(FERRAMENTAS[0].nome, "resumo");
     assert.match(INSTRUCOES, /cronologia_resumo/);
     assert.match(INSTRUCOES, /AAAA-MM-DD/);
@@ -1071,7 +1071,7 @@ describe("o Extrato e os deméritos pelo CorrerIA (1.119.0)", () => {
     await s.call("dar_pontos", { quem: "Beto", pontos: 5, motivo: "x" });
     const id = JSON.parse((await s.call("placar")).texto).extrato[0].id;
     await s.refused("mudar_extrato", { id, acao: "trocar", quem: "Carla" }, /Carla não está no placar/);
-    await s.refused("mudar_extrato", { id, acao: "somar" }, /tirar ou trocar/);
+    await s.refused("mudar_extrato", { id, acao: "somar" }, /tirar, devolver ou trocar/);
     await setup({ app: { score: { enabled: false, participants: [] } } }).refused("mudar_extrato", { id: "x", acao: "tirar" }, /placar está desligado/);
   });
   it("demeritos: novo, mudar e apagar, com o que vale", async () => {
@@ -1121,5 +1121,136 @@ describe("os calendários pelo CorrerIA (1.120.0)", () => {
     await s.refused("mudar_calendario", { calendario: "casa", de_quem: "Carla" }, /Pessoa não encontrada/);
     await s.refused("mudar_calendario", { calendario: "feriados", de_quem: "Ana" }, /não aceita eventos novos/);
     await s.refused("mudar_calendario", { calendario: "a", oculto: true }, /Mais de um calendário/);
+  });
+});
+
+// 1.123.0: a auditoria da tela contra as ferramentas: as opções, o placar, os avisos, as pessoas, o ResolvIA e o backup
+describe("1.123.0: what only the screen did", () => {
+  const todosFalso = (s) => {
+    const items = [
+      { uid: "t1", summary: "Regar as plantas", status: "needs_action" },
+      { uid: "t2", summary: "Lavar o carro", status: "needs_action", description: "com cera" },
+      { uid: "t3", summary: "Já feita", status: "completed" },
+    ];
+    s.home.todos = {
+      states: new Map([["todo.casa", { state: "2", attributes: { friendly_name: "Casa", supported_features: 2 } }], ["todo.mercado", { state: "0", attributes: { friendly_name: "Mercado", supported_features: 2 } }]]),
+      items: new Map([["todo.casa", items], ["todo.mercado", []]]),
+      app: () => ({ repete: { "todo.casa": { t1: 3 } } }),
+      pointsOf: () => 2,
+      setDone: async () => {},
+      refresh: () => {},
+      index: () => ({ lists: [], items: [] }),
+    };
+  };
+  it("opcoes e mudar_opcoes", async () => {
+    const s = setup();
+    todosFalso(s);
+    let r = await s.read("opcoes");
+    assert.deepEqual(r.opcoes, { semana_comeca: "segunda", local_e_notas: false, esconder_o_que_passou: false, tarefas_sem_prazo: false, tarefas_fora_do_calendario: false, listas_de_fora: [], esconder_contas: false, marcar_por_outros: false, placar_na_tela_cheia: true, calendario_padrao: null, sensores: false });
+    assert.deepEqual(r.recompensas, { ligado: true, participantes: ["Ana", "Beto"], periodo: "semana", avisar_resultado: true, pontuar_a_mao: false, lembrete: "nao", lembrete_para: "todos" });
+    assert.deepEqual(r.avisos, { remedios: true, atraso_minutos: 30, quem_cuida: [] });
+    assert.deepEqual(r.pessoas, [{ nome: "Ana" }]);
+    const t = (await s.call("mudar_opcoes", { semana_comeca: "domingo", local_e_notas: true, placar_na_tela_cheia: false, listas_de_fora: ["mercado"], calendario_padrao: "casa", resolvia: true, marcar_por_outros: true })).texto;
+    assert.equal(t, "Opções mudadas: a semana começa no domingo; Local e notas nos compromissos; o Feito pergunta quem fez; o placar sai da Tela cheia; integração com o ResolvIA ligada; de fora da agenda: Mercado; calendário padrão: Casa.");
+    const app = s.store.data.app;
+    assert.deepEqual([app.week_start, app.event_details, app.placar_cheia, app.todo_hidden, app.default_calendar, app.resolvia_on, app.who_pick], [0, true, false, ["todo.mercado"], "calendar.casa", true, true]);
+    r = await s.read("opcoes");
+    assert.deepEqual([r.opcoes.semana_comeca, r.opcoes.listas_de_fora, r.opcoes.calendario_padrao, r.integracoes.resolvia], ["domingo", ["Mercado"], "Casa", true]);
+    assert.match((await s.call("mudar_opcoes", { listas_de_fora: [], calendario_padrao: "nenhum", placar_na_tela_cheia: true })).texto, /o placar aparece na Tela cheia; todas as listas do ResolvIA entram na agenda; sem calendário padrão\./);
+    assert.deepEqual([s.store.data.app.todo_hidden, s.store.data.app.default_calendar, s.store.data.app.placar_cheia], [undefined, undefined, undefined]);
+    await s.refused("mudar_opcoes", {}, /Nada a mudar/);
+    await s.refused("mudar_opcoes", { semana_comeca: "terça" }, /domingo ou segunda/);
+    await s.refused("mudar_opcoes", { sensores: "sim" }, /sensores: true ou false/);
+    await s.refused("mudar_opcoes", { listas_de_fora: ["Nada"] }, /lista não encontrada: Nada\. As listas do ResolvIA: Casa \(todo\.casa\), Mercado/);
+    await s.refused("mudar_opcoes", { listas_de_fora: "Casa" }, /a lista dos nomes/);
+    await s.refused("mudar_opcoes", { calendario_padrao: "feriados" }, /não aceita eventos novos/);
+  });
+  it("as opções gravam pelo caminho da tela (o setApp do servidor)", async () => {
+    const s = setup();
+    const vistos = [];
+    s.f.setApp = (p) => (vistos.push(p), s.store.setApp(p));
+    await s.call("mudar_opcoes", { sensores: true });
+    await s.call("avisos", { remedios: false });
+    assert.deepEqual(vistos.map((p) => Object.keys(p)), [["sensors_on"], ["alerts"]]);
+  });
+  it("pessoas, recompensas e avisos", async () => {
+    const s = setup();
+    assert.equal((await s.call("pessoas", { acao: "nova", nome: " Beto " })).texto, "Pessoa adicionada: Beto.");
+    assert.equal((await s.call("pessoas", { acao: "nova", nome: "Mimi", pet: true, cuida: "ana" })).texto, "Pet adicionado: Mimi (os avisos vão para Ana).");
+    assert.deepEqual(s.store.data.app.people, { Beto: {}, Mimi: { pet: true, care: "Ana" } });
+    assert.equal((await s.call("pessoas", { acao: "mudar", nome: "mimi", cuida: "Beto" })).texto, "Mimi: os avisos vão para Beto.");
+    assert.equal((await s.call("pessoas", { acao: "mudar", nome: "Mimi", cuida: "" })).texto, "Mimi: sem alguém escolhido para os avisos.");
+    await s.refused("pessoas", { acao: "nova", nome: "ana" }, /Já existe Ana/);
+    await s.refused("pessoas", { acao: "mudar", nome: "Ana", pet: true }, /pessoa do Home Assistant: não vira pet/);
+    await s.refused("pessoas", { acao: "mudar", nome: "Beto", cuida: "Beto" }, /Quem cuida é outra pessoa/);
+    await s.refused("pessoas", { acao: "mudar", nome: "Beto", cuida: "Mimi" }, /não é uma pessoa da casa/);
+    await s.refused("pessoas", { acao: "mudar", nome: "Beto" }, /Diga o que muda/);
+    await s.refused("pessoas", { acao: "apagar", nome: "Ana" }, /só sai por lá/);
+    await s.refused("pessoas", { acao: "apagar", nome: "Caio" }, /não está na lista\. Pessoas e pets: Ana, Beto, Mimi/);
+    await s.refused("pessoas", { acao: "outra", nome: "Beto" }, /nova, mudar ou apagar/);
+    await s.refused("pessoas", { acao: "nova", nome: " " }, /Falta o nome/);
+    await s.refused("pessoas", { acao: "nova", nome: "Rex", pet: "sim" }, /pet: true ou false/);
+
+    let t = (await s.call("recompensas", { periodo: "mes", lembrete: "20:00", lembrete_para: ["beto"], pontuar_a_mao: true, avisar_resultado: false })).texto;
+    assert.equal(t, "Recompensas: período: o mês; o resultado não vai para os celulares; dá para pontuar à mão em Recompensas; lembrete do placar às 20:00; o lembrete vai para Beto.");
+    assert.deepEqual(s.store.data.app.score, { enabled: true, participants: ["Ana", "Beto"], period: "mes", anchor: null, notify: false, manual: true, remind: "20:00", remind_to: ["Beto"] });
+    t = (await s.call("recompensas", { participantes: ["Ana"], lembrete: "não" })).texto;
+    assert.equal(t, "Recompensas: participam Ana; sem lembrete do placar.");
+    assert.deepEqual([s.store.data.app.score.participants, s.store.data.app.score.remind, s.store.data.app.score.remind_to], [["Ana"], null, []]);
+    await s.refused("recompensas", {}, /Nada a mudar/);
+    await s.refused("recompensas", { participantes: ["Mimi"] }, /não é uma pessoa da casa/);
+    await s.refused("recompensas", { participantes: [] }, /diga quem participa/);
+    await s.refused("recompensas", { lembrete_para: ["Beto"] }, /Beto não participa do placar\. Participam: Ana\./);
+    await s.refused("recompensas", { lembrete: "8 da noite" }, /HH:MM, ou nao/);
+    await s.refused("recompensas", { periodo: "ano" }, /semana, quinzena ou mes/);
+    await s.refused("recompensas", { ligado: "sim" }, /ligado: true ou false/);
+    assert.equal((await s.call("recompensas", { ligado: false, participantes: [] })).texto, "Recompensas: ninguém participa; placar desligado.");
+
+    t = (await s.call("avisos", { remedios: false, atraso_minutos: 60, quem_cuida: ["Ana", "beto", "ana"] })).texto;
+    assert.equal(t, "Avisos: os remédios não avisam no celular; quem cuida é avisado com 60 minutos de atraso; quem cuida: Ana, Beto.");
+    assert.deepEqual(s.store.data.app.alerts, { meds: false, late: 60, caregivers: ["Ana", "Beto"] });
+    assert.equal((await s.call("avisos", { atraso_minutos: 0, quem_cuida: [] })).texto, "Avisos: quem cuida não é avisado do atraso; ninguém cuida.");
+    await s.refused("avisos", {}, /Nada a mudar/);
+    await s.refused("avisos", { atraso_minutos: 10 }, /0, 15, 30/);
+    await s.refused("avisos", { remedios: 1 }, /true ou false/);
+    await s.refused("avisos", { quem_cuida: "Ana" }, /a lista das pessoas/);
+    assert.equal((await s.call("pessoas", { acao: "apagar", nome: "Beto" })).texto, "Tirado de Pessoas e pets: Beto. O que já foi marcado continua.");
+  });
+  it("levar_para_resolvia e trazer_tarefas", async () => {
+    const s = setup();
+    todosFalso(s);
+    await s.refused("levar_para_resolvia", { rotinas: "Casa" }, /integração com o ResolvIA está desligada/);
+    await s.refused("trazer_tarefas", { lista: "Casa" }, /integração com o ResolvIA está desligada/);
+    s.store.setApp({ resolvia_on: true });
+    assert.equal((await s.call("levar_para_resolvia", { manutencoes: "casa", rotinas: "todo.mercado" })).texto, "Levar para o ResolvIA: as manutenções vão para Casa; as rotinas vão para Mercado.");
+    assert.deepEqual(s.store.data.app.mirror, { maint_list: "todo.casa", routine_list: "todo.mercado" });
+    assert.equal((await s.call("levar_para_resolvia", { rotinas: "nenhuma" })).texto, "Levar para o ResolvIA: as rotinas não vão mais para o ResolvIA.");
+    assert.deepEqual(s.store.data.app.mirror, { maint_list: "todo.casa", routine_list: null });
+    await s.refused("levar_para_resolvia", {}, /Mande manutencoes/);
+    await s.refused("levar_para_resolvia", { rotinas: "Nada" }, /rotinas: lista não encontrada/);
+
+    await s.refused("trazer_tarefas", { lista: "Mercado", tarefas: ["todas"] }, /não tem tarefa para trazer/);
+    await s.refused("trazer_tarefas", { lista: "Casa" }, /Diga as tarefas \(ou \["todas"\]\)\. Em Casa: Regar as plantas \(a cada 3 dias\); Lavar o carro\./);
+    await s.refused("trazer_tarefas", { lista: "Casa", tarefas: ["Passear"] }, /Tarefa não encontrada em Casa: passear/);
+    await s.refused("trazer_tarefas", { lista: "Casa", tarefas: ["regar"] }, /Diga o calendario onde criar/);
+    const antes = s.ha.sent.length;
+    const t = (await s.call("trazer_tarefas", { lista: "Casa", tarefas: ["regar"], calendario: "casa", tirar_da_lista: false })).texto;
+    assert.equal(t, "1 rotina criada em Casa, de Casa (as tarefas continuam na lista): Regar as plantas.");
+    const criadas = s.ha.sent.slice(antes).filter((m) => m.type === "calendar/event/create");
+    assert.deepEqual(criadas.map((m) => [m.entity_id, m.event.summary]), [["calendar.casa", "Regar as plantas"]]);
+    assert.match(criadas[0].event.description, /3/);
+  });
+  it("mudar_extrato devolver e fazer_backup", async () => {
+    const s = setup();
+    await s.call("dar_pontos", { quem: "Ana", pontos: 4, motivo: "Lavou o carro" });
+    const id = (await s.read("placar")).extrato[0].id;
+    await s.call("mudar_extrato", { id, acao: "tirar" });
+    assert.equal(s.store.pointsByKey(id), null);
+    assert.equal((await s.call("mudar_extrato", { id, acao: "devolver" })).texto, "De volta no placar: Lavou o carro (Ana, +4).");
+    assert.ok(s.store.pointsByKey(id));
+    await s.refused("mudar_extrato", { id, acao: "devolver" }, /Já não dá para desfazer/);
+    await s.refused("fazer_backup", {}, /não está disponível/);
+    s.f.backup = async () => ({ folder: "share/cronologia", name: "cronologia-2026.zip" });
+    assert.equal((await s.call("fazer_backup")).texto, "Backup salvo em share/cronologia/cronologia-2026.zip.");
   });
 });
