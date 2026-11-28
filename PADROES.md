@@ -152,9 +152,14 @@ ordem, cada um com o ícone, o título, a seta e uma frase do que faz embaixo do
 - **Selecionar** (o modelo é o do OdisseIA): na linha do resumo da lista; segurar o dedo numa linha também começa; uma
   seleção é de um tipo só; em cima, o X, quantos e o Todos; embaixo, o **Alterar** (cada campo começa em Manter) e, onde
   o app apaga, o **Apagar**, com o Desfazer depois; a seleção ocupa uma entrada no histórico e acaba ao sair da tela.
-- **Categorias com cor** (o modelo é o do OdisseIA): a lista com o ícone na cor de cada uma; a janela com o Nome e a Cor,
-  da paleta de 12 (a mesma da Aparência); a nova vem com a cor menos usada; uma cor de antes, fora da paleta, aparece
-  marcada na mais próxima.
+- **Categorias com cor** (o modelo é o do OdisseIA; o dono: "as categorias sempre com cores"): toda categoria, em todo
+  app, tem a sua cor, e ela aparece onde a categoria aparece: na escolha (o pontinho na cor), na etiqueta da linha, no
+  grupo do Agrupar por e nos gráficos. A lista com o ícone na cor de cada uma; a janela com o Nome e a Cor, da paleta de
+  12 (a mesma da Aparência); a nova vem com a cor menos usada; uma cor de antes, fora da paleta, aparece marcada na mais
+  próxima.
+- **Linha que abre e tem chave** (como no Android; o dono: "se um item ao clicar nele abre outra tela, tem aquela
+  linha"): o toque no nome abre a tela ou a janela dela, a chave só liga e desliga, e entre os dois fica a linha fina em
+  pé (1 px, 32 px de altura, na cor das linhas).
 
 **O alto das listas** (o Buscar e toda tela com uma lista; o dono: "documenta nos padrões.md e aplica ele em todos os apps")
 - Embaixo da busca, um embaixo do outro e sem vão entre eles, o **Filtros** e o **Agrupar por**: cada um é uma linha que
