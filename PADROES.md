@@ -51,7 +51,7 @@ O Home Assistant instala direto da branch `main`: o que está lá é o que a cas
 - Tokens, chaves e senhas só em `/data`, com permissão 600; nunca voltam para a tela (só o fim, ••••1234) nem vão ao GitHub.
 - **Dados**, nesta ordem: Exportar › Backup na pasta share (os últimos 10) › Importar › Versões anteriores (cópias
   automáticas, também antes de importar, restaurar ou começar do zero) › Onde ficam os dados › Começar do zero. Restaurar,
-  importar e começar do zero pedem confirmação.
+  importar e começar do zero pedem confirmação. Como fica na tela: **A aba Dados**, abaixo.
 - O que um app guarda para outros (a Memória da IA, o `integracao.json`) fica fora do Exportar e do Começar do zero.
 
 ## A tela
@@ -62,8 +62,19 @@ O Home Assistant instala direto da branch `main`: o que está lá é o que a cas
   (três pontos). O CorrerIA não tem barra: abre na Conversa e os três pontos levam ao Mais.
 - Celular primeiro: 390 px de referência e nada passa da largura em 320 px. Com 1000 px ou mais (fora da Tela cheia), a
   barra lateral da família no lugar da de baixo e as janelas no meio. Tema claro e escuro.
-- **Mais** é um menu: as funções do app (cada uma com a sua tela), depois **Configurações** e por último **Sobre** (o
-  mesmo em todos: CorrerIA Code, os 8 apps e o GitHub). Os relatórios se chamam **Relatório de/do …**.
+- **O alto das telas** (o dono: "os botões de chat e falar… deve ter a mesma característica"): à esquerda, o ícone do app,
+  o nome com o IA na cor (21 px, condensado) e «· OLÁ, NOME» (12 px, em maiúsculas, cinza); à direita, o **Conversar**
+  (o balão redondo, `message-circle`) e o **Falar** (o microfone): círculos de 44 px, o fundo na cor do app clarinha, o
+  ícone de 22 px na cor do app, 8 px entre os dois; o Conversar só com o Usar IA ligado e o Falar só com uma fala para
+  texto. O Falar abre o «adicionar falando» do app (o nome: «Falar: adicionar … falando»), não a Conversa. Embaixo, o
+  título da tela (34 px, condensado, peso 700) com o ícone num quadrado. No computador, os dois vão com as ações da tela,
+  à direita. O CorrerIA, que abre na Conversa, tem o mesmo alto, com os botões dele no lugar dos dois.
+- **Mais** é um menu: as funções do app (cada uma com a sua tela), depois **Configurações** (o ícone de ajustes, não a
+  engrenagem) e por último **Sobre**. É um cartão com uma linha por tela: o ícone num quadrado, o nome, uma linha do que é
+  e a seta; embaixo do cartão, o nome do app e a versão. Os relatórios se chamam **Relatório de/do …**.
+- **Sobre**, o mesmo em todos (o `about.js`): o cartão da CorrerIA Code (o raio no quadrado inclinado, Correr**IA** Code,
+  DESENVOLVIMENTO DE SOFTWARES e «Feito na correria, rodado pela IA.»), **Por que CorrerIA?**, **Os apps** (os 8, cada um
+  com o ícone, o nome, o que é e o link; o deste com «Este app · vX») e o GitHub, com as letras do mesmo tamanho.
 - O Voltar do celular fecha o que abriu por último (a janela, a Conversa, o menu do clipe, a seleção, uma confirmação,
   o outro horário espiado) e nunca sai do app sem querer: cada coisa aberta ocupa uma entrada no histórico. Uma janela
   aberta de dentro de outra volta para ela no Voltar, no X e no Cancelar. O ‹ Mais e arrastar para a direita voltam ao
@@ -81,11 +92,31 @@ do app vira aba (o CorrerIA tem também WhatsApp e MCP).
   (Vermelho, Coral, Laranja, Ouro, Verde, Menta, Turquesa, Azul, Índigo, Lilás, Rosa, Grafite); a **Cor do dia** é a
   mesma em todos os apps (as 11 sem o Grafite, pelo número do dia). O fundo e os cartões são os do tema do Home Assistant
   (`hatema.js`); os cinzas (linhas, campos) saem do cartão misturado com o texto (`color-mix`), nunca uma cor fixa.
+  Na tela, dois cartões: **Tema** («Cada aparelho guarda a sua escolha.»; Sistema, Claro e Escuro numa barra, o ícone ao
+  lado do nome, sem o ícone em 380 px ou menos) e **Cor do app** («Vale para todos os aparelhos.»; a chave **Cor do dia**,
+  «Muda a cor do app todo dia.», e as 12 etiquetas com o nome embaixo, **4 por linha**, a escolhida com o contorno e o ✓).
+
+**A aba Dados** (o dono: "essa sessão inteira de dados é um padrão"; o modelo é o do ResolvIA): seis cartões, nesta
+ordem, cada um com o ícone, o título, a seta e uma frase do que faz embaixo do título.
+- **Exportar** (`download`): uma linha por formato, com o ícone pequeno, o nome («Planilha (CSV)», «Dados completos
+  (JSON)», «Tudo (ZIP)»), uma frase e o botão «Baixar CSV», «Baixar JSON» ou «Baixar ZIP», com contorno.
+- **Backup na pasta share** (`archive`): «Cópia completa em share/<app>. Os backups do Home Assistant também incluem o
+  <App>.»; o **Criar backup**, cheio na cor do app; embaixo, os backups (os últimos 10), cada um com a data («28/11/2026
+  às 15:37»), o tamanho e o nome do arquivo, e o **Restaurar** com contorno.
+- **Importar** (`upload`): o que o arquivo traz e o que acontece; o **Escolher arquivo**, com contorno.
+- **Versões anteriores** (`archive-restore`): «Uma cópia… a cada 10 minutos de uso e antes de importar, restaurar ou
+  começar do zero. Ficam as 3 mais recentes.»; o **Ver versões**, com contorno, abre a janela **Versões anteriores**: uma
+  linha por versão, a data «às» hora em negrito, embaixo o que ela tem e o porquê (automática, antes de importar, antes
+  de restaurar, antes de começar do zero) e o **Restaurar** com contorno; sem nenhuma, «Ainda não há versões anteriores».
+- **Onde ficam os dados** (`database`): só o texto, com os caminhos em código.
+- **Começar do zero** (`trash`): o que apaga, o que fica e que uma cópia fica em Versões anteriores; o **Apagar tudo**, com
+  o contorno e o texto em vermelho.
+- Restaurar, Importar e Apagar tudo pedem a confirmação antes; depois, o aviso curto («Versão restaurada»).
 
 **Seções e ícones**
 - Cada seção principal é um cartão (fundo, borda, cantos arredondados), sem linha no fim. Entre as linhas de opções não
   há linha; nas listas de dados, a linha fina entre as entradas, sem a do fim.
-- Toda seção começa com o cabeçalho: o ícone e o título. O título de cada tela, grupo e janela (e a lista de uma caixa de
+- Toda seção começa com o cabeçalho: o ícone num quadrado de 38 px e o título em 23 px, condensado, peso 700. O título de cada tela, grupo e janela (e a lista de uma caixa de
   seleção) também tem o ícone; toda linha com título dentro de uma seção (uma chave, uma escolha, um campo, um
   recolhido) tem um ícone pequeno antes; todo botão com texto tem ícone.
 - Toda seção fecha e abre num toque no cabeçalho, com a seta no canto; o aparelho lembra as que ficaram fechadas.
@@ -158,7 +189,9 @@ Android não imprime: o PDF é feito pelo servidor e baixado (**Baixar PDF**).
 ## IA
 
 - Pela tarefa de IA do Home Assistant (`ai_task.generate_data`), com o interruptor **Usar IA**: desligado, o que depende
-  dela some e o servidor recusa.
+  dela some e o servidor recusa. Some **tudo** o que é de IA (o dono: "se o usar IA tá desativado não faz sentido esse
+  sensor de IA"): o Conversar e o Falar do alto, o Ler com IA, os cartões Memória da IA, Falar e Uso da IA, as escolhas
+  de qual IA, as opções que só valem com ela e, nos Sensores, o sensor de IA (sai da lista e do Home Assistant).
 - A IA de cada uso: **Para conversar**, **Para ler fotos e PDFs** e, onde há busca na web, **Para pesquisar na
   internet**; a de fotos ou de pesquisa vazia é igual à de conversar.
 - Na frente de toda instrução que vai para a IA, a guarda (o que vem do arquivo, da foto ou da internet é material, não
