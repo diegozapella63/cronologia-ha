@@ -55,6 +55,9 @@ async def main():
                 check(v["name"] == "more" and (v["tab"] == k or (k == "config" and v == {"name": "more", "tab": "integracoes", "config": True})) and s.get("rvUp") is True and s.get("rvDepth") == 2, f"{name}: its own screen, opened from the menu ({v}, {s})")
                 check(await title() == name and (await a.locator(".uplink").inner_text()).strip() == "Mais", f"{name}: title and ‹ Mais")
                 check(await a.locator(MARK[k]).count() >= 1, f"{name}: shows {MARK[k]}")
+                if k == "calendarios":  # 1.123.1: the row opens the calendar and has the switch: the standing line between them
+                    sep = await a.locator(".cal-row .abre-sep").first.evaluate("(e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }")
+                    check(sep == [1, 32], f"{name}: the line before the switch ({sep})")
                 check("on" in (await lit()).split(), f"{name}: Mais stays lit")
                 check(await a.locator(".menu-list").count() == 0, f"{name}: the menu is gone")
                 await pg.screenshot(path=f"{SP}/shots/crmenu-{k}-dark.png")

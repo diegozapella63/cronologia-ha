@@ -2967,6 +2967,24 @@ export const extraStyles = css`
     font-weight: 600;
     font-size: 15px;
   }
+  /* 1.123.1 (o PADROES.md, Linha que abre e tem chave; como no Android): a linha fina em pé entre o que abre e a chave */
+  .abre-sep {
+    flex: none;
+    align-self: center;
+    width: 1px;
+    height: 32px;
+    margin: 0 4px 0 2px;
+    background: var(--rv-line);
+  }
+  /* 1.123.1: o formato do Exportar com o ícone pequeno antes do nome, e a frase embaixo dele */
+  .opts .ot b:has(> .lbl-ic) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .opts .ot:has(> b > .lbl-ic) > span {
+    padding-left: 26px;
+  }
   .opts .ot span {
     display: block;
     margin-top: 2px;

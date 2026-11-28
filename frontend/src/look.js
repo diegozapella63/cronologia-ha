@@ -46,7 +46,7 @@ export const lookStyles = `
   .seg.themes button .i { width: 18px; height: 18px; margin: 0; flex: none; }
   @media (max-width: 380px) { .seg.themes button .i { display: none; } }
   .seg.themes button.on .i { color: var(--rv-accent-ink); }
-  .tag-swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0 -6px 14px; }
+  .tag-swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 0 -6px 14px; } /* 4 por linha: as 12 em 3 linhas cheias (o PADROES.md) */
   .tsw { --sw-bg: var(--rv-surface); position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 2px 7px; border-radius: 10px; background: var(--sw-bg); cursor: pointer; -webkit-tap-highlight-color: transparent; min-width: 0; }
   @media (hover: hover) { .tsw:hover { --sw-bg: var(--rv-surface-2); } }
   .tsw svg { width: 48px; height: 36px; overflow: visible; }

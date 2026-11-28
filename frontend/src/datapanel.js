@@ -166,16 +166,17 @@ export const DataMixin = (Base) =>
       const b = this._backups;
       const writable = this._writable();
       // Exportar like the InventarIA and the ResolvIA: one line per file, what it is and its button, a border between them
-      const line = (title, text, btn) => html`<li><div class="ot"><b>${title}</b><span>${text}</span></div>${btn}</li>`;
+      // 1.123.1 (o PADROES.md, A aba Dados): cada formato com o ícone pequeno antes do nome
+      const line = (title, text, btn, ic) => html`<li><div class="ot"><b>${icon(ic, "lbl-ic")}${title}</b><span>${text}</span></div>${btn}</li>`;
       const exp = (fmt, label) => html`<a class="btn outline sm" href=${(this.api.dataUrl && this.api.dataUrl(fmt)) || "#"} download @click=${(e) => this._exportData(fmt, e)}>${icon("download")}${label}</a>`;
       return html`<div id="dados">
         <div class="panel">
           ${this._secHead("download", "Exportar")}
           <ul class="opts">
-            ${line("Eventos (CSV)", "Abre no Excel e no Google Planilhas, com um evento por linha.", exp("csv", "Baixar CSV"))}
-            ${line("Agenda (.ics)", "Os eventos dos calendários que você escolher, para abrir no Google Agenda, no Outlook ou no iPhone.", html`<button class="btn outline sm" @click=${() => this._openExport()}>${icon("calendar")}Escolher</button>`)}
-            ${line("Dados completos (JSON)", "Os ajustes, modelos, marcações e pontos do app, para backup ou para outro sistema.", exp("json", "Baixar JSON"))}
-            ${line("Tudo (ZIP)", "Os dados do app, os eventos de cada calendário em .ics e as planilhas de eventos e pontos num arquivo só.", exp("zip", "Baixar ZIP"))}
+            ${line("Eventos (CSV)", "Abre no Excel e no Google Planilhas, com um evento por linha.", exp("csv", "Baixar CSV"), "sheet")}
+            ${line("Agenda (.ics)", "Os eventos dos calendários que você escolher, para abrir no Google Agenda, no Outlook ou no iPhone.", html`<button class="btn outline sm" @click=${() => this._openExport()}>${icon("calendar")}Escolher</button>`, "calendar")}
+            ${line("Dados completos (JSON)", "Os ajustes, modelos, marcações e pontos do app, para backup ou para outro sistema.", exp("json", "Baixar JSON"), "braces")}
+            ${line("Tudo (ZIP)", "Os dados do app, os eventos de cada calendário em .ics e as planilhas de eventos e pontos num arquivo só.", exp("zip", "Baixar ZIP"), "archive")}
           </ul>
         </div>
         <div class="panel">

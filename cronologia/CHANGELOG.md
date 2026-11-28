@@ -1,5 +1,11 @@
 # Mudanças
 
+## 1.123.1
+
+- **Com a IA desligada, o sensor de IA sai**: o `sensor.cronologia_ia_hoje` some da lista dos Sensores e do Home Assistant; volta ao ligar a IA.
+- Em **Mais › Calendários**, entre o nome (que abre o calendário) e a chave, a linha fina em pé, como no Android.
+- No **Exportar**, cada formato com o seu ícone; as cores da **Aparência**, 4 por linha.
+
 ## 1.123.0
 
 - **Mais coisas da tela pela IA do CorrerIA** (no WhatsApp, no Claude, no Gemini e na Conversa de lá): ver e mudar as **opções** do app, os ajustes das **Recompensas** (ligar o placar, quem participa, o período, o lembrete), os **avisos dos remédios** (o atraso e quem cuida), as **pessoas e pets**, as listas do **Levar para o ResolvIA**, **trazer tarefas do ResolvIA** como rotinas da casa, **devolver ao placar** os pontos tirados há pouco e **fazer um backup**. Ex.: "adiciona a Mimi como pet, quem cuida é a Ana", "o placar agora é por mês", "traz a tarefa de regar as plantas para as rotinas".

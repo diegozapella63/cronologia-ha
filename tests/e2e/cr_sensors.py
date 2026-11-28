@@ -71,6 +71,15 @@ async def main():
         check(nx["attributes"].get("device_class") == "timestamp" and (nx["state"] == "unknown" or nx["attributes"].get("titulo")), f"proximo: when it starts, with the title ({nx['state']}, {nx['attributes'].get('titulo')})")
         check(req("GET", "binary_sensor.cronologia_ferias")["state"] == "off", "férias: off")
         await A.screenshot(path=f"{SP}/shots/crs-on.png", full_page=True)
+        # 1.123.1 (o dono: "se o usar IA tá desativado não faz sentido esse sensor de IA"): Usar IA off, the AI sensor goes
+        ia = A.locator("input[aria-label='Usar IA']").first
+        await ia.uncheck()
+        await wait_for(lambda: not has("sensor.cronologia_ia_hoje"), "Usar IA off: the AI sensor is removed")
+        check(has("sensor.cronologia_remedios_hoje"), "the other sensors stay")
+        rows = [t.split("\n")[0] for t in await panel.locator(":scope > .sub-op > .sensor-list .sensor-row > code").all_inner_texts()]
+        check("sensor.cronologia_ia_hoje" not in rows and len(rows) == 6, f"and out of the list ({rows})")
+        await ia.check()
+        await wait_for(lambda: has("sensor.cronologia_ia_hoje"), "Usar IA on again: it comes back")
         await sw.uncheck()
         await wait_for(lambda: not any(has(e) for e in SENS), "off: the sensors are removed")
         await A.reload(); await A.wait_for_timeout(2000)

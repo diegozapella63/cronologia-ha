@@ -80,7 +80,7 @@ if (DEV && process.env.CRONOLOGIA_DEV_INTEGRATIONS === "1" && store.data.app.res
 const ha = new HAClient(HA_URL, TOKEN, log);
 // Falar: the speech-to-text of Home Assistant (Assist)
 const voice = new Voice({ ha, rest: HA_REST, token: TOKEN, log, pick: () => store.data.app.voice_engine || "" });
-const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log, enabled: () => store.data.app.sensors_on === true });
+const usage = new AiUsage({ dir: DATA_DIR, sensor: "sensor.cronologia_ia_hoje", label: "CronologIA", rest: HA_REST, token: TOKEN, log, enabled: () => store.data.app.sensors_on === true && !store.data.app.ai_off });
 const ai = new AI({ ha, log, mediaDir: MEDIA_DIR, selected: () => store.data.app.ai_entity || "", selectedPhotos: () => store.data.app.ai_photos || "", usage });
 const calStates = new Map();
 const calWatchers = new Set(); // {session, id}
@@ -166,6 +166,9 @@ ha.on("ready", async () => {
   if (!sensorsCleaned && store.data.app.sensors_on !== true) {
     sensorsCleaned = true;
     home.removeSensors().catch(() => {});
+    usage.remove().catch(() => {});
+  } else if (!sensorsCleaned && !usage.enabled()) {
+    sensorsCleaned = true;
     usage.remove().catch(() => {});
     nextSensor.remove().catch(() => {});
   }
@@ -286,6 +289,8 @@ function applyApp(p) {
     home.rebuild();
     awayCal.sync();
   }
+  // 1.123.1 (o dono: "se o usar IA tá desativado não faz sentido esse sensor de IA"): o sensor de IA só com o Usar IA ligado
+  if (p && ("sensors_on" in p || "ai_off" in p)) (usage.enabled() ? usage.publish() : usage.remove()).catch(() => {});
   // Sensores no Home Assistant: on creates them now, off removes them
   if (p && "sensors_on" in p) {
     if (store.data.app.sensors_on === true) {

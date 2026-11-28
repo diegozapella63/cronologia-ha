@@ -2923,7 +2923,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
         <div class="label">${c.name}</div>
         <div class="hint">${[c.device, errors.get(c.id) ? "não carregou" : c.unavailable ? "indisponível" : c.canCreate ? (c.canUpdate ? "cria e edita" : "cria eventos") : "só leitura"].filter(Boolean).join(" · ")}</div>
       </button>
-      <label class="switch"><input type="checkbox" role="switch" .checked=${live(!c.hidden)} @change=${(e) => this._saveCalPrefs(c.id, { hidden: e.target.checked ? null : true })} aria-label="Mostrar ${c.name}" /><span class="track"></span></label>
+      <span class="abre-sep" aria-hidden="true"></span><label class="switch"><input type="checkbox" role="switch" .checked=${live(!c.hidden)} @change=${(e) => this._saveCalPrefs(c.id, { hidden: e.target.checked ? null : true })} aria-label="Mostrar ${c.name}" /><span class="track"></span></label>
     </div>`;
     return html`
       ${groups.map(
@@ -3234,7 +3234,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
       ["sensor.cronologia_proximo", "quando começa o próximo compromisso, com o título e o local"],
       ["binary_sensor.cronologia_ferias", "liga no modo férias"],
       ...(score ? [["sensor.cronologia_placar", "quem lidera o placar e os pontos"]] : []),
-      ["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"],
+      ...(this._aiOn() ? [["sensor.cronologia_ia_hoje", "chamadas de IA hoje, com erros, cota e tokens estimados"]] : []),
     ];
     return html`<div class="panel" id="sensores">
       ${this._secHead("activity", "Sensores no Home Assistant", "Para usar em painéis e automações do Home Assistant.")}
