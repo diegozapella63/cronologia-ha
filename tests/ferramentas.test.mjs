@@ -153,7 +153,7 @@ describe("the list of tools (the contract with the CorrerIA)", () => {
       assert.equal(typeof t.grava, "boolean");
       assert.equal(typeof t.apaga, "boolean");
     }
-    assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso"]);
+    assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso", "mudar_extrato", "demeritos"]);
     assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo"]);
     assert.equal(FERRAMENTAS[0].nome, "resumo");
     assert.match(INSTRUCOES, /cronologia_resumo/);
@@ -441,6 +441,8 @@ describe("cadastros and placar", () => {
     assert.equal(r.premio_do_proximo, "Ana: Cinema · Beto: Sorvete");
     assert.equal(r.extrato.length, 2);
     assert.equal(r.extrato_total, 3);
+    assert.match(r.extrato[1].id, /^demerito\|/, "1.119.0: o id da linha, para cronologia_mudar_extrato");
+    delete r.extrato[1].id;
     assert.deepEqual(r.extrato[1], { quando: "02/11/2026 14:00", tipo: "perdeu", pessoa: "Beto", pontos: -5, o_que: "Toalha molhada", por: "Ana", via: "Claude" });
     assert.equal(r.extrato[0].tipo, "trocou");
     assert.equal(r.extrato[0].de, "Beto");
@@ -1035,5 +1037,41 @@ describe("o prêmio e o lote pelo CorrerIA (1.118.0)", () => {
     assert.deepEqual([k.who, k.points], ["Beto", 20]);
     await s.refused("alterar_rotinas", { ids: ["calendar.casa|lixo|20261102"] }, /Mande o que mudar/);
     await s.refused("alterar_rotinas", { ids: [] }, /ids/);
+  });
+});
+
+describe("o Extrato e os deméritos pelo CorrerIA (1.119.0)", () => {
+  it("mudar_extrato: tira uma linha ou passa os pontos para outra pessoa, pelo id do extrato", async () => {
+    const s = setup();
+    await s.call("dar_pontos", { quem: "Beto", pontos: 15, motivo: "Lavou o carro" });
+    const linha = JSON.parse((await s.call("placar")).texto).extrato[0];
+    assert.ok(linha.id, "a linha que vale tem o id");
+    assert.equal((await s.call("mudar_extrato", { id: linha.id, acao: "trocar", quem: "beto" })).texto, "Lavou o carro já é de Beto.");
+    assert.equal((await s.call("mudar_extrato", { id: linha.id, acao: "trocar", quem: "ana" })).texto, "Lavou o carro (+15) passou de Beto para Ana.");
+    assert.deepEqual(JSON.parse((await s.call("placar")).texto).pontos, { Ana: 15, Beto: 0 });
+    assert.equal((await s.call("mudar_extrato", { id: linha.id, acao: "tirar" })).texto, "Tirado do placar: Lavou o carro (Ana, +15).");
+    assert.deepEqual(JSON.parse((await s.call("placar")).texto).pontos, { Ana: 0, Beto: 0 });
+    await s.refused("mudar_extrato", { id: linha.id, acao: "tirar" }, /não está mais no placar/);
+    await s.call("dar_pontos", { quem: "Beto", pontos: 5, motivo: "x" });
+    const id = JSON.parse((await s.call("placar")).texto).extrato[0].id;
+    await s.refused("mudar_extrato", { id, acao: "trocar", quem: "Carla" }, /Carla não está no placar/);
+    await s.refused("mudar_extrato", { id, acao: "somar" }, /tirar ou trocar/);
+    await setup({ app: { score: { enabled: false, participants: [] } } }).refused("mudar_extrato", { id: "x", acao: "tirar" }, /placar está desligado/);
+  });
+  it("demeritos: novo, mudar e apagar, com o que vale", async () => {
+    const s = setup();
+    assert.equal((await s.call("demeritos", { acao: "novo", nome: "Louça na pia", pontos: 3 })).texto, "Demérito criado: Louça na pia (3 pontos).");
+    assert.deepEqual(s.store.data.app.demerits.map((d) => [d.title, d.points]), [["Toalha molhada", 5], ["Louça na pia", 3]]);
+    assert.equal((await s.call("demeritos", { acao: "mudar", nome: "louca na pia", novo_nome: "Louça suja", pontos: 4 })).texto, "Demérito mudado: Louça suja (4 pontos).");
+    assert.equal((await s.call("demeritos", { acao: "mudar", nome: "Louça suja", pontos: 1 })).texto, "Demérito mudado: Louça suja (1 ponto).");
+    assert.match((await s.call("demeritos", { acao: "apagar", nome: "Louça suja" })).texto, /^Demérito apagado: Louça suja\./);
+    assert.deepEqual(s.store.data.app.demerits.map((d) => d.title), ["Toalha molhada"]);
+    await s.refused("demeritos", { acao: "novo", nome: "Toalha molhada", pontos: 2 }, /Já existe/);
+    await s.refused("demeritos", { acao: "novo", nome: "Outro" }, /Faltam os pontos/);
+    await s.refused("demeritos", { acao: "novo", nome: "Outro", pontos: 0 }, /de 1 a 1000/);
+    await s.refused("demeritos", { acao: "mudar", nome: "Nada", pontos: 2 }, /não encontrado: Nada\. Os deméritos: Toalha molhada/);
+    await s.refused("demeritos", { acao: "mudar", nome: "Toalha molhada" }, /Diga o que muda/);
+    await s.refused("demeritos", { acao: "x", nome: "Toalha molhada" }, /novo, mudar ou apagar/);
+    await s.refused("demeritos", { acao: "novo", nome: " " }, /Falta o nome/);
   });
 });

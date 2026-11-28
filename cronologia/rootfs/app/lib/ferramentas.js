@@ -239,6 +239,28 @@ export const FERRAMENTAS = [
       ["ids"],
     ),
   },
+  {
+    // 1.119.0 (o dono, às ferramentas que faltavam para o CorrerIA: "pode seguir neles"): o Extrato e os Deméritos de Recompensas
+    nome: "mudar_extrato",
+    titulo: "Mudar o Extrato",
+    grava: true,
+    apaga: true,
+    descricao:
+      "Numa linha do Extrato do placar (o id dela, de cronologia_placar): tira os pontos (acao tirar: saem do placar) ou passa para outra pessoa (acao trocar, com quem), como na tela de Recompensas.",
+    entrada: obj({ id: { type: "string", description: "O id da linha do extrato (de cronologia_placar)." }, acao: { type: "string", enum: ["tirar", "trocar"] }, quem: { type: "string", description: "Com trocar: quem fica com os pontos." } }, ["id", "acao"]),
+  },
+  {
+    nome: "demeritos",
+    titulo: "Deméritos",
+    grava: true,
+    apaga: true,
+    descricao:
+      "A lista dos deméritos de Recompensas (o que tira pontos, como Toalha molhada na cama): novo (nome e pontos), mudar (o nome com novo_nome e/ou os pontos) ou apagar. Para descontar um demérito de alguém, use cronologia_dar_pontos.",
+    entrada: obj(
+      { acao: { type: "string", enum: ["novo", "mudar", "apagar"] }, nome: { type: "string" }, pontos: { type: "integer", minimum: 1, maximum: 1000 }, novo_nome: { type: "string" } },
+      ["acao", "nome"],
+    ),
+  },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
 
@@ -757,6 +779,8 @@ export class Ferramentas {
       if (l.from) r.de = l.from;
       if (l.by) r.por = l.by;
       if (l.via) r.via = l.via;
+      // 1.119.0: o id da linha que ainda vale no placar (para cronologia_mudar_extrato)
+      if (l.key && this.store.pointsByKey(l.key)) r.id = l.key;
       return r;
     });
     const out = {
@@ -1164,6 +1188,59 @@ export class Ferramentas {
     this.store.setDelivered(h.key, entregue);
     this.home.changed();
     return `${entregue ? "Entregue" : "Ainda não entregue"}: o prêmio de ${h.winner}${h.reward ? ` (${h.reward})` : ""}, do período de ${dm(h.start)} a ${dm(ymd(addDays(fromYmd(h.end), -1)))}.`;
+  }
+
+  /** 1.119.0: o Tirar e o trocar de pessoa de uma linha do Extrato (home.removePoints e home.reassign, os da tela). */
+  async _mudar_extrato(a, ctx, now) {
+    const st = this.placarOn();
+    if (!st) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
+    const e = this.store.pointsByKey(String(a.id || ""));
+    if (!e) throw erro("Essa linha não está mais no placar. Veja os ids em cronologia_placar (extrato).");
+    const pts = `${e.points > 0 ? "+" : ""}${e.points}`;
+    if (a.acao === "tirar") {
+      this.home.removePoints(e.key);
+      return `Tirado do placar: ${e.title} (${e.who}, ${pts}).`;
+    }
+    if (a.acao !== "trocar") throw erro("acao: tirar ou trocar.");
+    const quem = this.home.participant(linha(a.quem, 40));
+    if (!quem) throw erro(`${a.quem || "(vazio)"} não está no placar. No placar: ${st.participants.join(", ")}.`);
+    if (quem === e.who) return `${e.title} já é de ${quem}.`;
+    this.home.reassign(e.key, quem);
+    return `${e.title} (${pts}) passou de ${e.who} para ${quem}.`;
+  }
+
+  /** 1.119.0: a lista dos deméritos (Mais › Recompensas › Deméritos), pelo store.setApp da tela. */
+  async _demeritos(a, ctx, now) {
+    if (!this.placarOn()) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
+    const list = (this.store.data.app.demerits || []).map((d) => ({ ...d }));
+    const nome = linha(a.nome, 80);
+    if (!nome) throw erro("Falta o nome.");
+    const n = foldText(nome);
+    const d = list.find((x) => x.id === a.nome || foldText(x.title) === n);
+    const pontos = a.pontos == null || a.pontos === "" ? null : Math.round(Number(a.pontos));
+    if (pontos !== null && !(pontos >= 1 && pontos <= 1000)) throw erro("pontos: de 1 a 1000 (quantos o demérito tira).");
+    const grava = (l) => {
+      this.store.setApp({ demerits: l });
+      this.home.changed();
+    };
+    if (a.acao === "novo") {
+      if (d) throw erro(`Já existe o demérito ${d.title} (${plural(d.points, "ponto", "pontos")}). Para mudar, acao mudar.`);
+      if (pontos === null) throw erro("Faltam os pontos que o demérito tira.");
+      if (list.length >= 40) throw erro("Já são 40 deméritos: apague um antes.");
+      grava([...list, { title: nome, points: pontos }]);
+      return `Demérito criado: ${nome} (${plural(pontos, "ponto", "pontos")}).`;
+    }
+    if (!d) throw erro(list.length ? `Demérito não encontrado: ${nome}. Os deméritos: ${list.map((x) => x.title).join(", ")}.` : "Nenhum demérito cadastrado.");
+    if (a.acao === "apagar") {
+      grava(list.filter((x) => x.id !== d.id));
+      return `Demérito apagado: ${d.title}. O que já foi descontado continua no placar.`;
+    }
+    if (a.acao !== "mudar") throw erro("acao: novo, mudar ou apagar.");
+    const novo = linha(a.novo_nome, 80);
+    if (!novo && pontos === null) throw erro("Diga o que muda: novo_nome ou pontos.");
+    if (novo && list.some((x) => x.id !== d.id && foldText(x.title) === foldText(novo))) throw erro(`Já existe o demérito ${novo}.`);
+    grava(list.map((x) => (x.id === d.id ? { ...x, title: novo || x.title, points: pontos === null ? x.points : pontos } : x)));
+    return `Demérito mudado: ${novo || d.title} (${plural(pontos === null ? d.points : pontos, "ponto", "pontos")}).`;
   }
 
   async _alterar_rotinas(a, ctx, now) {

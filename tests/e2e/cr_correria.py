@@ -52,7 +52,7 @@ async def main():
         await wait_for(not_used, "on, not used yet")
         key = j["chave"]
         s, lst = call(key)
-        check(s == 200 and len(lst["ferramentas"]) == 15, f"GET with the key: the tools ({s}, {len(lst['ferramentas']) if s == 200 else ''})")
+        check(s == 200 and len(lst["ferramentas"]) == 17, f"GET with the key: the tools ({s}, {len(lst['ferramentas']) if s == 200 else ''})")
         s, r = call(key, {"nome": "resumo", "argumentos": {}, "pessoa": {"id": "person.ana", "nome": "Ana"}, "cliente": "WhatsApp"})
         lixo = next((x for x in json.loads(r["texto"])["rotinas_hoje"] if x["nome"] == "Tirar o lixo" and x["situacao"] == "a fazer"), None)
         check(s == 200 and lixo is not None, "resumo: today's chore with its id")

@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.119.0
+
+- **Pelo CorrerIA** (WhatsApp, Claude, Gemini e a Conversa de lá): agora dá para **tirar uma linha do Extrato** do placar ou **passar os pontos para outra pessoa**, e **criar, mudar e apagar os deméritos**, como em Mais › Recompensas.
+
 ## 1.118.0
 
 - **Pelo CorrerIA** (WhatsApp, Claude, Gemini e a Conversa de lá): agora dá para pôr o **prêmio** do placar ("o prêmio desta semana é escolher o filme", o mesmo para todos ou um para cada pessoa, também o do próximo período), marcar um prêmio como **entregue** e **mudar várias rotinas de uma vez** (quem faz, os pontos e os cômodos), como no Selecionar de Mais › Rotinas.
