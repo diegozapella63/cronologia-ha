@@ -127,6 +127,25 @@ export function whatAt(list) {
   return plural(list.length, "item", "itens");
 }
 
+/**
+ * 1.121.0: what the CorrerIA sends for the Quadro de sensores, cleaned (only text, a few lines): null when there is
+ * nothing to show.
+ */
+export function cleanQuadro(q) {
+  if (!q || typeof q !== "object" || !Array.isArray(q.linhas)) return null;
+  const txt = (v, max) => String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, max);
+  const linhas = q.linhas
+    .filter((l) => l && typeof l === "object")
+    .slice(0, 8)
+    .map((l) => ({ nome: txt(l.nome, 60), valor: txt(l.valor, 40), destaque: l.destaque === true }))
+    .filter((l) => l.nome || l.valor);
+  const titulo = txt(q.titulo, 40);
+  if (!titulo || !linhas.length) return null;
+  const de = Number.isInteger(q.de) && q.de > 0 && q.de <= 20 ? q.de : 1;
+  const n = Number.isInteger(q.n) && q.n > 0 && q.n <= de ? q.n : 1;
+  return { titulo, linhas, n, de };
+}
+
 export const PainelMixin = (Base) =>
   class extends Base {
     /** The plan of the panel from what the Agora has (the events of yesterday to tomorrow, the index, the bills). */
@@ -160,11 +179,26 @@ export const PainelMixin = (Base) =>
       return html`<section class="page now-page full-page painel">
         ${head}
         <div class="full-cols pn-cols ${has ? "three" : "two"}">
-          <div class="pn-col pn-time">${top}${this._pnNow(p, now)}${this._pnHero(p, now)}${this._pnLater(p, now)}</div>
+          <div class="pn-col pn-time">${top}${this._pnNow(p, now)}${this._pnHero(p, now)}${this._pnLater(p, now)}${this._pnQuadro()}</div>
           <div class="pn-col pn-day">${this._pnTasks(p, now)}${placar}</div>
           ${chat ? html`<div class="pn-chat-slot" id="lugar-conversa" aria-hidden="true"></div>` : has ? html`<div class="full-memo">${memo}</div>` : nothing}
         </div>
       </section>`;
+    }
+
+    /**
+     * 1.121.0: the Quadro de sensores of the CorrerIA (inside it, ?painel=1&conversa=1): a card at the bottom of the left
+     * column with the list of now (the CorrerIA sends it, and changes it from time to time). Nothing sent, no card.
+     */
+    _pnQuadro() {
+      const q = this._embedChat ? this._quadro : null;
+      if (!q) return nothing;
+      return html`<div class="panel pn-quadro" id="quadro" role="group" aria-label=${q.titulo}>
+        ${this._panelHead("activity", "accent", q.titulo, q.de > 1 ? `${q.n} de ${q.de}` : "")}
+        <dl class="pn-qd">
+          ${q.linhas.map((l) => html`<div class=${l.destaque ? "big" : ""}><dt>${l.nome}</dt><dd>${l.valor}</dd></div>`)}
+        </dl>
+      </div>`;
     }
 
     /**
@@ -457,6 +491,46 @@ export const painelStyles = css`
   }
   .pn-col > .hero-ev {
     margin-bottom: 16px;
+  }
+  /* 1.121.0: the Quadro de sensores of the CorrerIA: the name on the left, the value on the right, in one line each */
+  .pn-qd {
+    margin: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .pn-qd > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-top: 1px solid var(--rv-line);
+  }
+  .pn-qd > div:first-child {
+    border-top: 0;
+  }
+  .pn-qd dt {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--rv-muted);
+  }
+  .pn-qd dd {
+    margin: 0;
+    flex: none;
+    font-family: var(--rv-font-c, inherit);
+    font-weight: 700;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  .pn-qd > .big dd {
+    font-size: 30px;
+    color: var(--rv-accent);
+  }
+  .pn-qd > .big dt {
+    color: var(--rv-text);
+    font-weight: 600;
   }
   .pn-allday {
     display: flex;
@@ -828,6 +902,10 @@ export const painelStyles = css`
       overflow-y: auto;
       overscroll-behavior: contain;
       padding-right: 6px;
+    }
+    /* the Quadro always at the bottom of its column, whole (Depois gives the room) */
+    .painel .pn-col > .panel.pn-quadro {
+      margin-top: auto;
     }
     .painel .pn-col > .panel:last-child,
     .painel .pn-col > .hero-ev:last-child {

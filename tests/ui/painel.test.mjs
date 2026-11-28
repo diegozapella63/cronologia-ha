@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { html, nothing } from "../../frontend/vendor/lit-all.min.js";
 import { text, render, fakeApi, hostOf } from "../_lit.mjs";
-import { PainelMixin, painelPlan, periodsAhead, whatAt } from "../../frontend/src/painel.js";
+import { PainelMixin, painelPlan, periodsAhead, whatAt, cleanQuadro } from "../../frontend/src/painel.js";
 import { ModelsMixin } from "../../frontend/src/models.js";
 import { TasksMixin } from "../../frontend/src/tasks.js";
 import { RewardsMixin } from "../../frontend/src/rewards.js";
@@ -186,6 +186,33 @@ describe("the panel on the screen", () => {
     h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: html`<div class="panel memo">Folha</div>` })).html;
     assert.match(h, /full-memo/);
     assert.doesNotMatch(h, /pn-chat-slot/);
+  });
+  it("inside the CorrerIA, its Quadro de sensores at the bottom of the left column (1.121.0)", () => {
+    const app = new App();
+    app._embedChat = true;
+    let h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: nothing })).html;
+    assert.doesNotMatch(h, /pn-quadro/, "nothing sent: no card");
+    app._quadro = cleanQuadro({ titulo: "Rede", n: 2, de: 3, linhas: [{ nome: "Agora", valor: "1,35 kW", destaque: true }, { nome: "Uso do CPU", valor: "20%" }] });
+    h = render(app._renderPainel({ head: nothing, events: EVENTS, memo: nothing })).html;
+    assert.match(h, /class="panel pn-quadro" id="quadro" role="group" aria-label="Rede"/);
+    assert.match(text(h), /Rede[\s\S]*2 de 3[\s\S]*Agora[\s\S]*1,35 kW[\s\S]*Uso do CPU[\s\S]*20%/);
+    assert.match(h, /<div class="big">/, "the total in evidence");
+    assert.ok(h.indexOf("pn-quadro") < h.indexOf("pn-col pn-day"), "in the left column, after Depois");
+    app._embedChat = false;
+    assert.doesNotMatch(render(app._renderPainel({ head: nothing, events: EVENTS, memo: nothing })).html, /pn-quadro/, "only inside the CorrerIA");
+  });
+  it("cleanQuadro: only text, a few lines; nothing to show is null (1.121.0)", () => {
+    assert.equal(cleanQuadro(null), null);
+    assert.equal(cleanQuadro({ titulo: "Rede", linhas: [] }), null);
+    assert.equal(cleanQuadro({ titulo: "", linhas: [{ nome: "a", valor: "1" }] }), null);
+    assert.equal(cleanQuadro({ titulo: "Rede", linhas: "x" }), null);
+    const q = cleanQuadro({ titulo: "  Rede  da casa ", n: 9, de: 2, linhas: [null, { nome: { a: 1 }, valor: 3 }, ...Array.from({ length: 12 }, (_, i) => ({ nome: `S${i}`, valor: "x".repeat(90) }))] });
+    assert.equal(q.titulo, "Rede da casa");
+    assert.deepEqual([q.n, q.de], [1, 2], "a page out of range is the first");
+    assert.equal(q.linhas.length, 8, "8 at most");
+    assert.deepEqual(q.linhas[0], { nome: "[object Object]", valor: "3", destaque: false });
+    assert.equal(q.linhas[1].valor.length, 40);
+    assert.deepEqual(cleanQuadro({ titulo: "A", linhas: [{ nome: "x", valor: "1" }] }), { titulo: "A", n: 1, de: 1, linhas: [{ nome: "x", valor: "1", destaque: false }] });
   });
   it("the buttons: Tomei for whoever uses it, Tomado for a pet, Paguei, the initials of who did it", () => {
     const app = new App();

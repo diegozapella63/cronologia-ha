@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.121.0
+
+- **Quadro de sensores na Tela cheia do CorrerIA**: dentro do CorrerIA 1.47.0 ou mais novo, o painel ganha um cartão embaixo, à esquerda, com a lista de sensores da vez (a energia de agora, por cômodo ou as listas que você criar lá). As listas e o tempo de troca ficam no CorrerIA, em Configurações › Opções › Tela cheia.
+
 ## 1.120.0
 
 - **Pelo CorrerIA**: dá para ver os calendários como o app os vê e **mudar um calendário**: ocultar ou mostrar, o nome, a cor e de quem ele é ("o calendário Trabalho é da Ana"). As mudanças só depois do Sim.

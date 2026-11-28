@@ -22,7 +22,7 @@ import { everyLabel, periodInfo, periodOfHour, NOW_CARDS, nowOrder, PERIODS, per
 import { RewardsMixin } from "./rewards.js";
 import { TasksMixin, TODO_COLOR } from "./tasks.js";
 import { MemoriaMixin, memoriaStyles } from "./memoria-card.js";
-import { PainelMixin, painelStyles } from "./painel.js";
+import { cleanQuadro, PainelMixin, painelStyles } from "./painel.js";
 import { DataMixin } from "./datapanel.js";
 import { aboutPage, aboutStyles } from "./about.js";
 import { timeField, dateField, dateText } from "./whenpick.js";
@@ -200,6 +200,7 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     _wide: { state: true },
     _full: { state: true },
     _conv: { state: true },
+    _quadro: { state: true },
     api: { attribute: false },
     env: { attribute: false },
     _ready: { state: true },
@@ -276,9 +277,12 @@ class CronologiaApp extends MemoriaIaMixin(PainelMixin(ChatMixin(DataMixin(Memor
     this._embed = EMBED;
     this._conv = null; // {aberta, novidade}: the Conversa of the CorrerIA around, for its button (1.97.0)
     this._embedChat = EMBED_CHAT;
+    this._quadro = null; // 1.121.0: {titulo, linhas: [{nome, valor, destaque}], n, de}: what the CorrerIA shows in the panel now
     this._onSlotResize = () => this._tellChatSlot && this._tellChatSlot();
     this._onParentMsg = (ev) => {
       if (!EMBED_CHAT || ev.origin !== location.origin || ev.source !== window.parent) return;
+      // 1.121.0: the Quadro de sensores of the CorrerIA 1.47.0 ({quadro: {titulo, linhas, n, de}}; null takes the card away)
+      if (ev.data && typeof ev.data === "object" && "quadro" in ev.data) this._quadro = cleanQuadro(ev.data.quadro);
       const c = ev.data && ev.data.conversa;
       if (!c || typeof c !== "object") return;
       const now = { aberta: !!c.aberta, novidade: !!c.novidade };
