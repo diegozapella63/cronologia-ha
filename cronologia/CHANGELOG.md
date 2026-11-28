@@ -1,5 +1,9 @@
 # Mudanças
 
+## 1.120.0
+
+- **Pelo CorrerIA**: dá para ver os calendários como o app os vê e **mudar um calendário**: ocultar ou mostrar, o nome, a cor e de quem ele é ("o calendário Trabalho é da Ana"). As mudanças só depois do Sim.
+
 ## 1.119.0
 
 - **Pelo CorrerIA** (WhatsApp, Claude, Gemini e a Conversa de lá): agora dá para **tirar uma linha do Extrato** do placar ou **passar os pontos para outra pessoa**, e **criar, mudar e apagar os deméritos**, como em Mais › Recompensas.

@@ -154,7 +154,7 @@ describe("the list of tools (the contract with the CorrerIA)", () => {
       assert.equal(typeof t.apaga, "boolean");
     }
     assert.deepEqual(l.filter((t) => t.apaga).map((t) => t.nome), ["apagar_compromisso", "mudar_extrato", "demeritos"]);
-    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo"]);
+    assert.deepEqual(l.filter((t) => !t.grava).map((t) => t.nome), ["resumo", "agenda", "cadastros", "placar", "ler_arquivo", "calendarios"]);
     assert.equal(FERRAMENTAS[0].nome, "resumo");
     assert.match(INSTRUCOES, /cronologia_resumo/);
     assert.match(INSTRUCOES, /AAAA-MM-DD/);
@@ -1073,5 +1073,37 @@ describe("o Extrato e os deméritos pelo CorrerIA (1.119.0)", () => {
     await s.refused("demeritos", { acao: "mudar", nome: "Toalha molhada" }, /Diga o que muda/);
     await s.refused("demeritos", { acao: "x", nome: "Toalha molhada" }, /novo, mudar ou apagar/);
     await s.refused("demeritos", { acao: "novo", nome: " " }, /Falta o nome/);
+  });
+});
+
+describe("os calendários pelo CorrerIA (1.120.0)", () => {
+  it("calendarios: como o app os vê, com o de cada pessoa", async () => {
+    const s = setup();
+    const r = JSON.parse((await s.call("calendarios")).texto);
+    const por = Object.fromEntries(r.calendarios.map((c) => [c.id, c]));
+    assert.deepEqual(por["calendar.pessoal"], { id: "calendar.pessoal", nome: "Pessoal da Ana", aceita_novos: true, de_quem: "Ana" });
+    assert.equal(por["calendar.escondido"].oculto, true);
+    assert.equal(por["calendar.fora"].fora_do_ar, true);
+    assert.equal(por["calendar.feriados"].aceita_novos, false);
+    assert.equal(r.padrao, "calendar.casa");
+  });
+  it("mudar_calendario: oculto, nome, cor e de quem é", async () => {
+    const s = setup();
+    assert.equal((await s.call("mudar_calendario", { calendario: "feriados", oculto: true, cor: "verde" })).texto, "Feriados: oculto, cor verde.");
+    assert.deepEqual(s.store.data.calendars["calendar.feriados"], { color: "verde", hidden: true });
+    assert.equal((await s.call("mudar_calendario", { calendario: "calendar.feriados", oculto: false, nome: "Feriados do Brasil" })).texto, "Feriados do Brasil: à vista, nome Feriados do Brasil.");
+    assert.equal((await s.call("mudar_calendario", { calendario: "Feriados do Brasil", nome: "" })).texto, "Feriados do Brasil: o nome do Home Assistant.");
+    assert.equal((await s.call("mudar_calendario", { calendario: "casa", de_quem: "ana" })).texto, "Casa: é o calendário de Ana.");
+    assert.equal(s.store.data.app.people.Ana.cal, "calendar.casa");
+    assert.equal(JSON.parse((await s.call("calendarios")).texto).calendarios.find((c) => c.id === "calendar.casa").de_quem, "Ana");
+    assert.equal((await s.call("mudar_calendario", { calendario: "casa", de_quem: "ninguém" })).texto, "Casa: não é mais o calendário de Ana.");
+    assert.equal(s.store.data.app.people.Ana.cal, false);
+    await s.refused("mudar_calendario", { calendario: "casa", de_quem: "ninguém" }, /já não é o calendário de ninguém/);
+    await s.refused("mudar_calendario", { calendario: "nada" }, /Calendário não encontrado/);
+    await s.refused("mudar_calendario", { calendario: "casa" }, /Diga o que muda/);
+    await s.refused("mudar_calendario", { calendario: "casa", cor: "bege" }, /cor: vermelho/);
+    await s.refused("mudar_calendario", { calendario: "casa", de_quem: "Carla" }, /Pessoa não encontrada/);
+    await s.refused("mudar_calendario", { calendario: "feriados", de_quem: "Ana" }, /não aceita eventos novos/);
+    await s.refused("mudar_calendario", { calendario: "a", oculto: true }, /Mais de um calendário/);
   });
 });

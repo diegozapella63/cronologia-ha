@@ -8,6 +8,7 @@ import { parseKind, buildDescription, occurrenceKey, KINDS, foldText, namesOf, e
 import { scoreSettings } from "./score.js";
 import { asActor } from "./actor.js";
 import { MIMES } from "./anexos.js";
+import { COLORS } from "./store.js";
 
 const DAY = 86400000;
 const MAX_DIAS = 400; // a busca da agenda: até 400 dias
@@ -261,6 +262,31 @@ export const FERRAMENTAS = [
       ["acao", "nome"],
     ),
   },
+  // 1.120.0 (o dono: "pode adicionar esses também"): os calendários de Mais › Calendários e o de cada pessoa
+  {
+    nome: "calendarios",
+    titulo: "Calendários",
+    grava: false,
+    descricao: "Os calendários do Home Assistant como o app os vê: o nome, a cor, se está oculto, se aceita eventos novos e de quem é (o calendário de cada pessoa).",
+    entrada: obj({}),
+  },
+  {
+    nome: "mudar_calendario",
+    titulo: "Mudar calendário",
+    grava: true,
+    descricao:
+      "Muda como um calendário aparece no app (Mais › Calendários): oculto (some do Agora e do Calendário) ou à vista, o nome e a cor. Com de_quem, passa a ser o calendário dessa pessoa (onde entram os compromissos dela); de_quem «ninguém» tira de quem o tinha.",
+    entrada: obj(
+      {
+        calendario: { type: "string", description: "O id (calendar.…) ou o nome." },
+        oculto: { type: "boolean" },
+        nome: { type: "string", description: "O nome novo no app (vazio: o do Home Assistant)." },
+        cor: { type: "string", enum: COLORS },
+        de_quem: { type: "string", description: "O nome da pessoa, ou «ninguém»." },
+      },
+      ["calendario"],
+    ),
+  },
 ];
 const POR_NOME = new Map(FERRAMENTAS.map((f) => [f.nome, f]));
 
@@ -366,8 +392,8 @@ export class Ferramentas {
    * fetchEvents(cal, startIso, endIso) -> events; createEvent(cal, ev), updateEvent(cal, uid, ev, {recurrence_id,
    * recurrence_range}), deleteEvent(cal, uid, opts): the same as the screen's commands.
    */
-  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null, awaySync = () => {} }) {
-    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler, awaySync });
+  constructor({ store, home, gerencia, gerenciaOn = () => false, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler = null, awaySync = () => {}, prefsChanged = () => {} }) {
+    Object.assign(this, { store, home, gerencia, gerenciaOn, calStates, fetchEvents, createEvent, updateEvent, deleteEvent, log, ler, awaySync, prefsChanged });
   }
 
   /** 1.110.0: what the AI of this app reads in the file the person sent (the same reading of the screen). */
@@ -1210,6 +1236,85 @@ export class Ferramentas {
   }
 
   /** 1.119.0: a lista dos deméritos (Mais › Recompensas › Deméritos), pelo store.setApp da tela. */
+  /** 1.120.0: os calendários, com o de cada pessoa. */
+  _donos() {
+    const cals = this.calendarios();
+    const w = cals.filter((c) => c.cria && !c.fora).map((c) => ({ id: c.id, name: c.nome }));
+    const people = this.store.data.app.people || {};
+    const nomes = [...new Set([...Object.keys(people).filter((n) => !people[n].pet), ...[...(this.home.persons ? this.home.persons.values() : [])].map((p) => p.name).filter(Boolean)])];
+    const dono = new Map();
+    for (const n of nomes) {
+      const pc = personCalendar(n, people, w);
+      if (pc && !dono.has(pc.id)) dono.set(pc.id, n);
+    }
+    return { cals, dono, nomes };
+  }
+
+  async _calendarios() {
+    const { cals, dono } = this._donos();
+    const prefs = this.store.data.calendars || {};
+    if (!cals.length) return "Nenhum calendário no Home Assistant.";
+    return JSON.stringify({
+      calendarios: cals.map((c) => ({
+        id: c.id, nome: c.nome, ...((prefs[c.id] || {}).color ? { cor: prefs[c.id].color } : {}), ...(c.oculto ? { oculto: true } : {}),
+        ...(c.fora ? { fora_do_ar: true } : {}), aceita_novos: c.cria, ...(dono.has(c.id) ? { de_quem: dono.get(c.id) } : {}),
+      })),
+      padrao: (this.padrao() || {}).id || null,
+    });
+  }
+
+  async _mudar_calendario(a) {
+    const { cals, nomes } = this._donos();
+    const v = linha(a.calendario, 120);
+    const n = foldText(v);
+    const achados = cals.filter((c) => c.id === v);
+    const pelo = achados.length ? achados : cals.filter((c) => foldText(c.nome) === n);
+    const cal = pelo.length ? pelo : cals.filter((c) => n && foldText(c.nome).includes(n));
+    if (!cal.length) throw erro(`Calendário não encontrado: ${v || "(vazio)"}. Os calendários: ${cals.map((c) => `${c.nome} (${c.id})`).join(", ") || "nenhum"}.`);
+    if (cal.length > 1) throw erro(`Mais de um calendário com esse nome: ${cal.map((c) => `${c.nome} (${c.id})`).join(", ")}. Mande o id.`);
+    const c = cal[0];
+    const mudou = [];
+    const prefs = {};
+    if (typeof a.oculto === "boolean") {
+      prefs.hidden = a.oculto;
+      mudou.push(a.oculto ? "oculto" : "à vista");
+    }
+    if (a.nome != null) {
+      prefs.name = linha(a.nome, 80) || null;
+      mudou.push(prefs.name ? `nome ${prefs.name}` : "o nome do Home Assistant");
+    }
+    if (a.cor != null) {
+      if (!COLORS.includes(a.cor)) throw erro(`cor: ${COLORS.join(", ")}.`);
+      prefs.color = a.cor;
+      mudou.push(`cor ${a.cor}`);
+    }
+    let people = null;
+    if (a.de_quem != null) {
+      const q = foldText(linha(a.de_quem, 40));
+      people = JSON.parse(JSON.stringify(this.store.data.app.people || {}));
+      if (["ninguem", "nenhum", "nenhuma", ""].includes(q)) {
+        const w = cals.filter((x) => x.cria && !x.fora).map((x) => ({ id: x.id, name: x.nome }));
+        const eram = nomes.filter((p) => (personCalendar(p, people, w) || {}).id === c.id);
+        if (!eram.length) throw erro(`${c.nome} já não é o calendário de ninguém.`);
+        for (const p of eram) people[Object.keys(people).find((k) => foldText(k) === foldText(p)) || p] = { ...(people[p] || {}), cal: false };
+        mudou.push(`não é mais o calendário de ${eram.join(" e ")}`);
+      } else {
+        const pessoa = nomes.find((p) => foldText(p) === q) || nomes.find((p) => foldText(p).split(" ")[0] === q);
+        if (!pessoa) throw erro(`Pessoa não encontrada: ${a.de_quem}. As pessoas: ${nomes.join(", ") || "nenhuma"}.`);
+        if (!c.cria) throw erro(`${c.nome} não aceita eventos novos: não serve de calendário de uma pessoa.`);
+        const k = Object.keys(people).find((x) => foldText(x) === foldText(pessoa)) || pessoa;
+        people[k] = { ...(people[k] || {}), cal: c.id };
+        mudou.push(`é o calendário de ${pessoa}`);
+      }
+    }
+    if (!mudou.length) throw erro("Diga o que muda: oculto, nome, cor ou de_quem.");
+    if (Object.keys(prefs).length) this.store.setCalendar(c.id, prefs);
+    if (people) this.store.setApp({ people });
+    this.prefsChanged();
+    this.home.changed();
+    return `${prefs.name || c.nome}: ${mudou.join(", ")}.`;
+  }
+
   async _demeritos(a, ctx, now) {
     if (!this.placarOn()) throw erro("O placar está desligado no CronologIA (Mais › Configurações › Placar).");
     const list = (this.store.data.app.demerits || []).map((d) => ({ ...d }));
