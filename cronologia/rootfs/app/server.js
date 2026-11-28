@@ -421,7 +421,7 @@ class Session {
       case "cronologia/event/tomorrow": {
         // Amanhã (1.81.0): this time of a routine or a maintenance goes to tomorrow
         if (!isCal(msg.entity_id) || typeof msg.uid !== "string") return this.error(id, "invalid_format", "Item inválido");
-        return this.result(id, await home.toTomorrow(msg.entity_id, msg.uid));
+        return this.result(id, await home.toTomorrow(msg.entity_id, msg.uid, msg.para === "hoje")); // para: "hoje" (1.122.0), a late one
       }
 
       case "cronologia/maint/undo": {

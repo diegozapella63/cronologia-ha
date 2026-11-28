@@ -1,5 +1,10 @@
 # Mudanças
 
+## 1.122.0
+
+- **Hoje, num atrasado**: na ficha de uma rotina ou manutenção atrasada, ao lado do **Amanhã**, o botão **Hoje** traz essa vez para hoje, para ser feita hoje (sem marcar como feita e sem pontos; dá para desfazer).
+- **Pelo CorrerIA**: "deixa o regar plantas para hoje" ou "para amanhã". Só depois do seu sim.
+
 ## 1.121.0
 
 - **Quadro de sensores na Tela cheia do CorrerIA**: dentro do CorrerIA 1.47.0 ou mais novo, o painel ganha um cartão embaixo, à esquerda, com a lista de sensores da vez (a energia de agora, por cômodo ou as listas que você criar lá). As listas e o tempo de troca ficam no CorrerIA, em Configurações › Opções › Tela cheia.

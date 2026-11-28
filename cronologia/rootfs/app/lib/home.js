@@ -1106,15 +1106,18 @@ export class Home {
    * Not done: no points, nothing in its history. Desfazer: maintUndo. One repeated by the calendar has the next one
    * already there: Pular.
    */
-  async toTomorrow(cal, uid) {
+  async toTomorrow(cal, uid, hoje = false) {
     const raw = this.findRaw(cal, uid);
     if (!raw) throw coded("not_found", "Não achei esse compromisso no calendário");
     const k = parseKind(raw.description);
     if (!k || !["rotina", "manutencao"].includes(k.kind)) throw coded("invalid_format", "Só uma rotina ou uma manutenção fica para amanhã");
     if (raw.rrule) throw coded("not_supported", "Esse se repete na agenda: use Pular");
-    const event = toTomorrow(raw, new Date());
+    // Hoje (1.122.0): a late one comes to today, to be done today (not done, no points, as Amanhã)
+    const now = new Date();
+    if (hoje && String(raw.start).slice(0, 10) >= ymd(now)) throw coded("not_supported", "Só o que está atrasado vem para hoje");
+    const event = toTomorrow(raw, now, hoje ? 0 : 1);
     const undo = await this.moveEvent(cal, raw, event);
-    this.log.info(`Para amanhã: ${raw.summary}`);
+    this.log.info(`Para ${hoje ? "hoje" : "amanhã"}: ${raw.summary}`);
     return { moved: true, next: event.start.slice(0, 10), undo };
   }
 

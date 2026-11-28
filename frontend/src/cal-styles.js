@@ -208,6 +208,13 @@ export const calStyles = css`
   .kind-later.two {
     grid-template-columns: 1fr 1fr;
   }
+  /* 1.122.0: Pular, Hoje e Amanhã (num atrasado) */
+  .kind-later.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .kind-later.three > .btn {
+    padding-inline: 6px;
+  }
   .kind-later > .btn {
     width: 100%;
     margin-top: 0;

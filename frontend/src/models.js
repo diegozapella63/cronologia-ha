@@ -340,12 +340,12 @@ export const ModelsMixin = (Base) =>
     }
 
     /** Amanhã (1.81.0): this time goes to tomorrow, not done, no points; Desfazer puts it back. */
-    async _toTomorrow(e) {
+    async _toTomorrow(e, hoje = false) {
       if (this._sheet) await this._closeSheet();
       try {
-        const r = await this.api.toTomorrow(e.cal, e.uid);
+        const r = await (hoje ? this.api.toTomorrow(e.cal, e.uid, true) : this.api.toTomorrow(e.cal, e.uid));
         this._haptic("light");
-        this._showToast(`${clip(e.summary, 24)}: fica para amanhã`, r && r.undo ? { label: "Desfazer", run: () => this.api.maintUndo(e.cal, e.uid).catch((err) => this._showToast(err.message)) } : null);
+        this._showToast(`${clip(e.summary, 24)}: fica para ${hoje ? "hoje" : "amanhã"}`, r && r.undo ? { label: "Desfazer", run: () => this.api.maintUndo(e.cal, e.uid).catch((err) => this._showToast(err.message)) } : null);
       } catch (err) {
         this._showToast(`Não consegui: ${err.message}`);
       }
@@ -1091,7 +1091,16 @@ export const ModelsMixin = (Base) =>
       const tomorrow = (k.kind === "rotina" || k.kind === "manutencao") && !e.rrule && e.start < addDays(startOfDay(now), 1)
         ? html`<button class="btn outline kind-tomorrow" @click=${() => this._toTomorrow(e)}>${icon("sunrise")}Amanhã</button>`
         : nothing;
-      const later = (skip) => (tomorrow === nothing ? skip : skip === nothing ? html`<div class="kind-later">${tomorrow}</div>` : html`<div class="kind-later two">${skip}${tomorrow}</div>`);
+      // 1.122.0 (o dono: "para um atrasado ter a opção do lado do amanhã de marcar como hoje"): Hoje, só no atrasado
+      // (a maintenance opened from the Agora brings the start of its cycle in e.start: its lateness is the one of the index)
+      const mLate = k.kind === "manutencao" ? (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid) : null;
+      const today = tomorrow !== nothing && (mLate ? mLate.days < 0 : e.start < startOfDay(now))
+        ? html`<button class="btn outline kind-today" @click=${() => this._toTomorrow(e, true)}>${icon("calendar-check")}Hoje</button>`
+        : nothing;
+      const later = (skip) => {
+        const bs = [skip, today, tomorrow].filter((b) => b !== nothing);
+        return !bs.length ? nothing : bs.length === 1 && bs[0] === skip ? skip : html`<div class="kind-later ${["", "", "two", "three"][bs.length]}">${bs}</div>`;
+      };
       let action = nothing;
       if (k.kind === "manutencao") {
         const m = (this._ix().maint || []).find((x) => x.cal === e.cal && x.uid === e.uid);

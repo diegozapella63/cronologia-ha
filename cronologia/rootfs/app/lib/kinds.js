@@ -324,8 +324,9 @@ export function maintSkip(raw, k, today = new Date()) {
  * Amanhã (1.81.0): this time goes to tomorrow, at the same hour and length. Not done: its history stays as it was
  * (one that comes back N days after done counts again from the day it is done).
  */
-export function toTomorrow(raw, today = new Date()) {
-  return movedTo(raw, new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1), raw.description || "");
+export function toTomorrow(raw, today = new Date(), days = 1) {
+  // days 0 (1.122.0, Hoje): a late one comes to today
+  return movedTo(raw, new Date(today.getFullYear(), today.getMonth(), today.getDate() + days), raw.description || "");
 }
 
 /**

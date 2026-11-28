@@ -591,6 +591,16 @@ describe("maintSkip (Pular a maintenance, 1.80.0)", () => {
   });
 });
 
+describe("toTomorrow with 0 days (Hoje, 1.122.0)", () => {
+  it("a late one comes to today, the same hour and length", () => {
+    const raw = { summary: "Regar", description: "#rotina", start: "2026-10-30T08:00:00-03:00", end: "2026-10-30T08:30:00-03:00" };
+    const out = toTomorrow(raw, new Date(2026, 10, 2, 15, 0), 0);
+    assert.equal(out.start.slice(0, 16), "2026-11-02T08:00");
+    assert.equal(out.end.slice(0, 16), "2026-11-02T08:30");
+    assert.deepEqual(toTomorrow({ summary: "Regar", start: "2026-10-30", end: "2026-10-31" }, new Date(2026, 10, 2), 0).start, "2026-11-02");
+  });
+});
+
 describe("toTomorrow (Amanhã, 1.81.0)", () => {
   const today = at(2026, 11, 11, 20);
   it("all-day: tomorrow, one day; the description (and its history) stays", () => {

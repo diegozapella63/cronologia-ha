@@ -301,8 +301,8 @@ export class Api {
   }
 
   /** Amanhã (1.81.0): this time of a routine or a maintenance goes to tomorrow -> {moved, next, undo}; Desfazer: maintUndo */
-  toTomorrow(entityId, uid) {
-    return this.call("cronologia/event/tomorrow", { entity_id: entityId, uid });
+  toTomorrow(entityId, uid, hoje = false) {
+    return this.call("cronologia/event/tomorrow", { entity_id: entityId, uid, ...(hoje ? { para: "hoje" } : {}) });
   }
 
   /** Pular a maintenance: not done this time -> {skipped, moved, next?, undo?, key?} */

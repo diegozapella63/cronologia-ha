@@ -748,6 +748,21 @@ describe("Home: maintenance", () => {
     assert.equal((await g.home.toTomorrow(CAL, "cama")).undo, false);
     assert.deepEqual(g.ha.sent.map((m) => m.type), ["calendar/event/delete", "calendar/event/create"]);
   });
+  it("Hoje (1.122.0): a late one comes to today, not done; one of today or after does not", async () => {
+    const late = setup({ events: { [CAL]: [filtro({ start: "2026-10-20", end: "2026-10-21" })] } });
+    const out = await late.home.toTomorrow(CAL, "filtro", true);
+    assert.deepEqual(out, { moved: true, next: "2026-11-02", undo: true });
+    const [upd] = sentOf(late.ha, "calendar/event/update");
+    assert.equal(upd.event.dtstart, "2026-11-02");
+    assert.equal(parseKind(upd.event.description).history[0], "2026-05-07", "history as it was");
+    assert.deepEqual(late.store.data.checks, {}, "not done nor skipped");
+    assert.equal(late.store.data.score.entries.length, 0, "no points");
+    await late.home.maintUndo(CAL, "filtro");
+    assert.equal(sentOf(late.ha, "calendar/event/update")[1].event.dtstart, "2026-10-20", "Desfazer: back to its day");
+    const s = setup({ events: { [CAL]: [cama()] } });
+    await assert.rejects(s.home.toTomorrow(CAL, "cama", true), { code: "not_supported", message: "Só o que está atrasado vem para hoje" });
+    assert.equal(sentOf(s.ha, "calendar/event/update").length, 0);
+  });
   it("Amanhã: errors (not found, not a routine nor a maintenance, repeated by the calendar, read-only calendar)", async () => {
     const rep = cama({ uid: "lixo", rrule: "FREQ=DAILY", description: "#rotina\nPontos: 5" });
     const med = { uid: "rem", summary: "Losartana", start: "2026-11-02T08:00:00-03:00", end: "2026-11-02T08:15:00-03:00", description: "#remédio\nDose: 1 comprimido" };

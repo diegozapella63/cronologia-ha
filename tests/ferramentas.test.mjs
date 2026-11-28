@@ -852,6 +852,22 @@ describe("marcar_feito and pular", () => {
     await refused("marcar_feito", { id: "calendar.casa|nada|2026-11-02" }, /Não achei: calendar\.casa\|nada\|2026-11-02/);
     await refused("marcar_feito", { id: "Tirar o lixo" }, /Não achei/);
   });
+  it("mudar_dia (1.122.0): a late maintenance comes to today or goes to tomorrow; what it does not take", async () => {
+    const s = setup();
+    let r = await s.call("mudar_dia", { id: "calendar.casa|filtro|2026-10-30", para: "hoje" });
+    assert.equal(r.texto, "Trocar o filtro: fica para hoje (02/11/2026).");
+    r = await s.call("mudar_dia", { id: "calendar.casa|cama|2026-11-02", para: "amanha" });
+    assert.equal(r.texto, "Arrumar a cama: fica para amanhã (03/11/2026).");
+    const t = setup();
+    await t.refused("mudar_dia", { id: "calendar.casa|cama|2026-11-02", para: "hoje" }, /Só o que está atrasado vem para hoje\./);
+    await t.refused("mudar_dia", { id: "calendar.casa|lixo|20261102", para: "amanha" }, /Esse se repete na agenda: use Pular\./);
+    await t.refused("mudar_dia", { id: "calendar.casa|vitd|20261102T080000", para: "amanha" }, /Só uma rotina ou uma manutenção muda de dia assim; este é remédio/);
+    await t.refused("mudar_dia", { para: "hoje" }, /Falta o id/);
+    await t.refused("mudar_dia", { id: "calendar.casa|cama|2026-11-02", para: "sexta" }, /para: hoje ou amanha/);
+    await t.refused("mudar_dia", { id: "calendar.casa|nada|2026-11-02", para: "hoje" }, /Não achei/);
+    await t.call("marcar_feito", { id: "calendar.casa|cama|2026-11-02" });
+    await t.refused("mudar_dia", { id: "calendar.casa|cama|2026-11-02", para: "amanha" }, /Já está feita ou pulada|Não achei/);
+  });
   it("pular: a chore (no points), a dose, a maintenance; a chore that comes back N days after done goes to its next date", async () => {
     const s = setup();
     let r = await s.call("pular", { id: "calendar.casa|lixo|20261102" });

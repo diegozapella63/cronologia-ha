@@ -167,6 +167,15 @@ export const FERRAMENTAS = [
     entrada: obj({ id: ID }, ["id"]),
   },
   {
+    // 1.122.0: o Hoje e o Amanhã da ficha de uma rotina ou manutenção
+    nome: "mudar_dia",
+    titulo: "Deixar para hoje ou para amanhã",
+    grava: true,
+    descricao:
+      "Muda o dia desta vez de uma rotina ou de uma manutenção, sem marcar como feita e sem pontos: para amanha (a de hoje ou a atrasada fica para amanhã) ou para hoje (só a atrasada: vem para hoje, para ser feita hoje). Não vale para a que se repete na agenda (essa já tem a próxima lá: use cronologia_pular).",
+    entrada: obj({ id: ID, para: { type: "string", enum: ["hoje", "amanha"] } }, ["id", "para"]),
+  },
+  {
     nome: "dar_pontos",
     titulo: "Dar ou tirar pontos",
     grava: true,
@@ -1163,6 +1172,25 @@ export class Ferramentas {
     if (c) throw erro(`Já está ${c.skipped ? (o.k.kind === "remedio" ? "pulado" : "pulada") : o.k.kind === "remedio" ? "tomado" : "feita"}: ${o.raw.summary}. Para desfazer, use cronologia_marcar_feito com feito false.`);
     const r = await this.home.skip(o.key, ctx.nome || ctx.cliente);
     return `Pulado: ${o.raw.summary}${r && r.next ? `; volta em ${dm(r.next)}` : ""}.`;
+  }
+
+  /** 1.122.0: o Hoje (num atrasado) e o Amanhã da ficha, pelo home.toTomorrow da tela. */
+  async _mudar_dia(a) {
+    const id = linha(a.id, 600);
+    if (!id) throw erro("Falta o id.");
+    if (!["hoje", "amanha"].includes(a.para)) throw erro("para: hoje ou amanha.");
+    const o = this.ocorrencia(id);
+    if (!o) throw erro(`Não achei: ${id}. Os ids das rotinas de hoje e das atrasadas estão em cronologia_resumo.`);
+    if (!["rotina", "manutencao"].includes(o.k.kind)) throw erro(`Só uma rotina ou uma manutenção muda de dia assim; este é ${KINDS[o.k.kind].label.toLowerCase()}.`);
+    if (this.store.data.checks[o.key]) throw erro(`Já está feita ou pulada: ${o.raw.summary}.`);
+    let r;
+    try {
+      r = await this.home.toTomorrow(o.cal, o.raw.uid, a.para === "hoje");
+    } catch (e) {
+      if (e && ["not_supported", "invalid_format", "not_found"].includes(e.code)) throw erro(`${e.message}.`);
+      throw e;
+    }
+    return `${o.raw.summary}: fica para ${a.para === "hoje" ? "hoje" : "amanhã"} (${dm(r.next)}).`;
   }
 
   /** 1.118.0: o Prêmio de Recompensas (o mesmo para todos, ou um para cada pessoa), pelo store.setPrizes da tela. */

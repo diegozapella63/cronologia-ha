@@ -229,6 +229,9 @@ describe("models: Tomei, Pular, Amanhã and their undo", () => {
     assert.deepEqual([a._sheet, api.calls.at(-1), a.toasts.at(-1), a.undos.at(-1).label], [null, ["toTomorrow", "calendar.casa", "u-pano"], "Passar pano: fica para amanhã", "Desfazer"]);
     await a.undos.at(-1).run();
     assert.deepEqual(api.calls.at(-1), ["maintUndo", "calendar.casa", "u-pano"]);
+    // 1.122.0: Hoje (a late one comes to today)
+    await a._toTomorrow({ cal: "calendar.casa", uid: "u-pano", summary: "Passar pano" }, true);
+    assert.deepEqual([api.calls.at(-1), a.toasts.at(-1)], [["toTomorrow", "calendar.casa", "u-pano", true], "Passar pano: fica para hoje"]);
     // nothing more known of the next time, nothing to undo, and what fails
     const plain = new App({ api: fakeApi({ skipCheck: null, toTomorrow: null, setCheck: new Error("x") }) });
     await plain._skip({ key: "k1", summary: "Regar" });
@@ -473,16 +476,17 @@ describe("models: the sheet of an event of a model", () => {
     assert.equal(text(a._renderKindFacts(CONTA({ description: "#conta" }))), "Paguei");
     const got = [];
     const m = new App({ home: { maint: MAINT(), score: SCORE } });
-    Object.assign(m, { _maintDone: (x, by) => got.push(["feito", x.summary, by]), _maintSkip: (x) => got.push(["pular", x.summary]), _toTomorrow: (e) => got.push(["amanhã", e.summary]) });
+    Object.assign(m, { _maintDone: (x, by) => got.push(["feito", x.summary, by]), _maintSkip: (x) => got.push(["pular", x.summary]), _toTomorrow: (e, hoje) => got.push([hoje ? "hoje" : "amanhã", e.summary]) });
     const f = m._renderKindFacts(MAN());
-    assert.equal(text(f), "15 pontos para quem fizer A cada 6 meses, contando da última vez Quem faz: Ana Cozinha Purificador Aparece na tela inicial 7 dias antes Feito em 15 mai filtro modelo X Feito hoje Pular Amanhã");
+    assert.equal(text(f), "15 pontos para quem fizer A cada 6 meses, contando da última vez Quem faz: Ana Cozinha Purificador Aparece na tela inicial 7 dias antes Feito em 15 mai filtro modelo X Feito hoje Pular Hoje Amanhã", "late: Hoje beside Amanhã (1.122.0)");
     click(f, "Feito hoje");
     click(f, "Pular");
     click(f, "Amanhã");
+    click(f, "Hoje");
     const pick = new App({ home: { maint: MAINT(), score: SCORE }, app: { who_pick: true } });
     pick._maintDone = (x, by) => got.push(["feito", x.summary, by]);
     click(pick._renderKindFacts(MAN()), /Davi/);
-    assert.deepEqual(got, [["feito", "Trocar o filtro", undefined], ["pular", "Trocar o filtro"], ["amanhã", "Trocar o filtro"], ["feito", "Trocar o filtro", "Davi"]]);
+    assert.deepEqual(got, [["feito", "Trocar o filtro", undefined], ["pular", "Trocar o filtro"], ["amanhã", "Trocar o filtro"], ["hoje", "Trocar o filtro"], ["feito", "Trocar o filtro", "Davi"]]);
     assert.deepEqual(labels(new App()._renderKindFacts(MAN())), [], "not on the list of the maintenance: nothing to mark");
   });
 
