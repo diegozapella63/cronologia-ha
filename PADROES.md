@@ -122,6 +122,12 @@ ordem, cada um com o ícone, o título, a seta e uma frase do que faz embaixo do
 - Toda seção fecha e abre num toque no cabeçalho, com a seta no canto; o aparelho lembra as que ficaram fechadas.
 - O que só vale com uma chave ligada (o Horário e o A cada, o Quem recebe e o Testar, uma lista como Apps detectados)
   fica num quadro recuado logo abaixo dela.
+- **Itens dentro de um campo** (o dono escolheu entre três desenhos: "gostei da opção A"): numa janela, o campo que junta
+  várias opções (as Opções do Personalizar, por exemplo) mostra os itens no mesmo quadro recuado: um tom acima do cartão,
+  a borda fina, os cantos arredondados, recuado até depois do ícone do título, e a linha fina entre um item e outro.
+- **Opção desligada some de tudo** (o dono: "se eu nem controlo prazos não pode aparecer as opções de prazo no buscar,
+  agrupar"): o que depende de uma opção desligada (Controlar prazos, Usar cômodos, Usar bens…) some também dos filtros,
+  do Agrupar por, dos grupos, das etiquetas, dos campos das janelas, do Alterar e dos relatórios; ligada de novo, volta.
 - Abas que não cabem na largura: a ponta de onde há mais some aos poucos, com uma seta.
 - **Inativos no fim, recolhidos**: o que está inativo, cancelado, arquivado ou ignorado de propósito fica numa seção no
   fim da lista, fechada, com o nome e a contagem (**Arquivados (3)**); abre num toque.
@@ -167,7 +173,13 @@ ordem, cada um com o ícone, o título, a seta e uma frase do que faz embaixo do
   a seta. Fechado, «· o escolhido» ao lado do nome, em cinza, numa linha só: o que não cabe termina em «…». Aberto, o conteúdo logo abaixo, e 8 px até a linha seguinte.
   O aparelho lembra.
 - **Agrupar por**: fora dos Filtros; as escolhas numa barra só, do mesmo tamanho (com o ícone; sem ele onde não cabe); de
-  início, a escolha que mais ajuda naquela tela (um **Nenhum**, onde houver, fica por último).
+  início, a escolha que mais ajuda naquela tela (um **Nenhum**, onde houver, fica por último). Só aparece com duas
+  escolhas ou mais (o dono: "não faz sentido mostrar o agrupar por se só tem 1"): com uma só, os grupos dela ficam, sem o
+  bloco.
+- **Nova coisa no fim da lista** (o dono: "faz no mesmo padrão da ronda que lá embaixo tem um botão de adicionar"): uma
+  tela que lista o que se cria no app (listas, rondas, categorias, blocos) tem, no fim da lista, o botão **Nova <coisa>**
+  com o +, na largura do cartão. E o **Adicionar** do meio sabe onde está ("o sistema precisa ser inteligente"): nessa
+  tela, cria uma dessas; numa lista de tarefas, uma tarefa nela.
 - A linha da contagem, logo antes da lista: à esquerda a contagem (e a soma, onde há valor), em 15 px, cinza; à direita o
   **Selecionar**, na cor do app, com o ícone.
 - Cada grupo: o ícone num quadrado de 36 px (na cor da lista ou da categoria; senão, na do app), o nome em 20 px
